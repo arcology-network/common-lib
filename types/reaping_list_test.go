@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
+	ethCommon "github.com/arcology/3rd-party/eth/common"
 )
 
 func TestReapinglist(t *testing.T) {

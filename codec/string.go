@@ -1,6 +1,6 @@
 package codec
 
-import "github.com/HPISTechnologies/common-lib/common"
+import "github.com/arcology/common-lib/common"
 
 const (
 	CHAR_LEN = 1

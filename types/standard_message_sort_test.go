@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
-	ethTypes "github.com/HPISTechnologies/3rd-party/eth/types"
-	"github.com/HPISTechnologies/evm/crypto"
+	ethCommon "github.com/arcology/3rd-party/eth/common"
+	ethTypes "github.com/arcology/3rd-party/eth/types"
+	"github.com/arcology/evm/crypto"
 )
 
 func TestStandardMessageEncodingAndDeconing(t *testing.T) {

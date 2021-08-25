@@ -1,8 +1,8 @@
 package merkle
 
 import (
-	codec "github.com/HPISTechnologies/common-lib/codec"
-	encoding "github.com/HPISTechnologies/common-lib/encoding"
+	codec "github.com/arcology/common-lib/codec"
+	encoding "github.com/arcology/common-lib/encoding"
 )
 
 type Node struct {

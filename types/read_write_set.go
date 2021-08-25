@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"math/big"
 
-	"github.com/HPISTechnologies/common-lib/common"
-	"github.com/HPISTechnologies/common-lib/encoding"
+	"github.com/arcology/common-lib/common"
+	"github.com/arcology/common-lib/encoding"
 )
 
 const (

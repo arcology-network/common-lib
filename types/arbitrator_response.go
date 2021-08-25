@@ -1,6 +1,6 @@
 package types
 
-import ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
+import ethCommon "github.com/arcology/3rd-party/eth/common"
 
 type ArbitratorResponse struct {
 	ConflictedList []*ethCommon.Hash

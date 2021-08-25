@@ -3,9 +3,9 @@ package types
 import (
 	"math"
 
-	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
-	"github.com/HPISTechnologies/common-lib/common"
-	encoding "github.com/HPISTechnologies/common-lib/encoding"
+	ethCommon "github.com/arcology/3rd-party/eth/common"
+	"github.com/arcology/common-lib/common"
+	encoding "github.com/arcology/common-lib/encoding"
 )
 
 type ArbitratorRequest struct {

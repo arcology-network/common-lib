@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
+	ethCommon "github.com/arcology/3rd-party/eth/common"
 )
 
 func TestAssert(t *testing.T) {

@@ -1,8 +1,8 @@
 package types
 
 import (
-	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
-	encoding "github.com/HPISTechnologies/common-lib/encoding"
+	ethCommon "github.com/arcology/3rd-party/eth/common"
+	encoding "github.com/arcology/common-lib/encoding"
 )
 
 type ReceiptHash struct {

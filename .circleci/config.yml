@@ -8,7 +8,7 @@ jobs:
     working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
     steps:
       - checkout
-      - run: go env -w GOPRIVATE=github.com/HPISTechnologies
+      - run: go env -w GOPRIVATE=github.com/arcology
       - run: go build ./...
       - run: go test -v ./... -coverprofile=coverage.txt -covermode=atomic
       - run: bash <(curl -s https://codecov.io/bash) -t 433021dd-d93f-44e6-86d8-acc35300a3f4

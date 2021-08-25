@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
+	ethCommon "github.com/arcology/3rd-party/eth/common"
 )
 
 func TestReceiptHash(t *testing.T) {
