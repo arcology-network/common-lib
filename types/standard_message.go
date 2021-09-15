@@ -7,11 +7,11 @@ import (
 	"sort"
 	"time"
 
-	ethCommon "github.com/arcology/3rd-party/eth/common"
-	ethTypes "github.com/arcology/3rd-party/eth/types"
-	"github.com/arcology/common-lib/common"
-	"github.com/arcology/common-lib/encoding"
-	"github.com/arcology/evm/crypto"
+	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	ethTypes "github.com/arcology-network/3rd-party/eth/types"
+	"github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/encoding"
+	"github.com/arcology-network/evm/crypto"
 )
 
 const (

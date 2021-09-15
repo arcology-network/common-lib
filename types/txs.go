@@ -1,7 +1,7 @@
 package types
 
 import (
-	encoding "github.com/arcology/common-lib/encoding"
+	encoding "github.com/arcology-network/common-lib/encoding"
 )
 
 type Txs struct {

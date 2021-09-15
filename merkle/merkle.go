@@ -2,6 +2,8 @@ package merkle
 
 import (
 	"bytes"
+
+	"github.com/arcology-network/common-lib/common"
 )
 
 const (
@@ -39,11 +41,7 @@ func (this *Merkle) Build(id uint32, children []*Node, n int) []*Node {
 }
 
 func (*Merkle) Pad(original []*Node, n int) []*Node {
-	if len(original) == n {
-		return original
-	}
-
-	for i := 0; i < len(original)%n; i++ {
+	for len(original)%n != 0 {
 		original = append(original, original[len(original)-1])
 	}
 	return original
@@ -66,10 +64,13 @@ func (this *Merkle) Init(data [][]byte) {
 	}
 
 	// Insert the leaf nodes
-	leafNodes := []*Node{}
-	for i, bytes := range data {
-		leafNodes = append(leafNodes, NewNode(uint32(i), 0, this.hasher(bytes)))
+	leafNodes := make([]*Node, len(data))
+	worker := func(start, end, index int, args ...interface{}) {
+		for i := start; i < end; i++ {
+			leafNodes[i] = NewNode(uint32(i), 0, this.hasher(data[i]))
+		}
 	}
+	common.ParallelWorker(len(data), 4, worker)
 	this.nodes = append(this.nodes, this.Pad(leafNodes, int(this.branch)))
 
 	// Build the non-leaf nodes
@@ -105,6 +106,7 @@ func (this *Merkle) GetProofNodes(hash []byte) []*Node {
 		rgt := v.hash
 		if bytes.Equal(hash[:], rgt[:]) {
 			mainPath = append(mainPath, v)
+			break
 		}
 	}
 
@@ -131,7 +133,11 @@ func (this *Merkle) Verify(proofs [][][]byte, root []byte, seed []byte) bool {
 }
 
 func (this *Merkle) ComputeHash(hashes [][]byte) []byte {
-	buffer := []byte{}
+	if len(hashes) == 0 {
+		return []byte{}
+	}
+
+	buffer := make([]byte, 0, len(hashes)*len(hashes[0]))
 	for j := 0; j < len(hashes); j++ {
 		buffer = append(buffer, hashes[j][:]...)
 	}

@@ -4,9 +4,9 @@ import (
 	"crypto/sha256"
 	"math/big"
 
-	ethCommon "github.com/arcology/3rd-party/eth/common"
-	"github.com/arcology/common-lib/common"
-	"github.com/arcology/common-lib/encoding"
+	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	"github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/encoding"
 )
 
 type ExecutingSequence struct {

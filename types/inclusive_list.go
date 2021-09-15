@@ -1,9 +1,9 @@
 package types
 
 import (
-	ethCommon "github.com/arcology/3rd-party/eth/common"
-	"github.com/arcology/common-lib/common"
-	encoding "github.com/arcology/common-lib/encoding"
+	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	"github.com/arcology-network/common-lib/common"
+	encoding "github.com/arcology-network/common-lib/encoding"
 )
 
 const (

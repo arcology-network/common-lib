@@ -3,8 +3,8 @@ package types
 import (
 	"crypto/sha256"
 
-	"github.com/arcology/common-lib/common"
-	"github.com/arcology/common-lib/encoding"
+	"github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/encoding"
 )
 
 const (

@@ -1,6 +1,6 @@
 package codec
 
-import "github.com/arcology/common-lib/common"
+import "github.com/arcology-network/common-lib/common"
 
 const (
 	CHAR_LEN = 1
@@ -54,4 +54,20 @@ func (this Strings) Flatten() []byte {
 	}
 	common.ParallelWorker(len(this), 4, worker)
 	return buffer
+}
+
+func (this Strings) ToBytes() [][]byte {
+	bytes := make([][]byte, len(this))
+	for i := 0; i < len(this); i++ {
+		bytes[i] = []byte(this[i])
+	}
+	return bytes
+}
+
+func (Strings) FromBytes(byteSet [][]byte) []string {
+	strings := make([]string, len(byteSet))
+	for i := 0; i < len(byteSet); i++ {
+		strings[i] = string(byteSet[i])
+	}
+	return strings
 }

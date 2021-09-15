@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"math"
 
-	ethCommon "github.com/arcology/3rd-party/eth/common"
+	ethCommon "github.com/arcology-network/3rd-party/eth/common"
 )
 
 const (

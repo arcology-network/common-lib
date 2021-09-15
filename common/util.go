@@ -18,8 +18,8 @@ import (
 	"sync"
 	"unsafe"
 
-	ethCommon "github.com/arcology/3rd-party/eth/common"
-	"github.com/arcology/common-lib/encoding"
+	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	"github.com/arcology-network/common-lib/encoding"
 	"github.com/google/uuid"
 )
 

@@ -8,8 +8,8 @@ package types
 // 	"sync"
 // 	"testing"
 
-// 	ethCommon "github.com/arcology/3rd-party/eth/common"
-// 	"github.com/arcology/common-lib/common"
+// 	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+// 	"github.com/arcology-network/common-lib/common"
 // )
 
 // func Test_Defcalls_encodingAndDeconing(t *testing.T) {

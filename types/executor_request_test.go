@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"testing"
 
-	ethCommon "github.com/arcology/3rd-party/eth/common"
-	ethTypes "github.com/arcology/3rd-party/eth/types"
+	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	ethTypes "github.com/arcology-network/3rd-party/eth/types"
 )
 
 func TestExecutorRequestEncodingAndDeconing(t *testing.T) {

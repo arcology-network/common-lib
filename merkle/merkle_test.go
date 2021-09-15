@@ -38,17 +38,17 @@ func TestBinaryMerkle(t *testing.T) { // Create a new merkle tree with 2 branche
 
 func TestQuadMerkle(t *testing.T) { // Create a new merkle tree with 4 branches under each non-leaf node and using sha256 hashing algorithm
 	bytes := [][]byte{}
-	for i := 0; i < 15; i++ {
+	for i := 0; i < 17; i++ {
 		bytes = append(bytes, []byte(fmt.Sprint(i)))
 	}
 
 	merkle := NewMerkle(4, Sha256)
 	merkle.Init(bytes)
 
-	proofNodes := merkle.GetProofNodes(Sha256([]byte(fmt.Sprint(0))))
+	proofNodes := merkle.GetProofNodes(Sha256([]byte(fmt.Sprint(16))))
 	proofs := merkle.NodesToHashes(proofNodes)
 
-	seed := Sha256([]byte(fmt.Sprint(0)))
+	seed := Sha256([]byte(fmt.Sprint(16)))
 	if !merkle.Verify(proofs[:], merkle.GetRoot(), seed[:]) {
 		t.Error("Error: Merkle Proofs weren't found")
 	}
@@ -56,11 +56,11 @@ func TestQuadMerkle(t *testing.T) { // Create a new merkle tree with 4 branches 
 
 func TestOctodecMerkle(t *testing.T) { // Create a new merkle tree with 16 branches under each non-leaf node and using Keccak256 hashing algorithm
 	bytes := [][]byte{}
-	for i := 0; i < 8; i++ {
+	for i := 0; i < 9; i++ {
 		bytes = append(bytes, []byte(fmt.Sprint(i)))
 	}
 
-	merkle := NewMerkle(2, Sha256)
+	merkle := NewMerkle(8, Sha256)
 	merkle.Init(bytes)
 
 	proofNodes := merkle.GetProofNodes(Sha256([]byte(fmt.Sprint(0))))
@@ -78,7 +78,7 @@ func TestKeccakOctodecMerkle(t *testing.T) { // Create a new merkle tree with 16
 		bytes = append(bytes, []byte(fmt.Sprint(i)))
 	}
 
-	merkle := NewMerkle(2, Keccak256)
+	merkle := NewMerkle(8, Keccak256)
 	merkle.Init(bytes)
 
 	proofNodes := merkle.GetProofNodes(Keccak256([]byte(fmt.Sprint(0))))
@@ -93,7 +93,7 @@ func TestKeccakOctodecMerkle(t *testing.T) { // Create a new merkle tree with 16
 func TestKeccakOctodecMerkleSingleEntry(t *testing.T) { // Create a new merkle tree with 16 branches under each non-leaf node and using Keccak256 hashing algorithm
 	bytes := [][]byte{[]byte(fmt.Sprint(0))}
 
-	merkle := NewMerkle(2, Keccak256)
+	merkle := NewMerkle(8, Keccak256)
 	merkle.Init(bytes)
 
 	proofNodes := merkle.GetProofNodes(Keccak256([]byte(fmt.Sprint(0))))

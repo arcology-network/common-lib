@@ -3,7 +3,7 @@ package encoding
 import (
 	"crypto/sha256"
 
-	ethCommon "github.com/arcology/3rd-party/eth/common"
+	ethCommon "github.com/arcology-network/3rd-party/eth/common"
 )
 
 const (
