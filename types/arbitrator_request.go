@@ -1,9 +1,8 @@
 package types
 
 import (
-	"math"
-
 	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
 	encoding "github.com/arcology-network/common-lib/encoding"
 )
@@ -15,43 +14,68 @@ type ArbitratorRequest struct {
 type TxElement struct {
 	TxHash  *ethCommon.Hash
 	Batchid uint64
+	Txid    uint32
+}
+
+func (this TxElement) Encode() []byte {
+	tmpData := [][]byte{
+		this.TxHash[:],
+		encoding.Uint64(this.Batchid).Encode(),
+		encoding.Uint32(this.Txid).Encode(),
+	}
+	return encoding.Byteset(tmpData).Encode()
+}
+
+func (this *TxElement) Decode(data []byte) *TxElement {
+	fields := encoding.Byteset{}.Decode(data)
+	hash := ethCommon.BytesToHash(fields[0])
+	this.TxHash = &hash
+	this.Batchid = encoding.Uint64(0).Decode(fields[1])
+	this.Txid = encoding.Uint32(0).Decode(fields[2])
+	return this
 }
 
 func (tx TxElement) Size() uint32 {
-	return ethCommon.Hash{}.Size() + encoding.Uint64(0).Size()
+	return ethCommon.Hash{}.Size() + encoding.Uint64(0).Size() + uint32(encoding.Uint32(0).Size())
 }
 
 type TxElements []*TxElement
 
 func (elems TxElements) Encode() []byte {
-	length := int(TxElement{}.Size())
-	bytes := make([]byte, len(elems)*length)
-	for i := range elems {
-		copy(bytes[i*length:], elems[i].TxHash[:])
-		copy(bytes[i*length+len(elems[i].TxHash):], encoding.Uint64(elems[i].Batchid).Encode())
+	byteset := make([][]byte, len(elems))
+	worker := func(start, end, index int, args ...interface{}) {
+		for i := start; i < end; i++ {
+			byteset[i] = elems[i].Encode()
+		}
 	}
-	return bytes
+	common.ParallelWorker(len(elems), 4, worker)
+	return codec.Byteset(byteset).Encode()
 }
 
-func (_ TxElements) Decode(bytes []byte) TxElements {
-	length := int(TxElement{}.Size())
-	elems := make([]*TxElement, len(bytes)/int(length))
-	for i := 0; i < len(elems); i++ {
-		tx := TxElement{&ethCommon.Hash{}, 0}
-		copy(tx.TxHash[:], bytes[i*length:int(math.Min(float64((i+1)*length), float64(len(bytes))-1))])
-		tx.Batchid = encoding.Uint64(0).Decode(bytes[i*length+ethCommon.HashLength : int(math.Min(float64((i+1)*length+ethCommon.HashLength), float64(len(bytes))-1))])
-		elems[i] = &tx
+func (TxElements) Decode(bytes []byte) TxElements {
+	bytesset := codec.Byteset{}.Decode(bytes).(codec.Byteset)
+	elements := make([]*TxElement, len(bytesset))
+	worker := func(start, end, index int, args ...interface{}) {
+		for i := start; i < end; i++ {
+			ele := &TxElement{}
+			ele.Decode(bytesset[i])
+			elements[i] = ele
+		}
 	}
-	return elems
+	common.ParallelWorker(len(bytesset), 4, worker)
+	return elements
 }
+
 func (request *ArbitratorRequest) GobEncode() ([]byte, error) {
 	return request.Encode(), nil
 }
+
 func (request *ArbitratorRequest) GobDecode(data []byte) error {
 	req := request.Decode(data)
 	request.TxsListGroup = req.TxsListGroup
 	return nil
 }
+
 func (request *ArbitratorRequest) Encode() []byte {
 	bytes := make([][]byte, len(request.TxsListGroup))
 	worker := func(start int, end int, idx int, args ...interface{}) {
@@ -63,7 +87,7 @@ func (request *ArbitratorRequest) Encode() []byte {
 	return encoding.Byteset(bytes).Encode()
 }
 
-func (_ ArbitratorRequest) Decode(bytes []byte) *ArbitratorRequest {
+func (ArbitratorRequest) Decode(bytes []byte) *ArbitratorRequest {
 	byteset := encoding.Byteset{}.Decode(bytes)
 	elems := make([][]*TxElement, len(byteset))
 
@@ -76,24 +100,6 @@ func (_ ArbitratorRequest) Decode(bytes []byte) *ArbitratorRequest {
 	return &ArbitratorRequest{elems}
 }
 
-/*
-func (a ArbitratorRequest) MarshalBinary() ([]byte, error) {
-	ar := arEncoder.Encode(&a)
-	var buf bytes.Buffer
-	err := gob.NewEncoder(&buf).Encode(ar)
-	return buf.Bytes(), err
-}
-
-func (a *ArbitratorRequest) UnmarshalBinary(data []byte) error {
-	var ar arbReq
-	err := gob.NewDecoder(bytes.NewBuffer(data)).Decode(&ar)
-	if err != nil {
-		return err
-	}
-	a.TxsListGroup = arDecoder.Decode(&ar).TxsListGroup
-	return nil
-}
-*/
 type arbReq struct {
 	Indices []uint32
 	Hashes  []byte
@@ -115,7 +121,7 @@ func newArbReqEncoder() *arbReqEncoder {
 	}
 }
 
-func (e *arbReqEncoder) Encode(r *ArbitratorRequest) *arbReq {
+func (this *arbReqEncoder) Encode(r *ArbitratorRequest) *arbReq {
 	if len(r.TxsListGroup) == 0 {
 		return &arbReq{}
 	}
@@ -127,15 +133,15 @@ func (e *arbReqEncoder) Encode(r *ArbitratorRequest) *arbReq {
 	prevGroupSize := len(r.TxsListGroup[0])
 	count := 1
 	for _, elem := range r.TxsListGroup[0] {
-		dataOffset += copy(e.hashBuf[dataOffset:], elem.TxHash.Bytes())
-		e.batchBuf[batchOffset] = uint32(elem.Batchid)
+		dataOffset += copy(this.hashBuf[dataOffset:], elem.TxHash.Bytes())
+		this.batchBuf[batchOffset] = uint32(elem.Batchid)
 		batchOffset++
 	}
 
 	for i := 1; i < len(r.TxsListGroup); i++ {
 		if len(r.TxsListGroup[i]) != prevGroupSize {
-			e.indexBuf[indexOffset] = uint32(prevGroupSize)
-			e.indexBuf[indexOffset+1] = uint32(count)
+			this.indexBuf[indexOffset] = uint32(prevGroupSize)
+			this.indexBuf[indexOffset+1] = uint32(count)
 			indexOffset += 2
 			prevGroupSize = len(r.TxsListGroup[i])
 			count = 1
@@ -144,20 +150,20 @@ func (e *arbReqEncoder) Encode(r *ArbitratorRequest) *arbReq {
 		}
 
 		for _, elem := range r.TxsListGroup[i] {
-			dataOffset += copy(e.hashBuf[dataOffset:], elem.TxHash.Bytes())
-			e.batchBuf[batchOffset] = uint32(elem.Batchid)
+			dataOffset += copy(this.hashBuf[dataOffset:], elem.TxHash.Bytes())
+			this.batchBuf[batchOffset] = uint32(elem.Batchid)
 			batchOffset++
 		}
 	}
 
-	e.indexBuf[indexOffset] = uint32(prevGroupSize)
-	e.indexBuf[indexOffset+1] = uint32(count)
+	this.indexBuf[indexOffset] = uint32(prevGroupSize)
+	this.indexBuf[indexOffset+1] = uint32(count)
 	indexOffset += 2
 
 	return &arbReq{
-		Indices: e.indexBuf[:indexOffset],
-		Hashes:  e.hashBuf[:dataOffset],
-		Batches: e.batchBuf[:batchOffset],
+		Indices: this.indexBuf[:indexOffset],
+		Hashes:  this.hashBuf[:dataOffset],
+		Batches: this.batchBuf[:batchOffset],
 	}
 }
 
@@ -175,7 +181,7 @@ func newArbReqDecoder() *arbReqDecoder {
 	}
 }
 
-func (d *arbReqDecoder) Decode(r *arbReq) *ArbitratorRequest {
+func (this *arbReqDecoder) Decode(r *arbReq) *ArbitratorRequest {
 	offset := 0
 	hashOffset := 0
 	batchOffset := 0
@@ -183,10 +189,10 @@ func (d *arbReqDecoder) Decode(r *arbReq) *ArbitratorRequest {
 		subListSize := r.Indices[i]
 		count := r.Indices[i+1]
 		for j := uint32(0); j < count; j++ {
-			d.list[offset] = d.list[offset][:0]
+			this.list[offset] = this.list[offset][:0]
 			for k := uint32(0); k < subListSize; k++ {
 				hash := ethCommon.BytesToHash(r.Hashes[hashOffset : hashOffset+32])
-				d.list[offset] = append(d.list[offset], &TxElement{
+				this.list[offset] = append(this.list[offset], &TxElement{
 					TxHash:  &hash,
 					Batchid: uint64(r.Batches[batchOffset]),
 				})
@@ -197,6 +203,6 @@ func (d *arbReqDecoder) Decode(r *arbReq) *ArbitratorRequest {
 		}
 	}
 	return &ArbitratorRequest{
-		TxsListGroup: d.list[:offset],
+		TxsListGroup: this.list[:offset],
 	}
 }

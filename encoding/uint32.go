@@ -10,7 +10,7 @@ const (
 
 type Uint32 uint32
 
-func (v Uint32) Size() int {
+func (v Uint32) Size() uint32 {
 	return UINT32_LEN
 }
 

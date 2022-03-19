@@ -37,7 +37,7 @@ func TestStringEngine(t *testing.T) {
 func TestSortString(t *testing.T) {
 	data := []string{"5678", "9101112", "1234"}
 
-	result, err := SortString(data)
+	result, err := SortStrings(data)
 	if err != nil {
 		t.Error("sort err:" + err.Error())
 	}
@@ -47,11 +47,24 @@ func TestSortString(t *testing.T) {
 	}
 	fmt.Printf("result=%v\n", result)
 }
+func TestUniqueSortStrings(t *testing.T) {
+	data := []string{"5678", "9101112", "5678", "1234"}
 
-func TestUniqueString(t *testing.T) {
+	result, err := UniqueSortStrings(data)
+	if err != nil {
+		t.Error("sort err:" + err.Error())
+	}
+
+	if !reflect.DeepEqual(result[0], data[3]) || !reflect.DeepEqual(result[1], data[0]) || !reflect.DeepEqual(result[2], data[1]) {
+		t.Error("Wrong order !")
+	}
+	fmt.Printf("result=%v\n", result)
+}
+
+func TestUniqueStrings(t *testing.T) {
 	data := []string{"124", "5678", "1258", "5678"}
 
-	result, err := UniqueString(data)
+	result, err := UniqueStrings(data)
 	if err != nil {
 		t.Error("Unique err:" + err.Error())
 	}
@@ -81,7 +94,7 @@ func TestSortBytes(t *testing.T) {
 	if err != nil {
 		t.Error("sort err:" + err.Error())
 	}
-	if !reflect.DeepEqual(result[0], data[0]) || !reflect.DeepEqual(result[1], data[2]) || !reflect.DeepEqual(result[2], data[1]) {
+	if !reflect.DeepEqual(result[0], data[0]) || !reflect.DeepEqual(result[1], data[1]) || !reflect.DeepEqual(result[2], data[2]) {
 		t.Error("Wrong order !")
 	}
 	fmt.Printf("result=%v\n", result)

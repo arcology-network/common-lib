@@ -52,9 +52,9 @@ func (hash Hash16) Encode() []byte {
 	return hash[:]
 }
 
-func (hash Hash16) Decode(data []byte) interface{} {
-	copy(hash[:], data)
-	return hash
+func (this Hash16) Decode(data []byte) interface{} {
+	copy(this[:], data)
+	return Hash16(this)
 }
 
 type Hash16s []ethCommon.Hash

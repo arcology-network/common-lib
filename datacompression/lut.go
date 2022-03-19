@@ -1,100 +1,167 @@
 package datacompression
 
 import (
+	"bytes"
+	"fmt"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
-	"github.com/arcology-network/common-lib/common"
+	codec "github.com/arcology-network/common-lib/codec"
+	common "github.com/arcology-network/common-lib/common"
+	cccontainer "github.com/arcology-network/common-lib/concurrentcontainer"
 )
 
 type CompressionLut struct {
-	KeyLut []string
-	Dict   map[string]uint32
-	offset uint32 // offset for builtins
+	IdxToKeyLut []string
+	dict        *cccontainer.ConcurrentMap
+	tempLut     *CompressionLut
+	length      uint32
+	offset      uint32
+	lock        sync.RWMutex
+	depths      [][2]int
 }
 
 func NewCompressionLut() *CompressionLut {
-	lut := &CompressionLut{
-		KeyLut: []string{
-			"blcc://eth1.0/account",
-			// "code",
-			// "nonce",
-			// "balance",
-			// "defer/",
-			// "storage/",
-			"storage/containers",
-			"storage/native",
-			"storage/containers/!",
-		},
-		Dict: map[string]uint32{},
+	syspath := []string{
+		"blcc://eth1.0/account",
+		"code",
+		"nonce",
+		"balance",
+		"defer",
+		//"storage",
+		"storage/containers",
+		"storage/native",
 	}
-	lut.offset = uint32(len(lut.KeyLut))
+
+	tempLut := &CompressionLut{
+		IdxToKeyLut: syspath,
+		dict:        cccontainer.NewConcurrentMap(),
+		tempLut:     nil,
+		length:      0,
+		offset:      0,
+	}
+
+	lut := &CompressionLut{
+		IdxToKeyLut: []string{},
+		length:      0,
+		dict:        cccontainer.NewConcurrentMap(),
+		tempLut: &CompressionLut{
+			IdxToKeyLut: []string{},
+			dict:        cccontainer.NewConcurrentMap(),
+			tempLut:     tempLut,
+			length:      0,
+			offset:      0,
+		},
+
+		depths: [][2]int{{-1, 3}, {3, 4}, {4, 8}},
+	}
+
+	lut.tempLut.insertToDict(lut.filterExistingKeys(syspath, lut.dict), lut.dict)
+	lut.Commit()
 	return lut
 }
 
-func (this *CompressionLut) Compress(original string) string {
-	line := this.compressFixedLeading(original, this.KeyLut[:this.offset], 0) // Partially compressed
-	if first := strings.Index(line, "]/"); first > -1 {
-		first += 2
-		if second := strings.Index(line[first:], "/"); second > -1 {
-			second += first
-			key := line[first:second]
-			if _, ok := this.Dict[line[first:second]]; !ok {
-				this.Dict[key] = uint32(len(this.Dict) + len(this.KeyLut))
-				this.KeyLut = append(this.KeyLut, key)
-			}
-			line = line[:first] + "[" + strconv.Itoa(int(this.Dict[key])) + "]" + line[second:]
-		}
-	}
+func (this *CompressionLut) CompressOnTemp(originals []string) []string {
+	this.tempLut.offset = this.dict.Size()
 
-	return this.compressFixedTrailing(line, this.KeyLut[:this.offset], 0)
-}
+	t0 := time.Now()
+	positions := this.findPositions(originals, this.depths)
+	fmt.Println("findPositions", time.Since(t0))
 
-func (this *CompressionLut) Uncompress(compressed string) string {
-	pos := make([]uint32, 0, 6)
-	for j := range compressed {
-		if compressed[j] == '[' || compressed[j] == ']' {
-			pos = append(pos, uint32(j))
-		}
-	}
+	t0 = time.Now()
+	nKeys := Flatten(this.parseKeys(originals, positions))
+	fmt.Println("Flatten", time.Since(t0))
 
-	if len(pos) > 0 {
-		original := compressed[:pos[0]]
-		for j := 0; j < len(pos)/2; j++ {
-			idxStr := compressed[pos[j*2]+1 : pos[j*2+1]]
-			idx, _ := strconv.Atoi(idxStr)
-			original += this.KeyLut[idx]
+	t0 = time.Now()
+	this.tempLut.insertToDict(nKeys, this.dict) // update the dictionary
+	fmt.Println("insertToDict", time.Since(t0))
 
-			if (j+1)*2 < len(pos) {
-				original += compressed[pos[j*2+1]+1 : pos[(j+1)*2]]
-			}
-		}
+	t0 = time.Now()
+	originals = this.replaceSubstrings(originals, positions) // Use the dictionary to compress the entires
+	fmt.Println("replaceSubstrings", time.Since(t0))
 
-		if uint32(len(compressed)) > pos[len(pos)-1]+1 {
-			original += compressed[pos[len(pos)-1]+1:]
-		}
-		return original
-	}
-	return compressed
-}
-
-func (this *CompressionLut) BatchCompress(originals []string) []string {
-	worker := func(start, end, idx int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			originals[i] = this.Compress(originals[i])
-		}
-	}
-	common.ParallelWorker(len(originals), 6, worker)
 	return originals
 }
 
-func (this *CompressionLut) BatchUncompress(compressed []string) []string {
-	worker := func(start, end, idx int, args ...interface{}) {
+func (this *CompressionLut) TryCompress(original string) string {
+	positions := this.findPosition(original, this.depths)
+	return this.replaceSubstring(original, positions)
+}
+
+func (this *CompressionLut) TryBatchCompress(originals []string) []string {
+	positions := this.findPositions(originals, this.depths)
+	return this.replaceSubstrings(originals, positions)
+}
+
+func (this *CompressionLut) replaceSubstrings(originals []string, positions [][][2]int) []string {
+	//this.insertToDict(Flatten(this.parseKeys(originals, positions)))
+	compressor := func(start, end, idx int, args ...interface{}) {
 		for i := start; i < end; i++ {
-			compressed[i] = this.Uncompress(compressed[i])
-			compressed[i] = this.Uncompress(compressed[i]) // Twice
+			originals[i] = this.replaceSubstring(originals[i], positions[i])
 		}
 	}
-	common.ParallelWorker(len(compressed), 6, worker)
-	return compressed
+	common.ParallelWorker(len(originals), 4, compressor)
+	return originals
+}
+
+func (this *CompressionLut) TryUncompress(compressed string) string {
+	if strings.Count(compressed, "[") == 0 {
+		return compressed
+	}
+
+	p0 := make([]uint32, 0, 6)
+	p1 := make([]uint32, 0, 6)
+	for j := range compressed {
+		if compressed[j] == '[' {
+			p0 = append(p0, uint32(j))
+		}
+
+		if compressed[j] == ']' {
+			p1 = append(p1, uint32(j))
+		}
+	}
+
+	if len(p0) == 0 || len(p1) == 0 {
+		return compressed
+	}
+
+	var buffer bytes.Buffer
+	prefix := compressed[:p0[0]]
+	buffer.WriteString(prefix)
+	for i := 0; i < len(p0); i++ {
+		idxStr := compressed[p0[i]+1 : p1[i]]
+		idx, _ := strconv.Atoi(idxStr)
+		if idx >= len(this.IdxToKeyLut) {
+			panic("Error: Wrong Uncompression LUT")
+		}
+		buffer.WriteString(this.IdxToKeyLut[idx])
+
+		if i+1 < len(p0) {
+			buffer.WriteString(compressed[p1[i]+1 : p0[i+1]])
+		} else {
+			buffer.WriteString(compressed[p1[i]+1:])
+			break
+		}
+	}
+	return buffer.String()
+}
+
+func (this *CompressionLut) TryBatchUncompress(compressed []string) {
+	if len(compressed) < 1024 {
+		this.singleThreadedUncompressor(compressed)
+	} else {
+		this.multiThreadedUncompressor(compressed)
+	}
+}
+
+func (this *CompressionLut) GetCompressionRatio(originals []string, compressed []string) float32 {
+	compressedLen := 0
+	for _, v := range compressed {
+		compressedLen += len(v)
+	}
+
+	originalLen := len(codec.Strings(originals).Flatten())
+	return float32(compressedLen) / float32(originalLen)
 }

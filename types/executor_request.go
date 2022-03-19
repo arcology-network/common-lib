@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
 	"github.com/arcology-network/common-lib/encoding"
 )
@@ -17,12 +18,12 @@ type ExecutingSequence struct {
 }
 
 func NewExecutingSequence(msgs []*StandardMessage, parallel bool) *ExecutingSequence {
-	datas := make([][]byte, len(msgs))
+	buffers := make([][]byte, len(msgs))
 	for i, msg := range msgs {
-		datas[i] = msg.TxHash.Bytes()
+		buffers[i] = msg.TxHash.Bytes()
 	}
 
-	hash := sha256.Sum256(encoding.Byteset(datas).Encode())
+	hash := sha256.Sum256(encoding.Byteset(buffers).Encode())
 	return &ExecutingSequence{
 		Msgs:       msgs,
 		Parallel:   parallel,
@@ -33,65 +34,65 @@ func NewExecutingSequence(msgs []*StandardMessage, parallel bool) *ExecutingSequ
 
 type ExecutingSequences []*ExecutingSequence
 
-func (ess ExecutingSequences) Encode() ([]byte, error) {
-	if ess == nil {
+func (this ExecutingSequences) Encode() ([]byte, error) {
+	if this == nil {
 		return []byte{}, nil
 	}
-	data := make([][]byte, len(ess))
+
+	data := make([][]byte, len(this))
 	worker := func(start, end, idx int, args ...interface{}) {
 		executingSequences := args[0].([]interface{})[0].(ExecutingSequences)
 		data := args[0].([]interface{})[1].([][]byte)
 		for i := start; i < end; i++ {
-
 			standardMessages := StandardMessages(executingSequences[i].Msgs)
 			standardMessagesData, err := standardMessages.Encode()
 			if err != nil {
 				standardMessagesData = []byte{}
 			}
+
 			tmpData := [][]byte{
 				standardMessagesData,
-				encoding.Bools([]bool{executingSequences[i].Parallel}).Encode(),
+				codec.Bools([]bool{executingSequences[i].Parallel}).Encode(),
 				executingSequences[i].SequenceId[:],
-				encoding.Uint32s(executingSequences[i].Txids).Encode(),
+				codec.Uint32s(executingSequences[i].Txids).Encode(),
 			}
-			data[i] = encoding.Byteset(tmpData).Encode()
+			data[i] = codec.Byteset(tmpData).Encode()
 		}
 	}
-
-	common.ParallelWorker(len(ess), concurrency, worker, ess, data)
-	return encoding.Byteset(data).Encode(), nil
+	common.ParallelWorker(len(this), concurrency, worker, this, data)
+	return codec.Byteset(data).Encode(), nil
 }
-func (ess *ExecutingSequences) Decode(data []byte) ([]*ExecutingSequence, error) {
-	fields := encoding.Byteset{}.Decode(data)
-	esss := make([]*ExecutingSequence, len(fields))
+
+func (this *ExecutingSequences) Decode(data []byte) ([]*ExecutingSequence, error) {
+	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
+	v := ExecutingSequences(make([]*ExecutingSequence, len(fields)))
+	this = &v
 
 	worker := func(start, end, idx int, args ...interface{}) {
-		datas := args[0].([]interface{})[0].([][]byte)
-		executingSequences := args[0].([]interface{})[1].([]*ExecutingSequence)
+		datas := args[0].([]interface{})[0].(codec.Byteset)
+		executingSequences := args[0].([]interface{})[1].(ExecutingSequences)
 
 		for i := start; i < end; i++ {
 			executingSequence := new(ExecutingSequence)
 
-			fields := encoding.Byteset{}.Decode(datas[i])
-
-			msgResults, err := new(StandardMessages).Decode(fields[0])
+			datafields := codec.Byteset{}.Decode(datas[i]).(codec.Byteset)
+			msgResults, err := new(StandardMessages).Decode(datafields[0])
 			if err != nil {
 				msgResults = StandardMessages{}
 			}
 			executingSequence.Msgs = msgResults
-			parallels := new(encoding.Bools).Decode(fields[1])
+			parallels := new(encoding.Bools).Decode(datafields[1])
 			if len(parallels) > 0 {
 				executingSequence.Parallel = parallels[0]
 			}
-			executingSequence.SequenceId = ethCommon.BytesToHash(fields[2])
-			executingSequence.Txids = new(encoding.Uint32s).Decode(fields[3])
+			executingSequence.SequenceId = ethCommon.BytesToHash(datafields[2])
+			executingSequence.Txids = new(encoding.Uint32s).Decode(datafields[3])
 			executingSequences[i] = executingSequence
 
 		}
 	}
-	common.ParallelWorker(len(fields), concurrency, worker, fields, esss)
-
-	return esss, nil
+	common.ParallelWorker(len(fields), concurrency, worker, fields, *this)
+	return ([]*ExecutingSequence)(*this), nil
 }
 
 type ExecutorRequest struct {
@@ -102,42 +103,45 @@ type ExecutorRequest struct {
 	Parallelism   uint64
 }
 
-func (er *ExecutorRequest) GobEncode() ([]byte, error) {
-	precedings := Ptr2Arr(er.Precedings)
-	executingSequences := ExecutingSequences(er.Sequences)
+func (this *ExecutorRequest) GobEncode() ([]byte, error) {
+	precedings := Ptr2Arr(this.Precedings)
+	executingSequences := ExecutingSequences(this.Sequences)
 	executingSequencesData, err := executingSequences.Encode()
 	if err != nil {
 		return []byte{}, err
 	}
+
 	timeStampData := []byte{}
-	if er.Timestamp != nil {
-		timeStampData = er.Timestamp.Bytes()
+	if this.Timestamp != nil {
+		timeStampData = this.Timestamp.Bytes()
 	}
+
 	data := [][]byte{
 		executingSequencesData,
 		ethCommon.Hashes(precedings).Encode(),
-		er.PrecedingHash.Bytes(),
+		this.PrecedingHash.Bytes(),
 		timeStampData,
-		common.Uint64ToBytes(er.Parallelism),
+		common.Uint64ToBytes(this.Parallelism),
 	}
 	return encoding.Byteset(data).Encode(), nil
 }
-func (er *ExecutorRequest) GobDecode(data []byte) error {
+
+func (this *ExecutorRequest) GobDecode(data []byte) error {
 	fields := encoding.Byteset{}.Decode(data)
 	msgResults, err := new(ExecutingSequences).Decode(fields[0])
 	if err != nil {
 		return err
 	}
-	er.Sequences = msgResults
+	this.Sequences = msgResults
 	arrs := []ethCommon.Hash{}
 	arrs = ethCommon.Hashes(arrs).Decode(fields[1])
-	er.Precedings = Arr2Ptr(arrs)
-	er.PrecedingHash = ethCommon.BytesToHash(fields[2])
+	this.Precedings = Arr2Ptr(arrs)
+	this.PrecedingHash = ethCommon.BytesToHash(fields[2])
 	if len(fields[3]) > 0 {
-		er.Timestamp = new(big.Int).SetBytes(fields[3])
+		this.Timestamp = new(big.Int).SetBytes(fields[3])
 	}
 	if len(fields[4]) > 0 {
-		er.Parallelism = common.BytesToUint64(fields[4])
+		this.Parallelism = common.BytesToUint64(fields[4])
 	}
 
 	return nil

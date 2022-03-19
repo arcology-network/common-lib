@@ -28,8 +28,8 @@ func (this *Merkle) Encode() []byte {
 
 func (*Merkle) Decode(bytes []byte) interface{} {
 	merkle := &Merkle{}
-	fields := codec.Byteset{}.Decode(bytes)
-	switch uint8(codec.Uint32(0).Decode(fields[0])) {
+	fields := codec.Byteset{}.Decode(bytes).(codec.Byteset)
+	switch uint8(codec.Uint8(0).Decode(fields[0]).(codec.Uint8)) {
 	case 0:
 		merkle.hasher = Sha256
 	case 1:
@@ -38,7 +38,7 @@ func (*Merkle) Decode(bytes []byte) interface{} {
 
 	for i := 1; i < len(fields); i++ {
 		level := []*Node{}
-		subFields := codec.Byteset{}.Decode(fields[i])
+		subFields := codec.Byteset{}.Decode(fields[i]).(codec.Byteset)
 		for _, subField := range subFields {
 			level = append(level, (&Node{}).Decode(subField).(*Node))
 		}

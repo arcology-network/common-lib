@@ -15,7 +15,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sync"
 	"unsafe"
 
 	ethCommon "github.com/arcology-network/3rd-party/eth/common"
@@ -36,42 +35,29 @@ func ToNewHash(h ethCommon.Hash, height, round uint64) ethCommon.Hash {
 	return ethCommon.BytesToHash(newhash[:])
 }
 
-func JsonEncode(x interface{}) ([]byte, error) {
-	return json.Marshal(x)
-}
-func JsonDecode(data []byte, x interface{}) error {
-	return json.Unmarshal(data, x)
-}
-
-func ToHexStr(src []byte) string {
+func HexToString(src []byte) string {
 	shex := hex.EncodeToString(src)
 	return "0x" + shex
-}
-
-// find b in a ,return idx ,if not exist return -1
-func FindinArrays(a [][]byte, b []byte) int {
-	for i, v := range a {
-		if bytes.Equal(v, b) {
-			return i
-		}
-	}
-	return -1
 }
 
 func BytesToUint64(array []byte) uint64 {
 	return binary.BigEndian.Uint64(array)
 }
+
 func BytesToUint32(array []byte) uint32 {
 	return binary.BigEndian.Uint32(array)
 }
+
 func BytesToUint16(array []byte) uint16 {
 	return binary.BigEndian.Uint16(array)
 }
+
 func Uint64ToBytes(n uint64) []byte {
 	b := make([]byte, 8)
 	binary.BigEndian.PutUint64(b, n)
 	return b
 }
+
 func Uint32ToBytes(n uint32) []byte {
 	b := make([]byte, 4)
 	binary.BigEndian.PutUint32(b, n)
@@ -83,10 +69,6 @@ func Uint16ToBytes(n uint16) []byte {
 	return b
 }
 
-type TestElement struct {
-	D2Array [][]byte
-}
-
 func Int64ToUint64(src1 int64) uint64 {
 	return *(*uint64)(unsafe.Pointer(&src1))
 }
@@ -95,42 +77,9 @@ func Uint64ToInt64(src1 uint64) int64 {
 	return *(*int64)(unsafe.Pointer(&src1))
 }
 
-func GetUniqueValue(relations *map[string]string) []string {
-	unique := map[string]string{}
-	for _, topic := range *relations {
-		unique[topic] = topic // get unique topics
-	}
-
-	topics := []string{}
-	for topic, _ := range unique {
-		topics = append(topics, topic)
-	}
-	return topics
-}
-
 func GenerateUUID() uint64 {
 	uuid := uuid.New()
 	return binary.BigEndian.Uint64(uuid[0:9])
-}
-
-func GobEncode(x interface{}) ([]byte, error) {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(x)
-	if err != nil {
-		return nil, err
-	}
-	retData := buf.Bytes()
-	return retData, nil
-}
-func GobDecode(data []byte, x interface{}) error {
-	bufTo := bytes.NewBuffer(data)
-	dec := gob.NewDecoder(bufTo)
-	err := dec.Decode(x)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func Transpose(slice [][]string) [][]string {
@@ -194,6 +143,14 @@ func FileExists(filename string) bool {
 	return !info.IsDir()
 }
 
+func DirExists(path string) bool {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return info.IsDir()
+}
+
 // Make a deep copy from src into dst.
 func Deepcopy(dst interface{}, src interface{}) error {
 	if dst == nil {
@@ -222,45 +179,40 @@ func GenerateRanges(length int, numThreads int) []int {
 	return ranges
 }
 
-func ParallelWorker(total, nThds int, worker func(start, end, idx int, args ...interface{}), args ...interface{}) {
-	idxRanges := GenerateRanges(total, nThds)
-	var wg sync.WaitGroup
-	for i := 0; i < len(idxRanges)-1; i++ {
-		wg.Add(1)
-		go func(start int, end int, idx int) {
-			defer wg.Done()
-			if start != end {
-				worker(start, end, idx, args)
-			}
-		}(idxRanges[i], idxRanges[i+1], i)
+func GetCurrentDirectory() (string, error) {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		fmt.Printf("err=%v\n", err)
+		return "", err
 	}
-	wg.Wait()
+	return strings.Replace(dir, "\\", "/", -1), nil
 }
 
-func Intersected(lft [][32]byte, rgt [][32]byte) bool {
-	for i := range lft {
-		for j := range rgt {
-			if bytes.Equal(lft[i][:], rgt[j][:]) {
-				return true
-			}
-		}
-	}
-	return false
+func ArrayCopy(data []byte) []byte {
+	datas := make([]byte, len(data))
+	copy(datas, data)
+	return datas
 }
-func Serialization(filename string, obj interface{}) {
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0664)
+
+func GobEncode(x interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(x)
 	if err != nil {
-		fmt.Printf("openfile err=%v\n", err)
-		return
+		return nil, err
 	}
-	defer file.Close()
-	data, err := JsonEncode(obj)
-	if err == nil {
-		file.WriteString(fmt.Sprintf("%x", data) + "\n")
-	} else {
-		fmt.Printf("JsonEncode err=%v\n", err)
+	retData := buf.Bytes()
+	return retData, nil
+}
+
+func GobDecode(data []byte, x interface{}) error {
+	bufTo := bytes.NewBuffer(data)
+	dec := gob.NewDecoder(bufTo)
+	err := dec.Decode(x)
+	if err != nil {
+		return err
 	}
-	file.Sync()
+	return nil
 }
 
 func CalculateHash(hashes []*ethCommon.Hash) ethCommon.Hash {
@@ -273,19 +225,6 @@ func CalculateHash(hashes []*ethCommon.Hash) ethCommon.Hash {
 	}
 	hash := sha256.Sum256(encoding.Byteset(datas).Encode())
 	return ethCommon.BytesToHash(hash[:])
-}
-
-func ArrayCopy(data []byte) []byte {
-	datas := make([]byte, len(data))
-	copy(datas, data)
-	return datas
-}
-func Array2DCopy(src [][]byte) [][]byte {
-	elements := make([][]byte, len(src))
-	for i, row := range src {
-		elements[i] = ArrayCopy(row)
-	}
-	return elements
 }
 func Flatten(src [][]byte) []byte {
 	totalSize := 0
@@ -301,11 +240,102 @@ func Flatten(src [][]byte) []byte {
 	return buffer
 }
 
-func GetCurrentDirectory() (string, error) {
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+func AppendToFile(filename, content string) error {
+	file, err := os.OpenFile(filename, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0664)
 	if err != nil {
 		fmt.Printf("err=%v\n", err)
-		return "", err
+		return err
 	}
-	return strings.Replace(dir, "\\", "/", -1), nil
+	defer file.Close()
+
+	_, err = file.WriteString(content + "\n")
+	if err != nil {
+		fmt.Printf("err=%v\n", err)
+		return err
+	}
+	file.Sync()
+
+	return nil
+}
+
+func AddToLogFile(filename, field string, v interface{}) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		AppendToFile(filename, "Marshal err : "+err.Error())
+		return
+	}
+	AppendToFile(filename, field+" : "+string(data))
+}
+
+func RemoveNils(values *[]interface{}) {
+	pos := int64(-1)
+	for i := 0; i < len((*values)); i++ {
+		if pos < 0 && (*values)[i] == nil {
+			pos = int64(i)
+			continue
+		}
+
+		if pos < 0 && (*values)[i] != nil {
+			continue
+		}
+
+		if pos >= 0 && (*values)[i] == nil {
+			(*values)[pos] = (*values)[i]
+			continue
+		}
+
+		(*values)[pos] = (*values)[i]
+		pos++
+	}
+
+	if pos >= 0 {
+		(*values) = (*values)[:pos]
+	}
+}
+
+func RemoveDuplicateStrings(strs *[]string) []string {
+	dict := make(map[string]bool)
+	for i := 0; i < len(*strs); i++ {
+		dict[(*strs)[i]] = true
+	}
+
+	uniqueStrs := make([]string, 0, len(dict))
+	for k := range dict {
+		uniqueStrs = append(uniqueStrs, k)
+	}
+	return uniqueStrs
+}
+
+func Remove(values *[]interface{}, condition func(interface{}) bool) {
+	pos := int64(-1)
+	for i := 0; i < len((*values)); i++ {
+		if pos < 0 && condition((*values)[i]) {
+			pos = int64(i)
+			continue
+		}
+
+		if pos < 0 && condition((*values)[i]) {
+			continue
+		}
+
+		if pos >= 0 && condition((*values)[i]) {
+			(*values)[pos] = (*values)[i]
+			continue
+		}
+
+		(*values)[pos] = (*values)[i]
+		pos++
+	}
+
+	if pos >= 0 {
+		(*values) = (*values)[:pos]
+	}
+}
+
+func ReverseString(s string) string {
+	reversed := []byte(s)
+	for i, j := 0, len(reversed)-1; i < j; i, j = i+1, j-1 {
+		reversed[i], reversed[j] = reversed[j], reversed[i]
+	}
+	return *(*string)(unsafe.Pointer(&reversed))
 }

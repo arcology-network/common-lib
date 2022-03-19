@@ -2,15 +2,13 @@ package codec
 
 import (
 	"bytes"
-
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
 )
 
 const (
 	HASH32_LEN = 32
 )
 
-type Hash32 [32]byte
+type Hash32 [HASH32_LEN]byte
 
 func (this *Hash32) Get() interface{} {
 	return *this
@@ -20,53 +18,57 @@ func (this *Hash32) Set(v interface{}) {
 	*this = v.(Hash32)
 }
 
-func (hash Hash32) Size() uint32 {
+func (this Hash32) Size() uint32 {
 	return uint32(HASH32_LEN)
 }
 
-func (hash Hash32) Encode() []byte {
-	return hash[:]
+func (this Hash32) Encode() []byte {
+	return this[:]
 }
 
-func (hash Hash32) Decode(data []byte) interface{} {
-	copy(hash[:], data)
-	return hash
+func (this Hash32) EncodeToBuffer(buffer []byte) {
+	copy(buffer, this[:])
 }
 
-type Hash32s []ethCommon.Hash
-
-func (hashes Hash32s) Encode() []byte {
-	return Hash32s(hashes).Flatten()
+func (this Hash32) Decode(buffer []byte) interface{} {
+	copy(this[:], buffer)
+	return Hash32(this)
 }
 
-func (hashes Hash32s) Decode(data []byte) interface{} {
-	hashes = make([]ethCommon.Hash, len(data)/HASH32_LEN)
-	for i := 0; i < len(hashes); i++ {
-		copy(hashes[i][:], data[i*HASH32_LEN:(i+1)*HASH32_LEN])
+type Hash32s [][HASH32_LEN]byte
+
+func (this Hash32s) Encode() []byte {
+	return Hash32s(this).Flatten()
+}
+
+func (this Hash32s) Decode(data []byte) interface{} {
+	this = make([][HASH32_LEN]byte, len(data)/HASH32_LEN)
+	for i := 0; i < len(this); i++ {
+		copy(this[i][:], data[i*HASH32_LEN:(i+1)*HASH32_LEN])
 	}
-	return hashes
+	return this
 }
 
-func (hashes Hash32s) Size() uint32 {
-	return uint32(len(hashes) * HASH32_LEN)
+func (this Hash32s) Size() uint32 {
+	return uint32(len(this) * HASH32_LEN)
 }
 
-func (hashes Hash32s) Flatten() []byte {
-	buffer := make([]byte, len(hashes)*HASH32_LEN)
-	for i := 0; i < len(hashes); i++ {
-		copy(buffer[i*HASH32_LEN:(i+1)*HASH32_LEN], hashes[i][:])
+func (this Hash32s) Flatten() []byte {
+	buffer := make([]byte, len(this)*HASH32_LEN)
+	for i := 0; i < len(this); i++ {
+		copy(buffer[i*HASH32_LEN:(i+1)*HASH32_LEN], this[i][:])
 	}
 	return buffer
 }
 
-func (hashes Hash32s) Len() int {
-	return len(hashes)
+func (this Hash32s) Len() int {
+	return len(this)
 }
 
-func (hashes Hash32s) Less(i, j int) bool {
-	return bytes.Compare(hashes[i][:], hashes[j][:]) < 0
+func (this Hash32s) Less(i, j int) bool {
+	return bytes.Compare(this[i][:], this[j][:]) < 0
 }
 
-func (hashes Hash32s) Swap(i, j int) {
-	hashes[i], hashes[j] = hashes[j], hashes[i]
+func (this Hash32s) Swap(i, j int) {
+	this[i], this[j] = this[j], this[i]
 }

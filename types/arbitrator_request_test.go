@@ -26,32 +26,38 @@ func PrepareNewArbitrator() *ArbitratorRequest {
 			{
 				TxHash:  &hashes[0],
 				Batchid: 1,
+				Txid:    11,
 			},
 		},
 		{
 			{
 				TxHash:  &hashes[1],
 				Batchid: 2,
+				Txid:    12,
 			},
 			{
 				TxHash:  &hashes[2],
 				Batchid: 3,
+				Txid:    13,
 			},
 		},
 		{
 			{
 				TxHash:  &hashes[3],
 				Batchid: 4,
+				Txid:    14,
 			},
 			{
 				TxHash:  &hashes[4],
 				Batchid: 5,
+				Txid:    15,
 			},
 		},
 		{
 			{
 				TxHash:  &hashes[5],
 				Batchid: 6,
+				Txid:    16,
 			},
 		},
 		{
@@ -173,7 +179,7 @@ func TestArbitratorRequestPerformanec(t *testing.T) {
 		txInfo[i] = []*TxElement{}
 		for j := 0; j < cols; j++ {
 			hash := ethCommon.BytesToHash([]byte{1})
-			txInfo[i] = append(txInfo[i], &TxElement{&hash, uint64(i)})
+			txInfo[i] = append(txInfo[i], &TxElement{&hash, uint64(i), uint32(0)})
 
 		}
 	}

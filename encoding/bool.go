@@ -6,8 +6,8 @@ const (
 
 type Bools []bool
 
-func (v Bools) Size() int {
-	return len(v)
+func (v Bools) Size() uint32 {
+	return uint32(len(v))
 }
 
 func (v Bools) Encode() []byte {

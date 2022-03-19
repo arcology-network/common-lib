@@ -2,28 +2,55 @@ package merkle
 
 import (
 	"bytes"
+	"math"
 
 	"github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/mempool"
 )
 
 const (
-	UINT32_MAX = 0xffffffff
+	bufferSize  = 1024
+	concurrency = 4
 )
 
 type Merkle struct {
-	branch uint32
-	nodes  [][]*Node
-	hasher func([]byte) []byte
+	branch  uint32
+	nodes   [][]*Node
+	buffers [concurrency][]byte
+	hasher  func([]byte) []byte
+	mempool *mempool.Mempool
 }
 
-func (this *Merkle) ExtractParent(id uint32, children []*Node) *Node {
-	bytes := []byte{}
+func NewMerkle(n int, hasher func([]byte) []byte) *Merkle {
+	merkle := &Merkle{
+		branch: uint32(n),
+		nodes:  [][]*Node{},
+		hasher: hasher,
+	}
+	for i := range merkle.buffers {
+		merkle.buffers[i] = make([]byte, 0, bufferSize)
+	}
+	return merkle
+}
+
+func (this *Merkle) Reset() {
+	for i := range this.nodes {
+		this.nodes[i] = this.nodes[i][:0]
+	}
+	this.nodes = this.nodes[:0]
+	for i := range this.buffers {
+		this.buffers[i] = this.buffers[i][:0]
+	}
+}
+
+func (this *Merkle) ExtractParent(id uint32, children []*Node, index int, mempool *mempool.Mempool) *Node {
+	this.buffers[index] = this.buffers[index][:0]
 	for _, v := range children {
-		hash := v.hash
-		bytes = append(bytes, hash[:]...)
+		this.buffers[index] = append(this.buffers[index], v.hash[:]...)
 	}
 
-	parent := NewNode(id, children[0].level+1, this.hasher(bytes))
+	parent := mempool.Get().(*Node)
+	parent.Init(id, children[0].level+1, this.hasher(this.buffers[index]))
 	for i, v := range children {
 		parent.children = append(parent.children, v.id)
 		children[i].parent = parent.id
@@ -32,11 +59,30 @@ func (this *Merkle) ExtractParent(id uint32, children []*Node) *Node {
 }
 
 func (this *Merkle) Build(id uint32, children []*Node, n int) []*Node {
-	nodes := []*Node{}
-	for i := 1; i <= len(children)/n; i++ {
-		nodes = append(nodes, this.ExtractParent(id, children[(i-1)*n:i*n]))
-		id++
+	if len(children) < 64 {
+		return this.singleThreadedBuild(id, children, n)
+	} else {
+		return this.multiThreadedBuild(id, children, n)
 	}
+}
+
+func (this *Merkle) singleThreadedBuild(id uint32, children []*Node, n int) []*Node {
+	nodes := make([]*Node, len(children)/n)
+	for i := 0; i < len(children)/n; i++ {
+		nodes[i] = this.ExtractParent(id+uint32(i), children[(i)*n:(i+1)*n], 0, this.mempool)
+	}
+	return nodes
+}
+
+func (this *Merkle) multiThreadedBuild(id uint32, children []*Node, n int) []*Node {
+	nodes := make([]*Node, len(children)/n)
+	worker := func(start, end, index int, args ...interface{}) {
+		mempool := this.mempool.GetTlsMempool(index)
+		for i := start; i < end; i++ {
+			nodes[i] = this.ExtractParent(id+uint32(i), children[(i)*n:(i+1)*n], index, mempool)
+		}
+	}
+	common.ParallelWorker(len(nodes), concurrency, worker)
 	return nodes
 }
 
@@ -47,31 +93,44 @@ func (*Merkle) Pad(original []*Node, n int) []*Node {
 	return original
 }
 
-func NewMerkle(n int, hasher func([]byte) []byte) *Merkle {
-	merkle := &Merkle{
-		branch: uint32(n),
-		nodes:  [][]*Node{},
-		hasher: hasher,
+func (this *Merkle) createLeafNodeSingleThreaded(data [][]byte) []*Node {
+	leafNodes := make([]*Node, len(data))
+	for i := 0; i < len(data); i++ {
+		leafNodes[i] = this.mempool.Get().(*Node)
+		leafNodes[i].Init(uint32(i), 0, this.hasher(data[i]))
 	}
-	return merkle
+	return leafNodes
 }
 
-func (this *Merkle) Init(data [][]byte) {
+func (this *Merkle) createLeafNodeMultiThreaded(data [][]byte) []*Node {
+	leafNodes := make([]*Node, len(data))
+	worker := func(start, end, index int, args ...interface{}) {
+		mempool := this.mempool.GetTlsMempool(index)
+		for i := start; i < end; i++ {
+			leafNodes[i] = mempool.Get().(*Node)
+			leafNodes[i].Init(uint32(i), 0, this.hasher(data[i]))
+		}
+	}
+	common.ParallelWorker(len(data), concurrency, worker)
+	return leafNodes
+}
+
+func (this *Merkle) Init(data [][]byte, mempool *mempool.Mempool) {
+	this.mempool = mempool
 	if len(data) == 1 {
-		node := NewNode(uint32(0), 0, this.hasher([]byte(data[0])))
+		node := this.mempool.Get().(*Node)
+		node.Init(uint32(0), 0, this.hasher(data[0]))
 		this.nodes = [][]*Node{{node}}
 		return
 	}
 
-	// Insert the leaf nodes
-	leafNodes := make([]*Node, len(data))
-	worker := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			leafNodes[i] = NewNode(uint32(i), 0, this.hasher(data[i]))
-		}
+	var leafNodes []*Node
+	if len(data) < 1024 {
+		leafNodes = this.Pad(this.createLeafNodeSingleThreaded(data), int(this.branch))
+	} else {
+		leafNodes = this.Pad(this.createLeafNodeMultiThreaded(data), int(this.branch))
 	}
-	common.ParallelWorker(len(data), 4, worker)
-	this.nodes = append(this.nodes, this.Pad(leafNodes, int(this.branch)))
+	this.nodes = append(this.nodes, leafNodes)
 
 	// Build the non-leaf nodes
 	for {
@@ -124,7 +183,7 @@ func (this *Merkle) GetProofNodes(hash []byte) []*Node {
 func (this *Merkle) Verify(proofs [][][]byte, root []byte, seed []byte) bool {
 	for i := 0; i < len(proofs); i++ {
 		idx := this.IfContains(proofs[i], seed)
-		if UINT32_MAX == idx {
+		if math.MaxUint32 == idx {
 			return false
 		}
 		seed = this.ComputeHash(proofs[i])
@@ -150,5 +209,5 @@ func (this *Merkle) IfContains(target [][]byte, seed []byte) uint32 {
 			return uint32(i)
 		}
 	}
-	return UINT32_MAX
+	return math.MaxUint32
 }

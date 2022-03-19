@@ -14,22 +14,27 @@ func (this *Bool) Set(v interface{}) {
 	*this = v.(Bool)
 }
 
-func (this Bool) Size() int {
-	return BOOL_LEN
+func (this Bool) Size() uint32 {
+	return uint32(BOOL_LEN)
 }
 
 func (this Bool) Encode() []byte {
-	data := make([]byte, BOOL_LEN)
-	if this {
-		data[0] = 1
-	} else {
-		data[0] = 0
-	}
-	return data
+	buffer := make([]byte, BOOL_LEN)
+	this.EncodeToBuffer(buffer)
+	return buffer
 }
 
-func (Bool) Decode(data []byte) Bool {
-	return Bool(data[0] > 0)
+func (this Bool) EncodeToBuffer(buffer []byte) {
+	if this {
+		buffer[0] = 1
+	} else {
+		buffer[0] = 0
+	}
+}
+
+func (this Bool) Decode(data []byte) interface{} {
+	this = Bool(data[0] > 0)
+	return this
 }
 
 type Bools []bool
@@ -39,15 +44,19 @@ func (this Bools) Size() int {
 }
 
 func (this Bools) Encode() []byte {
-	data := make([]byte, len(this))
+	buffer := make([]byte, len(this))
+	this.EncodeToBuffer(buffer)
+	return buffer
+}
+
+func (this Bools) EncodeToBuffer(buffer []byte) {
 	for i := range this {
 		if this[i] {
-			data[i] = 1
+			buffer[i] = 1
 		} else {
-			data[i] = 0
+			buffer[i] = 0
 		}
 	}
-	return data
 }
 
 func (Bools) Decode(data []byte) interface{} {
@@ -59,5 +68,5 @@ func (Bools) Decode(data []byte) interface{} {
 			bools[i] = false
 		}
 	}
-	return bools
+	return Bools(bools)
 }

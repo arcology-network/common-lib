@@ -2,6 +2,7 @@ package codec
 
 import (
 	"crypto/sha256"
+	"unsafe"
 
 	ethCommon "github.com/arcology-network/3rd-party/eth/common"
 )
@@ -20,74 +21,147 @@ func (this *Bytes) Set(v interface{}) {
 	*this = v.(Bytes)
 }
 
-func (bytes Bytes) Encode() []byte {
-	return []byte(bytes)
+func (this Bytes) Encode() []byte {
+	return []byte(this)
+}
+
+func (this Bytes) Size() uint32 {
+	return uint32(len(this))
+}
+
+func (this Bytes) EncodeToBuffer(buffer []byte) {
+	copy(buffer, this)
 }
 
 func (Bytes) Decode(bytes []byte) interface{} {
 	return Bytes(bytes)
 }
 
+func (this Bytes) ToString() string {
+	return *(*string)(unsafe.Pointer(&this))
+}
+
 type Byteset [][]byte
 
-func (byteset Byteset) Sizes() Uint32s {
-	sizes := make([]Uint32, len(byteset))
-	for i := range byteset {
-		sizes[i] = Uint32(len(byteset[i]))
+func (this Byteset) Deepcopy() Uint32s {
+	sizes := make([]uint32, len(this))
+	for i := range this {
+		sizes[i] = uint32(len(this[i]))
 	}
 	return sizes
 }
 
-func (byteset Byteset) Flatten() []byte {
-	lengths := byteset.Sizes()
-	buffer := make([]byte, Uint32s(lengths).Sum())
+func (this Byteset) Size() uint32 {
+	if len(this) == 0 {
+		return 0
+	}
 
-	positions := append([]Uint32{0}, Uint32s(lengths).Accumulate()...)
-	for i := 0; i < len(positions)-1; i++ {
-		copy(buffer[positions[i]:positions[i+1]], byteset[i])
+	total := (len(this) + 1) * UINT32_LEN // Header size
+	for i := 0; i < len(this); i++ {
+		total += len(this[i])
+	}
+	return uint32(total)
+}
+
+func (this Byteset) Sizes() Uint32s {
+	sizes := make([]uint32, len(this))
+	for i := range this {
+		sizes[i] = uint32(len(this[i]))
+	}
+	return sizes
+}
+
+func (this Byteset) Flatten() []byte {
+	total := 0
+	for i := range this {
+		total += len(this[i])
+	}
+	buffer := make([]byte, total)
+
+	offset := 0
+	for i := 0; i < len(this); i++ {
+		copy(buffer[offset:], this[i])
+		offset += len(this[i])
 	}
 	return buffer
 }
 
-func (byteset Byteset) Checksum() ethCommon.Hash {
-	return sha256.Sum256(byteset.Flatten())
+func (this Byteset) Checksum() ethCommon.Hash {
+	return sha256.Sum256(this.Flatten())
 }
 
-func (byteset Byteset) Encode() []byte {
-	lengths := byteset.Sizes()
-	header := append(Uint32(len(lengths)).Encode(), Uint32s(lengths).Encode()...)
-	headerLen := uint32(len(header))
-
-	buffer := make([]byte, headerLen+Uint32s(lengths).Sum())
-	copy(buffer[:len(header)], header)
-
-	positions := append([]Uint32{0}, Uint32s(lengths).Accumulate()...)
-	for i := 0; i < len(positions)-1; i++ {
-		copy(buffer[uint32(positions[i])+headerLen:uint32(positions[i+1])+headerLen], byteset[i])
-	}
+func (this Byteset) Encode() []byte {
+	total := this.Size()
+	buffer := make([]byte, total)
+	this.EncodeToBuffer(buffer)
 	return buffer
 }
 
-func (Byteset) Decode(bytes []byte) [][]byte {
-	count := uint32(Uint32(0).Decode(bytes[:UINT32_LEN]))
-	lengths := Uint32s{}.Decode(bytes[UINT32_LEN : UINT32_LEN+count*UINT32_LEN]).(Uint32s)
-
-	byteset := make([][]byte, count)
-	positions := append([]Uint32{0}, (lengths).Accumulate()...)
-	for i := 0; i < len(positions)-1; i++ {
-		start := (count+1)*(UINT32_LEN) + uint32(positions[i])
-		end := (count+1)*(UINT32_LEN) + uint32(positions[i+1])
-		byteset[i] = bytes[start:end]
+func (this Byteset) HeaderSize() uint32 {
+	if len(this) == 0 {
+		return 0
 	}
-	return byteset
+	return uint32(len(this)+1) * UINT32_LEN
+}
+
+func (this Byteset) FillHeader(buffer []byte) {
+	if len(this) == 0 {
+		return
+	}
+
+	Uint32(len(this)).EncodeToBuffer(buffer)
+
+	offset := uint32(0)
+	for i := 0; i < len(this); i++ {
+		Uint32(offset).EncodeToBuffer(buffer[(i+1)*UINT32_LEN:])
+		offset += uint32(len(this[i]))
+	}
+}
+
+func (this Byteset) EncodeToBuffer(buffer []byte) {
+	if len(buffer) == 0 {
+		return
+	}
+	this.FillHeader(buffer)
+
+	offset := uint32(0)
+	headerLen := this.HeaderSize()
+	for i := 0; i < len(this); i++ {
+		copy(buffer[headerLen+offset:headerLen+offset+uint32(len(this[i]))], this[i])
+		offset += uint32(len(this[i]))
+	}
+}
+
+func (this Byteset) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return Byteset{}
+	}
+
+	count := uint32(Uint32(0).Decode(buffer[:UINT32_LEN]).(Uint32))
+	this = make([][]byte, count)
+
+	headerLen := (count + 1) * UINT32_LEN
+	prev := uint32(Uint32(0).Decode(buffer[UINT32_LEN : UINT32_LEN+UINT32_LEN]).(Uint32))
+	next := uint32(0)
+	for i := 0; i < int(count); i++ {
+		if i == int(count)-1 {
+			next = uint32(len(buffer)) - headerLen
+		} else {
+			next = uint32(Uint32(0).Decode(buffer[UINT32_LEN+(i+1)*UINT32_LEN : UINT32_LEN+(i+2)*UINT32_LEN]).(Uint32))
+		}
+
+		this[i] = buffer[headerLen+prev : headerLen+next]
+		prev = next
+	}
+	return Byteset(this)
 }
 
 type Bytegroup [][][]byte
 
-func (bytegroup Bytegroup) Sizes() []Uint32 {
-	sizes := make([]Uint32, len(bytegroup))
+func (bytegroup Bytegroup) Sizes() []uint32 {
+	sizes := make([]uint32, len(bytegroup))
 	for i := range bytegroup {
-		sizes[i] = Uint32(len(bytegroup[i]))
+		sizes[i] = uint32(len(bytegroup[i]))
 	}
 	return sizes
 }
@@ -96,7 +170,7 @@ func (bytegroup Bytegroup) Flatten() [][]byte {
 	lengths := bytegroup.Sizes()
 	buffer := make([][]byte, Uint32s(lengths).Sum())
 
-	positions := append([]Uint32{0}, Uint32s(lengths).Accumulate()...)
+	positions := append([]uint32{0}, Uint32s(lengths).Accumulate()...)
 	for i := 0; i < len(positions)-1; i++ {
 		copy(buffer[positions[i]:positions[i+1]], bytegroup[i])
 	}

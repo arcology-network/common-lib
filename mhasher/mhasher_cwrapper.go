@@ -15,13 +15,11 @@ package mhasher
 import "C" //must flow above
 import (
 	"bytes"
-	"crypto/md5"
 	"errors"
-	"io"
-	"time"
 	"unsafe"
 
 	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/encoding"
 )
 
@@ -29,26 +27,6 @@ const (
 	HashType_160 = 20
 	HashType_256 = 32
 )
-
-func getRoundBys(size int) []byte {
-	t := time.Now()
-	h := md5.New()
-	io.WriteString(h, "crazyof4335435.me")
-	io.WriteString(h, t.String())
-	seed := h.Sum(nil)
-
-	seedSize := len(seed)
-	roundCount := size / seedSize
-	if size%seedSize > 0 {
-		roundCount = roundCount + 1
-	}
-	roundKey := make([]byte, roundCount*seedSize)
-	bz := 0
-	for i := 0; i < roundCount; i++ {
-		bz += copy(roundKey[bz:], seed)
-	}
-	return roundKey[:size]
-}
 
 func UniqueKeysByMap(keys [][]byte) [][]byte {
 	mp := make(map[string]int, len(keys))
@@ -116,44 +94,12 @@ func SortByHash(hashes []ethCommon.Hash) ([]uint64, error) {
 	return rIndex, err
 }
 
-func BinaryMhasherFromRaw(srcStr []byte, length int, HashType int) ([]byte, error) {
-	ahash := make([]byte, HashType)
-	if len(srcStr) == 0 {
-		return ahash, nil
-	}
-	c_char := (*C.char)(unsafe.Pointer(&srcStr[0]))
-	clenth := C.uint64_t(length)
-
-	a_char := (*C.char)(unsafe.Pointer(&ahash[0]))
-
-	var err error
-	if HashType == HashType_160 {
-		_, err = C.ChecksumRIPEMD160(c_char, clenth, a_char)
-	} else {
-		_, err = C.ChecksumKecaak256(c_char, clenth, a_char)
-	}
-
-	return ahash, err
-}
-
-//is used in monaco/core/types/tx.go
-func GetHash(src []byte, HashType int) ([]byte, error) {
-	length := C.uint64_t(len(src))
-	c_char := (*C.char)(unsafe.Pointer(&src[0]))
-
-	ahash := make([]byte, HashType)
-	a_char := (*C.char)(unsafe.Pointer(&ahash[0]))
-	var err error
-	if HashType == HashType_160 {
-		_, err = C.SingleHashRIPEMD160(c_char, length, a_char)
-	} else {
-		_, err = C.SingleHashKeccak256(c_char, length, a_char)
-	}
-	return ahash, err
-}
-
 //is used in monaco/core/types/tx.go
 func Roothash(ls [][]byte, HashType int) ([]byte, error) {
+	ahash := make([]byte, HashType)
+	if len(ls) == 0 {
+		return ahash, nil
+	}
 	srcLenth := len(ls)
 	var buffer bytes.Buffer
 	for i := 0; i < srcLenth; i++ {
@@ -161,20 +107,78 @@ func Roothash(ls [][]byte, HashType int) ([]byte, error) {
 		buffer.Write(ls[i])
 	}
 	srcStr := buffer.Bytes()
-
 	num := C.uint64_t(srcLenth)
-
 	c_char := (*C.char)(unsafe.Pointer(&srcStr[0]))
 
-	ahash := make([]byte, HashType)
 	a_char := (*C.char)(unsafe.Pointer(&ahash[0]))
 
 	var err error
 	if HashType == HashType_160 {
-
 		_, err = C.BinaryMhasherRIPEMD160(c_char, num, a_char)
 	} else {
 		_, err = C.BinaryMhasherKeccak256(c_char, num, a_char)
 	}
 	return ahash, err
+}
+
+func Keccak256(byteSet [][]byte) [][]byte {
+	length := len(byteSet)
+	bytes := codec.Byteset(byteSet).Flatten()
+	dataLens := make([]uint64, length)
+	for i := range byteSet {
+		dataLens[i] = uint64(len(byteSet[i]))
+	}
+
+	buffer := make([]byte, length*32)
+	C.keccak256(
+		(*C.char)(unsafe.Pointer(&bytes[0])),
+		(*C.uint64_t)(unsafe.Pointer(&dataLens[0])),
+		(C.uint64_t)(length),
+		(*C.char)(unsafe.Pointer(&buffer[0])),
+	)
+	return Reshape(buffer, 32)
+}
+
+func Ripemd160(byteSet [][]byte) [][]byte {
+	length := len(byteSet)
+	bytes := codec.Byteset(byteSet).Flatten()
+	dataLens := make([]uint64, length)
+	for i := range byteSet {
+		dataLens[i] = uint64(len(byteSet[i]))
+	}
+
+	buffer := make([]byte, length*20)
+	C.keccak256(
+		(*C.char)(unsafe.Pointer(&bytes[0])),
+		(*C.uint64_t)(unsafe.Pointer(&dataLens[0])),
+		(C.uint64_t)(length),
+		(*C.char)(unsafe.Pointer(&buffer[0])),
+	)
+	return Reshape(buffer, 20)
+}
+
+func Sha3256(byteSet [][]byte) [][]byte {
+	length := len(byteSet)
+	bytes := codec.Byteset(byteSet).Flatten()
+	dataLens := make([]uint64, length)
+	for i := range byteSet {
+		dataLens[i] = uint64(len(byteSet[i]))
+	}
+
+	buffer := make([]byte, length*32)
+	C.sha3256(
+		(*C.char)(unsafe.Pointer(&bytes[0])),
+		(*C.uint64_t)(unsafe.Pointer(&dataLens[0])),
+		(C.uint64_t)(length),
+		(*C.char)(unsafe.Pointer(&buffer[0])),
+	)
+	return Reshape(buffer, 32)
+}
+
+func Reshape(bytes []byte, hashSize int) [][]byte {
+	hashes := make([][]byte, len(bytes)/hashSize)
+	for i := range hashes {
+		hashes[i] = bytes[i*hashSize : (i+1)*hashSize]
+	}
+	return hashes
 }

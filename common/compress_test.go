@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func Test_compressUint32s(t *testing.T) {
+func TestCompressUint32s(t *testing.T) {
 	lineCounter := 2174252
 	fmt.Printf("get hash %d\n", lineCounter)
 
@@ -26,7 +26,7 @@ func Test_compressUint32s(t *testing.T) {
 	// compress before length 8697008,after lenth 5331656
 }
 
-func Test_compressWithzLib(t *testing.T) {
+func TestCompressWithzLib(t *testing.T) {
 	srclen := len(mainnetAllocData)
 	rst := ZlibCompress([]byte(mainnetAllocData))
 	dstlen := len(rst)
@@ -39,7 +39,7 @@ func Test_compressWithzLib(t *testing.T) {
 	//compress before length 286044,after lenth 225202
 }
 
-func Test_compressWithzgip(t *testing.T) {
+func TestCompressWithzgip(t *testing.T) {
 	srclen := len(mainnetAllocData)
 	rst := GzipCompress([]byte(mainnetAllocData))
 	dstlen := len(rst)

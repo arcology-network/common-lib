@@ -1,5 +1,3 @@
-// +build !nometri
-
 package mhasher
 
 /*
@@ -7,7 +5,6 @@ package mhasher
 #cgo LDFLAGS: -L/usr/local/lib/ -lmhasher
 #include "bytes.external.h"
 #include "stdlib.h"
-
 */
 import "C" //must flow above
 import (
@@ -21,15 +18,15 @@ type StringEngine struct {
 }
 
 func (s *StringEngine) Stop() {
-	C.Stop(s.enginePtr)
+	C.StringEngineStop(s.enginePtr)
 }
 func (s *StringEngine) Clear() {
-	C.Clear(s.enginePtr)
+	C.StringEngineClear(s.enginePtr)
 }
 
 func Start() *StringEngine {
 	s := StringEngine{}
-	s.enginePtr = C.Start()
+	s.enginePtr = C.StringEngineStart()
 	return &s
 }
 
@@ -40,7 +37,7 @@ func (s *StringEngine) ToBuffer(paths []string) error {
 	for i := range paths {
 		pathLenthVec[i] = uint32(len(paths[i]))
 	}
-	_, err := C.ToBuffer(
+	_, err := C.StringEngineToBuffer(
 		s.enginePtr,
 		(*C.char)(unsafe.Pointer(&paths[0])),
 		(*C.char)(unsafe.Pointer(&pathLenthVec[0])),
@@ -57,7 +54,7 @@ func (s *StringEngine) FromBuffer(paths []string) ([]string, error) {
 
 	dataLengthVec := make([]uint32, DataLenth)
 	dataNums := make([]uint32, 1)
-	_, err := C.FromBuffer(
+	_, err := C.StringEngineFromBuffer(
 		s.enginePtr,
 		(*C.char)(unsafe.Pointer(&buffer[0])),
 		(*C.char)(unsafe.Pointer(&dataLengthVec[0])),
@@ -77,28 +74,33 @@ func (s *StringEngine) FromBuffer(paths []string) ([]string, error) {
 	return retpaths, nil
 }
 
-func SortString(datas []string) ([]string, error) {
-	lengthVec, dataLength := orderDataString(datas)
-	totalBytes := codec.Strings(datas).Flatten()
-	indices := make([]uint32, dataLength)
-	_, err := C.Sort(
-		(*C.char)(unsafe.Pointer(&totalBytes[0])),
-		(*C.uint32_t)(unsafe.Pointer(&lengthVec[0])),
-		C.uint32_t(dataLength),
-		(*C.uint32_t)(unsafe.Pointer(&indices[0])),
-	)
-	if err != nil {
-		return datas, err
+func UniqueStrings(datas []string) ([]string, error) {
+	if len(datas) == 0 {
+		return datas, nil
 	}
-	results := make([]string, dataLength)
-	for i, idx := range indices {
-		results[i] = datas[int(idx)]
+
+	noEmpty := true
+	for i := range datas {
+		noEmpty = len(datas[i]) > 0 && noEmpty
 	}
-	return results, nil
-}
-func UniqueString(datas []string) ([]string, error) {
-	lengthVec, dataLength := orderDataString(datas)
-	totalBytes := codec.Strings(datas).Flatten()
+
+	// Remove empty strings first
+	if !noEmpty {
+		cpy := make([]string, len(datas))
+		counter := 0
+		for i := range datas {
+			if len(datas[i]) > 0 {
+				cpy[counter] = datas[i]
+				counter++
+			}
+		}
+
+		if datas = cpy[:counter]; len(datas) == 0 {
+			return datas, nil
+		}
+	}
+
+	totalBytes, lengthVec, dataLength := vectorizeString(datas)
 	indices := make([]uint8, dataLength)
 	_, err := C.Unique(
 		(*C.char)(unsafe.Pointer(&totalBytes[0])),
@@ -106,9 +108,11 @@ func UniqueString(datas []string) ([]string, error) {
 		C.uint32_t(dataLength),
 		(*C.uint8_t)(unsafe.Pointer(&indices[0])),
 	)
+
 	if err != nil {
 		return datas, err
 	}
+
 	results := make([]string, 0, dataLength)
 	for i, flag := range indices {
 		if flag == uint8(255) {
@@ -117,11 +121,10 @@ func UniqueString(datas []string) ([]string, error) {
 	}
 	return results, nil
 }
+
 func RemoveString(datas, toRemove []string) ([]string, error) {
-	lengthVec, dataLength := orderDataString(datas)
-	removeLengthVec, removeDataLength := orderDataString(toRemove)
-	totalBytes := codec.Strings(datas).Flatten()
-	totalBytesRemove := codec.Strings(toRemove).Flatten()
+	totalBytes, lengthVec, dataLength := vectorizeString(datas)
+	totalBytesRemove, removeLengthVec, removeDataLength := vectorizeString(toRemove)
 	indices := make([]uint8, dataLength)
 	_, err := C.Remove(
 		(*C.char)(unsafe.Pointer(&totalBytes[0])),
@@ -145,20 +148,106 @@ func RemoveString(datas, toRemove []string) ([]string, error) {
 	}
 	return results, nil
 }
-func orderDataString(datas []string) ([]uint32, uint32) {
+
+func vectorizeString(datas []string) ([]byte, []uint32, uint32) {
 	dataLength := len(datas)
 	if dataLength == 0 {
-		return []uint32{}, 0
+		return []byte{}, []uint32{}, 0
 	}
+
 	lengthVec := make([]uint32, dataLength)
-	for i, data := range datas {
-		lengthVec[i] = uint32(len(data))
+	counter := 0
+	for _, data := range datas {
+		if len(data) > 0 {
+			lengthVec[counter] = uint32(len(data))
+			counter++
+		}
 	}
-	return lengthVec, uint32(dataLength)
+	lengthVec = lengthVec[:counter]
+	return codec.Strings(datas).Flatten(), lengthVec, uint32(counter)
+}
+
+func SortStrings(datas []string) ([]string, error) {
+	totalBytes, lengthVec, dataLength := vectorizeString(datas)
+	if len(totalBytes) == 0 {
+		return datas, nil
+	}
+
+	indices := make([]uint32, dataLength)
+	_, err := C.Sort(
+		(*C.char)(unsafe.Pointer(&totalBytes[0])),
+		(*C.uint32_t)(unsafe.Pointer(&lengthVec[0])),
+		C.uint32_t(dataLength),
+		(*C.uint32_t)(unsafe.Pointer(&indices[0])),
+	)
+
+	if err != nil {
+		return datas, err
+	}
+
+	results := make([]string, dataLength)
+	for i, idx := range indices {
+		results[i] = datas[int(idx)]
+	}
+	return results, nil
+}
+
+func UniqueSortStrings(datas []string) ([]string, error) {
+	if len(datas) == 0 {
+		return datas, nil
+	}
+
+	noEmpty := true
+	for i := range datas {
+		noEmpty = len(datas[i]) > 0 && noEmpty
+	}
+
+	// Remove empty strings first
+	if !noEmpty {
+		cpy := make([]string, len(datas))
+		counter := 0
+		for i := range datas {
+			if len(datas[i]) > 0 {
+				cpy[counter] = datas[i]
+				counter++
+			}
+		}
+
+		if datas = cpy[:counter]; len(datas) == 0 {
+			return datas, nil
+		}
+	}
+
+	totalBytes, lengthVec, dataLength := vectorizeString(datas)
+	if len(totalBytes) == 0 {
+		return datas, nil
+	}
+
+	indices := make([]uint32, dataLength)
+	count := make([]uint32, 1)
+	_, err := C.UniqueSort(
+		(*C.char)(unsafe.Pointer(&totalBytes[0])),
+		(*C.uint32_t)(unsafe.Pointer(&lengthVec[0])),
+		C.uint32_t(dataLength),
+		(*C.uint32_t)(unsafe.Pointer(&indices[0])),
+		(*C.uint32_t)(unsafe.Pointer(&count[0])),
+	)
+
+	if err != nil {
+		return datas, err
+	}
+	results := make([]string, count[0])
+	for i := 0; i < int(count[0]); i++ {
+		results[i] = datas[int(indices[i])]
+	}
+	// for i, idx := range indices {
+	// 	results[i] = datas[int(idx)]
+	// }
+	return results, nil
 }
 
 func SortBytes(data [][]byte) ([][]byte, error) {
-	totalBytes, lengthVec, dataLength := orderData(data)
+	totalBytes, lengthVec, dataLength := vectorize(data)
 
 	indices := make([]uint32, dataLength)
 	_, err := C.Sort(
@@ -178,7 +267,7 @@ func SortBytes(data [][]byte) ([][]byte, error) {
 }
 
 func UniqueBytes(data [][]byte) ([][]byte, error) {
-	totalBytes, lengthVec, dataLength := orderData(data)
+	totalBytes, lengthVec, dataLength := vectorize(data)
 
 	indices := make([]uint8, dataLength)
 	_, err := C.Unique(
@@ -200,8 +289,8 @@ func UniqueBytes(data [][]byte) ([][]byte, error) {
 }
 
 func RemoveBytes(data, toRemove [][]byte) ([][]byte, error) {
-	totalBytes, lengthVec, dataLength := orderData(data)
-	removeTotalBytes, removeLengthVec, removeDataLength := orderData(toRemove)
+	totalBytes, lengthVec, dataLength := vectorize(data)
+	removeTotalBytes, removeLengthVec, removeDataLength := vectorize(toRemove)
 
 	indices := make([]uint8, dataLength)
 	_, err := C.Remove(
@@ -227,7 +316,7 @@ func RemoveBytes(data, toRemove [][]byte) ([][]byte, error) {
 	return results, nil
 }
 
-func orderData(datas [][]byte) ([]byte, []uint32, uint32) {
+func vectorize(datas [][]byte) ([]byte, []uint32, uint32) {
 	dataLength := len(datas)
 	if dataLength == 0 {
 		return []byte{}, []uint32{}, 0

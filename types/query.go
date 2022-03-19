@@ -3,6 +3,8 @@ package types
 import (
 	"math/big"
 	"time"
+
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 const (
@@ -14,9 +16,28 @@ const (
 	QueryType_Nonce        = "nonce"
 	QueryType_LatestHeight = "latestheight"
 
+	QueryType_BlockNumber      = "blocknumber"
+	QueryType_Code             = "code"
+	QueryType_Balance_Eth      = "balanceEth"
+	QueryType_TransactionCount = "transactionCount"
+	QueryType_Storage          = "storage"
+	QueryType_Receipt_Eth      = "receiptEth"
+	QueryType_Transaction      = "transaction"
+	QueryType_Block_Eth        = "blockEth"
+	QueryType_BlocByHash       = "blockbyhash"
+	QueryType_Logs             = "logs"
+
+	QueryType_TxNumsByHash     = "txNumsByHash"
+	QueryType_TxNumsByNumber   = "txNumsByNumber"
+	QueryType_TxByHashAndIdx   = "txByHashAndIdx"
+	QueryType_TxByNumberAndIdx = "txByNumberAndIdx"
+
 	ConcurrentLibStyle_Array = "array"
 	ConcurrentLibStyle_Map   = "map"
 	ConcurrentLibStyle_Queue = "queue"
+
+	QueryType_Syncing  = "syncing"
+	QueryType_Proposer = "proposer"
 )
 
 type QueryRequest struct {
@@ -26,6 +47,23 @@ type QueryRequest struct {
 
 type QueryResult struct {
 	Data interface{}
+}
+
+type RequestParameters struct {
+	Number  int64
+	Address evmCommon.Address
+}
+
+type RequestBlockEth struct {
+	Number int64
+	Hash   evmCommon.Hash
+	Index  int
+	FullTx bool
+}
+type RequestStorage struct {
+	Number  int64
+	Address evmCommon.Address
+	Key     string
 }
 
 type RequestBalance struct {
@@ -97,4 +135,12 @@ type SendTransactionArgs struct {
 
 type SendTransactionReply struct {
 	Status int
+	Data   interface{}
+}
+
+type RawTransactionArgs struct {
+	Txs []byte
+}
+type RawTransactionReply struct {
+	TxHash interface{}
 }

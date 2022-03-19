@@ -2,7 +2,7 @@ package types
 
 import (
 	ethCommon "github.com/arcology-network/3rd-party/eth/common"
-	encoding "github.com/arcology-network/common-lib/encoding"
+	"github.com/arcology-network/common-lib/codec"
 )
 
 type MetaBlock struct {
@@ -10,18 +10,55 @@ type MetaBlock struct {
 	Hashlist []*ethCommon.Hash
 }
 
-func (mb MetaBlock) GobEncode() ([]byte, error) {
-	hashArray := Ptr2Arr(mb.Hashlist)
-	data := [][]byte{
-		encoding.Byteset(mb.Txs).Encode(),
-		ethCommon.Hashes(hashArray).Encode(),
-	}
-	return encoding.Byteset(data).Encode(), nil
+func (this MetaBlock) HeaderSize() uint32 {
+	return uint32(3 * codec.UINT32_LEN)
 }
-func (mb *MetaBlock) GobDecode(data []byte) error {
-	fields := encoding.Byteset{}.Decode(data)
-	mb.Txs = encoding.Byteset{}.Decode(fields[0])
+
+func (this MetaBlock) Size() uint32 {
+	total := 0
+	for i := 0; i < len(this.Txs); i++ {
+		total += len(this.Txs[i])
+	}
+	return uint32(
+		this.HeaderSize() +
+			uint32(codec.UINT32_LEN*(len(this.Txs)+1)) + uint32(total) +
+			uint32(len(this.Hashlist)*codec.HASH32_LEN))
+}
+
+func (this MetaBlock) Encode() []byte {
+	buffer := make([]byte, this.Size())
+	this.EncodeToBuffer(buffer)
+	return buffer
+}
+
+func (this MetaBlock) FillHeader(buffer []byte) {
+	codec.Uint32(2).EncodeToBuffer(buffer[codec.UINT32_LEN*0:])
+	codec.Uint32(0).EncodeToBuffer(buffer[codec.UINT32_LEN*1:])
+	codec.Uint32(codec.Byteset(this.Txs).Size()).EncodeToBuffer(buffer[codec.UINT32_LEN*2:])
+}
+
+func (this MetaBlock) EncodeToBuffer(buffer []byte) {
+	this.FillHeader(buffer)
+	headerLen := this.HeaderSize()
+
+	offset := uint32(0)
+	codec.Byteset(this.Txs).EncodeToBuffer(buffer[headerLen+offset:])
+	offset += codec.Byteset(this.Txs).Size()
+
+	for i := 0; i < len(this.Hashlist); i++ {
+		codec.Hash32(*this.Hashlist[i]).EncodeToBuffer(buffer[headerLen+offset:])
+		offset += this.Hashlist[i].Size()
+	}
+}
+
+func (this MetaBlock) GobEncode() ([]byte, error) {
+	return this.Encode(), nil
+}
+
+func (this *MetaBlock) GobDecode(buffer []byte) error {
+	fields := codec.Byteset{}.Decode(buffer).(codec.Byteset)
+	this.Txs = codec.Byteset{}.Decode(fields[0]).(codec.Byteset)
 	arrs := ethCommon.Hashes([]ethCommon.Hash{}).Decode(fields[1])
-	mb.Hashlist = Arr2Ptr(arrs)
+	this.Hashlist = Arr2Ptr(arrs)
 	return nil
 }

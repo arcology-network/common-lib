@@ -2,106 +2,135 @@ package datacompression
 
 import (
 	"fmt"
-	"math/rand"
 	"reflect"
 	"testing"
 	"time"
+	"unsafe"
 
-	codec "github.com/arcology-network/common-lib/codec"
+	"github.com/arcology-network/common-lib/mhasher"
 )
 
-func TestCompressUncompressBasicSingleAccount(t *testing.T) {
+func TestMapDelete(t *testing.T) {
+	m := make(map[string]interface{})
+	m["12"] = 12
+	m["34"] = 34
+	m["12"] = nil
+
+	for k, v := range m {
+		fmt.Println(k, v)
+	}
+
+	delete(m, "12")
+	for k, v := range m {
+		fmt.Println(k, v)
+	}
+}
+
+func TestFlattenStrings(t *testing.T) {
+	paths := make([][]string, 100000)
+	acct := RandomAccount()
+	for i := 0; i < len(paths); i++ {
+		for j := 0; j < 10; j++ {
+			paths[i] = append(paths[i], "blcc://eth1.0/account/"+acct+"/")
+		}
+	}
+
+	t0 := time.Now()
+	if len(Flatten(paths)) != len(paths)*10 {
+		t.Error("Error")
+	}
+	fmt.Println("Flatten "+fmt.Sprint(100000*10), time.Since(t0))
+}
+
+func TestCompressString(t *testing.T) {
+	lut := NewCompressionLut()
+	path := "1//1/1/1"
+	compressed := lut.TryCompress(path)
+	if compressed != "1//1/1/1" {
+		t.Error("Error")
+	}
+
+	acct := RandomAccount()
+	acctPath := "blcc://eth1.0/account/" + acct + "/"
+	acctPathCompressed := lut.TryCompress(acctPath)
+
+	if acctPathCompressed != "[1]/"+acct+"/" {
+		t.Error("Error")
+	}
+}
+
+func TestSingleAccount(t *testing.T) {
+	strs := []string{"2", "1", "1"}
+	newKeys, _ := mhasher.UniqueStrings(strs)
+	fmt.Println(newKeys)
+
+	acct := RandomAccount()
+	if len(acct) != 40 {
+		t.Error("Error: Account Address must be 40 byte long")
+	}
+
 	paths := []string{
-		"blcc://eth1.0/account/" + "0x112345" + "/",
-		"blcc://eth1.0/account/" + "0x112345" + "/code",
-		"blcc://eth1.0/account/" + "0x112345" + "/nonce",
-		"blcc://eth1.0/account/" + "0x112345" + "/balance",
-		"blcc://eth1.0/account/" + "0x112345" + "/defer/",
-		"blcc://eth1.0/account/" + "0x112345" + "/storage/",
-		"blcc://eth1.0/account/" + "0x112345" + "/storage/containers/",
-		"blcc://eth1.0/account/" + "0x112345" + "/storage/native/",
-		"blcc://eth1.0/account/" + "0x112345" + "/storage/containers/!/",
+		"blcc://eth1.0/account/" + acct + "/",
+		"blcc://eth1.0/account/" + acct + "/code",
+		"blcc://eth1.0/account/" + acct + "/nonce",
+		"blcc://eth1.0/account/" + acct + "/balance",
+		"blcc://eth1.0/account/" + acct + "/defer/",
+		"blcc://eth1.0/account/" + acct + "/storage/",
+		"blcc://eth1.0/account/" + acct + "/storage/containers/",
+		"blcc://eth1.0/account/" + acct + "/storage/native/",
+		"blcc://eth1.0/account/" + acct + "/storage/containers/!/",
+		"blcc://eth1.0/account/" + acct + "/storage/containers/KittyIndexToOwner/$ad90f8111111111111111111111111111111111111",
+		"blcc://eth1.0/account/" + acct + "/storage/containers/KittyIndexToOwner/$ad90f8211111111111111111111111111111111111",
+		"blcc://eth1.0/account/" + acct + "/storage/containers/KittyIndexToOwner/$ad90f8311111111111111111111111111111111111",
+		"blcc://eth1.0/account/" + acct + "/storage/containers/KittyIndexToOwner/$ad90f8411111111111111111111111111111111111",
 	}
 
+	source := Deepcopy(paths)
 	lut := NewCompressionLut()
-	t0 := time.Now()
-	compressed := lut.BatchCompress(paths)
-	fmt.Println("BatchCompress "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
 
-	t0 = time.Now()
-	uncompressed := lut.BatchUncompress(compressed)
-	fmt.Println("Uncompressed "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
+	compressed := lut.CompressOnTemp(paths) //LUT not the temp ?
+	lut.Commit()
+	fmt.Println("Compression Ratio: ", lut.GetCompressionRatio(source, compressed))
+	lut.TryBatchUncompress(compressed)
 
-	if !reflect.DeepEqual(paths, uncompressed) {
-		t.Error("Error: Failed to uncompress")
+	for i := 0; i < len(source); i++ {
+		if len(compressed) != len(source) || source[i] != compressed[i] {
+			t.Error("Error: Error happened after uncompression")
+		}
 	}
 }
 
-func TestCompressUncompressBasicMultipleAccounts(t *testing.T) {
-	paths := []string{}
-	accounts := []string{"alice", "bob", "carol", "dave"}
-	for _, acct := range accounts {
-		paths = append(paths, []string{
-			"blcc://eth1.0/account/" + acct + "/",
-			"blcc://eth1.0/account/" + acct + "/code",
-			"blcc://eth1.0/account/" + acct + "/nonce",
-			"blcc://eth1.0/account/" + acct + "/balance",
-			"blcc://eth1.0/account/" + acct + "/defer/",
-			"blcc://eth1.0/account/" + acct + "/storage/",
-			"blcc://eth1.0/account/" + acct + "/storage/containers/",
-			"blcc://eth1.0/account/" + acct + "/storage/native/",
-			"blcc://eth1.0/account/" + acct + "/storage/containers/!/",
-		}...)
+func TestShortPath(t *testing.T) {
+	strs := []string{"2", "1", "1"}
+	newKeys, _ := mhasher.UniqueStrings(strs)
+	fmt.Println(newKeys)
+
+	acct := RandomAccount()
+	if len(acct) != 40 {
+		t.Error("Error: Account Address must be 40 byte long")
 	}
 
+	path := "blcc://eth1.0/account/"
 	lut := NewCompressionLut()
-	compressed := lut.BatchCompress(paths)
-	uncompressed := lut.BatchUncompress(compressed)
+	lut.Commit()
 
-	ratio := float32(len(codec.Strings(compressed).Encode())) / float32(len(codec.Strings(paths).Encode()))
-	fmt.Println("---- Compression ratio " + fmt.Sprint(ratio))
+	compressed := lut.TryCompress(path) //LUT not the temp ?
 
-	if !reflect.DeepEqual(paths, uncompressed) {
-		t.Error("Error: Failed to uncompress")
+	if compressed != "[1]/" {
+		t.Error("Error: Failed to compress the orginal string")
+	}
+
+	uncompressed := lut.TryUncompress(compressed)
+	if uncompressed != "blcc://eth1.0/account/" {
+		t.Error("Error: Strings don't match !")
 	}
 }
 
-func BenchmarkUncompressSameAccount(b *testing.B) {
+func TestMultiAccounts(t *testing.T) {
 	paths := []string{}
-	for i := 0; i < 100000; i++ {
-		acct := fmt.Sprint(rand.Float64())
-		paths = append(paths, []string{
-			"blcc://eth1.0/account/" + acct + "/",
-			"blcc://eth1.0/account/" + acct + "/code",
-			"blcc://eth1.0/account/" + acct + "/nonce",
-			"blcc://eth1.0/account/" + acct + "/balance",
-			"blcc://eth1.0/account/" + acct + "/defer/",
-			"blcc://eth1.0/account/" + acct + "/storage/",
-			"blcc://eth1.0/account/" + acct + "/storage/containers/",
-			"blcc://eth1.0/account/" + acct + "/storage/native/",
-			"blcc://eth1.0/account/" + acct + "/storage/containers/!/",
-		}...)
-	}
-
-	sections := make([][]string, 100000)
-	for i := 0; i < 100000; i++ {
-		sections[i] = paths[i*9 : (i+1)*9]
-	}
-
-	t0 := time.Now()
-	lut := NewCompressionLut()
-	for i := 0; i < len(sections); i++ {
-		lut.BatchUncompress(sections[i])
-	}
-	fmt.Println("Compressed then Uncompressed "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
-}
-
-func BenchmarkUncompressDifferentAccount100k(b *testing.B) {
-	paths := []string{}
-	//accounts := []string{"alice", "bob", "carol", "dave"}
-	for j := 0; j < 4; j++ {
-		for i := 0; i < 25000; i++ {
-			acct := fmt.Sprint(rand.Float64())
+	for j := 0; j < 3; j++ {
+		acct := RandomAccount()
+		for i := 0; i < 1; i++ {
 			paths = append(paths, []string{
 				"blcc://eth1.0/account/" + acct + "/",
 				"blcc://eth1.0/account/" + acct + "/code",
@@ -115,20 +144,82 @@ func BenchmarkUncompressDifferentAccount100k(b *testing.B) {
 			}...)
 		}
 	}
-
+	source := Deepcopy(paths)
 	lut := NewCompressionLut()
+
+	compressed := lut.CompressOnTemp(paths)
+	lut.Commit()
+	lut.TryBatchUncompress(compressed)
+
+	if !reflect.DeepEqual(source, compressed) {
+		t.Error("Error: Failed to uncompress")
+	}
+
+	acct := RandomAccount()
+	compressed = []string{"[1]/" + acct + "/"}
+	lut.TryBatchUncompress(compressed)
+
+	if compressed[0] != "blcc://eth1.0/account/"+acct+"/" {
+		t.Error("Error: Failed to uncompress")
+	}
+}
+
+func BenchmarkStringToBytes(b *testing.B) {
+	accounts := make([]string, 1000000)
+	for i := 0; i < len(accounts); i++ {
+		accounts[i] = "abcdefghijklmnopqrestuvwxyz0123456789"
+	}
+
 	t0 := time.Now()
-	compressed := lut.BatchCompress(paths)
-	fmt.Println("BatchCompress "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
+	byteset := make([][]byte, 1000000)
+	for i := 0; i < len(accounts); i++ {
+		byteset[i] = []byte(accounts[i])
+	}
+	fmt.Println("1000000 "+fmt.Sprint(100000*9), time.Since(t0))
+}
+
+func BenchmarkStringToBytesObjects(b *testing.B) {
+	accounts := make([]string, 1000000)
+	for i := 0; i < len(accounts); i++ {
+		accounts[i] = "abcdefghijklmnopqrestuvwxyz0123456789"
+	}
+
+	t0 := time.Now()
+	byteset := make([][]byte, 1000000)
+	for i := 0; i < len(accounts); i++ {
+		byteset[i] = *(*[]byte)(unsafe.Pointer(&accounts[i]))
+	}
+	fmt.Println("1000000 "+fmt.Sprint(100000*9), time.Since(t0))
+}
+
+func BenchmarkStringToBytesUnsafePtr(b *testing.B) {
+	accounts := make([]string, 1000000)
+	for i := 0; i < len(accounts); i++ {
+		accounts[i] = "abcdefghijklmnopqrestuvwxyz0123456789"
+	}
+
+	t0 := time.Now()
+	byteset := make([]*[]byte, 1000000)
+	for i := 0; i < len(accounts); i++ {
+		byteset[i] = (*[]byte)(unsafe.Pointer(&accounts[i]))
+	}
+	fmt.Println("1000000 "+fmt.Sprint(100000*9), time.Since(t0))
+}
+
+func BenchmarkKeccak256(b *testing.B) {
+	accounts := make([]string, 1000000)
+	for i := 0; i < len(accounts); i++ {
+		accounts[i] = RandomAccount()
+	}
+
+	t0 := time.Now()
+	byteset := make([][]byte, 1000000)
+	for i := 0; i < len(accounts); i++ {
+		byteset[i] = *(*[]byte)(unsafe.Pointer(&accounts[i]))
+	}
+	fmt.Println("1000000 "+fmt.Sprint(100000*9), time.Since(t0))
 
 	t0 = time.Now()
-	uncompressed := lut.BatchUncompress(compressed)
-	fmt.Println("Uncompressed "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
-
-	ratio := float32(len(codec.Strings(compressed).Encode())) / float32(len(codec.Strings(paths).Encode()))
-	fmt.Println("---- Compression ratio " + fmt.Sprint(ratio))
-
-	if !reflect.DeepEqual(paths, uncompressed) {
-		b.Error("Error: Failed to uncompress")
-	}
+	mhasher.Sha3256(byteset)
+	fmt.Println("mhasher.Keccak256 :", time.Since(t0))
 }

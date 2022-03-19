@@ -13,38 +13,48 @@ import (
 func TestUint8(t *testing.T) {
 	in := Uint8(244)
 	data := in.Encode()
-	out := in.Decode(data)
+	out := in.Decode(data).(Uint8)
 
-	if uint8(in) != out {
+	if (in) != (out) {
 		t.Error("Uint8 Mismatched !")
 	}
 }
 
 func TestUint8s(t *testing.T) {
-	in := Uint8s{1, 2, 3, 4, 5}
+	in := []uint8{1, 2, 3, 4, 5}
 	data := Uint8s(in).Encode()
-	out := Uint8s(in).Decode(data)
+	out := Uint8s(in).Decode(data).(Uint8s)
 
-	if !reflect.DeepEqual(in, out) {
+	if !reflect.DeepEqual(in, []uint8(out)) {
 		t.Error("Uint8s Mismatched !")
 	}
 }
 
-func TestUint32s(t *testing.T) {
-	in := []Uint32{1, 2, 3, 4, 5}
-	data := Uint32s(in).Encode()
-	out := Uint32s(in).Decode(data)
-
-	if !reflect.DeepEqual(Uint32s(in), out) {
+func TestUint32(t *testing.T) {
+	in := uint32(99)
+	data := Uint32(in).Encode()
+	out := Uint32(in).Decode(data).(Uint32)
+	if Uint32(in) != out {
 		t.Error("Uint32 Mismatched !")
 	}
 }
+
+func TestUint32s(t *testing.T) {
+	in := []uint32{1, 2, 3, 4, 5}
+	data := Uint32s(in).Encode()
+	out := Uint32s(in).Decode(data).(Uint32s)
+
+	if !reflect.DeepEqual(Uint32s(in), (out)) {
+		t.Error("Uint32 Mismatched !")
+	}
+}
+
 func TestUint64s(t *testing.T) {
-	in := Uint64s([]Uint64{11, 22, 33, 44, 555555})
+	in := []uint64{11, 22, 33, 44, 555555}
 	data := Uint64s(in).Encode()
 	out := Uint64s(in).Decode(data).(Uint64s)
 
-	if !reflect.DeepEqual(in, out) {
+	if !reflect.DeepEqual(Uint64s(in), out) {
 		t.Error("Uint64s Mismatched !")
 	}
 }
@@ -52,49 +62,58 @@ func TestUint64s(t *testing.T) {
 func TestBools(t *testing.T) {
 	in := []bool{false, false, true, true}
 	data := Bools(in).Encode()
-	out := Bools(in).Decode(data)
+	out := Bools(in).Decode(data).(Bools)
 
-	if !reflect.DeepEqual(in, out) {
+	if !reflect.DeepEqual(Bools(in), out) {
 		t.Error("Mismatch !")
 		fmt.Println(in)
 		fmt.Println()
 		fmt.Println(out)
+	}
+}
+
+func TestString(t *testing.T) {
+	in := "0x1234567890abcdef"
+	bytes := String(in).Encode()
+	out := String("").Decode(bytes).(String)
+	if !reflect.DeepEqual(String(in), out) {
+		t.Error("strings mismatch !")
 	}
 }
 
 func TestStrings(t *testing.T) {
-	in := []string{"111", "2222", "33333"}
+	in := []string{"", "111", "2222", "33333", ""}
 	bytes := Strings(in).Encode()
-	out := Strings([]string{}).Decode(bytes)
-	if !reflect.DeepEqual(in, []string(out)) {
+	out := Strings([]string{}).Decode(bytes).(Strings)
+	if !reflect.DeepEqual(Strings(in), (out)) {
 		t.Error("strings mismatch !")
 	}
-
 }
 
 func TestBytes(t *testing.T) {
-	in := [][]byte{
-		Uint32s([]Uint32{1, 2, 3, 4, 5}).Encode(),
-		Uint64s([]Uint64{11, 22, 33, 44, 555555}).Encode(),
+	inner := [][]byte{
+		Uint32s([]uint32{1, 2, 3, 4, 5}).Encode(),
 		Bools([]bool{false, false, true, true}).Encode(),
 	}
 
-	data := Byteset(in).Encode()
-	out := Byteset(in).Decode(data)
+	in := [][]byte{
+		{},
+		Uint32s([]uint32{1, 2, 3, 4, 5}).Encode(),
+		Uint64s([]uint64{11, 22, 33, 44, 555555}).Encode(),
+		Bools([]bool{false, false, true, true}).Encode(),
+		{},
+		{},
+		Byteset(inner).Encode(),
+	}
 
-	if !reflect.DeepEqual(in, out) {
+	buffer := Byteset(in).Encode()
+	out := Byteset(in).Decode(buffer).(Byteset)
+
+	if !reflect.DeepEqual(in, [][]byte(out)) {
 		t.Error("Mismatch !")
 		fmt.Println(in)
 		fmt.Println()
 		fmt.Println(out)
-	}
-
-	byteset := [][]byte{{byte(1)}, {byte(2)}, {byte(3)}}
-	if !reflect.DeepEqual(Byteset(byteset).Flatten(), append([]byte{byte(1)}, append([]byte{byte(2)}, []byte{byte(3)}[:]...)[:]...)) {
-		t.Error("Mismatch !")
-		fmt.Println(Byteset(byteset).Flatten())
-		fmt.Println()
-		fmt.Println(append([]byte{byte(1)}, append([]byte{byte(2)}, []byte{byte(3)}[:]...)[:]...))
 	}
 
 }
@@ -102,9 +121,9 @@ func TestBytes(t *testing.T) {
 func TestBigint(t *testing.T) {
 	in := big.NewInt(1234567)
 	data := (*Bigint)(in).Encode()
-	out := (&Bigint{}).Decode(data)
+	out := (&Bigint{}).Decode(data).(*Bigint)
 
-	if !reflect.DeepEqual(in, out) {
+	if !reflect.DeepEqual(in, (*big.Int)(out)) {
 		t.Error("Mismatch !")
 		fmt.Println(in)
 		fmt.Println()
@@ -113,9 +132,9 @@ func TestBigint(t *testing.T) {
 
 	in = big.NewInt(-456789)
 	data = (*Bigint)(in).Encode()
-	out = (&Bigint{}).Decode(data)
+	out = (&Bigint{}).Decode(data).(*Bigint)
 
-	if !reflect.DeepEqual(in, out) {
+	if !reflect.DeepEqual((in), (*big.Int)(out)) {
 		t.Error("Mismatch !")
 		fmt.Println(in)
 		fmt.Println()
@@ -123,12 +142,12 @@ func TestBigint(t *testing.T) {
 	}
 }
 
-func TestBytesPerformance(t *testing.T) {
-	byteset := make([][]byte, 0, 500000)
-	for i := 0; i < 500000; i++ {
+func TestEncodeBytesPerformance(t *testing.T) {
+	byteset := make([][]byte, 0, 600000)
+	for i := 0; i < 600000; i++ {
 		byteset = append(byteset, [][]byte{
-			Uint32s([]Uint32{1, 2, 3, 4, 5}).Encode(),
-			Uint64s([]Uint64{11, 22, 33, 44, 555555}).Encode(),
+			Uint32s([]uint32{1, 2, 3, 4, 5}).Encode(),
+			Uint64s([]uint64{11, 22, 33, 44, 555555}).Encode(),
 			Bools([]bool{false, false, true, true}).Encode(),
 		}...)
 	}
@@ -162,6 +181,58 @@ func TestConcatenateStrings(t *testing.T) {
 	fmt.Println("Flatten Strings : ", len(buffer), time.Now().Sub(t0))
 
 	if !bytes.Equal(buf.Bytes(), buffer) {
+		t.Error("Mismatch !")
+	}
+}
+
+func TestEncoderUint32(t *testing.T) {
+	n1 := Uint32(999999)
+	buffer := make([]byte, Encoder{}.Size([]interface{}{n1, n1}))
+	Encoder{}.ToBuffer(buffer, []interface{}{n1, n1})
+
+	fields := [][]byte(Byteset{}.Decode(buffer).(Byteset))
+	if n1 != Uint32(0).Decode(fields[0]) ||
+		n1 != Uint32(0).Decode(fields[1]) {
+		t.Error("Mismatch !")
+	}
+}
+
+func TestEncoderBigint(t *testing.T) {
+	v := big.NewInt(-999999)
+	n1 := Bigint(*v)
+
+	v0 := big.NewInt(11)
+	n2 := Bigint(*v0)
+
+	buffer := make([]byte, Encoder{}.Size([]interface{}{&n1, &n2}))
+	Encoder{}.ToBuffer(buffer, []interface{}{&n1, &n2})
+
+	fields := [][]byte(Byteset{}.Decode(buffer).(Byteset))
+	lft := (*big.Int)((&Bigint{}).Decode(fields[0]).(*Bigint))
+	rgt := (*big.Int)((&Bigint{}).Decode(fields[1]).(*Bigint))
+
+	buf := n1.Encode()
+	fmt.Print(buf)
+	if v.Cmp(lft) != 0 || v0.Cmp(rgt) != 0 {
+		t.Error("Mismatch !")
+	}
+}
+
+func TestEncoderBigintAndNil(t *testing.T) {
+	v := big.NewInt(-999999)
+	n1 := Bigint(*v)
+
+	buffer := make([]byte, Encoder{}.Size([]interface{}{nil, nil, nil}))
+	Encoder{}.ToBuffer(buffer, []interface{}{nil, nil, nil})
+
+	fields := [][]byte(Byteset{}.Decode(buffer).(Byteset))
+	_0 := (*big.Int)((&Bigint{}).Decode(fields[0]).(*Bigint))
+	_1 := (*big.Int)((&Bigint{}).Decode(fields[1]).(*Bigint))
+	_2 := (*big.Int)((&Bigint{}).Decode(fields[2]).(*Bigint))
+
+	buf := n1.Encode()
+	fmt.Print(buf)
+	if _0.Cmp(&big.Int{}) != 0 || _1.Cmp(&big.Int{}) != 0 || _2.Cmp(&big.Int{}) != 0 {
 		t.Error("Mismatch !")
 	}
 }

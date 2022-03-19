@@ -12,17 +12,17 @@ type ExecutingLog struct {
 	Value string `json:"value"`
 }
 
-func (log *ExecutingLog) GetKey() string {
-	return log.Key
+func (this *ExecutingLog) GetKey() string {
+	return this.Key
 }
 
-func (log *ExecutingLog) GetValue() string {
-	return log.Value
+func (this *ExecutingLog) GetValue() string {
+	return this.Value
 }
 
 type ExecutingLogs struct {
 	Txhash ethCommon.Hash `json:"txhash"`
-	Logs   []ExecutingLog `json:"logs"`
+	Logs   []ExecutingLog `json:"this"`
 }
 
 type ExecutingLogsMessage struct {
@@ -51,28 +51,29 @@ func GetAssert(ret []byte) string {
 	}
 	return ""
 }
+
 func NewExecutingLogs() *ExecutingLogs {
 	return &ExecutingLogs{
 		Logs: []ExecutingLog{},
 	}
 }
 
-func (logs *ExecutingLogs) Append(key, value string) {
-	logs.Logs = append(logs.Logs, ExecutingLog{
+func (this *ExecutingLogs) Append(key, value string) {
+	this.Logs = append(this.Logs, ExecutingLog{
 		Key:   key,
 		Value: value,
 	})
 }
-func (logs *ExecutingLogs) Appends(log []ExecutingLog) {
-	logs.Logs = append(logs.Logs, log...)
+func (this *ExecutingLogs) Appends(log []ExecutingLog) {
+	this.Logs = append(this.Logs, log...)
 }
 
-func (logs *ExecutingLogs) Marshal() (string, error) {
-	data, err := json.Marshal(logs)
+func (this *ExecutingLogs) Marshal() (string, error) {
+	data, err := json.Marshal(this)
 	return fmt.Sprintf("%v", string(data)), err
 }
 
-func (logs *ExecutingLogs) UnMarshal(data string) error {
+func (this *ExecutingLogs) UnMarshal(data string) error {
 
-	return json.Unmarshal([]byte(data), logs)
+	return json.Unmarshal([]byte(data), this)
 }

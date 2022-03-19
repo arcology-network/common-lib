@@ -4,10 +4,14 @@ import (
 	"bytes"
 )
 
-type Hash64 [64]byte
+const (
+	HASH64_LEN = 64
+)
 
-func (hash Hash64) Size() uint64 {
-	return uint64(64)
+type Hash64 [HASH64_LEN]byte
+
+func (hash Hash64) Size() uint32 {
+	return uint32(HASH64_LEN)
 }
 
 func (hash Hash64) Encode() []byte {
@@ -16,31 +20,31 @@ func (hash Hash64) Encode() []byte {
 
 func (hash Hash64) Decode(data []byte) interface{} {
 	copy(hash[:], data)
-	return hash
+	return Hash64(hash)
 }
 
-type Hash64s [][64]byte
+type Hash64s [][HASH64_LEN]byte
 
 func (hashes Hash64s) Encode() []byte {
 	return Hash64s(hashes).Flatten()
 }
 
-func (hashes Hash64s) Decode(data []byte) interface{} {
-	hashes = make([][64]byte, len(data)/64)
-	for i := 0; i < len(hashes); i++ {
-		copy(hashes[i][:], data[i*64:(i+1)*64])
+func (this Hash64s) Decode(data []byte) interface{} {
+	this = make([][HASH64_LEN]byte, len(data)/HASH64_LEN)
+	for i := 0; i < len(this); i++ {
+		copy(this[i][:], data[i*HASH64_LEN:(i+1)*HASH64_LEN])
 	}
-	return hashes
+	return [][HASH64_LEN]byte(this)
 }
 
-func (hashes Hash64s) Size() uint64 {
-	return uint64(len(hashes) * 64)
+func (hashes Hash64s) Size() uint32 {
+	return uint32(len(hashes) * HASH64_LEN)
 }
 
 func (hashes Hash64s) Flatten() []byte {
-	buffer := make([]byte, len(hashes)*64)
+	buffer := make([]byte, len(hashes)*HASH64_LEN)
 	for i := 0; i < len(hashes); i++ {
-		copy(buffer[i*64:(i+1)*64], hashes[i][:])
+		copy(buffer[i*HASH64_LEN:(i+1)*HASH64_LEN], hashes[i][:])
 	}
 	return buffer
 }

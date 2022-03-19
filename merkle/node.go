@@ -1,8 +1,10 @@
 package merkle
 
 import (
+	"math"
+
 	codec "github.com/arcology-network/common-lib/codec"
-	encoding "github.com/arcology-network/common-lib/encoding"
+	"github.com/arcology-network/common-lib/encoding"
 )
 
 type Node struct {
@@ -13,14 +15,18 @@ type Node struct {
 	hash     []byte
 }
 
-func NewNode(id uint32, level uint32, hash []byte) *Node {
+func NewNode() *Node {
 	return &Node{
-		id:       id,
-		level:    level,
-		parent:   UINT32_MAX,
-		children: []uint32{},
-		hash:     hash,
+		children: make([]uint32, 0, 16),
 	}
+}
+
+func (this *Node) Init(id uint32, level uint32, hash []byte) {
+	this.id = id
+	this.level = level
+	this.parent = math.MaxUint32
+	this.children = this.children[:0]
+	this.hash = hash
 }
 
 func (this *Node) Encode() []byte {
@@ -33,13 +39,15 @@ func (this *Node) Encode() []byte {
 	}.Encode()
 }
 
-func (*Node) Decode(bytes []byte) interface{} {
-	fields := codec.Byteset{}.Decode(bytes)
-	return &Node{
-		codec.Uint32(0).Decode(fields[0]),
-		codec.Uint32(0).Decode(fields[1]),
-		codec.Uint32(0).Decode(fields[2]),
-		(&encoding.Uint32s{}).Decode(fields[3]),
-		(&codec.Bytes{}).Decode(fields[4]).(codec.Bytes),
+func (node *Node) Decode(bytes []byte) interface{} {
+	fields := codec.Byteset{}.Decode(bytes).(codec.Byteset)
+	data := (&codec.Bytes{}).Decode(fields[4]).(codec.Bytes)
+	*node = Node{
+		uint32(codec.Uint32(0).Decode(fields[0]).(codec.Uint32)),
+		uint32(codec.Uint32(0).Decode(fields[1]).(codec.Uint32)),
+		uint32(codec.Uint32(0).Decode(fields[2]).(codec.Uint32)),
+		[]uint32(codec.Uint32s{}.Decode(fields[3]).(codec.Uint32s)),
+		[]byte(data),
 	}
+	return node
 }

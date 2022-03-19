@@ -19,10 +19,10 @@ func (this *Key) Encode() []byte {
 }
 
 func (*Key) Decode(bytes []byte) interface{} {
-	fields := codec.Byteset{}.Decode(bytes)
+	fields := codec.Byteset{}.Decode(bytes).(codec.Byteset)
 	return Key{
-		id:    codec.Uint32(0).Decode(fields[0]),
-		to:    codec.Uint32(0).Decode(fields[1]),
-		nonce: codec.Uint32(0).Decode(fields[2]),
+		id:    uint32(codec.Uint32(0).Decode(fields[0]).(codec.Uint32)),
+		to:    uint32(codec.Uint32(0).Decode(fields[1]).(codec.Uint32)),
+		nonce: uint32(codec.Uint32(0).Decode(fields[2]).(codec.Uint32)),
 	}
 }

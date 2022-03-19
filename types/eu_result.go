@@ -3,30 +3,7 @@ package types
 import (
 	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
-	encoding "github.com/arcology-network/common-lib/encoding"
 )
-
-type DeferCall struct {
-	DeferID         string
-	ContractAddress Address
-	Signature       string
-}
-
-func (dc *DeferCall) Encode() []byte {
-	tmpData := [][]byte{
-		[]byte(dc.DeferID),
-		[]byte(dc.ContractAddress),
-		[]byte(dc.Signature),
-	}
-	return encoding.Byteset(tmpData).Encode()
-}
-
-func (dc *DeferCall) Decode(data []byte) {
-	fields := encoding.Byteset{}.Decode(data)
-	dc.DeferID = string(fields[0])
-	dc.ContractAddress = Address(fields[1])
-	dc.Signature = string(fields[2])
-}
 
 type EuResult struct {
 	H           string
@@ -37,125 +14,163 @@ type EuResult struct {
 	GasUsed     uint64
 }
 
-func (er *EuResult) Encode() []byte {
-	dcData := []byte{}
-	if er.DC != nil {
-		dcData = er.DC.Encode()
-	}
-	tmpData := [][]byte{
-		[]byte(er.H),
-		encoding.Uint32(er.ID).Encode(),
-		encoding.Byteset(er.Transitions).Encode(),
-		dcData,
-		encoding.Uint64(er.Status).Encode(),
-		encoding.Uint64(er.GasUsed).Encode(),
-	}
-	return encoding.Byteset(tmpData).Encode()
+func (this *EuResult) HeaderSize() uint32 {
+	return 7 * codec.UINT32_LEN
 }
-func (er *EuResult) Decode(data []byte) {
-	fields := encoding.Byteset{}.Decode(data)
 
-	er.H = string(fields[0])
-	er.ID = encoding.Uint32(0).Decode(fields[1])
-	er.Transitions = encoding.Byteset{}.Decode(fields[2])
+func (this *EuResult) Size() uint32 {
+	return this.HeaderSize() +
+		uint32(len(this.H)) +
+		codec.UINT32_LEN +
+		codec.Byteset(this.Transitions).Size() +
+		this.DC.Size() +
+		codec.UINT64_LEN +
+		codec.UINT64_LEN
+}
+
+// Fill in the header info
+func (this *EuResult) FillHeader(buffer []byte) {
+	offset := uint32(0)
+	codec.Uint32(6).EncodeToBuffer(buffer[codec.UINT32_LEN*0:])
+
+	codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*1:])
+	offset += codec.String(this.H).Size()
+
+	codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*2:])
+	offset += codec.Uint32(this.ID).Size()
+
+	codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*3:])
+	offset += codec.Byteset(this.Transitions).Size()
+
+	codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*4:])
+	offset += this.DC.Size()
+
+	codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*5:])
+	offset += codec.Uint64(this.Status).Size()
+
+	codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*6:])
+}
+
+func (this *EuResult) Encode() []byte {
+	buffer := make([]byte, this.Size())
+	this.EncodeToBuffer(buffer)
+	return buffer
+}
+
+func (this *EuResult) EncodeToBuffer(buffer []byte) {
+	if this == nil {
+		return
+	}
+	this.FillHeader(buffer)
+
+	headerLen := this.HeaderSize()
+	offset := uint32(0)
+
+	codec.String(this.H).EncodeToBuffer(buffer[headerLen+offset:])
+	offset += codec.String(this.H).Size()
+
+	codec.Uint32(this.ID).EncodeToBuffer(buffer[headerLen+offset:])
+	offset += codec.Uint32(this.ID).Size()
+
+	codec.Byteset(this.Transitions).EncodeToBuffer(buffer[headerLen+offset:])
+	offset += codec.Byteset(this.Transitions).Size()
+
+	this.DC.EncodeToBuffer(buffer[headerLen+offset:])
+	offset += this.DC.Size()
+
+	codec.Uint64(this.Status).EncodeToBuffer(buffer[headerLen+offset:])
+	offset += codec.Uint64(this.Status).Size()
+
+	codec.Uint64(this.GasUsed).EncodeToBuffer(buffer[headerLen+offset:])
+}
+
+func (this *EuResult) Decode(buffer []byte) *EuResult {
+	fields := [][]byte(codec.Byteset{}.Decode(buffer).(codec.Byteset))
+
+	this.H = string(fields[0])
+	this.ID = uint32(codec.Uint32(0).Decode(fields[1]).(codec.Uint32))
+
+	this.Transitions = [][]byte(codec.Byteset{}.Decode(fields[2]).(codec.Byteset))
 	if len(fields[3]) > 0 {
-		dc := &DeferCall{}
-		dc.Decode(fields[3])
-		er.DC = dc
+		this.DC = (&DeferCall{}).Decode(fields[3])
 	}
-	er.Status = encoding.Uint64(0).Decode(fields[4])
-	er.GasUsed = encoding.Uint64(0).Decode(fields[5])
+	this.Status = uint64(codec.Uint64(0).Decode(fields[4]).(codec.Uint64))
+	this.GasUsed = uint64(codec.Uint64(0).Decode(fields[5]).(codec.Uint64))
+	return this
 }
 
-func (er *EuResult) GobEncode() ([]byte, error) {
-	return er.Encode(), nil
+func (this *EuResult) GobEncode() ([]byte, error) {
+	return this.Encode(), nil
 }
-func (er *EuResult) GobDecode(data []byte) error {
-	er.Decode(data)
+
+func (this *EuResult) GobDecode(buffer []byte) error {
+	this.Decode(buffer)
 	return nil
-}
-
-type TxAccessRecords struct {
-	Hash     string
-	ID       uint32
-	Accesses [][]byte
-}
-
-func (tar *TxAccessRecords) Encode() []byte {
-	tmpData := [][]byte{
-		[]byte(tar.Hash),
-		encoding.Uint32(tar.ID).Encode(),
-		encoding.Byteset(tar.Accesses).Encode(),
-	}
-	return encoding.Byteset(tmpData).Encode()
-}
-
-func (tar *TxAccessRecords) Decode(data []byte) {
-	fields := encoding.Byteset{}.Decode(data)
-
-	tar.Hash = string(fields[0])
-	tar.ID = encoding.Uint32(0).Decode(fields[1])
-	tar.Accesses = encoding.Byteset{}.Decode(fields[2])
 }
 
 func (tar *TxAccessRecords) GobEncode() ([]byte, error) {
 	return tar.Encode(), nil
 }
-func (tar *TxAccessRecords) GobDecode(data []byte) error {
-	tar.Decode(data)
+
+func (tar *TxAccessRecords) GobDecode(buffer []byte) error {
+	tar.Decode(buffer)
 	return nil
 }
 
 type Euresults []*EuResult
 
-func (ers Euresults) GobEncode() ([]byte, error) {
-	byteset := make([][]byte, len(ers))
+func (this *Euresults) HeaderSize() uint32 {
+	return uint32((len(*this) + 1) * codec.UINT32_LEN) // Header length
+}
+
+func (this *Euresults) Size() uint32 {
+	total := this.HeaderSize()
+	for i := 0; i < len(*this); i++ {
+		total += (*this)[i].Size()
+	}
+	return total
+}
+
+// Fill in the header info
+func (this *Euresults) FillHeader(buffer []byte) {
+	codec.Uint32(len(*this)).EncodeToBuffer(buffer)
+
+	offset := uint32(0)
+	for i := 0; i < len(*this); i++ {
+		codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*(i+1):])
+		offset += (*this)[i].Size()
+	}
+}
+
+func (this Euresults) GobEncode() ([]byte, error) {
+	buffer := make([]byte, this.Size())
+	this.FillHeader(buffer)
+
+	offsets := make([]uint32, len(this)+1)
+	offsets[0] = 0
+	for i := 0; i < len(this); i++ {
+		offsets[i+1] = offsets[i] + this[i].Size()
+	}
+
+	headerLen := this.HeaderSize()
 	worker := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
-			byteset[i] = ers[i].Encode()
+			this[i].EncodeToBuffer(buffer[headerLen+offsets[i]:])
 		}
 	}
-	common.ParallelWorker(len(ers), 4, worker)
-	return codec.Byteset(byteset).Encode(), nil
+	common.ParallelWorker(len(this), 4, worker)
+	return buffer, nil
 }
-func (ers *Euresults) GobDecode(data []byte) error {
-	bytesset := codec.Byteset{}.Decode(data)
+
+func (this *Euresults) GobDecode(buffer []byte) error {
+	bytesset := [][]byte(codec.Byteset{}.Decode(buffer).(codec.Byteset))
 	euresults := make([]*EuResult, len(bytesset))
 	worker := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
-			euresult := &EuResult{}
-			euresult.Decode(bytesset[i])
-			euresults[i] = euresult
+			euresults[i] = (&EuResult{}).Decode(bytesset[i])
 		}
 	}
 	common.ParallelWorker(len(bytesset), 4, worker)
-	*ers = euresults
-	return nil
-}
-
-type TxAccessRecordses []*TxAccessRecords
-
-func (tars TxAccessRecordses) GobEncode() ([]byte, error) {
-	byteset := make([][]byte, len(tars))
-	worker := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			byteset[i] = tars[i].Encode()
-		}
-	}
-	common.ParallelWorker(len(tars), 4, worker)
-	return codec.Byteset(byteset).Encode(), nil
-}
-func (tars *TxAccessRecordses) GobDecode(data []byte) error {
-	bytesset := codec.Byteset{}.Decode(data)
-	tarses := make([]*TxAccessRecords, len(bytesset))
-	worker := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			tar := &TxAccessRecords{}
-			tar.Decode(bytesset[i])
-			tarses[i] = tar
-		}
-	}
-	common.ParallelWorker(len(bytesset), 4, worker)
-	*tars = tarses
+	*this = euresults
 	return nil
 }

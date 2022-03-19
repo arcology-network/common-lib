@@ -2,6 +2,7 @@ package types
 
 import (
 	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	"github.com/arcology-network/common-lib/codec"
 	encoding "github.com/arcology-network/common-lib/encoding"
 )
 
@@ -27,6 +28,7 @@ type ExecutorResponses struct {
 	TxidsHash         []ethCommon.Hash
 	TxidsId           []uint32
 	TxidsAddress      []ethCommon.Address
+	CallResults       [][]byte
 }
 
 func (er *ExecutorResponses) GobEncode() ([]byte, error) {
@@ -44,6 +46,7 @@ func (er *ExecutorResponses) GobEncode() ([]byte, error) {
 		ethCommon.Hashes(er.TxidsHash).Encode(),
 		encoding.Uint32s(er.TxidsId).Encode(),
 		ethCommon.Addresses(er.TxidsAddress).Encode(),
+		codec.Byteset(er.CallResults).Encode(),
 	}
 	return encoding.Byteset(data).Encode(), nil
 }
@@ -62,5 +65,6 @@ func (er *ExecutorResponses) GobDecode(data []byte) error {
 	er.TxidsHash = ethCommon.Hashes(er.TxidsHash).Decode(fields[10])
 	er.TxidsId = encoding.Uint32s(er.TxidsId).Decode(fields[11])
 	er.TxidsAddress = ethCommon.Addresses(er.TxidsAddress).Decode(fields[12])
+	er.CallResults = [][]byte(codec.Byteset{}.Decode(fields[13]).(codec.Byteset))
 	return nil
 }
