@@ -1,11 +1,20 @@
-module github.com/arcology-network/common-lib
+module github.com/HPISTechnologies/common-lib
 
-go 1.13
+go 1.17
 
 require (
-	github.com/arcology-network/3rd-party v0.9.2-0.20210626004852-924da2642860
-	github.com/arcology-network/evm v1.10.4-0.20210723080918-610ef3636717
+	github.com/HPISTechnologies/3rd-party v1.3.1-0.20220302005842-3524e305a016
+	github.com/HPISTechnologies/evm v1.10.4-0.20220123034347-eb8d747ab2b2
 	github.com/elliotchance/orderedmap v1.4.0
 	github.com/google/uuid v1.1.5
-	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 )
+
+require (
+	github.com/btcsuite/btcd v0.21.0-beta // indirect
+	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1 // indirect
+)
+
+// replace github.com/HPISTechnologies/evm => ../evm/
+
+// replace github.com/HPISTechnologies/3rd-party => ../3rd-party/

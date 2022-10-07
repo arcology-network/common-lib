@@ -3,8 +3,8 @@ package types
 import (
 	"math/big"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
-	"github.com/arcology-network/common-lib/common"
+	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
+	"github.com/HPISTechnologies/common-lib/common"
 )
 
 type AccountInfo struct {

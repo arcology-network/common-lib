@@ -3,7 +3,7 @@ package cachedstorage
 import (
 	"sync"
 
-	ccctrn "github.com/arcology-network/common-lib/concurrentcontainer"
+	ccctrn "github.com/HPISTechnologies/common-lib/concurrentcontainer"
 )
 
 type MemDB struct {

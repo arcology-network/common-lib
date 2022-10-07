@@ -10,7 +10,7 @@ import "C" //must flow above
 import (
 	"unsafe"
 
-	"github.com/arcology-network/common-lib/codec"
+	"github.com/HPISTechnologies/common-lib/codec"
 )
 
 type StringEngine struct {

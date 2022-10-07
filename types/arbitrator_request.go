@@ -1,10 +1,10 @@
 package types
 
 import (
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
-	"github.com/arcology-network/common-lib/codec"
-	"github.com/arcology-network/common-lib/common"
-	encoding "github.com/arcology-network/common-lib/encoding"
+	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
+	"github.com/HPISTechnologies/common-lib/codec"
+	"github.com/HPISTechnologies/common-lib/common"
+	encoding "github.com/HPISTechnologies/common-lib/encoding"
 )
 
 type ArbitratorRequest struct {

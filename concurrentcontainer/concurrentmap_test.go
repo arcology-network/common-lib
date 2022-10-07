@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arcology-network/common-lib/codec"
+	"github.com/HPISTechnologies/common-lib/codec"
 )
 
 func TestCcmapBasic(t *testing.T) {

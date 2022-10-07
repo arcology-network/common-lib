@@ -3,7 +3,7 @@ package merkle
 import (
 	"reflect"
 
-	codec "github.com/arcology-network/common-lib/codec"
+	codec "github.com/HPISTechnologies/common-lib/codec"
 )
 
 func (this *Merkle) Encode() []byte {

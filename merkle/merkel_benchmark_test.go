@@ -5,8 +5,8 @@ package merkle
 // 	"testing"
 // 	"time"
 
-// 	common "github.com/arcology-network/common-lib/common"
-// 	mempool "github.com/arcology-network/common-lib/mempool"
+// 	common "github.com/HPISTechnologies/common-lib/common"
+// 	mempool "github.com/HPISTechnologies/common-lib/mempool"
 // )
 
 // func BenchmarkMerkle10kAcct(b *testing.B) {

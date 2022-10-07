@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	common "github.com/arcology-network/common-lib/common"
+	common "github.com/HPISTechnologies/common-lib/common"
 )
 
 func Flatten(originals [][]string) []string {

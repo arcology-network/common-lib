@@ -1,8 +1,8 @@
 package types
 
 import (
-	"github.com/arcology-network/common-lib/codec"
-	"github.com/arcology-network/common-lib/common"
+	"github.com/HPISTechnologies/common-lib/codec"
+	"github.com/HPISTechnologies/common-lib/common"
 )
 
 type TxAccessRecords struct {

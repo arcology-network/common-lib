@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/arcology-network/common-lib/common"
+	"github.com/HPISTechnologies/common-lib/common"
 )
 
 const (

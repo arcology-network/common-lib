@@ -1,7 +1,7 @@
 package datacompression
 
 import (
-	codec "github.com/arcology-network/common-lib/codec"
+	codec "github.com/HPISTechnologies/common-lib/codec"
 )
 
 func (this *CompressionLut) Encode() []byte {

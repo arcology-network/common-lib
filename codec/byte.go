@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"unsafe"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
 )
 
 const (

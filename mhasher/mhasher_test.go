@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
-	"github.com/arcology-network/3rd-party/eth/crypto/sha3"
+	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
+	"github.com/HPISTechnologies/3rd-party/eth/crypto/sha3"
 )
 
 func TestUniqueStringss(t *testing.T) {

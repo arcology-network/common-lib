@@ -1,9 +1,9 @@
 package types
 
 import (
-	"github.com/arcology-network/common-lib/codec"
-	"github.com/arcology-network/common-lib/common"
-	encoding "github.com/arcology-network/common-lib/encoding"
+	"github.com/HPISTechnologies/common-lib/codec"
+	"github.com/HPISTechnologies/common-lib/common"
+	encoding "github.com/HPISTechnologies/common-lib/encoding"
 )
 
 type DeferCall struct {

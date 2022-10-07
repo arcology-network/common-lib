@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	common "github.com/arcology-network/common-lib/common"
+	common "github.com/HPISTechnologies/common-lib/common"
 )
 
 func TestCachePolicy(t *testing.T) {

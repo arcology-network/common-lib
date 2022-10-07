@@ -5,10 +5,10 @@ import (
 	"errors"
 	"sync"
 
-	codec "github.com/arcology-network/common-lib/codec"
-	common "github.com/arcology-network/common-lib/common"
-	cccontainer "github.com/arcology-network/common-lib/concurrentcontainer"
-	datacompression "github.com/arcology-network/common-lib/datacompression"
+	codec "github.com/HPISTechnologies/common-lib/codec"
+	common "github.com/HPISTechnologies/common-lib/common"
+	cccontainer "github.com/HPISTechnologies/common-lib/concurrentcontainer"
+	datacompression "github.com/HPISTechnologies/common-lib/datacompression"
 )
 
 type DataStore struct {

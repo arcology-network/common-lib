@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"strconv"
 
-	common "github.com/arcology-network/common-lib/common"
-	cccontainer "github.com/arcology-network/common-lib/concurrentcontainer"
-	"github.com/arcology-network/common-lib/mhasher"
+	common "github.com/HPISTechnologies/common-lib/common"
+	cccontainer "github.com/HPISTechnologies/common-lib/concurrentcontainer"
+	"github.com/HPISTechnologies/common-lib/mhasher"
 )
 
 func (this *CompressionLut) singleThreadedUncompressor(compressed []string) {
