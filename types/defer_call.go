@@ -1,9 +1,9 @@
 package types
 
 import (
-	"github.com/HPISTechnologies/common-lib/codec"
-	"github.com/HPISTechnologies/common-lib/common"
-	encoding "github.com/HPISTechnologies/common-lib/encoding"
+	"github.com/arcology-network/common-lib/codec"
+	"github.com/arcology-network/common-lib/common"
+	encoding "github.com/arcology-network/common-lib/encoding"
 )
 
 type DeferCall struct {
@@ -34,19 +34,6 @@ func (this *DeferCall) HeaderSize() uint32 {
 	return 4 * codec.UINT32_LEN
 }
 
-func (this *DeferCall) FillHeader(buffer []byte) {
-	offset := uint32(0)
-	codec.Uint32(3).EncodeToBuffer(buffer[codec.UINT32_LEN*0:])
-
-	codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*1:])
-	offset += codec.String(this.DeferID).Size()
-
-	codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*2:])
-	offset += codec.String(this.ContractAddress).Size()
-
-	codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*3:])
-}
-
 func (this *DeferCall) Size() uint32 {
 	if this == nil {
 		return 0
@@ -56,22 +43,24 @@ func (this *DeferCall) Size() uint32 {
 		uint32(len(this.DeferID)+len(this.ContractAddress)+len(this.Signature))
 }
 
-func (this *DeferCall) EncodeToBuffer(buffer []byte) {
+func (this *DeferCall) EncodeToBuffer(buffer []byte) int {
 	if this == nil {
-		return
+		return 0
 	}
 
-	this.FillHeader(buffer)
-	headerLen := this.HeaderSize()
-	offset := uint32(0)
+	offset := codec.Encoder{}.FillHeader(
+		buffer,
+		[]uint32{
+			codec.String(this.DeferID).Size(),
+			codec.String(this.ContractAddress).Size(),
+			codec.String(this.Signature).Size(),
+		},
+	)
 
-	codec.String(this.DeferID).EncodeToBuffer(buffer[headerLen+offset:])
-	offset += codec.String(this.DeferID).Size()
-
-	codec.String(this.ContractAddress).EncodeToBuffer(buffer[headerLen+offset:])
-	offset += codec.String(this.ContractAddress).Size()
-
-	codec.String(this.Signature).EncodeToBuffer(buffer[headerLen+offset:])
+	offset += codec.String(this.DeferID).EncodeToBuffer(buffer[offset:])
+	offset += codec.String(this.ContractAddress).EncodeToBuffer(buffer[offset:])
+	offset += codec.String(this.Signature).EncodeToBuffer(buffer[offset:])
+	return offset
 }
 
 type DeferCalls []*DeferCall

@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"sort"
 
-	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
+	ethCommon "github.com/arcology-network/3rd-party/eth/common"
 )
 
 const (
@@ -32,8 +32,9 @@ func (this Uint64) Encode() []byte {
 	return buffer
 }
 
-func (this Uint64) EncodeToBuffer(buffer []byte) {
+func (this Uint64) EncodeToBuffer(buffer []byte) int {
 	binary.LittleEndian.PutUint64(buffer, uint64(this))
+	return UINT64_LEN
 }
 
 func (this Uint64) Decode(data []byte) interface{} {
@@ -86,10 +87,16 @@ func (this Uint64s) Unique() []uint64 {
 
 func (this Uint64s) Encode() []byte {
 	buffer := make([]byte, len(this)*UINT64_LEN)
-	for i := range this {
-		copy(buffer[i*UINT64_LEN:(i+1)*UINT64_LEN], Uint64(this[i]).Encode())
-	}
+	this.EncodeToBuffer(buffer)
 	return buffer
+}
+
+func (this Uint64s) EncodeToBuffer(buffer []byte) int {
+	offset := 0
+	for i := range this {
+		offset += Uint64(this[i]).EncodeToBuffer(buffer[offset:])
+	}
+	return len(this) * UINT64_LEN
 }
 
 func (this Uint64s) Decode(data []byte) interface{} {

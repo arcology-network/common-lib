@@ -3,7 +3,7 @@ package codec
 import (
 	"crypto/sha256"
 
-	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
+	ethCommon "github.com/arcology-network/3rd-party/eth/common"
 )
 
 const (
@@ -30,8 +30,9 @@ func (v Uint8) Encode() []byte {
 	return buffer
 }
 
-func (v Uint8) EncodeToBuffer(buffer []byte) {
+func (v Uint8) EncodeToBuffer(buffer []byte) int {
 	buffer[0] = uint8(v)
+	return UINT8_LEN
 }
 
 func (this Uint8) Decode(data []byte) interface{} {
@@ -71,10 +72,11 @@ func (this Uint8s) Encode() []byte {
 	return buffer
 }
 
-func (this Uint8s) EncodeToBuffer(buffer []byte) {
+func (this Uint8s) EncodeToBuffer(buffer []byte) int {
 	for i := range this {
 		buffer[i] = uint8(this[i])
 	}
+	return len(this) * UINT8_LEN
 }
 
 func (Uint8s) Decode(data []byte) interface{} {

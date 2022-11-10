@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"time"
 
-	evmCommon "github.com/HPISTechnologies/evm/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 const (
@@ -139,7 +139,8 @@ type SendTransactionReply struct {
 }
 
 type RawTransactionArgs struct {
-	Txs []byte
+	Tx  []byte
+	Src TxSource
 }
 type RawTransactionReply struct {
 	TxHash interface{}

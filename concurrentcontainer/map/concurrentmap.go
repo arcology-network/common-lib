@@ -7,22 +7,31 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/HPISTechnologies/common-lib/codec"
-	"github.com/HPISTechnologies/common-lib/common"
+	"github.com/arcology-network/common-lib/codec"
+	"github.com/arcology-network/common-lib/common"
 )
 
 type ConcurrentMap struct {
-	numShards uint8
-	sharded   []map[string]interface{}
-	lock      sync.RWMutex
+	numShards  uint8
+	sharded    []map[string]interface{}
+	shardLocks []sync.RWMutex
 }
 
-func NewConcurrentMap() *ConcurrentMap {
+func NewConcurrentMap(args ...interface{}) *ConcurrentMap {
+	defaultShards := uint8(6)
+	if len(args) > 0 && args[0] != nil {
+		defaultShards = uint8(args[0].(uint8))
+		if defaultShards > 254 {
+			defaultShards = 254
+		}
+	}
+
 	ccmap := &ConcurrentMap{
-		numShards: 6,
+		numShards: defaultShards,
 	}
 
 	ccmap.sharded = make([]map[string]interface{}, ccmap.numShards)
+	ccmap.shardLocks = make([]sync.RWMutex, ccmap.numShards)
 	for i := 0; i < int(ccmap.numShards); i++ {
 		ccmap.sharded[i] = make(map[string]interface{}, 64)
 	}
@@ -32,13 +41,23 @@ func NewConcurrentMap() *ConcurrentMap {
 func (this *ConcurrentMap) Size() uint32 {
 	total := 0
 	for i := 0; i < int(this.numShards); i++ {
+		this.shardLocks[i].RLock()
 		total += len(this.sharded[i])
+		this.shardLocks[i].RUnlock()
 	}
 	return uint32(total)
 }
 
 func (this *ConcurrentMap) Get(key string, args ...interface{}) (interface{}, bool) {
-	v, ok := this.sharded[this.Hash8(key)%this.numShards][key]
+	shardID := this.Hash8(key)
+	if shardID >= uint8(len(this.sharded)) {
+		return nil, true
+	}
+
+	this.shardLocks[shardID].RLock()
+	defer this.shardLocks[shardID].RUnlock()
+
+	v, ok := this.sharded[shardID][key]
 	return v, ok
 }
 
@@ -49,12 +68,16 @@ func (this *ConcurrentMap) BatchGet(keys []string, args ...interface{}) []interf
 	for threadID := 0; threadID < int(this.numShards); threadID++ {
 		wg.Add(1)
 		go func(threadID int) {
+			this.shardLocks[threadID].RLock()
+			defer this.shardLocks[threadID].RUnlock()
+
 			defer wg.Done()
 			for i := 0; i < len(keys); i++ {
 				if shardIds[i] == uint8(threadID) {
 					values[i] = this.sharded[threadID][keys[i]]
 				}
 			}
+
 		}(threadID)
 	}
 	wg.Wait()
@@ -72,22 +95,75 @@ func (this *ConcurrentMap) DirectBatchGet(shardIDs []uint8, keys []string, args 
 	return values
 }
 
-func (this *ConcurrentMap) delete(key string) {
-	shardID := this.Hash8(key) % this.numShards
+func (this *ConcurrentMap) delete(shardID uint8, key string) {
 	delete(this.sharded[shardID], key)
 }
 
 func (this *ConcurrentMap) Set(key string, v interface{}, args ...interface{}) error {
-	this.lock.Lock()
-	defer this.lock.Unlock()
+	shardID := this.Hash8(key)
+	if shardID >= uint8(len(this.sharded)) {
+		return nil
+	}
+
+	this.shardLocks[shardID].Lock()
+	defer this.shardLocks[shardID].Unlock()
 
 	if v == nil {
-		this.delete(key)
+		this.delete(shardID, key)
 	} else {
-		shardID := this.Hash8(key) % this.numShards
 		this.sharded[shardID][key] = v
 	}
 	return nil
+}
+
+func (this *ConcurrentMap) BatchUpdate(keys []string, values []interface{}, Updater func(origin interface{}, index int, key string, value interface{}) interface{}) {
+	shards := this.Hash8s(keys)
+	var wg sync.WaitGroup
+	for shard := uint8(0); shard < this.numShards; shard++ {
+		wg.Add(1)
+		go func(shard uint8) {
+			this.shardLocks[shard].Lock()
+			defer this.shardLocks[shard].Unlock()
+			defer wg.Done()
+
+			for i := 0; i < len(keys); i++ {
+				if shards[i] != shard {
+					continue
+				}
+
+				this.sharded[shard][keys[i]] = Updater(this.sharded[shard][keys[i]], i, keys[i], values[i])
+			}
+		}(shard)
+	}
+	wg.Wait()
+}
+
+func (this *ConcurrentMap) Traverse(Operator func(key string, value interface{}) (interface{}, interface{})) [][]interface{} {
+	results := make([][]interface{}, this.numShards)
+	var wg sync.WaitGroup
+	for shard := uint8(0); shard < this.numShards; shard++ {
+		wg.Add(1)
+		go func(shard uint8) {
+			this.shardLocks[shard].Lock()
+			defer this.shardLocks[shard].Unlock()
+			defer wg.Done()
+
+			for k, v := range this.sharded[shard] {
+				newV, ret := Operator(k, v)
+				if ret != nil {
+					results[shard] = append(results[shard], ret)
+				}
+
+				if newV != nil {
+					this.sharded[shard][k] = newV
+				} else {
+					delete(this.sharded[shard], k)
+				}
+			}
+		}(shard)
+	}
+	wg.Wait()
+	return results
 }
 
 func (this *ConcurrentMap) BatchSet(keys []string, values []interface{}, args ...interface{}) {
@@ -101,9 +177,6 @@ func (this *ConcurrentMap) BatchSet(keys []string, values []interface{}, args ..
 }
 
 func (this *ConcurrentMap) DirectBatchSet(shardIDs []uint8, keys []string, values []interface{}, args ...interface{}) {
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
 	var flags []bool
 	if len(args) > 0 && args[0] != nil {
 		flags = args[0].([]bool)
@@ -113,6 +186,8 @@ func (this *ConcurrentMap) DirectBatchSet(shardIDs []uint8, keys []string, value
 	for threadID := 0; threadID < int(this.numShards); threadID++ {
 		wg.Add(1)
 		go func(threadID int) {
+			this.shardLocks[threadID].Lock()
+			defer this.shardLocks[threadID].Unlock()
 			defer wg.Done()
 			for i := 0; i < len(keys); i++ {
 				if shardIDs[i] == uint8(threadID) {
@@ -125,7 +200,7 @@ func (this *ConcurrentMap) DirectBatchSet(shardIDs []uint8, keys []string, value
 					}
 
 					if values[i] == nil {
-						this.delete(keys[i])
+						this.delete(shardIDs[i], keys[i])
 					} else {
 						this.sharded[threadID][keys[i]] = values[i]
 					}
@@ -138,23 +213,35 @@ func (this *ConcurrentMap) DirectBatchSet(shardIDs []uint8, keys []string, value
 }
 
 func (this *ConcurrentMap) Keys() []string {
-	total := 0
+	total := uint32(0)
+	offsets := make([]uint32, this.numShards+1)
 	for i := 0; i < int(this.numShards); i++ {
-		total += len(this.sharded[i])
+		total += uint32(len(this.sharded[i]))
+		offsets[i+1] = total
 	}
 
 	keys := make([]string, total)
-	counter := 0
-	for i := 0; i < int(this.numShards); i++ {
-		for k := range this.sharded[i] {
-			keys[counter] = k
-			counter++
+	worker := func(start, end, index int, args ...interface{}) {
+		this.shardLocks[start].Lock()
+		defer this.shardLocks[start].Unlock()
+
+		for i := start; i < end; i++ {
+			counter := offsets[i]
+			for k := range this.sharded[i] {
+				keys[counter] = k
+				counter++
+			}
 		}
 	}
+	common.ParallelWorker(len(this.sharded), len(this.sharded), worker)
 	return keys
 }
 
 func (this *ConcurrentMap) Hash8(key string) uint8 {
+	if len(key) == 0 {
+		return math.MaxUint8
+	}
+
 	var total uint32 = 0
 	for j := 0; j < len(key); j++ {
 		total += uint32(key[j])
@@ -182,18 +269,20 @@ func (this *ConcurrentMap) Shards() *[]map[string]interface{} {
 }
 
 func (this *ConcurrentMap) Find(Compare func(interface{}, interface{}) bool) interface{} {
-	shards := this.Shards()
-	values := make([]interface{}, len(*shards))
+	values := make([]interface{}, len(this.sharded))
 	worker := func(start, end, index int, args ...interface{}) {
+		this.shardLocks[start].RLock()
+		defer this.shardLocks[start].RUnlock()
+
 		for i := start; i < end; i++ {
-			for _, v := range (*shards)[i] {
+			for _, v := range this.sharded[i] {
 				if values[i] == nil || Compare(v, values[i]) {
 					values[i] = v
 				}
 			}
 		}
 	}
-	common.ParallelWorker(len(*shards), len(*shards), worker)
+	common.ParallelWorker(len(this.sharded), len(this.sharded), worker)
 
 	val := values[0]
 	for i := 1; i < len(values); i++ {
@@ -205,24 +294,35 @@ func (this *ConcurrentMap) Find(Compare func(interface{}, interface{}) bool) int
 }
 
 func (this *ConcurrentMap) Foreach(predicate func(interface{}) interface{}) {
-	shards := this.Shards()
 	worker := func(start, end, index int, args ...interface{}) {
+		this.shardLocks[start].RLock()
+		defer this.shardLocks[start].RUnlock()
+
 		for i := start; i < end; i++ {
-			for k, v := range (*shards)[i] {
+			for k, v := range this.sharded[i] {
 				if v = predicate(v); v == nil {
-					delete((*shards)[i], k)
+					delete(this.sharded[i], k)
 				} else {
-					(*shards)[i][k] = v
+					this.sharded[i][k] = v
 				}
 			}
 		}
 	}
-	common.ParallelWorker(len(*shards), len(*shards), worker)
+	common.ParallelWorker(len(this.sharded), len(this.sharded), worker)
 }
 
 func (this *ConcurrentMap) KVs() ([]string, []interface{}) {
 	keys := this.Keys()
 	return keys, this.BatchGet(keys)
+}
+
+func (this *ConcurrentMap) Clear() {
+	cleaner := func(start, end, index int, args ...interface{}) {
+		this.shardLocks[start].RLock()
+		defer this.shardLocks[start].RUnlock()
+		this.sharded[start] = make(map[string]interface{}, 64)
+	}
+	common.ParallelWorker(len(this.sharded), len(this.sharded), cleaner)
 }
 
 /* -----------------------------------Debug Functions---------------------------------------------------------*/

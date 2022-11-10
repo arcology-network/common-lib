@@ -6,10 +6,11 @@ import (
 	"math/rand"
 	"reflect"
 	"sort"
+	"sync"
 	"testing"
 	"time"
 
-	"github.com/HPISTechnologies/common-lib/codec"
+	"github.com/arcology-network/common-lib/codec"
 )
 
 func TestCcmapBasic(t *testing.T) {
@@ -58,14 +59,21 @@ func TestCcmapBasic(t *testing.T) {
 	if v, ok := ccmap.Get("1"); !ok || v.(string) != "first" {
 		t.Error("Error: Failed to get")
 	}
+
 	if v, ok := ccmap.Get("2"); !ok || v.(string) != "second" {
 		t.Error("Error: Failed to get")
 	}
+
 	if v, ok := ccmap.Get("3"); !ok || v.(int) != 3 {
 		t.Error("Error: Failed to get")
 	}
+
 	if v, ok := ccmap.Get("4"); !ok || v.(int) != 4 {
 		t.Error("Error: Failed to get")
+	}
+
+	if ok := ccmap.Set("5", nil); ok != nil {
+		t.Error("Error: Failed to set")
 	}
 
 	keys := ccmap.Keys()
@@ -83,6 +91,34 @@ func TestCcmapBasic(t *testing.T) {
 
 	if ccmap.Size() != 4 {
 		t.Error("Error: Wrong entry count")
+	}
+}
+
+func TestCcmapEmptyKeys(t *testing.T) {
+	ccmap := NewConcurrentMap()
+	ccmap.Set("1", 1)
+	ccmap.Set("2", 2)
+	ccmap.Set("3", 3)
+	ccmap.Set("", 4)
+
+	if v, ok := ccmap.Get("1"); !ok || v.(int) != 1 {
+		t.Error("Error: Failed to get")
+	}
+
+	if v, ok := ccmap.Get("2"); !ok || v.(int) != 2 {
+		t.Error("Error: Failed to get")
+	}
+
+	if v, ok := ccmap.Get("3"); !ok || v.(int) != 3 {
+		t.Error("Error: Failed to get")
+	}
+
+	if ccmap.Size() != 3 {
+		t.Error("Error: Total count should be 3 ")
+	}
+
+	if v, _ := ccmap.Get(""); v != nil {
+		t.Error("Error: Failed to get")
 	}
 }
 
@@ -240,7 +276,7 @@ func TestChecksum(t *testing.T) {
 	}
 }
 
-func BenchmarkCcmap(b *testing.B) {
+func BenchmarkCcmapBatchSet(b *testing.B) {
 	genString := func() string {
 		var letters = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
 		rand.Seed(time.Now().UnixNano())
@@ -277,7 +313,15 @@ func BenchmarkCcmap(b *testing.B) {
 	}
 
 	t0 := time.Now()
+	var masterLock sync.RWMutex
+	for i := 0; i < 1000000; i++ {
+		masterLock.Lock()
+		masterLock.Unlock()
+	}
+	fmt.Println("Lock() 1000000 "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
+
+	t0 = time.Now()
 	ccmap := NewConcurrentMap()
 	ccmap.BatchSet(paths, values)
-	fmt.Println("Deepcopy "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
+	fmt.Println("BatchSet "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
 }

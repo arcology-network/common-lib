@@ -3,8 +3,8 @@ package merkle
 import (
 	"math"
 
-	codec "github.com/HPISTechnologies/common-lib/codec"
-	"github.com/HPISTechnologies/common-lib/encoding"
+	codec "github.com/arcology-network/common-lib/codec"
+	"github.com/arcology-network/common-lib/encoding"
 )
 
 type Node struct {

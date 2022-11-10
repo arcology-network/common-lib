@@ -1,20 +1,27 @@
-module github.com/HPISTechnologies/common-lib
+module github.com/arcology-network/common-lib
 
-go 1.17
+go 1.19
 
 require (
-	github.com/HPISTechnologies/3rd-party v1.3.1-0.20220302005842-3524e305a016
-	github.com/HPISTechnologies/evm v1.10.4-0.20220123034347-eb8d747ab2b2
-	github.com/elliotchance/orderedmap v1.4.0
-	github.com/google/uuid v1.1.5
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	github.com/arcology-network/3rd-party v0.0.0-20221110004651-3ae5c3009a22
+	github.com/arcology-network/evm v0.0.0-20221110011616-1cdc0ab27c8e
+	github.com/dgraph-io/badger v1.6.2
+	github.com/elliotchance/orderedmap v1.5.0
+	github.com/google/uuid v1.3.0
+	github.com/natefinch/atomic v1.0.1
+	golang.org/x/crypto v0.2.0
+	golang.org/x/exp v0.0.0-20221109205753-fc8884afc316
 )
 
 require (
-	github.com/btcsuite/btcd v0.21.0-beta // indirect
-	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1 // indirect
+	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
+	github.com/btcsuite/btcd v0.20.1-beta // indirect
+	github.com/cespare/xxhash v1.1.0 // indirect
+	github.com/dgraph-io/ristretto v0.0.2 // indirect
+	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/golang/protobuf v1.4.3 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	golang.org/x/net v0.2.0 // indirect
+	golang.org/x/sys v0.2.0 // indirect
+	google.golang.org/protobuf v1.23.0 // indirect
 )
-
-// replace github.com/HPISTechnologies/evm => ../evm/
-
-// replace github.com/HPISTechnologies/3rd-party => ../3rd-party/

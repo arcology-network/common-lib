@@ -7,7 +7,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/HPISTechnologies/common-lib/mhasher"
+	"github.com/arcology-network/common-lib/mhasher"
 )
 
 func TestMapDelete(t *testing.T) {

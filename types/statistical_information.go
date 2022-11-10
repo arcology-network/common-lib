@@ -3,8 +3,8 @@ package types
 import (
 	"time"
 
-	"github.com/HPISTechnologies/common-lib/common"
-	encoding "github.com/HPISTechnologies/common-lib/encoding"
+	"github.com/arcology-network/common-lib/common"
+	encoding "github.com/arcology-network/common-lib/encoding"
 )
 
 type StatisticalInformation struct {

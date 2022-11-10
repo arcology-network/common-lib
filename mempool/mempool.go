@@ -44,15 +44,17 @@ func (m *Mempool) GetTlsMempool(id interface{}) *Mempool {
 }
 
 func (m *Mempool) Get() interface{} {
-	if len(m.objects) <= m.next {
-		m.objects = append(m.objects, make([]interface{}, 1024)...)
-	}
+	// if len(m.objects) <= m.next {
+	// 	m.objects = append(m.objects, make([]interface{}, 1024)...)
+	// }
 
-	if m.objects[m.next] == nil {
-		m.objects[m.next] = m.nf()
-	}
-	m.next++
-	return m.objects[m.next-1]
+	// if m.objects[m.next] == nil {
+	// 	m.objects[m.next] = m.nf()
+	// }
+	// m.next++
+	// return m.objects[m.next-1]
+
+	return m.nf()
 }
 
 func (m *Mempool) Reclaim() {

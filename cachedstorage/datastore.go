@@ -3,12 +3,13 @@ package cachedstorage
 import (
 	"crypto/sha256"
 	"errors"
+	"path/filepath"
 	"sync"
 
-	codec "github.com/HPISTechnologies/common-lib/codec"
-	common "github.com/HPISTechnologies/common-lib/common"
-	cccontainer "github.com/HPISTechnologies/common-lib/concurrentcontainer"
-	datacompression "github.com/HPISTechnologies/common-lib/datacompression"
+	codec "github.com/arcology-network/common-lib/codec"
+	common "github.com/arcology-network/common-lib/common"
+	cccontainer "github.com/arcology-network/common-lib/concurrentcontainer/map"
+	datacompression "github.com/arcology-network/common-lib/datacompression"
 )
 
 type DataStore struct {
@@ -21,13 +22,19 @@ type DataStore struct {
 	partitionIDs   []uint8
 	keyBuffer      []string
 	valueBuffer    []interface{}
+	dbfilter       DbFilter
 	commitLock     sync.RWMutex
+	dblock         sync.RWMutex
+
+	globalCache map[string]interface{}
+	cacheGuard  sync.RWMutex
 }
 
 func NewDataStore(args ...interface{}) *DataStore {
 	dataStore := DataStore{
 		partitionIDs: make([]uint8, 0, 65536),
 		localCache:   cccontainer.NewConcurrentMap(),
+		globalCache:  make(map[string]interface{}),
 	}
 
 	if len(args) > 0 && args[0] != nil {
@@ -40,6 +47,7 @@ func NewDataStore(args ...interface{}) *DataStore {
 
 	if len(args) > 2 && args[2] != nil {
 		dataStore.db = args[2].(PersistentStorageInterface)
+		dataStore.cachePolicy.Customize(dataStore.db)
 	}
 
 	if len(args) > 3 && args[3] != nil {
@@ -48,6 +56,14 @@ func NewDataStore(args ...interface{}) *DataStore {
 
 	if len(args) > 4 && args[4] != nil {
 		dataStore.decoder = args[4].(func([]byte) interface{})
+	}
+
+	if len(args) > 5 && args[5] != nil {
+		dataStore.dbfilter = DbFilter(args[5].(func(PersistentStorageInterface) bool))
+	}
+
+	if dataStore.db != nil && (dataStore.encoder == nil || dataStore.decoder == nil) {
+		panic("Error: DB Encoder or Decoder haven't been specified !")
 	}
 
 	return &dataStore
@@ -73,7 +89,7 @@ func (this *DataStore) Checksum() [32]byte {
 	return this.localCache.Checksum()
 }
 
-// Special interface to inject directly to the local cache.
+// Inject directly to the local cache.
 func (this *DataStore) Inject(key string, v interface{}) {
 	if this.compressionLut != nil {
 		key = this.compressionLut.CompressOnTemp([]string{key})[0]
@@ -83,6 +99,15 @@ func (this *DataStore) Inject(key string, v interface{}) {
 	this.localCache.Set(key, v)
 }
 
+func (this *DataStore) Query(pattern string, condition func(string, string) bool) ([]string, [][]byte, error) {
+	this.dblock.RLock()
+	defer this.dblock.RUnlock()
+
+	return this.db.Query(pattern, condition)
+
+}
+
+// Inject directly to the local cache.
 func (this *DataStore) BatchInject(keys []string, values []interface{}) {
 	if this.compressionLut != nil {
 		this.compressionLut.CompressOnTemp(keys)
@@ -97,61 +122,120 @@ func (this *DataStore) batchWritePersistentStorage(keys []string, values []inter
 		return nil
 	}
 
-	byteset := make([][]byte, len(keys))
-	encoder := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			byteset[i] = this.encoder(values[i])
+	this.dblock.Lock()
+	go func() {
+		byteset := make([][]byte, len(keys))
+		encoder := func(start, end, index int, args ...interface{}) {
+			for i := start; i < end; i++ {
+				byteset[i] = this.encoder(values[i])
+			}
 		}
-	}
-	common.ParallelWorker(len(keys), 4, encoder)
-	return this.db.BatchSet(keys, byteset)
+
+		common.ParallelWorker(len(keys), 4, encoder)
+
+		this.db.BatchSet(keys, byteset)
+		this.dblock.Unlock()
+	}()
+
+	return nil
 }
 
-func (this *DataStore) readPersistentStorage(key string) (interface{}, error) {
+func (this *DataStore) prefetch(key string) (uint32, uint32, error) {
+	if this.db == nil {
+		return 0, 0, errors.New("Error: DB not found !")
+	}
+
+	pattern := filepath.Dir(key)
+
+	this.dblock.RLock()
+	prefetchedKeys, valBytes, err := this.db.Query(pattern, Under)
+	this.dblock.RUnlock()
+
+	prefetchedValues := make([]interface{}, len(valBytes))
+	for i := 0; i < len(valBytes); i++ {
+		prefetchedValues[i] = this.decoder(valBytes[i])
+	}
+
+	flags, count := this.cachePolicy.BatchCheckCapacity(prefetchedKeys, prefetchedValues) // need to check the cache status first
+	if count > 0 {
+		this.localCache.BatchSet(prefetchedKeys, prefetchedValues, flags) // Save to the local cache
+	}
+	return uint32(len(prefetchedKeys)), count, err
+}
+
+func (this *DataStore) fetchPersistentStorage(key string) (interface{}, error) {
 	if this.db == nil {
 		return nil, errors.New("Error: DB not found")
 	}
 
-	if bytes, err := this.db.Get(key); err == nil { // Get from the cache
-		return this.decoder(bytes), nil
-	} else {
-		return nil, errors.New("Error: Failed to get from the DB")
+	var value interface{}
+	this.dblock.RLock()
+	bytes, err := this.db.Get(key)
+	this.dblock.RUnlock()
+
+	if bytes != nil && err == nil { // Get from the cache
+		value = this.decoder(bytes)
 	}
+	return value, err
 }
 
-func (this *DataStore) batchReadPersistentStorage(keys []string) ([]interface{}, error) {
+func (this *DataStore) batchFetchPersistentStorage(keys []string) ([]interface{}, error) {
 	if this.db == nil {
 		return nil, errors.New("Error: DB not found")
 	}
 
 	values := make([]interface{}, len(keys))
+	this.dblock.RLock()
 	byteset, err := this.db.BatchGet(keys) // Get from the cache
+	this.dblock.RUnlock()
+
 	if err == nil {
 		for i := 0; i < len(byteset); i++ {
-			values[i] = this.decoder(byteset[i])
+			if byteset[i] != nil {
+				values[i] = this.decoder(byteset[i])
+			}
 		}
 	}
 	return values, err
 }
 
-func (this *DataStore) Retrive(key string) interface{} {
-	this.commitLock.RLock()
-	defer this.commitLock.RUnlock()
+func (this *DataStore) addToCache(keys []string, values []interface{}) {
+	if this.cachePolicy == nil {
+		return
+	}
 
+	flags, count := this.cachePolicy.BatchCheckCapacity(keys, values) // need to check the cache status first
+	if count > 0 {
+		this.localCache.BatchSet(keys, values, flags)
+	}
+}
+
+func (this *DataStore) FillCache(path string) {
+
+}
+
+func (this *DataStore) Retrive(key string) (interface{}, error) {
 	if this.compressionLut != nil {
 		key = this.compressionLut.TryCompress(key) // Convert the key
 	}
 
-	v, _ := this.localCache.Get(key)
-	if v == nil {
-		if v, err := this.readPersistentStorage(key); err == nil && v != nil {
+	var err error
+	// var ok bool
+	v, _ := this.localCache.Get(key) // Read the local cache first
+	if v == nil && this.cachePolicy != nil && !this.cachePolicy.IsFullCache() {
+		if v, err = this.fetchPersistentStorage(key); err == nil && v != nil {
 			if this.cachePolicy.CheckCapacity(key, v) { // need to check the cache status first
-				this.localCache.Set(key, v) // Save to local cache if isn't full yet,
+				if err = this.localCache.Set(key, v); err != nil { // Save to the local cache
+					return nil, err
+				}
+
+				// if _, _, err := this.prefetch(key); err != nil { // Fetch the related entries
+				// 	return nil, err
+				// }
 			}
-			return v
 		}
 	}
-	return v
+	return v, err
 }
 
 func (this *DataStore) BatchRetrive(keys []string) []interface{} {
@@ -161,30 +245,68 @@ func (this *DataStore) BatchRetrive(keys []string) []interface{} {
 		keys = this.compressionLut.TryBatchCompress(keys)
 	}
 
-	missing := false
-	values := this.localCache.BatchGet(keys)
+	values := this.localCache.BatchGet(keys) // From the local cache first
+
+	/* Find the missing values */
+	queryKeys := make([]string, 0, len(keys))
+	queryIdxes := make([]int, 0, len(keys))
 	for i := 0; i < len(keys); i++ {
-		if values[i] != nil {
-			keys[i] = ""
-		} else {
-			missing = true
+		if values[i] == nil {
+			queryKeys = append(queryKeys, keys[i])
+			queryIdxes = append(queryIdxes, i)
 		}
 	}
 
-	if !missing { // No missing values
+	if len(queryKeys) == 0 || this.cachePolicy == nil || this.cachePolicy.IsFullCache() { // No missing values
 		return values
 	}
 
-	values, _ = this.batchReadPersistentStorage(keys)
-	this.cachePolicy.BatchCheckCapacity(keys, values)
-	this.localCache.BatchSet(keys, values) // Save to the local cache, need to check the cache status first
+	/* Filter based on the persistent storage type */
+	if this.dbfilter != nil {
+		this.dblock.RLock()
+		ok := this.dbfilter(this.db)
+		this.dblock.RUnlock()
+		if ok {
+			return values
+		}
+
+	}
+
+	/* Search in the persistent storage for the missing ones */
+	if queryvalues, err := this.batchFetchPersistentStorage(queryKeys); err == nil {
+		for i, idx := range queryIdxes {
+			values[idx] = queryvalues[i]
+		}
+		this.addToCache(queryKeys, queryvalues) //adding to the local cache
+	}
 	return values
+}
+
+func (this *DataStore) CacheRetrive(key string, valueTransformer func(interface{}) interface{}) (interface{}, error) {
+	this.cacheGuard.RLock()
+	if v, ok := this.globalCache[key]; ok {
+		this.cacheGuard.RUnlock()
+		return v, nil
+	}
+
+	if v, err := this.Retrive(key); err != nil {
+		this.cacheGuard.RUnlock()
+		return nil, err
+	} else {
+		this.cacheGuard.RUnlock()
+		this.cacheGuard.Lock()
+		tv := valueTransformer(v)
+		this.globalCache[key] = tv
+		this.cacheGuard.Unlock()
+		return tv, nil
+	}
 }
 
 func (this *DataStore) Clear() {
 	this.partitionIDs = this.partitionIDs[:0]
 	this.keyBuffer = this.keyBuffer[:0]
 	this.valueBuffer = this.valueBuffer[:0]
+	this.globalCache = make(map[string]interface{})
 }
 
 // Get the shard ids, values, and preupdate the compression dict
@@ -198,7 +320,7 @@ func (this *DataStore) Precommit(keys []string, values interface{}) {
 	this.valueBuffer = values.([]interface{})
 	for i := 0; i < len(this.valueBuffer); i++ {
 		if this.valueBuffer[i] != nil {
-			this.valueBuffer[i] = this.valueBuffer[i].(AccessableInterface).Value() // Strip access info
+			this.valueBuffer[i] = this.valueBuffer[i].(AccessibleInterface).Value() // Strip access info
 		} else {
 			this.valueBuffer[i] = nil
 		}
@@ -215,33 +337,39 @@ func (this *DataStore) Precommit(keys []string, values interface{}) {
 
 func (this *DataStore) Commit() error {
 	defer this.commitLock.Unlock()
+
+	this.localCache.DirectBatchSet(this.partitionIDs, this.keyBuffer, this.valueBuffer)
+
 	var err error
 	if this.compressionLut != nil {
 		common.ParallelExecute(
-			func() { this.localCache.DirectBatchSet(this.partitionIDs, this.keyBuffer, this.valueBuffer) },
+			//func() { this.localCache.DirectBatchSet(this.partitionIDs, this.keyBuffer, this.valueBuffer) },
 			func() { err = this.batchWritePersistentStorage(this.keyBuffer, this.valueBuffer) }, // Write data back
 			func() { this.compressionLut.Commit() })
-	} else {
-		common.ParallelExecute(
-			func() { this.localCache.DirectBatchSet(this.partitionIDs, this.keyBuffer, this.valueBuffer) },
-			func() { err = this.batchWritePersistentStorage(this.keyBuffer, this.valueBuffer) })
-	}
 
+	} else {
+		// common.ParallelExecute(
+		// 	func() { this.localCache.DirectBatchSet(this.partitionIDs, this.keyBuffer, this.valueBuffer) },
+		// 	func() { err = this.batchWritePersistentStorage(this.keyBuffer, this.valueBuffer) },
+		// )
+		err = this.batchWritePersistentStorage(this.keyBuffer, this.valueBuffer)
+	}
 	this.Clear()
 	return err
 }
 
-func (this *DataStore) UpdateCacheStats(keys []string, nVals []interface{}) {
-	if this.cachePolicy != nil {
-		this.CachePolicy().AddToBuffer(keys, nVals)
-	}
+func (this *DataStore) UpdateCacheStats(nVals []interface{}) {
+	// if this.cachePolicy != nil {
+	// 	objs := make([]AccessibleInterface, len(nVals))
+	// 	for i := range nVals {
+	// 		objs[i] = nVals[i].(AccessibleInterface)
+	// 	}
+	// 	this.CachePolicy().AddToStats(keys, objs)
+	// }
 }
 
-func (this *DataStore) RefreshCache() {
-	if this.cachePolicy != nil {
-		this.CachePolicy().Refresh(this.LocalCache())
-		this.CachePolicy().FreeMemory(this.LocalCache())
-	}
+func (this *DataStore) RefreshCache() (uint64, uint64) {
+	return this.CachePolicy().Refresh(this.LocalCache())
 }
 
 func (this *DataStore) Print() {

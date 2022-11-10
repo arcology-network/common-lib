@@ -4,10 +4,10 @@ import (
 	"crypto/sha256"
 	"math/big"
 
-	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
-	"github.com/HPISTechnologies/common-lib/codec"
-	"github.com/HPISTechnologies/common-lib/common"
-	"github.com/HPISTechnologies/common-lib/encoding"
+	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	"github.com/arcology-network/common-lib/codec"
+	"github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/encoding"
 )
 
 type ExecutingSequence struct {
@@ -97,18 +97,24 @@ func (this *ExecutingSequences) Decode(data []byte) ([]*ExecutingSequence, error
 
 type ExecutorRequest struct {
 	Sequences     []*ExecutingSequence
-	Precedings    []*ethCommon.Hash
-	PrecedingHash ethCommon.Hash
+	Precedings    [][]*ethCommon.Hash
+	PrecedingHash []ethCommon.Hash
 	Timestamp     *big.Int
 	Parallelism   uint64
+	Debug         bool
 }
 
 func (this *ExecutorRequest) GobEncode() ([]byte, error) {
-	precedings := Ptr2Arr(this.Precedings)
 	executingSequences := ExecutingSequences(this.Sequences)
 	executingSequencesData, err := executingSequences.Encode()
 	if err != nil {
 		return []byte{}, err
+	}
+
+	precedingsBytes := make([][]byte, len(this.Precedings))
+	for i := range this.Precedings {
+		precedings := Ptr2Arr(this.Precedings[i])
+		precedingsBytes[i] = ethCommon.Hashes(precedings).Encode()
 	}
 
 	timeStampData := []byte{}
@@ -118,10 +124,11 @@ func (this *ExecutorRequest) GobEncode() ([]byte, error) {
 
 	data := [][]byte{
 		executingSequencesData,
-		ethCommon.Hashes(precedings).Encode(),
-		this.PrecedingHash.Bytes(),
+		encoding.Byteset(precedingsBytes).Encode(),
+		ethCommon.Hashes(this.PrecedingHash).Encode(),
 		timeStampData,
 		common.Uint64ToBytes(this.Parallelism),
+		codec.Bool(this.Debug).Encode(),
 	}
 	return encoding.Byteset(data).Encode(), nil
 }
@@ -133,16 +140,20 @@ func (this *ExecutorRequest) GobDecode(data []byte) error {
 		return err
 	}
 	this.Sequences = msgResults
-	arrs := []ethCommon.Hash{}
-	arrs = ethCommon.Hashes(arrs).Decode(fields[1])
-	this.Precedings = Arr2Ptr(arrs)
-	this.PrecedingHash = ethCommon.BytesToHash(fields[2])
-	if len(fields[3]) > 0 {
-		this.Timestamp = new(big.Int).SetBytes(fields[3])
-	}
-	if len(fields[4]) > 0 {
-		this.Parallelism = common.BytesToUint64(fields[4])
+
+	precedingsBytes := encoding.Byteset{}.Decode(fields[1])
+	this.Precedings = make([][]*ethCommon.Hash, len(precedingsBytes))
+	for i := range precedingsBytes {
+		this.Precedings[i] = Arr2Ptr(ethCommon.Hashes([]ethCommon.Hash{}).Decode(precedingsBytes[i]))
 	}
 
+	this.PrecedingHash = ethCommon.Hashes([]ethCommon.Hash{}).Decode(fields[2])
+	//if len(fields[3]) > 0 {
+	this.Timestamp = new(big.Int).SetBytes(fields[3])
+	//}
+	//if len(fields[4]) > 0 {
+	this.Parallelism = common.BytesToUint64(fields[4])
+	//}
+	this.Debug = bool(codec.Bool(this.Debug).Decode(fields[5]).(codec.Bool))
 	return nil
 }

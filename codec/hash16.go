@@ -3,8 +3,6 @@ package codec
 import (
 	"bytes"
 	"math"
-
-	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
 )
 
 const (
@@ -42,6 +40,12 @@ func (hash Hash16) Size() uint32 {
 	return uint32(HASH16_LEN)
 }
 
+func (this Hash16) Clone() Hash16 {
+	target := Hash16{}
+	copy(target[:], this[:])
+	return target
+}
+
 func (hash Hash16) FromBytes(bytes []byte) Hash16 {
 	hash = Hash16{}
 	copy(hash[:], bytes)
@@ -57,40 +61,55 @@ func (this Hash16) Decode(data []byte) interface{} {
 	return Hash16(this)
 }
 
-type Hash16s []ethCommon.Hash
+type Hash16s [][16]byte
 
-func (hashes Hash16s) Encode() []byte {
-	return Hash16s(hashes).Flatten()
-}
-
-func (hashes Hash16s) Decode(data []byte) interface{} {
-	hashes = make([]ethCommon.Hash, len(data)/HASH16_LEN)
-	for i := 0; i < len(hashes); i++ {
-		copy(hashes[i][:], data[i*HASH16_LEN:(i+1)*HASH16_LEN])
+func (this Hash16s) Clone() Hash16s {
+	target := make([][HASH16_LEN]byte, len(this))
+	for i := 0; i < len(this); i++ {
+		copy(target[i][:], this[i][:])
 	}
-	return hashes
+	return Hash16s(target)
 }
 
-func (hashes Hash16s) Size() uint32 {
-	return uint32(len(hashes) * HASH16_LEN)
+func (this Hash16s) Encode() []byte {
+	return Hash16s(this).Flatten()
 }
 
-func (hashes Hash16s) Flatten() []byte {
-	buffer := make([]byte, len(hashes)*HASH16_LEN)
-	for i := 0; i < len(hashes); i++ {
-		copy(buffer[i*HASH16_LEN:(i+1)*HASH16_LEN], hashes[i][:])
+func (this Hash16s) EncodeToBuffer(buffer []byte) int {
+	for i := 0; i < len(this); i++ {
+		copy(buffer[i*HASH16_LEN:], this[i][:])
+	}
+	return len(this) * HASH16_LEN
+}
+
+func (this Hash16s) Decode(data []byte) interface{} {
+	this = make([][16]byte, len(data)/HASH16_LEN)
+	for i := 0; i < len(this); i++ {
+		copy(this[i][:], data[i*HASH16_LEN:(i+1)*HASH16_LEN])
+	}
+	return this
+}
+
+func (this Hash16s) Size() uint32 {
+	return uint32(len(this) * HASH16_LEN)
+}
+
+func (this Hash16s) Flatten() []byte {
+	buffer := make([]byte, len(this)*HASH16_LEN)
+	for i := 0; i < len(this); i++ {
+		copy(buffer[i*HASH16_LEN:(i+1)*HASH16_LEN], this[i][:])
 	}
 	return buffer
 }
 
-func (hashes Hash16s) Len() int {
-	return len(hashes)
+func (this Hash16s) Len() int {
+	return len(this)
 }
 
-func (hashes Hash16s) Less(i, j int) bool {
-	return bytes.Compare(hashes[i][:], hashes[j][:]) < 0
+func (this Hash16s) Less(i, j int) bool {
+	return bytes.Compare(this[i][:], this[j][:]) < 0
 }
 
-func (hashes Hash16s) Swap(i, j int) {
-	hashes[i], hashes[j] = hashes[j], hashes[i]
+func (this Hash16s) Swap(i, j int) {
+	this[i], this[j] = this[j], this[i]
 }

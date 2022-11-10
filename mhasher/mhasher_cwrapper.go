@@ -1,3 +1,4 @@
+//go:build !nometri
 // +build !nometri
 
 package mhasher
@@ -18,9 +19,9 @@ import (
 	"errors"
 	"unsafe"
 
-	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
-	"github.com/HPISTechnologies/common-lib/codec"
-	"github.com/HPISTechnologies/common-lib/encoding"
+	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	"github.com/arcology-network/common-lib/codec"
+	"github.com/arcology-network/common-lib/encoding"
 )
 
 const (
@@ -94,7 +95,7 @@ func SortByHash(hashes []ethCommon.Hash) ([]uint64, error) {
 	return rIndex, err
 }
 
-//is used in monaco/core/types/tx.go
+// is used in monaco/core/types/tx.go
 func Roothash(ls [][]byte, HashType int) ([]byte, error) {
 	ahash := make([]byte, HashType)
 	if len(ls) == 0 {

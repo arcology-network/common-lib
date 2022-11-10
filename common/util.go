@@ -13,12 +13,13 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"unsafe"
 
-	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
-	"github.com/HPISTechnologies/common-lib/encoding"
+	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	"github.com/arcology-network/common-lib/encoding"
 	"github.com/google/uuid"
 )
 
@@ -293,6 +294,84 @@ func RemoveNils(values *[]interface{}) {
 	}
 }
 
+func RemoveNilBytes(values *[][]byte) {
+	pos := int64(-1)
+	for i := 0; i < len((*values)); i++ {
+		if pos < 0 && ((*values)[i]) == nil {
+			pos = int64(i)
+			continue
+		}
+
+		if pos < 0 && ((*values)[i]) != nil {
+			continue
+		}
+
+		if pos >= 0 && ((*values)[i]) == nil {
+			(*values)[pos] = (*values)[i]
+			continue
+		}
+
+		(*values)[pos] = (*values)[i]
+		pos++
+	}
+
+	if pos >= 0 {
+		(*values) = (*values)[:pos]
+	}
+}
+
+func RemoveEmptyBytes(values *[][]byte) {
+	pos := int64(-1)
+	for i := 0; i < len((*values)); i++ {
+		if pos < 0 && len((*values)[i]) == 0 {
+			pos = int64(i)
+			continue
+		}
+
+		if pos < 0 && len((*values)[i]) > 0 {
+			continue
+		}
+
+		if pos >= 0 && len((*values)[i]) == 0 {
+			(*values)[pos] = (*values)[i]
+			continue
+		}
+
+		(*values)[pos] = (*values)[i]
+		pos++
+	}
+
+	if pos >= 0 {
+		(*values) = (*values)[:pos]
+	}
+}
+
+func RemoveEmptyStrings(values *[]string) {
+	pos := int64(-1)
+	for i := 0; i < len((*values)); i++ {
+		if pos < 0 && len((*values)[i]) == 0 {
+			pos = int64(i)
+			continue
+		}
+
+		if pos < 0 && len((*values)[i]) > 0 {
+			continue
+		}
+
+		if pos >= 0 && len((*values)[i]) == 0 {
+			(*values)[pos] = (*values)[i]
+			continue
+		}
+
+		(*values)[pos] = (*values)[i]
+		pos++
+	}
+
+	if pos >= 0 {
+		(*values) = (*values)[:pos]
+	}
+}
+
 func RemoveDuplicateStrings(strs *[]string) []string {
 	dict := make(map[string]bool)
 	for i := 0; i < len(*strs); i++ {
@@ -314,11 +393,113 @@ func Remove(values *[]interface{}, condition func(interface{}) bool) {
 			continue
 		}
 
-		if pos < 0 && condition((*values)[i]) {
+		if pos < 0 && !condition((*values)[i]) {
 			continue
 		}
 
+		(*values)[pos] = (*values)[i]
 		if pos >= 0 && condition((*values)[i]) {
+			continue
+		}
+		pos++
+	}
+
+	if pos >= 0 {
+		(*values) = (*values)[:pos]
+	}
+}
+
+func RemoveUint64(values *[]uint64, target uint64) {
+	pos := int64(-1)
+	for i := 0; i < len((*values)); i++ {
+		if pos < 0 && ((*values)[i]) == target {
+			pos = int64(i)
+			continue
+		}
+
+		if pos < 0 && ((*values)[i]) != target {
+			continue
+		}
+
+		if pos >= 0 && ((*values)[i]) == target {
+			(*values)[pos] = (*values)[i]
+			continue
+		}
+
+		(*values)[pos] = (*values)[i]
+		pos++
+	}
+
+	if pos >= 0 {
+		(*values) = (*values)[:pos]
+	}
+}
+
+func RemoveUint32(values *[]uint32, target uint32) {
+	pos := int64(-1)
+	for i := 0; i < len((*values)); i++ {
+		if pos < 0 && ((*values)[i]) == target {
+			pos = int64(i)
+			continue
+		}
+
+		if pos < 0 && ((*values)[i]) != target {
+			continue
+		}
+
+		if pos >= 0 && ((*values)[i]) == target {
+			(*values)[pos] = (*values)[i]
+			continue
+		}
+
+		(*values)[pos] = (*values)[i]
+		pos++
+	}
+
+	if pos >= 0 {
+		(*values) = (*values)[:pos]
+	}
+}
+
+func RemoveUint8(values *[]uint8, target uint8) {
+	pos := int64(-1)
+	for i := 0; i < len((*values)); i++ {
+		if pos < 0 && ((*values)[i]) == target {
+			pos = int64(i)
+			continue
+		}
+
+		if pos < 0 && ((*values)[i]) != target {
+			continue
+		}
+
+		if pos >= 0 && ((*values)[i]) == target {
+			(*values)[pos] = (*values)[i]
+			continue
+		}
+
+		(*values)[pos] = (*values)[i]
+		pos++
+	}
+
+	if pos >= 0 {
+		(*values) = (*values)[:pos]
+	}
+}
+
+func RemoveInt(values *[]int, target int) {
+	pos := int64(-1)
+	for i := 0; i < len((*values)); i++ {
+		if pos < 0 && ((*values)[i]) == target {
+			pos = int64(i)
+			continue
+		}
+
+		if pos < 0 && ((*values)[i]) != target {
+			continue
+		}
+
+		if pos >= 0 && ((*values)[i]) == target {
 			(*values)[pos] = (*values)[i]
 			continue
 		}
@@ -338,4 +519,104 @@ func ReverseString(s string) string {
 		reversed[i], reversed[j] = reversed[j], reversed[i]
 	}
 	return *(*string)(unsafe.Pointer(&reversed))
+}
+
+func SortStrings(strs []string) {
+	sort.SliceStable(strs, func(i, j int) bool {
+		return strs[i] < strs[j]
+	})
+}
+
+func MaxUint64(v0 uint64, v1 uint64) uint64 {
+	if v0 < v1 {
+		return v1
+	}
+	return v0
+}
+
+func MaxUint32(v0 uint32, v1 uint32) uint32 {
+	if v0 < v1 {
+		return v1
+	}
+	return v0
+}
+
+func MaxInt(v0 int, v1 int) int {
+	if v0 < v1 {
+		return v1
+	}
+	return v0
+}
+
+func MinUint64(v0 uint64, v1 uint64) uint64 {
+	if v0 < v1 {
+		return v0
+	}
+	return v1
+}
+
+func MinUint32(v0 uint32, v1 uint32) uint32 {
+	if v0 < v1 {
+		return v0
+	}
+	return v1
+}
+
+func MinInt(v0 int, v1 int) int {
+	if v0 < v1 {
+		return v0
+	}
+	return v1
+}
+
+func Remainder(numShards int, key string) int {
+	if len(key) == 0 {
+		return math.MaxInt
+	}
+
+	var total int = 0
+	for j := 0; j < len(key); j++ {
+		total += int(key[j])
+	}
+	return total % numShards
+}
+
+func FillInt(nums []int, v int) {
+	for i := 0; i < len(nums); i++ {
+		nums[i] = v
+	}
+}
+
+func UniqueInts(nums []int) int {
+	if len(nums) == 0 {
+		return 0
+	}
+
+	sort.Ints(nums)
+	current := 0
+	for i := 0; i < len(nums); i++ {
+		if nums[current] != (nums)[i] {
+			nums[current+1] = (nums)[i]
+			current++
+		}
+	}
+	return current + 1
+}
+
+func RemoveIf(values *[]interface{}, target interface{}, equal func(interface{}, interface{}) bool) {
+	pos := 0
+	for i := 0; i < len(*values); i++ {
+		if equal((*values)[i], target) {
+			pos = i
+			break
+		}
+	}
+
+	for i := pos; i < len(*values); i++ {
+		if !equal((*values)[i], target) {
+			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
+			pos++
+		}
+	}
+	(*values) = (*values)[:pos]
 }

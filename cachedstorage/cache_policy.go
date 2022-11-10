@@ -4,47 +4,71 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"reflect"
+	"sync"
 
-	cccontainer "github.com/HPISTechnologies/common-lib/concurrentcontainer"
+	cccontainer "github.com/arcology-network/common-lib/concurrentcontainer/map"
+)
+
+const (
+	Cache_Quota_Full = math.MaxUint64
 )
 
 type CachePolicy struct {
 	totalAllocated    uint64
 	quota             uint64
 	threshold         float64
-	mincounts         uint32
 	scoreboard        *cccontainer.ConcurrentMap
 	scoreDistribution *Distribution
 
-	keyBuffer   []string
-	sizeBuffer  []uint32
-	scoreBuffer []interface{} // access counts
+	keys   []string
+	sizes  []uint32
+	scores []interface{} // access counts
+	lock   sync.RWMutex
 }
 
-func NewCachePolicy(hardQuota uint64, initThreshold float64) *CachePolicy {
-	if initThreshold > 0.9 {
-		initThreshold = 0.9
-	}
-
-	if initThreshold < 0.7 {
-		initThreshold = 0.7
-	}
-
-	return &CachePolicy{
+// Memory hard Quota
+func NewCachePolicy(hardQuota uint64, threshold float64) *CachePolicy {
+	policy := &CachePolicy{
 		totalAllocated:    0,
 		quota:             hardQuota,
-		threshold:         initThreshold,
-		mincounts:         math.MaxUint32,
+		threshold:         threshold,
 		scoreboard:        cccontainer.NewConcurrentMap(),
 		scoreDistribution: NewDistribution(),
 
-		keyBuffer:   make([]string, 0, 65536),
-		sizeBuffer:  make([]uint32, 0, 65536),
-		scoreBuffer: make([]interface{}, 0, 65536),
+		keys:   make([]string, 0, 65536),
+		sizes:  make([]uint32, 0, 65536),
+		scores: make([]interface{}, 0, 65536),
+	}
+	policy.adjustThreshold(hardQuota, threshold)
+	return policy
+}
+
+func (this *CachePolicy) Customize(db PersistentStorageInterface) {
+	if this == nil {
+		return
+	}
+
+	name := reflect.TypeOf(db).String()
+	if name == "*cachedstorage.MemDB" { // A memory DB doesn't need a in-memory cache
+		this.quota = 0
 	}
 }
 
-func (this *CachePolicy) AdjustThreshold(hardQuota uint64, newthreshold float64) {
+func (this *CachePolicy) IsFullCache() bool {
+	return this.quota == Cache_Quota_Full
+}
+
+func (this *CachePolicy) adjustThreshold(hardQuota uint64, threshold float64) {
+	if this.isFixed() {
+		return
+	}
+
+	this.threshold = this.guardRange(threshold)
+	this.quota = hardQuota
+}
+
+func (this *CachePolicy) guardRange(newthreshold float64) float64 {
 	if newthreshold > 0.9 {
 		newthreshold = 0.9
 	}
@@ -52,27 +76,52 @@ func (this *CachePolicy) AdjustThreshold(hardQuota uint64, newthreshold float64)
 	if newthreshold < 0.7 {
 		newthreshold = 0.7
 	}
+	return newthreshold
+}
 
-	this.threshold = newthreshold
-	this.quota = hardQuota
+func (this *CachePolicy) isFixed() bool {
+	return this.quota == 0 || this.quota == math.MaxUint64
 }
 
 func (this *CachePolicy) Size() uint32 {
+	this.lock.RLock()
+	defer this.lock.RUnlock()
 	return this.scoreboard.Size()
 }
 
-func (this *CachePolicy) AddToBuffer(keys []string, vals []interface{}) {
-	prevSize := len(this.keyBuffer)
-	this.keyBuffer = append(this.keyBuffer, keys...)
-	this.sizeBuffer = append(this.sizeBuffer, make([]uint32, len(vals))...)
-	this.scoreBuffer = append(this.scoreBuffer, make([]interface{}, len(vals))...)
-	for i := prevSize; i < len(this.keyBuffer); i++ {
-		this.sizeBuffer[i] = vals[i-prevSize].(MeasurableInterface).Size()
-		this.scoreBuffer[i] = vals[i-prevSize].(AccessableInterface).Reads() + vals[i-prevSize].(AccessableInterface).Writes()
+func (this *CachePolicy) AddToStats(keys []string, vals []AccessibleInterface) {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	if this.isFixed() {
+		return
 	}
+
+	prevSize := len(this.keys)
+	this.keys = append(this.keys, keys...)
+	this.sizes = append(this.sizes, make([]uint32, len(vals))...)
+	this.scores = append(this.scores, make([]interface{}, len(vals))...)
+
+	if len(this.keys) != len(this.sizes) || len(this.keys) != len(this.scores) {
+		fmt.Println("this.keys: ", len(this.keys))
+		fmt.Println("this.sizes: ", len(this.sizes))
+		fmt.Println("this.scores: ", len(this.scores))
+		panic("Error: Sizes don't match !")
+	}
+
+	for i := 0; i < len(keys); i++ {
+		this.sizes[i+prevSize] = vals[i].Size()
+		this.scores[i+prevSize] = vals[i].Reads() + vals[i].Writes()
+	}
+
+	//there are some dupilicate keys
 }
 
-func (this *CachePolicy) FreeEntries(threshold uint32, probability float64, localCache *cccontainer.ConcurrentMap) (uint64, uint64) {
+func (this *CachePolicy) freeEntries(threshold uint32, probability float64, localCache *cccontainer.ConcurrentMap) (uint64, uint64) {
+	if this.isFixed() {
+		return 0, 0
+	}
+
 	scoreShards := this.scoreboard.Shards()
 	cacheShards := localCache.Shards()
 	freedMem := make([]uint64, len(*scoreShards))
@@ -87,7 +136,7 @@ func (this *CachePolicy) FreeEntries(threshold uint32, probability float64, loca
 
 			if (math.Abs(probability-1) < 0.05) || (rand.Float64() < probability) {
 				v := (*cacheShards)[i][k]
-				freedMem[i] += uint64(v.(MeasurableInterface).Size())
+				freedMem[i] += uint64(v.(AccessibleInterface).Size())
 				delete((*scoreShards)[i], k)
 				delete((*cacheShards)[i], k)
 				freedEntries[i]++
@@ -104,34 +153,47 @@ func (this *CachePolicy) FreeEntries(threshold uint32, probability float64, loca
 	return entries, memory
 }
 
-func (this *CachePolicy) Refresh(cache *cccontainer.ConcurrentMap) {
-	currentScores := this.scoreboard.BatchGet(this.keyBuffer)
-	for i := 0; i < len(this.sizeBuffer); i++ {
+func (this *CachePolicy) Refresh(cache *cccontainer.ConcurrentMap) (uint64, uint64) {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	if this.isFixed() {
+		return 0, 0
+	}
+
+	currentScores := this.scoreboard.BatchGet(this.keys)
+	for i := 0; i < len(this.sizes); i++ {
 		if currentScores[i] == nil {
 			currentScores[i] = uint32(0)
 		}
 
-		this.sizeBuffer[i] = currentScores[i].(uint32) + this.sizeBuffer[i]
+		this.sizes[i] = currentScores[i].(uint32) + this.sizes[i]
 	}
 
-	for i := 0; i < len(this.sizeBuffer); i++ {
-		this.totalAllocated += uint64(this.sizeBuffer[i])
+	for i := 0; i < len(this.sizes); i++ {
+		this.totalAllocated += uint64(this.sizes[i])
 	}
 
-	this.scoreboard.BatchSet(this.keyBuffer, this.scoreBuffer)                                                           // Update scores
-	this.scoreDistribution.UpdateDistribution(this.keyBuffer, this.sizeBuffer, this.scoreBuffer, cache, this.scoreboard) // Update the entry distribution info
+	this.scoreboard.BatchSet(this.keys, this.scores)                                                      // Update scores
+	this.scoreDistribution.updateDistribution(this.keys, this.sizes, this.scores, cache, this.scoreboard) // Update the entry distribution info
 
-	this.keyBuffer = this.keyBuffer[:0]
-	this.sizeBuffer = this.sizeBuffer[:0]
-	this.scoreBuffer = this.scoreBuffer[:0]
+	this.keys = this.keys[:0]
+	this.sizes = this.sizes[:0]
+	this.scores = this.scores[:0]
+
+	return this.freeMemory(cache)
 }
 
-func (this *CachePolicy) FreeMemory(localChache *cccontainer.ConcurrentMap) (uint64, uint64) {
+func (this *CachePolicy) freeMemory(localChache *cccontainer.ConcurrentMap) (uint64, uint64) {
+	if this.isFixed() {
+		return 0, 0
+	}
+
 	if this.totalAllocated > uint64(math.Round(float64(this.quota)*this.threshold)) {
 		target := this.totalAllocated - uint64(math.Round(float64(this.quota)*this.threshold))
 		threshold, prob := this.scoreDistribution.EstimateThreshold(target)
 
-		entires, mem := this.FreeEntries(threshold, prob, localChache)
+		entires, mem := this.freeEntries(threshold, prob, localChache)
 		this.totalAllocated -= mem
 		return entires, mem
 	}
@@ -139,21 +201,45 @@ func (this *CachePolicy) FreeMemory(localChache *cccontainer.ConcurrentMap) (uin
 }
 
 func (this *CachePolicy) CheckCapacity(key string, v interface{}) bool {
-	return uint64(v.(MeasurableInterface).Size())+this.totalAllocated < this.quota
+	if this.quota == math.MaxUint64 { // All in cache
+		return true
+	}
+
+	if this.quota == 0 { // Non in cache
+		return false
+	}
+
+	m := uint64(v.(TypeAccessibleInterface).Size())
+	return m+this.totalAllocated < this.quota
 }
 
-func (this *CachePolicy) BatchCheckCapacity(keys []string, values []interface{}) bool {
+func (this *CachePolicy) BatchCheckCapacity(keys []string, values []interface{}) ([]bool, uint32) {
+	flags := make([]bool, len(keys))
+	count := uint32(0)
+
+	if this.quota == 0 {
+		return flags, 0 // Non in cache
+	}
+
+	if this.quota == math.MaxUint64 {
+		for i := 0; i < len(flags); i++ {
+			flags[i] = true
+		}
+		return flags, uint32(len(keys)) // All in the cache
+	}
+
 	total := uint64(0)
 	for i, v := range values {
-		if len(keys[i]) != 0 { // Not in cache yet
-			if total += uint64(v.(MeasurableInterface).Size()); total+this.totalAllocated >= this.quota {
-				keys = keys[:i]
-				values = values[:i]
-				return false // No enough space for all
+		if len(keys[i]) != 0 && v != nil { // Not in the cache yet
+			total += uint64(v.(TypeAccessibleInterface).Size())
+			if flags[i] = total+this.totalAllocated < this.quota; flags[i] { // If no enough space for all
+				count++
+			} else {
+				break
 			}
 		}
 	}
-	return true // Good for all
+	return flags, count // Good for all entries to stay in the memory
 }
 
 func (this *CachePolicy) PrintScores() {

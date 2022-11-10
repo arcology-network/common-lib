@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"math"
 
-	"github.com/HPISTechnologies/common-lib/common"
-	"github.com/HPISTechnologies/common-lib/mempool"
+	"github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/mempool"
 )
 
 const (

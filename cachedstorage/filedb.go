@@ -5,36 +5,67 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
-	"github.com/HPISTechnologies/common-lib/codec"
-	"github.com/HPISTechnologies/common-lib/common"
+	"github.com/arcology-network/common-lib/codec"
+	"github.com/arcology-network/common-lib/common"
+)
+
+const (
+	MAX_DEPTH    = 4
+	MAX_SHARD    = 256
+	VERSION_FILE = "version.txt"
+	EXTENSIION   = ".dat"
 )
 
 type FileDB struct {
 	rootpath string
 	dirs     []string
-	shards   uint8
+	files    []string
+	shards   uint32
 	depth    uint8
-	ext      string
 }
 
-func NewFileDB(filePath string, shards uint8, depth uint8) (*FileDB, error) {
-	var err error
-	if filePath, err = filepath.Abs(filePath); err != nil {
+func LoadFileDB(rootpath string, shards uint32, depth uint8) (*FileDB, error) {
+	fileDB := &FileDB{
+		rootpath: path.Join(rootpath, "/") + "/",
+		shards:   shards,
+		depth:    depth,
+	}
+
+	if files, err := fileDB.ListFiles(); err == nil {
+		fileDB.files = files
+		fileDB.dirs = fileDB.Directories(fileDB.rootpath, depth)
+	} else {
 		return nil, err
 	}
-	filePath = filePath + "/"
+	return fileDB, nil
+}
+
+func NewFileDB(rootPath string, shards uint32, depth uint8) (*FileDB, error) {
+	var err error
+	if rootPath, err = filepath.Abs(rootPath); err != nil {
+		return nil, err
+	}
+
+	if depth >= MAX_DEPTH {
+		return nil, errors.New("Error: Excessed max depth ")
+	}
+
+	if shards >= MAX_SHARD {
+		return nil, errors.New("Error: Excessed max depth ")
+	}
 
 	fileDB := &FileDB{
-		rootpath: filePath,
+		rootpath: path.Join(rootPath, "/") + "/",
 		shards:   shards,
 		depth:    2,
-		ext:      ".dat",
 	}
 
 	if fileDB.depth > 2 {
@@ -51,17 +82,50 @@ func NewFileDB(filePath string, shards uint8, depth uint8) (*FileDB, error) {
 
 	dirs, err := fileDB.makeDirectories(fileDB.rootpath, 0)
 	fileDB.dirs = dirs
+	fileDB.files = make([]string, 0, 1024)
 	return fileDB, err
+}
+
+func (this *FileDB) Type() uint8 {
+	return PERSISTENT_DB
 }
 
 func (this *FileDB) Root() string {
 	return this.rootpath
 }
 
+func (this *FileDB) SetVer(newVer uint64) (uint64, error) {
+	version, err := this.GetVer()
+	if err == nil {
+		if version <= newVer {
+			return version, errors.New("Error: The new version has to be greater than the current !")
+		}
+
+		if version+1 != newVer {
+			return version, errors.New("Error: The version numbers have to be consecutive !")
+		}
+
+		err = os.WriteFile(path.Join(this.rootpath, VERSION_FILE), codec.Uint64(newVer).Encode(), os.ModePerm)
+		if err == nil {
+			return this.GetVer()
+		}
+	}
+	return math.MaxUint64, err
+}
+
+func (this *FileDB) GetVer() (uint64, error) {
+	if verBytes, err := os.ReadFile(path.Join(this.rootpath, VERSION_FILE)); err == nil {
+		version := codec.Uint64(0).Decode(verBytes).(uint64)
+		return version, nil
+	} else {
+		return math.MaxUint64, err
+	}
+}
+
 func (this *FileDB) Directories(folder string, depth uint8) []string {
 	dirs := []string{}
 	if depth < this.depth {
-		for i := uint8(0); i < this.shards; i++ {
+		for i := uint32(0); i < this.shards; i++ {
 			newDir := path.Join(folder, fmt.Sprint(i)) + "/"
 			if depth+1 == this.depth {
 				dirs = append(dirs, newDir)
@@ -83,13 +147,17 @@ func (this *FileDB) makeDirectories(folder string, depth uint8) ([]string, error
 	return dirs, nil
 }
 
-func (this *FileDB) GetFileName(key string) string {
+func (this *FileDB) locateFile(key string) string {
+	path := this.findPath(key)
+	path += fmt.Sprint(byte(key[this.depth]%byte(this.shards))) + EXTENSIION
+	return path
+}
+
+func (this *FileDB) findPath(key string) string {
 	path := this.rootpath
 	for i := uint8(0); i < this.depth; i++ {
 		path += fmt.Sprint(byte(key[0]%byte(this.shards))) + "/"
 	}
-
-	path += fmt.Sprint(byte(key[this.depth]%byte(this.shards))) + this.ext
 	return path
 }
 
@@ -110,7 +178,7 @@ func (this *FileDB) deserialize(buffer []byte) ([]string, [][]byte) {
 }
 
 func (this *FileDB) readFile(key string) ([]byte, error) {
-	file := this.GetFileName(key)
+	file := this.locateFile(key)
 	keys, values, err := this.loadFile(file)
 	if err != nil {
 		return nil, err
@@ -125,7 +193,7 @@ func (this *FileDB) readFile(key string) ([]byte, error) {
 }
 
 func (this *FileDB) writeFile(nkey string, nvalue []byte) error {
-	file := this.GetFileName(nkey)
+	file := this.locateFile(nkey)
 	keys, values, err := this.loadFile(file)
 	if err != nil && !os.IsNotExist(err) {
 		return err
@@ -150,15 +218,15 @@ func (this *FileDB) writeFile(nkey string, nvalue []byte) error {
 func (this *FileDB) updateContent(nKey string, keys []string, nVal []byte, values [][]byte) ([]string, [][]byte) {
 	for i := 0; i < len(keys); i++ {
 		if keys[i] == nKey {
-			if nVal == nil {
+			if nVal == nil { // Remove the value
 				return append(keys[:i], keys[i+1:]...), append(values[:i], values[i+1:]...)
 			} else {
-				values[i] = nVal
+				values[i] = nVal // Update the value
 				return keys, values
 			}
 		}
 	}
-	return append(keys, nKey), append(values, nVal)
+	return append(keys, nKey), append(values, nVal) // Append the new value
 }
 
 func (this *FileDB) Set(key string, v []byte) error {
@@ -171,14 +239,20 @@ func (this *FileDB) Get(key string) ([]byte, error) {
 
 func (this *FileDB) BatchGet(nkeys []string) ([][]byte, error) {
 	files := make([]string, len(nkeys))
-	for i := 0; i < len(nkeys); i++ {
-		files[i] = this.GetFileName(nkeys[i])
+	finder := func(start, end, index int, args ...interface{}) {
+		for i := start; i < end; i++ {
+			files[i] = this.locateFile(nkeys[i])
+		}
 	}
+	common.ParallelWorker(len(nkeys), 8, finder)
 
 	// Read files
 	errs := make([]interface{}, len(nkeys))
 	data := make([][]byte, len(nkeys))
+	t0 := time.Now()
 	uniqueFiles, indices := this.CategorizeFiles(files)
+	fmt.Println("niqueFiles, indices := this.CategorizeFiles(files):", time.Since(t0))
+
 	reader := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
 			keys, values, err := this.loadFile(uniqueFiles[i])
@@ -208,12 +282,17 @@ func (this *FileDB) BatchGet(nkeys []string) ([][]byte, error) {
 
 func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
 	files := make([]string, len(nkeys))
-	for i := 0; i < len(nkeys); i++ {
-		files[i] = this.GetFileName(nkeys[i])
+	finder := func(start, end, index int, args ...interface{}) {
+		for i := start; i < end; i++ {
+			files[i] = this.locateFile(nkeys[i])
+		}
 	}
+	common.ParallelWorker(len(nkeys), 8, finder)
 
 	errs := make([]interface{}, len(files))
 	uniqueFiles, indices := this.CategorizeFiles(files)
+
+	newFiles := make([]string, len(uniqueFiles))
 	maker := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
 			if _, err := os.Stat(uniqueFiles[i]); err != nil { // File doesn't exist, create it
@@ -221,11 +300,15 @@ func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
 					errs[i] = err
 					return
 				}
+				newFiles[i] = uniqueFiles[i]
 			}
 		}
 	}
 	common.ParallelWorker(len(uniqueFiles), 4, maker)
 	common.RemoveNils(&errs)
+	common.RemoveEmptyStrings(&newFiles)
+
+	this.files = append(this.files, newFiles...)
 	if len(errs) > 0 {
 		return errs[0].(error)
 	}
@@ -372,13 +455,17 @@ func (this *FileDB) readAll(paths []string) ([][]byte, error) {
 	return flattened, nil
 }
 
-func (this *FileDB) ListFiles() ([]string, error) {
+func (this *FileDB) Files() ([]string, error) {
+	return this.files, nil
+}
+
+func (this *FileDB) getFilesUnder(root string) ([]string, error) {
 	list := []string{}
-	err := filepath.Walk(this.rootpath, func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if info == nil || info.IsDir() {
 			return nil
 		}
-		if filepath.Ext(path) == this.ext {
+		if filepath.Ext(path) == EXTENSIION {
 			list = append(list, path)
 		}
 		return nil
@@ -390,11 +477,15 @@ func (this *FileDB) ListFiles() ([]string, error) {
 	return list, nil
 }
 
+func (this *FileDB) ListFiles() ([]string, error) {
+	return this.getFilesUnder(this.rootpath)
+}
+
 func (this *FileDB) Import(data [][]byte) error {
 	for i := 0; i < len(data); i++ {
 		combo := codec.Byteset{}.Decode(data[i]).(codec.Byteset)
 
-		file := codec.Bytes(combo[0]).ToString() // file name
+		file := codec.Bytes(combo[0]).ToString() // file ROOT_PATH
 		// file := this.rootpath + relativePath
 		reversed := common.ReverseString(file)
 		parts := strings.Split(reversed, "/")
@@ -402,8 +493,8 @@ func (this *FileDB) Import(data [][]byte) error {
 			return errors.New("Error: Wrong path !!!")
 		}
 		reversed = strings.Join(parts[:this.depth+1], "/")
-		name := this.rootpath + common.ReverseString(reversed)
-		if err := os.WriteFile(name, combo[1], os.ModePerm); err != nil {
+		ROOT_PATH := this.rootpath + common.ReverseString(reversed)
+		if err := os.WriteFile(ROOT_PATH, combo[1], os.ModePerm); err != nil {
 			return err
 		}
 	}

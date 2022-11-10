@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	INT_LEN = 8
+	INT64_LEN = 8
 )
 
 type Int64 int64
@@ -19,17 +19,18 @@ func (this *Int64) Set(v interface{}) {
 }
 
 func (this Int64) Size() uint32 {
-	return uint32(INT_LEN)
+	return uint32(INT64_LEN)
 }
 
 func (this Int64) Encode() []byte {
-	buffer := make([]byte, INT_LEN)
+	buffer := make([]byte, INT64_LEN)
 	this.EncodeToBuffer(buffer)
 	return buffer
 }
 
-func (this Int64) EncodeToBuffer(buffer []byte) {
+func (this Int64) EncodeToBuffer(buffer []byte) int {
 	binary.LittleEndian.PutUint64(buffer, uint64(this))
+	return INT64_LEN
 }
 
 func (this Int64) Decode(buffer []byte) interface{} {
@@ -39,15 +40,16 @@ func (this Int64) Decode(buffer []byte) interface{} {
 type Int64s []Int64
 
 func (this Int64s) Encode() []byte {
-	buffer := make([]byte, len(this)*INT_LEN)
+	buffer := make([]byte, len(this)*INT64_LEN)
 	this.EncodeToBuffer(buffer)
 	return buffer
 }
 
-func (this Int64s) EncodeToBuffer(buffer []byte) {
+func (this Int64s) EncodeToBuffer(buffer []byte) int {
 	for i := 0; i < len(this); i++ {
-		binary.LittleEndian.PutUint64(buffer[i*INT_LEN:], uint64(this[i]))
+		binary.LittleEndian.PutUint64(buffer[i*INT64_LEN:], uint64(this[i]))
 	}
+	return len(this) * INT64_LEN
 }
 
 func (this Int64s) Decode(buffer []byte) Int64s {

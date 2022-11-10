@@ -3,8 +3,8 @@ package datacompression
 import (
 	"strconv"
 
-	common "github.com/HPISTechnologies/common-lib/common"
-	performance "github.com/HPISTechnologies/common-lib/mhasher"
+	common "github.com/arcology-network/common-lib/common"
+	performance "github.com/arcology-network/common-lib/mhasher"
 )
 
 func (this *CompressionLut) GetNewAccounts(originals []string) []string {

@@ -7,14 +7,21 @@ import (
 	"time"
 )
 
-func TestEuresultEncoding(t *testing.T) {
+func TestEuresultEncodingWithDefer(t *testing.T) {
+	in := &DeferCall{
+		DeferID:         "7777999",
+		ContractAddress: "45678abc",
+		Signature:       "xxxx%123",
+	}
+
 	eu := &EuResult{
-		H:           "0x1234567",
-		ID:          99,
-		Transitions: [][]byte{[]byte("1"), []byte("2")},
-		DC:          nil,
-		Status:      0,
-		GasUsed:     0,
+		H:            "0x1234567",
+		ID:           99,
+		Transitions:  [][]byte{[]byte("1"), []byte("2")},
+		TransitTypes: []byte{8, 7},
+		DC:           in,
+		Status:       12,
+		GasUsed:      34,
 	}
 
 	if eu.DC == nil {
@@ -23,37 +30,47 @@ func TestEuresultEncoding(t *testing.T) {
 
 	buffer := eu.Encode()
 	out := (&EuResult{}).Decode(buffer)
-	if !reflect.DeepEqual(eu, out) {
+	if !reflect.DeepEqual(*eu, *out) {
 		t.Error("Error")
 	}
 }
 
-func TestEuResultEncoding(t *testing.T) {
+func TestDeferEncoding(t *testing.T) {
+	in := &DeferCall{
+		DeferID:         "7777999",
+		ContractAddress: "45678abc",
+		Signature:       "xxxx%123",
+	}
+
+	buffer := in.Encode()
+	out := (&DeferCall{}).Decode(buffer)
+
+	if !reflect.DeepEqual(in, out) {
+		t.Error("Error")
+	}
+}
+
+func TestEuResultEncodingWithDefer(t *testing.T) {
 	dc := &DeferCall{
 		DeferID:         "7777",
 		ContractAddress: "45678",
 		Signature:       "xxxx",
 	}
 
-	euresult := &EuResult{
-		H:           "1234",
-		ID:          uint32(99),
-		Transitions: [][]byte{[]byte(fmt.Sprint("xxxxxx")), []byte("+++++")},
-		DC:          dc,
-		Status:      0,
-		GasUsed:     99,
+	euresult := EuResult{
+		H:            "1234",
+		ID:           uint32(99),
+		Transitions:  [][]byte{[]byte(fmt.Sprint("xxxxxx")), []byte("+++++")},
+		TransitTypes: []byte{1, 2},
+		DC:           dc,
+		Status:       0,
+		GasUsed:      199,
 	}
 
-	t0 := time.Now()
-	buffer, _ := euresult.GobEncode()
-	fmt.Println("GobDecode():", time.Now().Sub(t0))
+	buffer := euresult.Encode()
+	out := (&EuResult{}).Decode(buffer)
 
-	t0 = time.Now()
-	out := new(EuResult)
-	out.GobDecode(buffer)
-	fmt.Println("GobDecode():", time.Now().Sub(t0))
-
-	if !reflect.DeepEqual(*euresult, *out) {
+	if !reflect.DeepEqual(euresult, *out) {
 		t.Error("Error")
 	}
 }
@@ -68,12 +85,13 @@ func TestEuResultsEncoding(t *testing.T) {
 	euresults := make([]*EuResult, 10)
 	for i := 0; i < len(euresults); i++ {
 		euresults[i] = &EuResult{
-			H:           "0x1234567",
-			ID:          uint32(99),
-			Transitions: [][]byte{[]byte(fmt.Sprint("++++")), []byte("||||")},
-			DC:          dc,
-			Status:      11,
-			GasUsed:     99,
+			H:            "0x1234567",
+			ID:           uint32(99),
+			Transitions:  [][]byte{[]byte(fmt.Sprint("++++")), []byte("||||")},
+			TransitTypes: []byte{1, 2},
+			DC:           dc,
+			Status:       11,
+			GasUsed:      99,
 		}
 	}
 

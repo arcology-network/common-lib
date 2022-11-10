@@ -1,9 +1,9 @@
 package types
 
 import (
-	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
-	"github.com/HPISTechnologies/common-lib/codec"
-	encoding "github.com/HPISTechnologies/common-lib/encoding"
+	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	"github.com/arcology-network/common-lib/codec"
+	encoding "github.com/arcology-network/common-lib/encoding"
 )
 
 type ExecuteResponse struct {

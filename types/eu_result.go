@@ -1,21 +1,22 @@
 package types
 
 import (
-	"github.com/HPISTechnologies/common-lib/codec"
-	"github.com/HPISTechnologies/common-lib/common"
+	"github.com/arcology-network/common-lib/codec"
+	"github.com/arcology-network/common-lib/common"
 )
 
 type EuResult struct {
-	H           string
-	ID          uint32
-	Transitions [][]byte
-	DC          *DeferCall
-	Status      uint64
-	GasUsed     uint64
+	H            string
+	ID           uint32
+	Transitions  [][]byte
+	TransitTypes []byte
+	DC           *DeferCall
+	Status       uint64
+	GasUsed      uint64
 }
 
 func (this *EuResult) HeaderSize() uint32 {
-	return 7 * codec.UINT32_LEN
+	return 8 * codec.UINT32_LEN
 }
 
 func (this *EuResult) Size() uint32 {
@@ -23,32 +24,10 @@ func (this *EuResult) Size() uint32 {
 		uint32(len(this.H)) +
 		codec.UINT32_LEN +
 		codec.Byteset(this.Transitions).Size() +
+		codec.Bytes(this.TransitTypes).Size() +
 		this.DC.Size() +
 		codec.UINT64_LEN +
 		codec.UINT64_LEN
-}
-
-// Fill in the header info
-func (this *EuResult) FillHeader(buffer []byte) {
-	offset := uint32(0)
-	codec.Uint32(6).EncodeToBuffer(buffer[codec.UINT32_LEN*0:])
-
-	codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*1:])
-	offset += codec.String(this.H).Size()
-
-	codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*2:])
-	offset += codec.Uint32(this.ID).Size()
-
-	codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*3:])
-	offset += codec.Byteset(this.Transitions).Size()
-
-	codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*4:])
-	offset += this.DC.Size()
-
-	codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*5:])
-	offset += codec.Uint64(this.Status).Size()
-
-	codec.Uint32(offset).EncodeToBuffer(buffer[codec.UINT32_LEN*6:])
 }
 
 func (this *EuResult) Encode() []byte {
@@ -57,31 +36,33 @@ func (this *EuResult) Encode() []byte {
 	return buffer
 }
 
-func (this *EuResult) EncodeToBuffer(buffer []byte) {
+func (this *EuResult) EncodeToBuffer(buffer []byte) int {
 	if this == nil {
-		return
+		return 0
 	}
-	this.FillHeader(buffer)
 
-	headerLen := this.HeaderSize()
-	offset := uint32(0)
+	offset := codec.Encoder{}.FillHeader(
+		buffer,
+		[]uint32{
+			codec.String(this.H).Size(),
+			codec.Uint32(this.ID).Size(),
+			codec.Byteset(this.Transitions).Size(),
+			codec.Bytes(this.TransitTypes).Size(),
+			this.DC.Size(),
+			codec.UINT64_LEN,
+			codec.UINT64_LEN,
+		},
+	)
 
-	codec.String(this.H).EncodeToBuffer(buffer[headerLen+offset:])
-	offset += codec.String(this.H).Size()
+	offset += codec.String(this.H).EncodeToBuffer(buffer[offset:])
+	offset += codec.Uint32(this.ID).EncodeToBuffer(buffer[offset:])
+	offset += codec.Byteset(this.Transitions).EncodeToBuffer(buffer[offset:])
+	offset += codec.Bytes(this.TransitTypes).EncodeToBuffer(buffer[offset:])
+	offset += this.DC.EncodeToBuffer(buffer[offset:])
+	offset += codec.Uint64(this.Status).EncodeToBuffer(buffer[offset:])
+	offset += codec.Uint64(this.GasUsed).EncodeToBuffer(buffer[offset:])
 
-	codec.Uint32(this.ID).EncodeToBuffer(buffer[headerLen+offset:])
-	offset += codec.Uint32(this.ID).Size()
-
-	codec.Byteset(this.Transitions).EncodeToBuffer(buffer[headerLen+offset:])
-	offset += codec.Byteset(this.Transitions).Size()
-
-	this.DC.EncodeToBuffer(buffer[headerLen+offset:])
-	offset += this.DC.Size()
-
-	codec.Uint64(this.Status).EncodeToBuffer(buffer[headerLen+offset:])
-	offset += codec.Uint64(this.Status).Size()
-
-	codec.Uint64(this.GasUsed).EncodeToBuffer(buffer[headerLen+offset:])
+	return offset
 }
 
 func (this *EuResult) Decode(buffer []byte) *EuResult {
@@ -91,11 +72,13 @@ func (this *EuResult) Decode(buffer []byte) *EuResult {
 	this.ID = uint32(codec.Uint32(0).Decode(fields[1]).(codec.Uint32))
 
 	this.Transitions = [][]byte(codec.Byteset{}.Decode(fields[2]).(codec.Byteset))
-	if len(fields[3]) > 0 {
-		this.DC = (&DeferCall{}).Decode(fields[3])
+	this.TransitTypes = []byte(codec.Bytes{}.Decode(fields[3]).(codec.Bytes))
+
+	if len(fields[4]) > 0 {
+		this.DC = (&DeferCall{}).Decode(fields[4])
 	}
-	this.Status = uint64(codec.Uint64(0).Decode(fields[4]).(codec.Uint64))
-	this.GasUsed = uint64(codec.Uint64(0).Decode(fields[5]).(codec.Uint64))
+	this.Status = uint64(codec.Uint64(0).Decode(fields[5]).(codec.Uint64))
+	this.GasUsed = uint64(codec.Uint64(0).Decode(fields[6]).(codec.Uint64))
 	return this
 }
 

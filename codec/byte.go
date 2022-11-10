@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"unsafe"
 
-	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
+	ethCommon "github.com/arcology-network/3rd-party/eth/common"
 )
 
 const (
@@ -29,8 +29,15 @@ func (this Bytes) Size() uint32 {
 	return uint32(len(this))
 }
 
-func (this Bytes) EncodeToBuffer(buffer []byte) {
+func (this Bytes) Clone() Bytes {
+	target := make([]byte, len(this))
+	copy(target, this)
+	return Bytes(target)
+}
+
+func (this Bytes) EncodeToBuffer(buffer []byte) int {
 	copy(buffer, this)
+	return len(this)
 }
 
 func (Bytes) Decode(bytes []byte) interface{} {
@@ -43,12 +50,13 @@ func (this Bytes) ToString() string {
 
 type Byteset [][]byte
 
-func (this Byteset) Deepcopy() Uint32s {
-	sizes := make([]uint32, len(this))
+func (this Byteset) Clone() Byteset {
+	target := make([][]byte, len(this))
 	for i := range this {
-		sizes[i] = uint32(len(this[i]))
+		target[i] = make([]byte, len(this[i]))
+		copy(target[i], this[i])
 	}
-	return sizes
+	return Byteset(target)
 }
 
 func (this Byteset) Size() uint32 {
@@ -118,18 +126,18 @@ func (this Byteset) FillHeader(buffer []byte) {
 	}
 }
 
-func (this Byteset) EncodeToBuffer(buffer []byte) {
+func (this Byteset) EncodeToBuffer(buffer []byte) int {
 	if len(buffer) == 0 {
-		return
+		return 0
 	}
 	this.FillHeader(buffer)
 
-	offset := uint32(0)
-	headerLen := this.HeaderSize()
+	offset := this.HeaderSize()
 	for i := 0; i < len(this); i++ {
-		copy(buffer[headerLen+offset:headerLen+offset+uint32(len(this[i]))], this[i])
+		copy(buffer[offset:offset+uint32(len(this[i]))], this[i])
 		offset += uint32(len(this[i]))
 	}
+	return int(offset)
 }
 
 func (this Byteset) Decode(buffer []byte) interface{} {
@@ -157,6 +165,18 @@ func (this Byteset) Decode(buffer []byte) interface{} {
 }
 
 type Bytegroup [][][]byte
+
+func (this Bytegroup) Clone() Bytegroup {
+	target := make([][][]byte, len(this))
+	for i := range this {
+		target[i] = make([][]byte, len(this[i]))
+		for j := range this[i] {
+			target[i][j] = make([]byte, len(this[i][j]))
+			copy(target[i][j], this[i][j])
+		}
+	}
+	return Bytegroup(target)
+}
 
 func (bytegroup Bytegroup) Sizes() []uint32 {
 	sizes := make([]uint32, len(bytegroup))

@@ -1,14 +1,11 @@
 package cachedstorage
 
 import (
-	"sync"
-
-	ccctrn "github.com/HPISTechnologies/common-lib/concurrentcontainer"
+	ccctrn "github.com/arcology-network/common-lib/concurrentcontainer/map"
 )
 
 type MemDB struct {
-	mutex sync.RWMutex
-	db    *ccctrn.ConcurrentMap
+	db *ccctrn.ConcurrentMap
 }
 
 func NewMemDB() *MemDB {
@@ -18,23 +15,18 @@ func NewMemDB() *MemDB {
 }
 
 func (this *MemDB) Set(key string, v []byte) error {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
 	return this.db.Set(key, v)
 }
 
 func (this *MemDB) Get(key string) ([]byte, error) {
-	this.mutex.RLock()
-	defer this.mutex.RUnlock()
-
 	v, _ := this.db.Get(key)
+	if v == nil {
+		return nil, nil
+	}
 	return v.([]byte), nil
 }
 
 func (this *MemDB) BatchGet(keys []string) ([][]byte, error) {
-	this.mutex.RLock()
-	defer this.mutex.RUnlock()
-
 	values := this.db.BatchGet(keys)
 	byteset := make([][]byte, len(keys))
 	for i, v := range values {
@@ -46,9 +38,6 @@ func (this *MemDB) BatchGet(keys []string) ([][]byte, error) {
 }
 
 func (this *MemDB) BatchSet(keys []string, byteset [][]byte) error {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-
 	values := make([]interface{}, len(keys))
 	for i, v := range byteset {
 		if v != nil {
@@ -58,4 +47,8 @@ func (this *MemDB) BatchSet(keys []string, byteset [][]byte) error {
 
 	this.db.BatchSet(keys, values)
 	return nil
+}
+
+func (this *MemDB) Query(key string, functor func(string, string) bool) ([]string, [][]byte, error) {
+	return []string{}, [][]byte{}, nil
 }

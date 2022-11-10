@@ -1,8 +1,8 @@
 package types
 
 import (
-	"github.com/HPISTechnologies/common-lib/codec"
-	"github.com/HPISTechnologies/common-lib/common"
+	"github.com/arcology-network/common-lib/codec"
+	"github.com/arcology-network/common-lib/common"
 )
 
 type TxAccessRecords struct {
@@ -22,35 +22,30 @@ func (this *TxAccessRecords) Size() uint32 {
 		codec.Byteset(this.Accesses).Size()
 }
 
-func (this *TxAccessRecords) FillHeader(buffer []byte) {
-	codec.Uint32(3).EncodeToBuffer(buffer)
-	codec.Uint32(0).EncodeToBuffer(buffer[codec.UINT32_LEN*1:])
-	codec.Uint32(codec.String(this.Hash).Size()).EncodeToBuffer(buffer[codec.UINT32_LEN*2:])
-	codec.Uint32(codec.String(this.Hash).Size() + codec.Uint32(this.ID).Size()).EncodeToBuffer(buffer[codec.UINT32_LEN*3:])
-}
-
 func (this *TxAccessRecords) Encode() []byte {
 	buffer := make([]byte, this.Size())
-	this.FillHeader(buffer)
 	this.EncodeToBuffer(buffer)
 	return buffer
 }
 
-func (this *TxAccessRecords) EncodeToBuffer(buffer []byte) {
+func (this *TxAccessRecords) EncodeToBuffer(buffer []byte) int {
 	if this == nil {
-		return
+		return 0
 	}
 
-	headerLen := this.HeaderSize()
-	offset := uint32(0)
+	offset := codec.Encoder{}.FillHeader(
+		buffer,
+		[]uint32{
+			codec.String(this.Hash).Size(),
+			codec.Uint32(this.ID).Size(),
+			codec.Byteset(this.Accesses).Size(),
+		},
+	)
 
-	codec.String(this.Hash).EncodeToBuffer(buffer[headerLen+offset:])
-	offset += codec.String(this.Hash).Size()
-
-	codec.Uint32(this.ID).EncodeToBuffer(buffer[headerLen+offset:])
-	offset += codec.Uint32(this.ID).Size()
-
-	codec.Byteset(this.Accesses).EncodeToBuffer(buffer[headerLen+offset:])
+	offset += codec.String(this.Hash).EncodeToBuffer(buffer[offset:])
+	offset += codec.Uint32(this.ID).EncodeToBuffer(buffer[offset:])
+	offset += codec.Byteset(this.Accesses).EncodeToBuffer(buffer[offset:])
+	return offset
 }
 
 func (this *TxAccessRecords) Decode(buffer []byte) *TxAccessRecords {
@@ -85,28 +80,27 @@ func (this *TxAccessRecordSet) FillHeader(buffer []byte) {
 	}
 }
 
-func (this TxAccessRecordSet) GobEncode() ([]byte, error) {
+func (this *TxAccessRecordSet) Encode() []byte {
 	buffer := make([]byte, this.Size())
 	this.FillHeader(buffer)
 
 	headerLen := this.HeaderSize()
-	offsets := make([]uint32, len(this)+1)
+	offsets := make([]uint32, len(*this)+1)
 	offsets[0] = 0
-	for i := 0; i < len(this); i++ {
-		offsets[i+1] = offsets[i] + this[i].Size()
+	for i := 0; i < len(*this); i++ {
+		offsets[i+1] = offsets[i] + (*this)[i].Size()
 	}
 
 	worker := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
-			this[i].FillHeader(buffer[headerLen+offsets[i]:])
-			this[i].EncodeToBuffer(buffer[headerLen+offsets[i]:])
+			(*this)[i].EncodeToBuffer(buffer[headerLen+offsets[i]:])
 		}
 	}
-	common.ParallelWorker(len(this), 4, worker)
-	return buffer, nil
+	common.ParallelWorker(len(*this), 4, worker)
+	return buffer
 }
 
-func (this *TxAccessRecordSet) GobDecode(data []byte) error {
+func (this *TxAccessRecordSet) Decode(data []byte) interface{} {
 	bytesset := codec.Byteset{}.Decode(data).(codec.Byteset)
 	records := make([]*TxAccessRecords, len(bytesset))
 	worker := func(start, end, index int, args ...interface{}) {
@@ -117,6 +111,15 @@ func (this *TxAccessRecordSet) GobDecode(data []byte) error {
 		}
 	}
 	common.ParallelWorker(len(bytesset), 6, worker)
-	*this = records
+	v := (TxAccessRecordSet)(records)
+	return &(v)
+}
+
+func (this *TxAccessRecordSet) GobEncode() ([]byte, error) {
+	return this.Encode(), nil
+}
+
+func (this *TxAccessRecordSet) GobDecode(data []byte) error {
+	*this = *(this.Decode(data).(*TxAccessRecordSet))
 	return nil
 }

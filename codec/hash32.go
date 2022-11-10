@@ -22,12 +22,19 @@ func (this Hash32) Size() uint32 {
 	return uint32(HASH32_LEN)
 }
 
+func (this Hash32) Clone() Hash32 {
+	target := Hash32{}
+	copy(target[:], this[:])
+	return target
+}
+
 func (this Hash32) Encode() []byte {
 	return this[:]
 }
 
-func (this Hash32) EncodeToBuffer(buffer []byte) {
+func (this Hash32) EncodeToBuffer(buffer []byte) int {
 	copy(buffer, this[:])
+	return len(this)
 }
 
 func (this Hash32) Decode(buffer []byte) interface{} {
@@ -37,8 +44,23 @@ func (this Hash32) Decode(buffer []byte) interface{} {
 
 type Hash32s [][HASH32_LEN]byte
 
+func (this Hash32s) Clone() Hash32s {
+	target := make([][HASH32_LEN]byte, len(this))
+	for i := 0; i < len(this); i++ {
+		copy(target[i][:], this[i][:])
+	}
+	return Hash32s(target)
+}
+
 func (this Hash32s) Encode() []byte {
 	return Hash32s(this).Flatten()
+}
+
+func (this Hash32s) EncodeToBuffer(buffer []byte) int {
+	for i := 0; i < len(this); i++ {
+		copy(buffer[i*HASH32_LEN:], this[i][:])
+	}
+	return len(this) * HASH32_LEN
 }
 
 func (this Hash32s) Decode(data []byte) interface{} {
@@ -55,9 +77,7 @@ func (this Hash32s) Size() uint32 {
 
 func (this Hash32s) Flatten() []byte {
 	buffer := make([]byte, len(this)*HASH32_LEN)
-	for i := 0; i < len(this); i++ {
-		copy(buffer[i*HASH32_LEN:(i+1)*HASH32_LEN], this[i][:])
-	}
+	this.EncodeToBuffer(buffer)
 	return buffer
 }
 

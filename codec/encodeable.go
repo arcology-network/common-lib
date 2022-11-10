@@ -38,3 +38,13 @@ func (this Encoder) ToBuffer(buffer []byte, args []interface{}) {
 		}
 	}
 }
+
+func (Encoder) FillHeader(buffer []byte, lengths []uint32) int {
+	Uint32(len(lengths)).EncodeToBuffer(buffer[UINT32_LEN*0:])
+	offset := uint32(0)
+	for i := 0; i < len(lengths); i++ {
+		Uint32(offset).EncodeToBuffer(buffer[UINT32_LEN*(i+1):])
+		offset += uint32(lengths[i])
+	}
+	return (len(lengths) + 1) * UINT32_LEN
+}

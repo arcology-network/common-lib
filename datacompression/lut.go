@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	codec "github.com/HPISTechnologies/common-lib/codec"
-	common "github.com/HPISTechnologies/common-lib/common"
-	cccontainer "github.com/HPISTechnologies/common-lib/concurrentcontainer"
+	codec "github.com/arcology-network/common-lib/codec"
+	common "github.com/arcology-network/common-lib/common"
+	cccontainer "github.com/arcology-network/common-lib/concurrentcontainer/map"
 )
 
 type CompressionLut struct {

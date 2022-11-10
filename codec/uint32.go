@@ -28,8 +28,9 @@ func (this Uint32) Encode() []byte {
 	return buffer
 }
 
-func (this Uint32) EncodeToBuffer(buffer []byte) {
+func (this Uint32) EncodeToBuffer(buffer []byte) int {
 	binary.LittleEndian.PutUint32(buffer, uint32(this))
+	return UINT32_LEN
 }
 
 func (this Uint32) Decode(buffer []byte) interface{} {
@@ -45,10 +46,12 @@ func (this Uint32s) Encode() []byte {
 	return buffer
 }
 
-func (this Uint32s) EncodeToBuffer(buffer []byte) {
+func (this Uint32s) EncodeToBuffer(buffer []byte) int {
+	offset := 0
 	for i := range this {
-		copy(buffer[i*UINT32_LEN:(i+1)*UINT32_LEN], Uint32(this[i]).Encode())
+		offset += Uint32(this[i]).EncodeToBuffer(buffer[offset:])
 	}
+	return len(this) * UINT32_LEN
 }
 
 func (this Uint32s) Decode(data []byte) interface{} {

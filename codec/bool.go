@@ -24,12 +24,13 @@ func (this Bool) Encode() []byte {
 	return buffer
 }
 
-func (this Bool) EncodeToBuffer(buffer []byte) {
+func (this Bool) EncodeToBuffer(buffer []byte) int {
 	if this {
 		buffer[0] = 1
 	} else {
 		buffer[0] = 0
 	}
+	return BOOL_LEN
 }
 
 func (this Bool) Decode(data []byte) interface{} {
@@ -49,7 +50,7 @@ func (this Bools) Encode() []byte {
 	return buffer
 }
 
-func (this Bools) EncodeToBuffer(buffer []byte) {
+func (this Bools) EncodeToBuffer(buffer []byte) int {
 	for i := range this {
 		if this[i] {
 			buffer[i] = 1
@@ -57,6 +58,7 @@ func (this Bools) EncodeToBuffer(buffer []byte) {
 			buffer[i] = 0
 		}
 	}
+	return len(this) * BOOL_LEN
 }
 
 func (Bools) Decode(data []byte) interface{} {

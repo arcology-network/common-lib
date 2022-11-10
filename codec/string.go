@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/HPISTechnologies/common-lib/common"
+	"github.com/arcology-network/common-lib/common"
 )
 
 const (
@@ -29,10 +29,11 @@ func (this String) Encode() []byte {
 	return this.ToBytes()
 }
 
-func (this String) EncodeToBuffer(buffer []byte) {
+func (this String) EncodeToBuffer(buffer []byte) int {
 	if len(this) > 0 {
 		copy(buffer, this.ToBytes())
 	}
+	return len(this) * CHAR_LEN
 }
 
 func (this String) Size() uint32 {
@@ -84,18 +85,18 @@ func (this Strings) FillHeader(buffer []byte) {
 	}
 }
 
-func (this Strings) EncodeToBuffer(buffer []byte) {
+func (this Strings) EncodeToBuffer(buffer []byte) int {
 	if len(buffer) == 0 {
-		return
+		return 0
 	}
 	this.FillHeader(buffer)
 
-	offset := uint32(0)
-	headerLen := this.HeaderSize()
+	offset := this.HeaderSize()
 	for i := 0; i < len(this); i++ {
-		copy(buffer[headerLen+offset:headerLen+offset+uint32(len(this[i]))], this[i])
+		copy(buffer[offset:offset+uint32(len(this[i]))], this[i])
 		offset += uint32(len(this[i]))
 	}
+	return int(offset)
 }
 
 func (this Strings) Decode(bytes []byte) interface{} {
@@ -171,4 +172,23 @@ func (Strings) FromBytes(byteSet [][]byte) []string {
 		strings[i] = String("").Decode(byteSet[i]).(string)
 	}
 	return strings
+}
+
+type Stringset [][]string
+
+func (this Stringset) Flatten() []string {
+	positions := make([]int, len(this)+1)
+	positions[0] = 0
+	for i := 1; i < len(positions); i++ {
+		positions[i] = positions[i-1] + len(this[i-1])
+	}
+
+	buffer := make([]string, positions[len(positions)-1])
+	worker := func(start, end, index int, args ...interface{}) {
+		for i := start; i < end; i++ {
+			copy(buffer[positions[i]:positions[i+1]], (this[i]))
+		}
+	}
+	common.ParallelWorker(len(this), 4, worker)
+	return buffer
 }

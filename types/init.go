@@ -4,7 +4,7 @@ import (
 	"encoding/gob"
 	"math/big"
 
-	ethCommon "github.com/HPISTechnologies/3rd-party/eth/common"
+	ethCommon "github.com/arcology-network/3rd-party/eth/common"
 )
 
 var arEncoder *arbReqEncoder
@@ -57,6 +57,14 @@ func init() {
 	gob.Register(&RequestParameters{})
 	gob.Register(&RequestBlockEth{})
 	gob.Register(&RequestStorage{})
+
+	gob.Register(&SyncStatus{})
+	gob.Register(&SyncPoint{})
+	gob.Register(&SyncDataRequest{})
+	gob.Register(&SyncDataResponse{})
+
+	gob.Register(&IncomingTxs{})
+	gob.Register(&IncomingMsgs{})
 
 	arEncoder = newArbReqEncoder()
 	arDecoder = newArbReqDecoder()

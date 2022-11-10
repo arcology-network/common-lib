@@ -11,12 +11,12 @@ import (
 )
 
 const (
-	name     = "/tmp/filedb/"
-	backname = "/tmp/filedb-back/"
+	ROOT_PATH   = "/tmp/filedb/"
+	BACKUP_PATH = "/tmp/filedb-back/"
 )
 
 func TestFileDB(t *testing.T) {
-	fileDB, err := NewFileDB(name, 8, 2)
+	fileDB, err := NewFileDB(ROOT_PATH, 8, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -70,7 +70,7 @@ func TestFileDB(t *testing.T) {
 }
 
 func TestFileDBBatch(t *testing.T) {
-	fileDB, err := NewFileDB(name, 8, 2)
+	fileDB, err := NewFileDB(ROOT_PATH, 8, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -99,7 +99,7 @@ func TestFileDBBatch(t *testing.T) {
 }
 
 func TestFileDbBatch(t *testing.T) {
-	fileDB, err := NewFileDB(name, 16, 2)
+	fileDB, err := NewFileDB(ROOT_PATH, 16, 2)
 
 	if err != nil {
 		t.Error(err)
@@ -143,7 +143,7 @@ func TestFileDbBatch(t *testing.T) {
 }
 
 func TestFileDbExport(t *testing.T) {
-	fileDB, err := NewFileDB(name, 4, 2)
+	fileDB, err := NewFileDB(ROOT_PATH, 4, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -170,7 +170,54 @@ func TestFileDbExport(t *testing.T) {
 }
 
 func TestFileDbExportAll(t *testing.T) {
-	fileDB, err := NewFileDB(name, 4, 2)
+	fileDB, err := NewFileDB(ROOT_PATH, 4, 2)
+	if err != nil {
+		t.Error(err)
+	}
+
+	keys := make([]string, 10)
+	values := make([][]byte, len(keys))
+	inHashes := make([][32]byte, len(keys))
+	for i := 0; i < len(keys); i++ {
+		buffer := make([]byte, 4)
+		binary.LittleEndian.PutUint32(buffer, uint32(i))
+		k := sha256.Sum256(buffer)
+		values[i] = buffer
+		keys[i] = string(k[:])
+		inHashes[i] = sha256.Sum256(buffer)
+	}
+
+	if err := fileDB.BatchSet(keys, values); err != nil {
+		t.Error(err)
+	}
+
+	data, err := fileDB.ExportAll()
+	if err != nil || len(data) != 8 {
+		t.Error(err)
+	}
+	fs, err := fileDB.ListFiles()
+	if fs == nil || err != nil {
+		t.Error(err)
+	}
+
+	fileDb, err := LoadFileDB(ROOT_PATH, 4, 2)
+	if err == nil {
+		if err := fileDb.Import(data); err != nil {
+			t.Error(err)
+		}
+	} else {
+		t.Error(err)
+	}
+
+	if !fileDB.Equal(fileDb) {
+		t.Error("Error: Two files are different")
+	}
+	os.RemoveAll(fileDB.rootpath)
+	os.RemoveAll(fileDb.rootpath)
+}
+
+func TestLoadFileDB(t *testing.T) {
+	fileDB, err := NewFileDB(ROOT_PATH, 4, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -196,7 +243,7 @@ func TestFileDbExportAll(t *testing.T) {
 		t.Error(err)
 	}
 
-	fileDb, err := NewFileDB(backname, 4, 2)
+	fileDb, err := LoadFileDB(ROOT_PATH, 4, 2)
 	if err == nil {
 		if err := fileDb.Import(data); err != nil {
 			t.Error(err)
@@ -208,17 +255,18 @@ func TestFileDbExportAll(t *testing.T) {
 	if !fileDB.Equal(fileDb) {
 		t.Error("Error: Two files are different")
 	}
-	os.RemoveAll(fileDB.rootpath)
-	os.RemoveAll(fileDb.rootpath)
+
+	os.RemoveAll(ROOT_PATH)
+	os.RemoveAll(BACKUP_PATH)
 }
 
 func BenchmarkFileDbBatch(b *testing.B) {
-	fileDB, err := NewFileDB(name, 128, 2)
+	fileDB, err := NewFileDB(ROOT_PATH, 128, 2)
 	if err != nil {
 		b.Error(err)
 	}
 
-	keys := make([]string, 4000000)
+	keys := make([]string, 2000000)
 	values := make([][]byte, len(keys))
 	for i := 0; i < len(keys); i++ {
 		buffer := make([]byte, 4)
@@ -239,5 +287,12 @@ func BenchmarkFileDbBatch(b *testing.B) {
 		b.Error(err)
 	}
 	fmt.Println("BatchGet() ", len(keys), " Entries from files:", time.Since(t0))
+
+	t0 = time.Now()
+	if err := fileDB.BatchSet(keys, values); err != nil {
+		b.Error(err)
+	}
+	fmt.Println("BatchSet() ", len(keys), " Entries from files:", time.Since(t0))
+
 	os.RemoveAll(fileDB.rootpath)
 }

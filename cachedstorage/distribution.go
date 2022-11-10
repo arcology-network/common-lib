@@ -3,7 +3,7 @@ package cachedstorage
 import (
 	"math"
 
-	cccontainer "github.com/HPISTechnologies/common-lib/concurrentcontainer"
+	cccontainer "github.com/arcology-network/common-lib/concurrentcontainer/map"
 )
 
 type Score struct {
@@ -37,7 +37,7 @@ func NewDistribution() *Distribution {
 	}
 }
 
-func (this *Distribution) UpdateDistribution(keys []string, nSizes []uint32, newScores []interface{}, cache *cccontainer.ConcurrentMap, scoreBoard *cccontainer.ConcurrentMap) {
+func (this *Distribution) updateDistribution(keys []string, nSizes []uint32, newScores []interface{}, cache *cccontainer.ConcurrentMap, scoreBoard *cccontainer.ConcurrentMap) {
 	curtSizes := this.getCurrentSizes(keys, cache)
 	curtScores := scoreBoard.BatchGet(keys) // Get the scores of the existing values.
 
@@ -59,7 +59,7 @@ func (this *Distribution) getCurrentSizes(keys []string, cache *cccontainer.Conc
 		if curtValues[i] == nil {
 			curtSizes[i] = 0
 		} else {
-			curtSizes[i] = curtValues[i].(MeasurableInterface).Size() // Get the sizes of the existing values.
+			curtSizes[i] = curtValues[i].(AccessibleInterface).Size() // Get the sizes of the existing values.
 		}
 	}
 	return curtSizes
