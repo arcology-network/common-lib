@@ -11,9 +11,10 @@ type AddDataRequest struct {
 }
 
 type TransactionalStore struct {
-	tfdb     *TransactionalFileDB
-	current  *Transaction
-	previous *Transaction
+	tfdb         *TransactionalFileDB
+	current      *Transaction
+	previous     *Transaction
+	optimization bool
 }
 
 func NewTransactionalStore() *TransactionalStore {
@@ -22,6 +23,7 @@ func NewTransactionalStore() *TransactionalStore {
 
 func (ts *TransactionalStore) Config(params map[string]interface{}) {
 	ts.tfdb = NewTransactionalFileDB(params["root"].(string))
+	ts.optimization = params["optimization"].(bool)
 }
 
 func (ts *TransactionalStore) BeginTransaction(ctx context.Context, id *string, _ *int) (err error) {
@@ -36,8 +38,11 @@ func (ts *TransactionalStore) AddData(ctx context.Context, request *AddDataReque
 	if ts.current == nil {
 		panic("AddData called before BeginTransaction.")
 	}
-	//return ts.current.Add(request.Data, request.RecoverFunc)
-	return nil
+	if ts.optimization {
+		return nil
+	} else {
+		return ts.current.Add(request.Data, request.RecoverFunc)
+	}
 }
 
 func (ts *TransactionalStore) EndTransaction(ctx context.Context, _ *int, _ *int) error {
