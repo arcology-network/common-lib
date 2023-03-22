@@ -25,8 +25,9 @@ func (this *FileDB) Query(pattern string, condition func(string, string) bool) (
 				}
 			}
 
-			common.RemoveEmptyStrings(&keys)
-			common.RemoveEmptyBytes(&valBytes)
+			common.Remove(&keys, "")
+			common.RemoveIf(&valBytes, func(v []byte) bool { return len(v) == 0 })
+
 			keyset[i] = keys
 			valSet[i] = valBytes
 		}

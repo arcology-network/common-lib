@@ -247,7 +247,7 @@ func (this *FileDB) BatchGet(nkeys []string) ([][]byte, error) {
 	common.ParallelWorker(len(nkeys), 8, finder)
 
 	// Read files
-	errs := make([]interface{}, len(nkeys))
+	errs := make([]error, len(nkeys))
 	data := make([][]byte, len(nkeys))
 	t0 := time.Now()
 	uniqueFiles, indices := this.CategorizeFiles(files)
@@ -271,10 +271,10 @@ func (this *FileDB) BatchGet(nkeys []string) ([][]byte, error) {
 		}
 	}
 	common.ParallelWorker(len(uniqueFiles), 8, reader)
+	common.RemoveIf(&errs, func(v error) bool { return v == nil })
 
-	common.RemoveNils(&errs)
 	if len(errs) > 0 {
-		return data, errs[0].(error)
+		return data, errs[0]
 	}
 
 	return data, nil
@@ -289,7 +289,7 @@ func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
 	}
 	common.ParallelWorker(len(nkeys), 8, finder)
 
-	errs := make([]interface{}, len(files))
+	errs := make([]error, len(files))
 	uniqueFiles, indices := this.CategorizeFiles(files)
 
 	newFiles := make([]string, len(uniqueFiles))
@@ -305,8 +305,9 @@ func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
 		}
 	}
 	common.ParallelWorker(len(uniqueFiles), 4, maker)
-	common.RemoveNils(&errs)
-	common.RemoveEmptyStrings(&newFiles)
+
+	common.Remove(&newFiles, "")
+	common.RemoveIf(&errs, func(v error) bool { return v == nil })
 
 	this.files = append(this.files, newFiles...)
 	if len(errs) > 0 {
@@ -314,7 +315,7 @@ func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
 	}
 
 	// Write Contents
-	errs = make([]interface{}, len(uniqueFiles))
+	errs = make([]error, len(uniqueFiles))
 	writer := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
 			file := uniqueFiles[i]
@@ -341,10 +342,10 @@ func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
 		}
 	}
 	common.ParallelWorker(len(uniqueFiles), 8, writer)
+	common.RemoveIf(&errs, func(v error) bool { return v == nil })
 
-	common.RemoveNils(&errs)
 	if len(errs) > 0 {
-		return errs[0].(error)
+		return errs[0]
 	}
 	return nil
 }
@@ -392,7 +393,7 @@ func (this *FileDB) ExportAll() ([][]byte, error) {
 func (this *FileDB) readAll(paths []string) ([][]byte, error) {
 	sort.Strings(paths)
 
-	errs := make([]interface{}, len(paths))
+	errs := make([]error, len(paths))
 	data := make([][][]byte, len(paths))
 	reader := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
@@ -435,8 +436,8 @@ func (this *FileDB) readAll(paths []string) ([][]byte, error) {
 		}
 	}
 	common.ParallelWorker(len(paths), 8, reader)
+	common.RemoveIf(&errs, func(v error) bool { return v == nil })
 
-	common.RemoveNils(&errs)
 	if len(errs) > 0 {
 		return nil, errs[0].(error)
 	}

@@ -3,7 +3,7 @@ module github.com/arcology-network/common-lib
 go 1.19
 
 require (
-	github.com/arcology-network/3rd-party v0.0.0-20221110004651-3ae5c3009a22
+	github.com/arcology-network/3rd-party v1.7.1
 	github.com/arcology-network/evm v0.0.0-20221110011616-1cdc0ab27c8e
 	github.com/dgraph-io/badger v1.6.2
 	github.com/elliotchance/orderedmap v1.5.0
@@ -12,6 +12,8 @@ require (
 	golang.org/x/crypto v0.2.0
 	golang.org/x/exp v0.0.0-20221109205753-fc8884afc316
 )
+
+// require github.com/arcology-network/3rd-party v1.7.1
 
 require (
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect

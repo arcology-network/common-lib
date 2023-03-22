@@ -7,104 +7,106 @@ import (
 	"reflect"
 	"testing"
 	"time"
+	// "github.com/HPISTechnologies/common-lib/common"
 )
 
 func TestRemoveNils(t *testing.T) {
 	strs := []interface{}{"1", 2, "3", "4"}
-	RemoveNils(&strs)
+	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
+
 	if len(strs) != 4 && strs[0] != "1" && strs[1] != 2 && strs[2] != "3" && strs[3] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{"1"}
-	RemoveNils(&strs)
+	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
 	if len(strs) != 1 && strs[0] != "1" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{"1", nil, "3", "4"}
-	RemoveNils(&strs)
+	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
 	if len(strs) != 3 && strs[0] != "1" && strs[1] != 3 && strs[2] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{nil, nil, "3", "4"}
-	RemoveNils(&strs)
+	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
 	if len(strs) != 2 && strs[0] != "3" && strs[1] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{nil, nil, nil, "4"}
-	RemoveNils(&strs)
+	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
 	if len(strs) != 1 && strs[0] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{nil, nil, nil, nil}
-	RemoveNils(&strs)
+	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
 	if len(strs) != 0 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{1, nil, nil, nil}
-	RemoveNils(&strs)
+	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
 	if len(strs) != 1 && strs[0] != 1 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{1, nil, nil, 2}
-	RemoveNils(&strs)
+	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
 	if len(strs) != 2 && strs[0] != 1 && strs[1] != 2 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 }
 
-func TestRemove(t *testing.T) {
+func TestRemoveIf(t *testing.T) {
 	strs := []interface{}{"1", 2, "3", "4"}
 	filter := func(v interface{}) bool { return v == nil }
-	Remove(&strs, filter)
+	RemoveIf(&strs, filter)
 	if len(strs) != 4 && strs[0] != "1" && strs[1] != 2 && strs[2] != "3" && strs[3] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{"1"}
-	Remove(&strs, filter)
+	RemoveIf(&strs, filter)
 	if len(strs) != 1 && strs[0] != "1" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{"1", nil, "3", "4"}
-	Remove(&strs, filter)
+	RemoveIf(&strs, filter)
 	if len(strs) != 3 && strs[0] != "1" && strs[1] != 3 && strs[2] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{nil, nil, "3", "4"}
-	Remove(&strs, filter)
+	RemoveIf(&strs, filter)
 	if len(strs) != 2 && strs[0] != "3" && strs[1] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{nil, nil, nil, "4"}
-	Remove(&strs, filter)
+	RemoveIf(&strs, filter)
 	if len(strs) != 1 && strs[0] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{nil, nil, nil, nil}
-	Remove(&strs, filter)
+	RemoveIf(&strs, filter)
 	if len(strs) != 0 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{1, nil, nil, nil}
-	Remove(&strs, filter)
+	RemoveIf(&strs, filter)
 	if len(strs) != 1 && strs[0] != 1 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{1, nil, nil, 2}
-	Remove(&strs, filter)
+	RemoveIf(&strs, filter)
 	if len(strs) != 2 && strs[0] != 1 && strs[1] != 2 {
 		t.Error("Error: Failed to remove nil values !")
 	}
@@ -112,49 +114,49 @@ func TestRemove(t *testing.T) {
 
 func TestRemoveEmptyStrings(t *testing.T) {
 	strs := []string{"1", "2", "3", "4"}
-	RemoveEmptyStrings(&strs)
+	Remove(&strs, "")
 	if len(strs) != 4 && strs[0] != "1" && strs[1] != "2" && strs[2] != "3" && strs[3] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []string{"1"}
-	RemoveEmptyStrings(&strs)
+	Remove(&strs, "")
 	if len(strs) != 1 && strs[0] != "1" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []string{"1", "", "3", "4"}
-	RemoveEmptyStrings(&strs)
+	Remove(&strs, "")
 	if len(strs) != 3 && strs[0] != "1" && strs[1] != "3" && strs[2] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []string{"", "", "3", "4"}
-	RemoveEmptyStrings(&strs)
+	Remove(&strs, "")
 	if len(strs) != 2 && strs[0] != "3" && strs[1] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []string{"", "", "", "4"}
-	RemoveEmptyStrings(&strs)
+	Remove(&strs, "")
 	if len(strs) != 1 && strs[0] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []string{"1", "", "", ""}
-	RemoveEmptyStrings(&strs)
+	Remove(&strs, "")
 	if len(strs) != 1 && strs[0] != "1" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []string{"1", "", "", "2"}
-	RemoveEmptyStrings(&strs)
+	Remove(&strs, "")
 	if len(strs) != 2 && strs[0] != "1" && strs[1] != "2" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []string{"", "", "", ""}
-	RemoveEmptyStrings(&strs)
+	Remove(&strs, "")
 	if len(strs) != 0 {
 		t.Error("Error: Failed to remove nil values !")
 	}
@@ -162,49 +164,99 @@ func TestRemoveEmptyStrings(t *testing.T) {
 
 func TestRemoveUint64s(t *testing.T) {
 	strs := []uint64{1, 2, 3, 4}
-	RemoveUint64(&strs, math.MaxUint64)
+	Remove(&strs, math.MaxUint64)
 	if len(strs) != 4 && strs[0] != 1 && strs[1] != 2 && strs[2] != 3 && strs[3] != 4 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []uint64{1}
-	RemoveUint64(&strs, math.MaxUint64)
+	Remove(&strs, math.MaxUint64)
 	if len(strs) != 1 && strs[0] != 1 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []uint64{1, math.MaxUint64, 3, 4}
-	RemoveUint64(&strs, math.MaxUint64)
+	Remove(&strs, math.MaxUint64)
 	if len(strs) != 3 && strs[0] != 1 && strs[1] != 3 && strs[2] != 4 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []uint64{math.MaxUint64, math.MaxUint64, 3, 4}
-	RemoveUint64(&strs, math.MaxUint64)
+	Remove(&strs, math.MaxUint64)
 	if len(strs) != 2 && strs[0] != 3 && strs[1] != 4 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []uint64{math.MaxUint64, math.MaxUint64, math.MaxUint64, 4}
-	RemoveUint64(&strs, math.MaxUint64)
+	Remove(&strs, math.MaxUint64)
 	if len(strs) != 1 && strs[0] != 4 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []uint64{1, math.MaxUint64, math.MaxUint64, math.MaxUint64}
-	RemoveUint64(&strs, math.MaxUint64)
+	Remove(&strs, math.MaxUint64)
 	if len(strs) != 1 && strs[0] != 1 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []uint64{1, math.MaxUint64, math.MaxUint64, 2}
-	RemoveUint64(&strs, math.MaxUint64)
+	Remove(&strs, math.MaxUint64)
 	if len(strs) != 2 && strs[0] != 1 && strs[1] != 2 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []uint64{math.MaxUint64, math.MaxUint64, math.MaxUint64, math.MaxUint64}
-	RemoveUint64(&strs, math.MaxUint64)
+	Remove(&strs, math.MaxUint64)
+	if len(strs) != 0 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+}
+
+func TestRemove(t *testing.T) {
+	strs := []uint64{1, 2, 3, 4}
+	Remove(&strs, math.MaxUint64)
+	if len(strs) != 4 && strs[0] != 1 && strs[1] != 2 && strs[2] != 3 && strs[3] != 4 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	strs = []uint64{1}
+	Remove(&strs, math.MaxUint64)
+	if len(strs) != 1 && strs[0] != 1 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	strs = []uint64{1, math.MaxUint64, 3, 4}
+	Remove(&strs, math.MaxUint64)
+	if len(strs) != 3 && strs[0] != 1 && strs[1] != 3 && strs[2] != 4 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	strs = []uint64{math.MaxUint64, math.MaxUint64, 3, 4}
+	Remove(&strs, math.MaxUint64)
+	if len(strs) != 2 && strs[0] != 3 && strs[1] != 4 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	strs = []uint64{math.MaxUint64, math.MaxUint64, math.MaxUint64, 4}
+	Remove(&strs, math.MaxUint64)
+	if len(strs) != 1 && strs[0] != 4 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	strs = []uint64{1, math.MaxUint64, math.MaxUint64, math.MaxUint64}
+	Remove(&strs, math.MaxUint64)
+	if len(strs) != 1 && strs[0] != 1 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	strs = []uint64{1, math.MaxUint64, math.MaxUint64, 2}
+	Remove(&strs, math.MaxUint64)
+	if len(strs) != 2 && strs[0] != 1 && strs[1] != 2 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	strs = []uint64{math.MaxUint64, math.MaxUint64, math.MaxUint64, math.MaxUint64}
+	Remove(&strs, math.MaxUint64)
 	if len(strs) != 0 {
 		t.Error("Error: Failed to remove nil values !")
 	}
@@ -268,15 +320,15 @@ func TestUniqueInts(t *testing.T) {
 	fmt.Println("UniqueMap: ", len(nums), "leafs in ", time.Now().Sub(t0))
 }
 
-func TestRemoveIf(t *testing.T) {
-	nums := []interface{}{4, 5, 5, 6, 1, 4, 2, 3, 3}
-	RemoveIf(&nums, 3, func(lhv interface{}, rhv interface{}) bool { return lhv.(int) == rhv.(int) })
-	if !reflect.DeepEqual(nums, []interface{}{4, 5, 5, 6, 1, 4, 2}) {
-		t.Error("Error: Failed to remove the target values !")
-	}
+// func TestRemoveIf(t *testing.T) {
+// 	nums := []int{4, 5, 5, 6, 1, 4, 2, 3, 3}
+// 	RemoveIf(&nums, func(lhv int) bool { return lhv == 3 })
+// 	if !reflect.DeepEqual(nums, []int{4, 5, 5, 6, 1, 4, 2}) {
+// 		t.Error("Error: Failed to remove the target values !")
+// 	}
 
-	RemoveIf(&nums, 5, func(lhv interface{}, rhv interface{}) bool { return lhv.(int) == rhv.(int) })
-	if !reflect.DeepEqual(nums, []interface{}{4, 6, 1, 4, 2}) {
-		t.Error("Error: Failed to remove the target values !")
-	}
-}
+// 	RemoveIf(&nums, func(lhv int) bool { return lhv == 5 })
+// 	if !reflect.DeepEqual(nums, []int{4, 6, 1, 4, 2}) {
+// 		t.Error("Error: Failed to remove the target values !")
+// 	}
+// }

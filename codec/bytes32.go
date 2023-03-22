@@ -2,6 +2,8 @@ package codec
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 )
 
 const (
@@ -40,6 +42,19 @@ func (this Hash32) EncodeToBuffer(buffer []byte) int {
 func (this Hash32) Decode(buffer []byte) interface{} {
 	copy(this[:], buffer)
 	return Hash32(this)
+}
+
+func (this Hash32) Hex() string {
+	var accHex [2 * len(this)]byte
+	hex.Encode(accHex[:], this[:])
+	return string(accHex[:])
+}
+
+func (this Hash32) UUID(seed uint64) Hash32 {
+	buffer := [HASH32_LEN + 8]byte{}
+	copy(this[:], buffer[:])
+	Uint64(uint64(seed)).EncodeToBuffer(buffer[len(this):])
+	return sha256.Sum256(buffer[:])
 }
 
 type Hash32s [][HASH32_LEN]byte

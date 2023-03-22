@@ -268,32 +268,6 @@ func AddToLogFile(filename, field string, v interface{}) {
 	AppendToFile(filename, field+" : "+string(data))
 }
 
-func RemoveNils(values *[]interface{}) {
-	pos := int64(-1)
-	for i := 0; i < len((*values)); i++ {
-		if pos < 0 && (*values)[i] == nil {
-			pos = int64(i)
-			continue
-		}
-
-		if pos < 0 && (*values)[i] != nil {
-			continue
-		}
-
-		if pos >= 0 && (*values)[i] == nil {
-			(*values)[pos] = (*values)[i]
-			continue
-		}
-
-		(*values)[pos] = (*values)[i]
-		pos++
-	}
-
-	if pos >= 0 {
-		(*values) = (*values)[:pos]
-	}
-}
-
 func RemoveNilBytes(values *[][]byte) {
 	pos := int64(-1)
 	for i := 0; i < len((*values)); i++ {
@@ -320,57 +294,31 @@ func RemoveNilBytes(values *[][]byte) {
 	}
 }
 
-func RemoveEmptyBytes(values *[][]byte) {
-	pos := int64(-1)
-	for i := 0; i < len((*values)); i++ {
-		if pos < 0 && len((*values)[i]) == 0 {
-			pos = int64(i)
-			continue
-		}
+// func RemoveEmptyStrings(values *[]string) {
+// 	pos := int64(-1)
+// 	for i := 0; i < len((*values)); i++ {
+// 		if pos < 0 && len((*values)[i]) == 0 {
+// 			pos = int64(i)
+// 			continue
+// 		}
 
-		if pos < 0 && len((*values)[i]) > 0 {
-			continue
-		}
+// 		if pos < 0 && len((*values)[i]) > 0 {
+// 			continue
+// 		}
 
-		if pos >= 0 && len((*values)[i]) == 0 {
-			(*values)[pos] = (*values)[i]
-			continue
-		}
+// 		if pos >= 0 && len((*values)[i]) == 0 {
+// 			(*values)[pos] = (*values)[i]
+// 			continue
+// 		}
 
-		(*values)[pos] = (*values)[i]
-		pos++
-	}
+// 		(*values)[pos] = (*values)[i]
+// 		pos++
+// 	}
 
-	if pos >= 0 {
-		(*values) = (*values)[:pos]
-	}
-}
-
-func RemoveEmptyStrings(values *[]string) {
-	pos := int64(-1)
-	for i := 0; i < len((*values)); i++ {
-		if pos < 0 && len((*values)[i]) == 0 {
-			pos = int64(i)
-			continue
-		}
-
-		if pos < 0 && len((*values)[i]) > 0 {
-			continue
-		}
-
-		if pos >= 0 && len((*values)[i]) == 0 {
-			(*values)[pos] = (*values)[i]
-			continue
-		}
-
-		(*values)[pos] = (*values)[i]
-		pos++
-	}
-
-	if pos >= 0 {
-		(*values) = (*values)[:pos]
-	}
-}
+// 	if pos >= 0 {
+// 		(*values) = (*values)[:pos]
+// 	}
+// }
 
 func RemoveDuplicateStrings(strs *[]string) []string {
 	dict := make(map[string]bool)
@@ -385,134 +333,6 @@ func RemoveDuplicateStrings(strs *[]string) []string {
 	return uniqueStrs
 }
 
-func Remove(values *[]interface{}, condition func(interface{}) bool) {
-	pos := int64(-1)
-	for i := 0; i < len((*values)); i++ {
-		if pos < 0 && condition((*values)[i]) {
-			pos = int64(i)
-			continue
-		}
-
-		if pos < 0 && !condition((*values)[i]) {
-			continue
-		}
-
-		(*values)[pos] = (*values)[i]
-		if pos >= 0 && condition((*values)[i]) {
-			continue
-		}
-		pos++
-	}
-
-	if pos >= 0 {
-		(*values) = (*values)[:pos]
-	}
-}
-
-func RemoveUint64(values *[]uint64, target uint64) {
-	pos := int64(-1)
-	for i := 0; i < len((*values)); i++ {
-		if pos < 0 && ((*values)[i]) == target {
-			pos = int64(i)
-			continue
-		}
-
-		if pos < 0 && ((*values)[i]) != target {
-			continue
-		}
-
-		if pos >= 0 && ((*values)[i]) == target {
-			(*values)[pos] = (*values)[i]
-			continue
-		}
-
-		(*values)[pos] = (*values)[i]
-		pos++
-	}
-
-	if pos >= 0 {
-		(*values) = (*values)[:pos]
-	}
-}
-
-func RemoveUint32(values *[]uint32, target uint32) {
-	pos := int64(-1)
-	for i := 0; i < len((*values)); i++ {
-		if pos < 0 && ((*values)[i]) == target {
-			pos = int64(i)
-			continue
-		}
-
-		if pos < 0 && ((*values)[i]) != target {
-			continue
-		}
-
-		if pos >= 0 && ((*values)[i]) == target {
-			(*values)[pos] = (*values)[i]
-			continue
-		}
-
-		(*values)[pos] = (*values)[i]
-		pos++
-	}
-
-	if pos >= 0 {
-		(*values) = (*values)[:pos]
-	}
-}
-
-func RemoveUint8(values *[]uint8, target uint8) {
-	pos := int64(-1)
-	for i := 0; i < len((*values)); i++ {
-		if pos < 0 && ((*values)[i]) == target {
-			pos = int64(i)
-			continue
-		}
-
-		if pos < 0 && ((*values)[i]) != target {
-			continue
-		}
-
-		if pos >= 0 && ((*values)[i]) == target {
-			(*values)[pos] = (*values)[i]
-			continue
-		}
-
-		(*values)[pos] = (*values)[i]
-		pos++
-	}
-
-	if pos >= 0 {
-		(*values) = (*values)[:pos]
-	}
-}
-
-func RemoveInt(values *[]int, target int) {
-	pos := int64(-1)
-	for i := 0; i < len((*values)); i++ {
-		if pos < 0 && ((*values)[i]) == target {
-			pos = int64(i)
-			continue
-		}
-
-		if pos < 0 && ((*values)[i]) != target {
-			continue
-		}
-
-		if pos >= 0 && ((*values)[i]) == target {
-			(*values)[pos] = (*values)[i]
-			continue
-		}
-
-		(*values)[pos] = (*values)[i]
-		pos++
-	}
-
-	if pos >= 0 {
-		(*values) = (*values)[:pos]
-	}
-}
-
 func ReverseString(s string) string {
 	reversed := []byte(s)
 	for i, j := 0, len(reversed)-1; i < j; i, j = i+1, j-1 {
@@ -525,60 +345,6 @@ func SortStrings(strs []string) {
 	sort.SliceStable(strs, func(i, j int) bool {
 		return strs[i] < strs[j]
 	})
-}
-
-func MaxUint64(v0 uint64, v1 uint64) uint64 {
-	if v0 < v1 {
-		return v1
-	}
-	return v0
-}
-
-func MaxUint32(v0 uint32, v1 uint32) uint32 {
-	if v0 < v1 {
-		return v1
-	}
-	return v0
-}
-
-func MaxInt(v0 int, v1 int) int {
-	if v0 < v1 {
-		return v1
-	}
-	return v0
-}
-
-func MinUint64(v0 uint64, v1 uint64) uint64 {
-	if v0 < v1 {
-		return v0
-	}
-	return v1
-}
-
-func MinUint32(v0 uint32, v1 uint32) uint32 {
-	if v0 < v1 {
-		return v0
-	}
-	return v1
-}
-
-func MinInt(v0 int, v1 int) int {
-	if v0 < v1 {
-		return v0
-	}
-	return v1
-}
-
-func Remainder(numShards int, key string) int {
-	if len(key) == 0 {
-		return math.MaxInt
-	}
-
-	var total int = 0
-	for j := 0; j < len(key); j++ {
-		total += int(key[j])
-	}
-	return total % numShards
 }
 
 func FillInt(nums []int, v int) {
@@ -603,17 +369,35 @@ func UniqueInts(nums []int) int {
 	return current + 1
 }
 
-func RemoveIf(values *[]interface{}, target interface{}, equal func(interface{}, interface{}) bool) {
+func RemoveIf[Type any](values *[]Type, condition func(Type) bool) {
 	pos := 0
 	for i := 0; i < len(*values); i++ {
-		if equal((*values)[i], target) {
+		if condition((*values)[i]) {
 			pos = i
 			break
 		}
 	}
 
 	for i := pos; i < len(*values); i++ {
-		if !equal((*values)[i], target) {
+		if !condition((*values)[i]) {
+			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
+			pos++
+		}
+	}
+	(*values) = (*values)[:pos]
+}
+
+func Remove[Type comparable](values *[]Type, target Type) {
+	pos := 0
+	for i := 0; i < len(*values); i++ {
+		if target == (*values)[i] {
+			pos = i
+			break
+		}
+	}
+
+	for i := pos; i < len(*values); i++ {
+		if target != (*values)[i] {
 			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
 			pos++
 		}
