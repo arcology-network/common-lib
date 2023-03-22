@@ -268,31 +268,31 @@ func AddToLogFile(filename, field string, v interface{}) {
 	AppendToFile(filename, field+" : "+string(data))
 }
 
-func RemoveNilBytes(values *[][]byte) {
-	pos := int64(-1)
-	for i := 0; i < len((*values)); i++ {
-		if pos < 0 && ((*values)[i]) == nil {
-			pos = int64(i)
-			continue
-		}
+// func RemoveNilBytes(values *[][]byte) {
+// 	pos := int64(-1)
+// 	for i := 0; i < len((*values)); i++ {
+// 		if pos < 0 && ((*values)[i]) == nil {
+// 			pos = int64(i)
+// 			continue
+// 		}
 
-		if pos < 0 && ((*values)[i]) != nil {
-			continue
-		}
+// 		if pos < 0 && ((*values)[i]) != nil {
+// 			continue
+// 		}
 
-		if pos >= 0 && ((*values)[i]) == nil {
-			(*values)[pos] = (*values)[i]
-			continue
-		}
+// 		if pos >= 0 && ((*values)[i]) == nil {
+// 			(*values)[pos] = (*values)[i]
+// 			continue
+// 		}
 
-		(*values)[pos] = (*values)[i]
-		pos++
-	}
+// 		(*values)[pos] = (*values)[i]
+// 		pos++
+// 	}
 
-	if pos >= 0 {
-		(*values) = (*values)[:pos]
-	}
-}
+// 	if pos >= 0 {
+// 		(*values) = (*values)[:pos]
+// 	}
+// }
 
 // func RemoveEmptyStrings(values *[]string) {
 // 	pos := int64(-1)
@@ -403,4 +403,10 @@ func Remove[Type comparable](values *[]Type, target Type) {
 		}
 	}
 	(*values) = (*values)[:pos]
+}
+
+func Foreach[Type any](values *[]Type, predicate func(v Type)) {
+	for i := 0; i < len(*values); i++ {
+		predicate((*values)[i])
+	}
 }

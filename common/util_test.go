@@ -11,6 +11,21 @@ import (
 )
 
 func TestRemoveNils(t *testing.T) {
+	encoded := [][]byte{{1}, {1}, {3}, {2}, nil}
+	RemoveIf(&encoded, func(v []byte) bool { return v == nil })
+	if len(encoded) != 4 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	encoded = make([][]byte, 3)
+	encoded[0] = []byte{1}
+	encoded[1] = []byte{2}
+
+	RemoveIf(&encoded, func(v []byte) bool { return v == nil })
+	if len(encoded) != 2 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
 	strs := []interface{}{"1", 2, "3", "4"}
 	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
 
@@ -320,15 +335,11 @@ func TestUniqueInts(t *testing.T) {
 	fmt.Println("UniqueMap: ", len(nums), "leafs in ", time.Now().Sub(t0))
 }
 
-// func TestRemoveIf(t *testing.T) {
-// 	nums := []int{4, 5, 5, 6, 1, 4, 2, 3, 3}
-// 	RemoveIf(&nums, func(lhv int) bool { return lhv == 3 })
-// 	if !reflect.DeepEqual(nums, []int{4, 5, 5, 6, 1, 4, 2}) {
-// 		t.Error("Error: Failed to remove the target values !")
-// 	}
+func TestForeach(t *testing.T) {
+	nums := [][]int{{4}, {5}, {5}, {6}}
+	Foreach(&nums, func(lhv []int) { lhv[0] += 1 })
 
-// 	RemoveIf(&nums, func(lhv int) bool { return lhv == 5 })
-// 	if !reflect.DeepEqual(nums, []int{4, 6, 1, 4, 2}) {
-// 		t.Error("Error: Failed to remove the target values !")
-// 	}
-// }
+	if nums[0][0] != 5 || nums[1][0] != 6 || nums[2][0] != 6 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+}

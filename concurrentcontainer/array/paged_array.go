@@ -15,8 +15,8 @@ type PagedArray struct {
 
 func NewPagedArray(blockSize int, minBlocks int) *PagedArray {
 	ccArray := &PagedArray{
-		minBlocks: common.MaxInt(minBlocks, 1),
-		blockSize: common.MaxInt(blockSize, 1),
+		minBlocks: common.Max(minBlocks, 1),
+		blockSize: common.Max(blockSize, 1),
 		length:    0,
 	}
 
@@ -45,7 +45,7 @@ func (this *PagedArray) Append(values []interface{}) {
 	nextBlockID, offset := this.next()
 	copy(this.blocks[nextBlockID][offset:], values)
 
-	minLen := common.MinInt(len(values), this.blockSize-offset)
+	minLen := common.Min(len(values), this.blockSize-offset)
 	values = values[minLen:]
 	this.length += minLen
 
@@ -87,9 +87,9 @@ func (this *PagedArray) CopyTo(start int, end int) []interface{} {
 }
 
 func (this *PagedArray) PopBackToBuffer(buffer []interface{}) {
-	start := common.MaxInt(this.length-len(buffer), 0)
-	this.ToBuffer(start, common.MinInt(start+len(buffer), this.Size()), buffer)
-	this.length -= common.MinInt(len(buffer), this.Size())
+	start := common.Max(this.length-len(buffer), 0)
+	this.ToBuffer(start, common.Min(start+len(buffer), this.Size()), buffer)
+	this.length -= common.Min(len(buffer), this.Size())
 }
 
 func (this *PagedArray) ToBuffer(start int, end int, buffer []interface{}) {
