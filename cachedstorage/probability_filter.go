@@ -4,12 +4,12 @@ import (
 	"sync"
 	"time"
 
-	cccontainer "github.com/arcology-network/common-lib/concurrentcontainer/map"
+	ccmap "github.com/arcology-network/common-lib/container/map"
 )
 
 type ProbFilter struct {
 	timeouts []string
-	lookup   *cccontainer.ConcurrentMap
+	lookup   *ccmap.ConcurrentMap
 	tLock    sync.Mutex
 	locks    []sync.RWMutex
 }
@@ -17,7 +17,7 @@ type ProbFilter struct {
 func NewProbFilter(shards uint8) *ProbFilter {
 	return &ProbFilter{
 		timeouts: []string{},
-		lookup:   cccontainer.NewConcurrentMap(shards),
+		lookup:   ccmap.NewConcurrentMap(shards),
 		locks:    make([]sync.RWMutex, shards),
 	}
 }
@@ -58,6 +58,6 @@ func (this *ProbFilter) Checkout(key string) error {
 
 func (this *ProbFilter) Clear() {
 	this.timeouts = this.timeouts[:0]
-	this.lookup = cccontainer.NewConcurrentMap(len(this.locks))
+	this.lookup = ccmap.NewConcurrentMap(len(this.locks))
 	this.locks = make([]sync.RWMutex, len(this.locks))
 }

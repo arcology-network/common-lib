@@ -1,16 +1,16 @@
 package cachedstorage
 
 import (
-	ccctrn "github.com/arcology-network/common-lib/concurrentcontainer/map"
+	ccmap "github.com/arcology-network/common-lib/container/map"
 )
 
 type MemDB struct {
-	db *ccctrn.ConcurrentMap
+	db *ccmap.ConcurrentMap
 }
 
 func NewMemDB() *MemDB {
 	return &MemDB{
-		db: ccctrn.NewConcurrentMap(),
+		db: ccmap.NewConcurrentMap(),
 	}
 }
 

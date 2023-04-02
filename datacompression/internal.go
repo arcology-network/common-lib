@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	common "github.com/arcology-network/common-lib/common"
-	cccontainer "github.com/arcology-network/common-lib/concurrentcontainer/map"
+	ccmap "github.com/arcology-network/common-lib/container/map"
 	"github.com/arcology-network/common-lib/mhasher"
 )
 
@@ -76,7 +76,7 @@ func (this *CompressionLut) parseKeys(originals []string, positions [][][2]int) 
 	return keySet
 }
 
-func (this *CompressionLut) filterExistingKeys(keys []string, dict *cccontainer.ConcurrentMap) []string {
+func (this *CompressionLut) filterExistingKeys(keys []string, dict *ccmap.ConcurrentMap) []string {
 	values := dict.BatchGet(keys)
 	nKeys := make([]string, 0, len(values))
 	for i := range values {
@@ -143,7 +143,7 @@ func (this *CompressionLut) searchInDict(key string, buffer *bytes.Buffer) {
 	}
 }
 
-func (this *CompressionLut) insertToDict(newKeys []string, dict *cccontainer.ConcurrentMap) {
+func (this *CompressionLut) insertToDict(newKeys []string, dict *ccmap.ConcurrentMap) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -186,6 +186,6 @@ func (this *CompressionLut) Commit() {
 
 func (this *CompressionLut) reset() {
 	this.tempLut.IdxToKeyLut = this.tempLut.IdxToKeyLut[:0]
-	this.tempLut.dict = cccontainer.NewConcurrentMap()
+	this.tempLut.dict = ccmap.NewConcurrentMap()
 	this.tempLut.offset = this.dict.Size()
 }

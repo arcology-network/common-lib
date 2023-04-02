@@ -8,7 +8,7 @@ import (
 
 	codec "github.com/arcology-network/common-lib/codec"
 	common "github.com/arcology-network/common-lib/common"
-	cccontainer "github.com/arcology-network/common-lib/concurrentcontainer/map"
+	ccmap "github.com/arcology-network/common-lib/container/map"
 	datacompression "github.com/arcology-network/common-lib/datacompression"
 )
 
@@ -16,7 +16,7 @@ type DataStore struct {
 	db             PersistentStorageInterface
 	encoder        func(interface{}) []byte
 	decoder        func([]byte) interface{}
-	localCache     *cccontainer.ConcurrentMap
+	localCache     *ccmap.ConcurrentMap
 	cachePolicy    *CachePolicy
 	compressionLut *datacompression.CompressionLut
 	partitionIDs   []uint8
@@ -33,7 +33,7 @@ type DataStore struct {
 func NewDataStore(args ...interface{}) *DataStore {
 	dataStore := DataStore{
 		partitionIDs: make([]uint8, 0, 65536),
-		localCache:   cccontainer.NewConcurrentMap(),
+		localCache:   ccmap.NewConcurrentMap(),
 		globalCache:  make(map[string]interface{}),
 	}
 
@@ -81,7 +81,7 @@ func (this *DataStore) Size() uint32 {
 	return this.localCache.Size()
 }
 
-func (this *DataStore) LocalCache() *cccontainer.ConcurrentMap {
+func (this *DataStore) LocalCache() *ccmap.ConcurrentMap {
 	return this.localCache
 }
 
