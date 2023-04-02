@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"sort"
+	"unsafe"
 
 	ethCommon "github.com/arcology-network/3rd-party/eth/common"
 )
@@ -44,6 +45,10 @@ func (this Uint64) Decode(data []byte) interface{} {
 
 func (v Uint64) Checksum() ethCommon.Hash {
 	return sha256.Sum256(v.Encode())
+}
+
+func (v Uint64) ToInt64() int64 {
+	return *(*int64)(unsafe.Pointer(&v))
 }
 
 type Uint64s []uint64

@@ -2,6 +2,7 @@ package codec
 
 import (
 	"encoding/binary"
+	"unsafe"
 )
 
 const (
@@ -35,6 +36,10 @@ func (this Int64) EncodeToBuffer(buffer []byte) int {
 
 func (this Int64) Decode(buffer []byte) interface{} {
 	return Int64(int64(binary.LittleEndian.Uint64(buffer)))
+}
+
+func (this Int64) ToUint64(src1 int64) uint64 {
+	return *(*uint64)(unsafe.Pointer(&src1))
 }
 
 type Int64s []Int64

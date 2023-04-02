@@ -382,7 +382,7 @@ func (this *FileDB) Export(prefixes [][]byte) ([][]byte, error) {
 			}
 		}
 	}
-	paths = common.RemoveDuplicateStrings(&paths)
+	paths = common.RemoveDuplicates(&paths)
 	return this.readAll(paths)
 }
 

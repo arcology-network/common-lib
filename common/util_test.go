@@ -343,3 +343,36 @@ func TestForeach(t *testing.T) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 }
+
+func TestFindLastIf(t *testing.T) {
+	nums := []int{4, '/', 5, '/', 6}
+
+	idx := FindLastIf(&nums, func(v int) bool { return v == '/' })
+	if idx != 3 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	idx = FindLast(&nums, '/')
+	if idx != 3 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	idx = FindFirstIf(&nums, func(v int) bool { return v == '/' })
+	if idx != 1 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	idx = FindFirst(&nums, '/')
+	if idx != 1 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	str := "4/5/6"
+	charArr := []byte(str)
+
+	idx = FindLastIf(&charArr, func(v byte) bool { return v == '/' })
+	if idx != 3 {
+		t.Error("Error: FindLastIf() Failed")
+	}
+
+}

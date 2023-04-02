@@ -2,7 +2,7 @@ package codec
 
 type Encodeable interface {
 	Size() uint32
-	EncodeToBuffer([]byte)
+	EncodeToBuffer([]byte) int
 	Decode([]byte) interface{}
 }
 

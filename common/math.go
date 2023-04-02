@@ -1,6 +1,10 @@
 package common
 
-import "math"
+import (
+	"math"
+
+	"golang.org/x/exp/constraints"
+)
 
 func Min[T ~int8 | ~int32 | ~int | ~int64 | ~uint8 | ~uint32 | ~uint64 | ~float64](a, b T) T {
 	if a < b {
@@ -26,4 +30,24 @@ func Remainder(numShards int, key string) int {
 		total += int(key[j])
 	}
 	return total % numShards
+}
+
+func Sum[T0, T1 constraints.Integer | float32 | float64 | byte](values []T0, sum T1) T1 {
+	for j := 0; j < len(values); j++ {
+		sum += T1(values[j])
+	}
+	return sum
+}
+
+func Accumulate[T0, T1 constraints.Integer | float32 | float64 | byte](values []T0, Type T1) []T1 {
+	if len(values) == 0 {
+		return []T1{}
+	}
+
+	summed := make([]T1, len(values))
+	summed[0] = T1(values[0])
+	for i := 1; i < len(values); i++ {
+		summed[i] = summed[i-1] + T1(values[i])
+	}
+	return summed
 }
