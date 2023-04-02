@@ -1,9 +1,3 @@
 # common-lib
 
-common-lib includes most of the frequently used data types and utility functions used in Arcology, such as:
-
-* Commonly used data types such as account, block, transaction, execution result, etc;
-* Encoding/decoding utilities;
-* Data compression utilities;
-* Concurrent containers;
-* And many other utilties.
+The common-lib module comprises a range of commonly utilized data types and utility functions within Arcology. These include frequently used data types like account, block, transaction, execution result, and more. Additionally, it includes utilities for encoding/decoding, data compression, concurrent containers, and various other functionalities.
