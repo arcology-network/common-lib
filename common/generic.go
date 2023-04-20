@@ -1,18 +1,18 @@
 package common
 
-func Reverse[Type any](values *[]Type) {
+func Reverse[T any](values *[]T) {
 	for i, j := 0, len(*values)-1; i < j; i, j = i+1, j-1 {
 		(*values)[i], (*values)[j] = (*values)[j], (*values)[i]
 	}
 }
 
-func Fill[Type any](values *[]Type, v Type) {
+func Fill[T any](values *[]T, v T) {
 	for i := 0; i < len(*values); i++ {
 		(*values)[i] = v
 	}
 }
 
-func RemoveIf[Type any](values *[]Type, condition func(Type) bool) {
+func RemoveIf[T any](values *[]T, condition func(T) bool) {
 	pos := 0
 	for i := 0; i < len(*values); i++ {
 		if condition((*values)[i]) {
@@ -30,7 +30,21 @@ func RemoveIf[Type any](values *[]Type, condition func(Type) bool) {
 	(*values) = (*values)[:pos]
 }
 
-func Remove[Type comparable](values *[]Type, target Type) {
+func IfThen[T any](condition bool, f0 func() T, f1 func() T) T {
+	if condition {
+		return f0()
+	}
+	return f1()
+}
+
+func EitherOf[T any](lhv interface{}, rhv T) T {
+	if lhv != nil {
+		return lhv.(T)
+	}
+	return rhv
+}
+
+func Remove[T comparable](values *[]T, target T) {
 	pos := 0
 	for i := 0; i < len(*values); i++ {
 		if target == (*values)[i] {
@@ -48,48 +62,48 @@ func Remove[Type comparable](values *[]Type, target Type) {
 	(*values) = (*values)[:pos]
 }
 
-func Foreach[Type any](values *[]Type, predicate func(v Type)) {
+func Foreach[T any](values *[]T, predicate func(v T)) {
 	for i := 0; i < len(*values); i++ {
 		predicate((*values)[i])
 	}
 }
 
-func FindFirst[Type comparable](values *[]Type, v Type) int {
+func FindFirst[T comparable](values *[]T, v T) (int, *T) {
 	for i := 0; i < len(*values); i++ {
 		if (*values)[i] == v {
-			return i
+			return i, &(*values)[i]
 		}
 	}
-	return -1
+	return -1, nil
 }
 
 // Find the leftmost index of the element meeting the criteria
-func FindFirstIf[Type any](values *[]Type, condition func(v Type) bool) int {
+func FindFirstIf[T any](values *[]T, condition func(v T) bool) (int, *T) {
 	for i := 0; i < len(*values); i++ {
 		if condition((*values)[i]) {
-			return i
+			return i, &(*values)[i]
 		}
 	}
-	return -1
+	return -1, nil
 }
 
-func FindLast[Type comparable](values *[]Type, v Type) int {
+func FindLast[T comparable](values *[]T, v T) (int, *T) {
 	for i := len(*values) - 1; i >= 0; i-- {
 		if (*values)[i] == v {
-			return i
+			return i, &(*values)[i]
 		}
 	}
-	return -1
+	return -1, nil
 }
 
 // Find the rightmost index of the element meeting the criteria
-func FindLastIf[Type any](values *[]Type, condition func(v Type) bool) int {
+func FindLastIf[T any](values *[]T, condition func(v T) bool) (int, *T) {
 	for i := len(*values) - 1; i >= 0; i-- {
 		if condition((*values)[i]) {
-			return i
+			return i, &(*values)[i]
 		}
 	}
-	return -1
+	return -1, nil
 }
 
 func DeepCopy[T any](src []T) []T {
@@ -110,3 +124,67 @@ func Flatten[T any](src [][]T) []T {
 	}
 	return buffer
 }
+
+func ConcateFrom[T0, T1 any](array []T0, getter func(T0) []T1) []T1 {
+	total := 0
+	for i := 0; i < len(array); i++ {
+		total += len(getter(array[i]))
+	}
+	output := make([]T1, total) // Pre-allocation for better performance
+
+	offset := 0
+	for i := 0; i < total; i++ {
+		elems := getter(array[i])
+		copy(output[offset:], elems)
+		offset += len(elems)
+	}
+	return output
+}
+
+func From[T any](src []T) []interface{} {
+	converted := make([]interface{}, len(src))
+	for i, v := range src {
+		converted[i] = v
+	}
+	return converted
+}
+
+func To[T any](src []interface{}, typed T) []T {
+	converted := make([]T, len(src))
+	for i, v := range src {
+		converted[i] = v.(T)
+	}
+	return converted
+}
+
+func MergeMaps[M ~map[K]V, K comparable, V any](from, to M) M {
+	for k, v := range to {
+		from[k] = v
+	}
+	return from
+}
+
+// func MergeMapsIf[M ~map[K]V, K comparable, V any](from, to M, func()) M {
+// 	for k, v := range to {
+// 		from[k] = v
+// 	}
+// 	return from
+// }
+
+// func MapKeys[M ~map[K]V, K comparable, V any](m M) []K {
+// 	return maps.Keys(m)
+// }
+
+// func MapValues[M ~map[K]V, K comparable, V any](m M) []V {
+// 	return maps.Values(m)
+// }
+
+// func MapKVs[M ~map[K]V, K comparable, V any](m M) ([]K, []V) {
+// 	keys := make([]K, 0, len(m))
+// 	values := make([]V, 0, len(m))
+// 	for k, v := range m {
+// 		keys = append(keys, k)
+// 		values = append(values, v)
+// 	}
+// 	return keys, values
+// }

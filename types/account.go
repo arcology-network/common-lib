@@ -1,10 +1,10 @@
 package types
 
 import (
+	"bytes"
 	"math/big"
 
 	ethCommon "github.com/arcology-network/3rd-party/eth/common"
-	"github.com/arcology-network/common-lib/common"
 )
 
 type AccountInfo struct {
@@ -26,6 +26,6 @@ func (a *Account) Clone() *Account {
 		Nonce:    a.Nonce,
 		Balance:  a.Balance,
 		Root:     a.Root,
-		CodeHash: common.ArrayCopy(a.CodeHash),
+		CodeHash: bytes.Clone(a.CodeHash),
 	}
 }

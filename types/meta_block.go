@@ -46,7 +46,7 @@ func (this MetaBlock) EncodeToBuffer(buffer []byte) {
 	offset += codec.Byteset(this.Txs).Size()
 
 	for i := 0; i < len(this.Hashlist); i++ {
-		codec.Hash32(*this.Hashlist[i]).EncodeToBuffer(buffer[headerLen+offset:])
+		codec.Bytes32(*this.Hashlist[i]).EncodeToBuffer(buffer[headerLen+offset:])
 		offset += this.Hashlist[i].Size()
 	}
 }

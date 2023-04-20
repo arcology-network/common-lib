@@ -91,25 +91,6 @@ func Transpose(slice [][]string) [][]string {
 	return result
 }
 
-// Make a deep copy from src into dst.
-// func Deepcopy(dst interface{}, src interface{}) error {
-// 	if dst == nil {
-// 		return fmt.Errorf("dst cannot be nil")
-// 	}
-// 	if src == nil {
-// 		return fmt.Errorf("src cannot be nil")
-// 	}
-// 	bytes, err := json.Marshal(src)
-// 	if err != nil {
-// 		return fmt.Errorf("Unable to marshal src: %s", err)
-// 	}
-// 	err = json.Unmarshal(bytes, dst)
-// 	if err != nil {
-// 		return fmt.Errorf("Unable to unmarshal into dst: %s", err)
-// 	}
-// 	return nil
-// }
-
 func GenerateRanges(length int, numThreads int) []int {
 	ranges := make([]int, 0, numThreads+1)
 	step := int(math.Ceil(float64(length) / float64(numThreads)))
@@ -117,12 +98,6 @@ func GenerateRanges(length int, numThreads int) []int {
 		ranges = append(ranges, int(math.Min(float64(step*i), float64(length))))
 	}
 	return ranges
-}
-
-func ArrayCopy(data []byte) []byte {
-	datas := make([]byte, len(data))
-	copy(datas, data)
-	return datas
 }
 
 func GobEncode(x interface{}) ([]byte, error) {
@@ -146,71 +121,7 @@ func GobDecode(data []byte, x interface{}) error {
 	return nil
 }
 
-// func CalculateHash(hashes []*ethCommon.Hash) ethCommon.Hash {
-// 	if len(hashes) == 0 {
-// 		return ethCommon.Hash{}
-// 	}
-// 	datas := make([][]byte, len(hashes))
-// 	for i := range hashes {
-// 		datas[i] = hashes[i].Bytes()
-// 	}
-// 	hash := sha256.Sum256(encoding.Byteset(datas).Encode())
-// 	return ethCommon.BytesToHash(hash[:])
-// }
-
-// func RemoveNilBytes(values *[][]byte) {
-// 	pos := int64(-1)
-// 	for i := 0; i < len((*values)); i++ {
-// 		if pos < 0 && ((*values)[i]) == nil {
-// 			pos = int64(i)
-// 			continue
-// 		}
-
-// 		if pos < 0 && ((*values)[i]) != nil {
-// 			continue
-// 		}
-
-// 		if pos >= 0 && ((*values)[i]) == nil {
-// 			(*values)[pos] = (*values)[i]
-// 			continue
-// 		}
-
-// 		(*values)[pos] = (*values)[i]
-// 		pos++
-// 	}
-
-// 	if pos >= 0 {
-// 		(*values) = (*values)[:pos]
-// 	}
-// }
-
-// func RemoveEmptyStrings(values *[]string) {
-// 	pos := int64(-1)
-// 	for i := 0; i < len((*values)); i++ {
-// 		if pos < 0 && len((*values)[i]) == 0 {
-// 			pos = int64(i)
-// 			continue
-// 		}
-
-// 		if pos < 0 && len((*values)[i]) > 0 {
-// 			continue
-// 		}
-
-// 		if pos >= 0 && len((*values)[i]) == 0 {
-// 			(*values)[pos] = (*values)[i]
-// 			continue
-// 		}
-
-// 		(*values)[pos] = (*values)[i]
-// 		pos++
-// 	}
-
-// 	if pos >= 0 {
-// 		(*values) = (*values)[:pos]
-// 	}
-// }
-
-func RemoveDuplicates[T comparable](strs *[]T) []T {
+func Unique[T comparable](strs *[]T) []T {
 	dict := make(map[T]bool)
 	for i := 0; i < len(*strs); i++ {
 		dict[(*strs)[i]] = true
@@ -221,20 +132,6 @@ func RemoveDuplicates[T comparable](strs *[]T) []T {
 		uniques = append(uniques, k)
 	}
 	return uniques
-}
-
-func ReverseString(s string) string {
-	reversed := []byte(s)
-	for i, j := 0, len(reversed)-1; i < j; i, j = i+1, j-1 {
-		reversed[i], reversed[j] = reversed[j], reversed[i]
-	}
-	return *(*string)(unsafe.Pointer(&reversed))
-}
-
-func SortStrings(strs []string) {
-	sort.SliceStable(strs, func(i, j int) bool {
-		return strs[i] < strs[j]
-	})
 }
 
 func UniqueInts(nums []int) int {

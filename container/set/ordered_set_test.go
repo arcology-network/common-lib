@@ -12,7 +12,7 @@ func TestIndexedSet(t *testing.T) {
 	set.Insert("3")
 	set.Insert("4")
 
-	if set.Size() != 4 {
+	if set.Len() != 4 {
 		t.Error("Error: Wrong entry count")
 	}
 
@@ -20,7 +20,7 @@ func TestIndexedSet(t *testing.T) {
 		t.Error("Error: Wrong entry count")
 	}
 
-	if set.Size() != 4 {
+	if set.Len() != 4 {
 		t.Error("Error: Wrong entry count")
 	}
 
@@ -65,7 +65,7 @@ func TestIndexedSet(t *testing.T) {
 		t.Error("Error: Failed to delete")
 	}
 
-	if set.Size() != 2 {
+	if set.Len() != 2 {
 		t.Error("Error: Wrong entry count")
 	}
 
@@ -77,11 +77,11 @@ func TestIndexedSet(t *testing.T) {
 		t.Error("Error: Failed to get")
 	}
 
-	if set.Size() != 2 {
+	if set.Len() != 2 {
 		t.Error("Error: Wrong entry count")
 	}
 
-	if !set.DeleteByIdx(set.Size() - 1) {
+	if !set.DeleteByIdx(set.Len() - 1) {
 		t.Error("Error: Failed to delete by index 0")
 	}
 
@@ -97,7 +97,7 @@ func TestIndexedSet(t *testing.T) {
 		t.Error("Error: Failed to delete by index 0")
 	}
 
-	if set.Size() != 0 {
+	if set.Len() != 0 {
 		t.Error("Error: Wrong entry count")
 	}
 
@@ -119,7 +119,7 @@ func TestIndexedSet(t *testing.T) {
 		}
 	}
 
-	if set.Size() != 0 {
+	if set.Len() != 0 {
 		t.Error("Error: Wrong entry count")
 	}
 
@@ -128,11 +128,11 @@ func TestIndexedSet(t *testing.T) {
 	}
 
 	for {
-		if set.Size() == 0 {
+		if set.Len() == 0 {
 			break
 		}
 
-		if !set.DeleteByIdx(set.Size() - 1) {
+		if !set.DeleteByIdx(set.Len() - 1) {
 			t.Error("Error: Failed to delete")
 		}
 	}
@@ -146,14 +146,18 @@ func TestIndexedSet(t *testing.T) {
 		t.Error("Error: Should fail")
 	}
 
-	if set.Size() != 1 {
+	if set.Len() != 1 {
 		t.Error("Error: Wrong entry count")
 	}
 
 	set.DeleteByKey("4")
-	if set.Size() != 0 {
+	if set.Len() != 0 {
 		t.Error("Error: Wrong entry count")
 	}
+
+	var emptySet *OrderedSet
+	emptySet.Deepcopy()
+
 }
 
 func BenchmarkSetInsertion(b *testing.B) {
@@ -188,11 +192,11 @@ func BenchmarkSetPopBack(b *testing.B) {
 
 	t0 := time.Now()
 	for {
-		if set.Size() == 0 {
+		if set.Len() == 0 {
 			break
 		}
 
-		if !set.DeleteByIdx(set.Size() - 1) {
+		if !set.DeleteByIdx(set.Len() - 1) {
 			b.Error("Error: Failed to delete")
 		}
 	}

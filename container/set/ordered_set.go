@@ -3,30 +3,43 @@ package orderedset
 import (
 	"math"
 
+	"github.com/arcology-network/common-lib/common"
 	"github.com/elliotchance/orderedmap"
 )
 
 type OrderedSet struct {
-	keyDict *orderedmap.OrderedMap // committed keys + added - removed
-	lookup  []string
+	dict   *orderedmap.OrderedMap // committed keys + added - removed
+	lookup []string
 }
 
 func NewOrderedSet(keys []string) *OrderedSet {
 	this := &OrderedSet{
-		keyDict: orderedmap.NewOrderedMap(),
-		lookup:  keys,
+		dict:   orderedmap.NewOrderedMap(),
+		lookup: keys,
 	}
 
 	for i := 0; i < len(keys); i++ {
-		this.keyDict.Set(keys[i], uint64(i))
+		this.dict.Set(keys[i], uint64(i))
 	}
 	return this
 }
 
-func (this *OrderedSet) Size() uint64 { return uint64(this.keyDict.Len()) }
+func (this *OrderedSet) Len() uint64         { return uint64(this.dict.Len()) }
+func (this *OrderedSet) Keys() []interface{} { return this.dict.Keys() }
+func (this *OrderedSet) Deepcopy() *OrderedSet {
+	if this == nil {
+		return this
+	}
+	return &OrderedSet{this.dict.Copy(), common.DeepCopy(this.lookup)}
+}
+
+func (this *OrderedSet) Exists(key string) bool {
+	_, ok := this.dict.Get(key)
+	return ok
+}
 
 func (this *OrderedSet) IdxOf(key string) (uint64, bool) {
-	v, ok := this.keyDict.Get(key)
+	v, ok := this.dict.Get(key)
 	if !ok {
 		return math.MaxUint64, false
 	}
@@ -41,28 +54,28 @@ func (this *OrderedSet) KeyOf(idx uint64) (interface{}, bool) {
 }
 
 func (this *OrderedSet) Insert(key string) {
-	if _, ok := this.keyDict.Get(key); ok {
+	if _, ok := this.dict.Get(key); ok {
 		return // Already exists
 	}
 
-	if this.keyDict.Set(key, uint64(this.keyDict.Len())) {
+	if this.dict.Set(key, uint64(this.dict.Len())) {
 		this.lookup = append(this.lookup, key)
 	}
 }
 
 func (this *OrderedSet) DeleteByKey(key string) bool {
-	idx, ok := this.keyDict.Get(key)
+	idx, ok := this.dict.Get(key)
 	if !ok {
 		return false
 	}
-	this.keyDict.Delete(key)
+	this.dict.Delete(key)
 	this.lookup = append(this.lookup[:idx.(uint64)], this.lookup[idx.(uint64)+1:]...)
 
 	if idx.(uint64) == uint64(len(this.lookup)) { // Pop back only
 		return true
 	}
 
-	current := this.keyDict.GetElement(this.lookup[idx.(uint64)])
+	current := this.dict.GetElement(this.lookup[idx.(uint64)])
 	for current != nil {
 		current.Value = current.Value.(uint64) - 1
 		current = current.Next()
@@ -75,4 +88,33 @@ func (this *OrderedSet) DeleteByIdx(idx uint64) bool {
 		return this.DeleteByKey(this.lookup[idx])
 	}
 	return false
+}
+
+func (this *OrderedSet) Union(other *orderedmap.OrderedMap) {
+	for iter := other.Front(); iter != nil; iter = iter.Next() {
+		this.Insert(iter.Key.(string))
+	}
+}
+
+func (this *OrderedSet) Difference(other *orderedmap.OrderedMap) {
+	for iter := other.Front(); iter != nil; iter = iter.Next() {
+		this.DeleteByKey(iter.Key.(string)) // could have serious performance problem
+	}
+
+	if this.dict.Len()*other.Len() > 65536 {
+		for iter := other.Front(); iter != nil; iter = iter.Next() {
+			this.dict.Delete(iter.Key.(string)) // could have serious performance problem
+		}
+	}
+
+	for iter := other.Front(); iter != nil; iter = iter.Next() {
+		this.DeleteByKey(iter.Key.(string))
+		return
+	}
+
+	// could better problems
+	this.lookup = this.lookup[:0]
+	for iter := this.dict.Front(); iter != nil; iter = iter.Next() {
+		this.lookup = append(this.lookup, iter.Key.(string))
+	}
 }

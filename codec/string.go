@@ -2,6 +2,7 @@ package codec
 
 import (
 	"reflect"
+	"sort"
 	"unsafe"
 
 	"github.com/arcology-network/common-lib/common"
@@ -23,6 +24,14 @@ func (this String) ToBytes() []byte {
 	return (*[0x7fff0000]byte)(unsafe.Pointer(
 		(*reflect.StringHeader)(unsafe.Pointer(&this)).Data),
 	)[:len(this):len(this)]
+}
+
+func (this String) Reverse() string {
+	reversed := []byte(this)
+	for i, j := 0, len(reversed)-1; i < j; i, j = i+1, j-1 {
+		reversed[i], reversed[j] = reversed[j], reversed[i]
+	}
+	return *(*string)(unsafe.Pointer(&reversed))
 }
 
 func (this String) Encode() []byte {
@@ -50,6 +59,16 @@ func (String) Decode(bytes []byte) interface{} {
 }
 
 type Strings []string
+
+func (this Strings) Concate() string {
+	return Bytes(this.Flatten()).ToString()
+}
+
+func (this Strings) Sort() {
+	sort.SliceStable(this, func(i, j int) bool {
+		return this[i] < this[j]
+	})
+}
 
 func (this Strings) Encode() []byte {
 	buffer := make([]byte, this.Size())

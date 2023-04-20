@@ -382,7 +382,7 @@ func (this *FileDB) Export(prefixes [][]byte) ([][]byte, error) {
 			}
 		}
 	}
-	paths = common.RemoveDuplicates(&paths)
+	paths = common.Unique(&paths)
 	return this.readAll(paths)
 }
 
@@ -488,13 +488,14 @@ func (this *FileDB) Import(data [][]byte) error {
 
 		file := codec.Bytes(combo[0]).ToString() // file ROOT_PATH
 		// file := this.rootpath + relativePath
-		reversed := common.ReverseString(file)
+
+		reversed := codec.String(file).Reverse()
 		parts := strings.Split(reversed, "/")
 		if len(parts) < int(this.depth) {
 			return errors.New("Error: Wrong path !!!")
 		}
 		reversed = strings.Join(parts[:this.depth+1], "/")
-		ROOT_PATH := this.rootpath + common.ReverseString(reversed)
+		ROOT_PATH := this.rootpath + codec.String(reversed).Reverse()
 		if err := os.WriteFile(ROOT_PATH, combo[1], os.ModePerm); err != nil {
 			return err
 		}

@@ -10,47 +10,47 @@ const (
 	HASH32_LEN = 32
 )
 
-type Hash32 [HASH32_LEN]byte
+type Bytes32 [HASH32_LEN]byte
 
-func (this *Hash32) Get() interface{} {
+func (this *Bytes32) Get() interface{} {
 	return *this
 }
 
-func (this *Hash32) Set(v interface{}) {
-	*this = v.(Hash32)
+func (this *Bytes32) Set(v interface{}) {
+	*this = v.(Bytes32)
 }
 
-func (this Hash32) Size() uint32 {
+func (this Bytes32) Size() uint32 {
 	return uint32(HASH32_LEN)
 }
 
-func (this Hash32) Clone() Hash32 {
-	target := Hash32{}
+func (this Bytes32) Clone() Bytes32 {
+	target := Bytes32{}
 	copy(target[:], this[:])
 	return target
 }
 
-func (this Hash32) Encode() []byte {
+func (this Bytes32) Encode() []byte {
 	return this[:]
 }
 
-func (this Hash32) EncodeToBuffer(buffer []byte) int {
+func (this Bytes32) EncodeToBuffer(buffer []byte) int {
 	copy(buffer, this[:])
 	return len(this)
 }
 
-func (this Hash32) Decode(buffer []byte) interface{} {
+func (this Bytes32) Decode(buffer []byte) interface{} {
 	copy(this[:], buffer)
-	return Hash32(this)
+	return Bytes32(this)
 }
 
-func (this Hash32) Hex() string {
+func (this Bytes32) Hex() string {
 	var accHex [2 * len(this)]byte
 	hex.Encode(accHex[:], this[:])
 	return string(accHex[:])
 }
 
-func (this Hash32) UUID(seed uint64) Hash32 {
+func (this Bytes32) UUID(seed uint64) Bytes32 {
 	buffer := [HASH32_LEN + 8]byte{}
 	copy(this[:], buffer[:])
 	Uint64(uint64(seed)).EncodeToBuffer(buffer[len(this):])

@@ -2,6 +2,7 @@ package codec
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"unsafe"
 
 	ethCommon "github.com/arcology-network/3rd-party/eth/common"
@@ -19,6 +20,12 @@ func (this *Bytes) Get() interface{} {
 
 func (this *Bytes) Set(v interface{}) {
 	*this = v.(Bytes)
+}
+
+func (this *Bytes) Hex() string {
+	bytes := make([]byte, 2*len(*this))
+	hex.Encode(bytes[:], (*this)[:])
+	return string(bytes)
 }
 
 func (this Bytes) Encode() []byte {
