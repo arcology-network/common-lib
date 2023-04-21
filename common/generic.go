@@ -157,6 +157,39 @@ func To[T any](src []interface{}, typed T) []T {
 	return converted
 }
 
+func EqualArray[T comparable](lhv []T, rhv []T) bool {
+	if len(lhv) != len(rhv) {
+		return false
+	}
+
+	for _, v0 := range lhv {
+		flag := false
+		for _, v1 := range rhv {
+			if v0 == v1 {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			return false
+		}
+	}
+
+	for _, v0 := range rhv {
+		flag := false
+		for _, v1 := range lhv {
+			if v0 == v1 {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			return false
+		}
+	}
+	return true
+}
+
 func MergeMaps[M ~map[K]V, K comparable, V any](from, to M) M {
 	for k, v := range to {
 		from[k] = v
@@ -171,20 +204,34 @@ func MergeMaps[M ~map[K]V, K comparable, V any](from, to M) M {
 // 	return from
 // }
 
-// func MapKeys[M ~map[K]V, K comparable, V any](m M) []K {
-// 	return maps.Keys(m)
-// }
+func MapKeys[M ~map[K]V, K comparable, V any](m M) []K {
+	keys := make([]K, len(m))
+	i := 0
+	for k := range m {
+		keys[i] = k
+		i++
+	}
+	return keys
+}
 
-// func MapValues[M ~map[K]V, K comparable, V any](m M) []V {
-// 	return maps.Values(m)
-// }
+func MapValues[M ~map[K]V, K comparable, V any](m M) []V {
+	values := make([]V, len(m))
+	i := 0
+	for _, v := range m {
+		values[i] = v
+		i++
+	}
+	return values
+}
 
-// func MapKVs[M ~map[K]V, K comparable, V any](m M) ([]K, []V) {
-// 	keys := make([]K, 0, len(m))
-// 	values := make([]V, 0, len(m))
-// 	for k, v := range m {
-// 		keys = append(keys, k)
-// 		values = append(values, v)
-// 	}
-// 	return keys, values
-// }
+func MapKVs[M ~map[K]V, K comparable, V any](m M) ([]K, []V) {
+	keys := make([]K, len(m))
+	values := make([]V, len(m))
+	i := 0
+	for k, v := range m {
+		keys[i] = k
+		values[i] = v
+		i++
+	}
+	return keys, values
+}

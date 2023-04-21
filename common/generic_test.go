@@ -374,7 +374,55 @@ func TestFindLastIf(t *testing.T) {
 	if idx != 3 {
 		t.Error("Error: FindLastIf() Failed")
 	}
+}
 
+func TestMapKeys(t *testing.T) {
+	_map := map[uint32]int{}
+	_map[11] = 99
+	_map[21] = 25
+
+	keys := MapKeys(_map)
+	if keys[0] != 11 || keys[1] != 21 {
+		t.Error("Error: Not equal")
+	}
+}
+
+func TestValues(t *testing.T) {
+	_map := map[uint32]int{}
+	_map[11] = 99
+	_map[21] = 25
+
+	keys := MapValues(_map)
+	if keys[0] != 99 || keys[1] != 25 {
+		t.Error("Error: Not equal")
+	}
+}
+
+func TestEqualArray(t *testing.T) {
+	array0 := []int{1, 2, 3}
+	array1 := []int{1, 2, 3}
+
+	if !EqualArray(array0, array1) {
+		t.Error("Error: Not equal")
+	}
+
+	array0 = []int{}
+	array1 = []int{}
+	if !EqualArray(array0, array1) {
+		t.Error("Error: Not equal")
+	}
+
+	array0 = []int{1, 1, 2, 3}
+	array1 = []int{1, 2, 3}
+	if EqualArray(array0, array1) {
+		t.Error("Error: Not equal")
+	}
+
+	array0 = []int{1, 1, 3}
+	array1 = []int{1, 2, 3}
+	if EqualArray(array0, array1) {
+		t.Error("Error: Not equal")
+	}
 }
 
 type testStruct struct {

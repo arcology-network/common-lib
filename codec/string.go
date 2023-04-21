@@ -195,6 +195,22 @@ func (Strings) FromBytes(byteSet [][]byte) []string {
 
 type Stringset [][]string
 
+func (this Stringset) Encode() []byte {
+	length := 0
+	for i := 0; i < len(this); i++ {
+		length += int(Strings(this[i]).Size())
+	}
+	buffer := make([]byte, length+(len(this)+1)*UINT32_LEN)
+
+	offset := 0
+	Uint32(len(this)).EncodeToBuffer(buffer)
+	for i := 0; i < len(this); i++ {
+		Uint32(len(this)).EncodeToBuffer(buffer[(i+1)*4:])
+		offset += Strings(this[i]).EncodeToBuffer(buffer[(len(this)+1)*UINT32_LEN+offset:])
+	}
+	return buffer
+}
+
 func (this Stringset) Flatten() []string {
 	positions := make([]int, len(this)+1)
 	positions[0] = 0
