@@ -39,15 +39,15 @@ func Sum[T0, T1 constraints.Integer | float32 | float64 | byte](values []T0, sum
 	return sum
 }
 
-func Accumulate[T0, T1 constraints.Integer | float32 | float64 | byte](values []T0, Type T1) []T1 {
-	if len(values) == 0 {
-		return []T1{}
-	}
+// func Accumulate[T0, T1 constraints.Integer | float32 | float64 | byte](values []T0, Type T1) []T1 {
+// 	if len(values) == 0 {
+// 		return []T1{}
+// 	}
 
-	summed := make([]T1, len(values))
-	summed[0] = T1(values[0])
-	for i := 1; i < len(values); i++ {
-		summed[i] = summed[i-1] + T1(values[i])
-	}
-	return summed
-}
+// 	summed := make([]T1, len(values))
+// 	summed[0] = T1(values[0])
+// 	for i := 1; i < len(values); i++ {
+// 		summed[i] = summed[i-1] + T1(values[i])
+// 	}
+// 	return summed
+// }

@@ -322,20 +322,20 @@ func TestStringsetFlatten(t *testing.T) {
 	}
 }
 
-// func TestStringsetCodec(t *testing.T) {
-// 	str0 := []string{"123456", "987654"}
-// 	str1 := []string{"abcdef", "zqwert"}
+func TestStringsetCodec(t *testing.T) {
+	str0 := []string{"123456", "987654"}
+	str1 := []string{"abcdef", "zqwert"}
 
-// 	buffer := Stringset([][]string{str0, str1}).Encode()
-// 	out := Stringset{}.Decode(buffer).(Stringset)
+	buffer := Stringset([][]string{str0, str1}).Encode()
+	out := Stringset{}.Decode(buffer).(Stringset)
 
-// 	if out[0][0] != "123456" ||
-// 		out[0][1] != "987654" ||
-// 		out[1][0] != "abcdef" ||
-// 		out[1][1] != "zqwert" {
-// 		t.Error("Mismatch !")
-// 	}
-// }
+	if out[0][0] != "123456" ||
+		out[0][1] != "987654" ||
+		out[1][0] != "abcdef" ||
+		out[1][1] != "zqwert" {
+		t.Error("Mismatch !")
+	}
+}
 
 func TestHash16s(t *testing.T) {
 	in := [][16]byte{{1, 2, 3, 4, 5}, {5, 6, 7, 8, 9}}

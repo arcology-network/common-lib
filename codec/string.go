@@ -5,7 +5,7 @@ import (
 	"sort"
 	"unsafe"
 
-	"github.com/arcology-network/common-lib/common"
+	common "github.com/arcology-network/common-lib/common"
 )
 
 const (
@@ -195,20 +195,42 @@ func (Strings) FromBytes(byteSet [][]byte) []string {
 
 type Stringset [][]string
 
-func (this Stringset) Encode() []byte {
+func (this Stringset) Size() uint32 {
 	length := 0
 	for i := 0; i < len(this); i++ {
 		length += int(Strings(this[i]).Size())
 	}
-	buffer := make([]byte, length+(len(this)+1)*UINT32_LEN)
+	return uint32(len(this)+1)*UINT32_LEN + uint32(length)
+}
 
-	offset := 0
-	Uint32(len(this)).EncodeToBuffer(buffer)
-	for i := 0; i < len(this); i++ {
-		Uint32(len(this)).EncodeToBuffer(buffer[(i+1)*4:])
-		offset += Strings(this[i]).EncodeToBuffer(buffer[(len(this)+1)*UINT32_LEN+offset:])
-	}
+func (this Stringset) Encode() []byte {
+	length := int(this.Size())
+	buffer := make([]byte, length)
+	this.EncodeToBuffer(buffer)
 	return buffer
+}
+
+func (this Stringset) EncodeToBuffer(buffer []byte) int {
+	lengths := make([]uint32, len(this))
+	for i := 0; i < len(this); i++ {
+		lengths[i] = Strings(this[i]).Size()
+	}
+
+	offset := Encoder{}.FillHeader(buffer, lengths)
+	for i := 0; i < len(this); i++ {
+		offset += Strings(this[i]).EncodeToBuffer(buffer[offset:])
+	}
+	return offset
+}
+
+func (Stringset) Decode(buffer []byte) interface{} {
+	fields := Byteset{}.Decode(buffer).(Byteset)
+
+	stringset := make([][]string, len(fields))
+	for i := 0; i < len(fields); i++ {
+		stringset[i] = []string(Strings{}.Decode(fields[i]).(Strings))
+	}
+	return Stringset(stringset)
 }
 
 func (this Stringset) Flatten() []string {

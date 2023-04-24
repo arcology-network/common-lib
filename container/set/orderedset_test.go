@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/arcology-network/common-lib/common"
 )
 
 func TestIndexedSet(t *testing.T) {
@@ -156,8 +158,25 @@ func TestIndexedSet(t *testing.T) {
 	}
 
 	var emptySet *OrderedSet
-	emptySet.Deepcopy()
+	emptySet.Clone()
+}
 
+func TestOrderedSetCodec(t *testing.T) {
+	set := NewOrderedSet([]string{"1", "2"})
+	set.Insert("3")
+	set.Insert("3")
+	set.Insert("4")
+
+	buffer := set.Encode()
+	out := (&OrderedSet{}).Decode(buffer).(*OrderedSet)
+
+	if !common.EqualArray(set.lookup, out.lookup) {
+		t.Error("Error: Lookup Mismatch")
+	}
+
+	// if !common.EqualMap(set.dict, out.dict) {
+	// 	t.Error("Error: Dic Mismatch")
+	// }
 }
 
 func BenchmarkSetInsertion(b *testing.B) {

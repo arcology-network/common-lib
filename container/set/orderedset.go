@@ -17,28 +17,53 @@ func NewOrderedSet(keys []string) *OrderedSet {
 		dict:   orderedmap.NewOrderedMap(),
 		lookup: keys,
 	}
-
-	for i := 0; i < len(keys); i++ {
-		this.dict.Set(keys[i], uint64(i))
-	}
 	return this
 }
 
-func (this *OrderedSet) Len() uint64         { return uint64(this.dict.Len()) }
-func (this *OrderedSet) Keys() []interface{} { return this.dict.Keys() }
-func (this *OrderedSet) Deepcopy() *OrderedSet {
+func (this *OrderedSet) Sync() *orderedmap.OrderedMap {
+	if (this.dict.Len()) != len(this.lookup) {
+		if this.dict.Len() > 0 {
+			this.dict = orderedmap.NewOrderedMap()
+		}
+
+		for i := 0; i < len(this.lookup); i++ {
+			this.dict.Set(this.lookup[i], uint64(i))
+		}
+	}
+	return this.dict
+}
+
+func (this *OrderedSet) Len() uint64                  { return uint64(len(this.lookup)) }
+func (this *OrderedSet) Keys() []string               { return this.lookup }
+func (this *OrderedSet) Dict() *orderedmap.OrderedMap { return this.Sync() }
+func (this *OrderedSet) Clone() *OrderedSet {
 	if this == nil {
 		return this
 	}
-	return &OrderedSet{this.dict.Copy(), common.DeepCopy(this.lookup)}
+	return &OrderedSet{
+		this.dict.Copy(),
+		common.DeepCopy(this.lookup),
+	}
 }
 
 func (this *OrderedSet) Exists(key string) bool {
+	this.Sync()
 	_, ok := this.dict.Get(key)
 	return ok
 }
 
+func (this *OrderedSet) Get(key string) (uint64, bool) {
+	return this.IdxOf(key)
+}
+
+func (this *OrderedSet) Set(key string) {
+	this.Insert(key)
+}
+
+func (this *OrderedSet) Delete(key string) bool { return this.DeleteByKey(key) }
+
 func (this *OrderedSet) IdxOf(key string) (uint64, bool) {
+	this.Sync()
 	v, ok := this.dict.Get(key)
 	if !ok {
 		return math.MaxUint64, false
@@ -54,6 +79,7 @@ func (this *OrderedSet) KeyOf(idx uint64) (interface{}, bool) {
 }
 
 func (this *OrderedSet) Insert(key string) {
+	this.Sync()
 	if _, ok := this.dict.Get(key); ok {
 		return // Already exists
 	}
@@ -64,6 +90,8 @@ func (this *OrderedSet) Insert(key string) {
 }
 
 func (this *OrderedSet) DeleteByKey(key string) bool {
+	this.Sync()
+
 	idx, ok := this.dict.Get(key)
 	if !ok {
 		return false
@@ -84,19 +112,23 @@ func (this *OrderedSet) DeleteByKey(key string) bool {
 }
 
 func (this *OrderedSet) DeleteByIdx(idx uint64) bool {
+	this.Sync()
+
 	if idx < uint64(len(this.lookup)) {
 		return this.DeleteByKey(this.lookup[idx])
 	}
 	return false
 }
 
-func (this *OrderedSet) Union(other *orderedmap.OrderedMap) {
+func (this *OrderedSet) Union(otherSet *OrderedSet) {
+	other := otherSet.Sync()
 	for iter := other.Front(); iter != nil; iter = iter.Next() {
 		this.Insert(iter.Key.(string))
 	}
 }
 
-func (this *OrderedSet) Difference(other *orderedmap.OrderedMap) {
+func (this *OrderedSet) Difference(otherSet *OrderedSet) {
+	other := otherSet.Sync()
 	for iter := other.Front(); iter != nil; iter = iter.Next() {
 		this.DeleteByKey(iter.Key.(string)) // could have serious performance problem
 	}

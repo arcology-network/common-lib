@@ -423,6 +423,14 @@ func TestEqualArray(t *testing.T) {
 	if EqualArray(array0, array1) {
 		t.Error("Error: Not equal")
 	}
+
+	if EqualArray(array0, nil) {
+		t.Error("Error: Not equal")
+	}
+
+	if EqualArray(nil, array0) {
+		t.Error("Error: Not equal")
+	}
 }
 
 type testStruct struct {
