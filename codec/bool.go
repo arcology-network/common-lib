@@ -1,5 +1,7 @@
 package codec
 
+import common "github.com/arcology-network/common-lib/common"
+
 const (
 	BOOL_LEN = 1
 )
@@ -25,11 +27,7 @@ func (this Bool) Encode() []byte {
 }
 
 func (this Bool) EncodeToBuffer(buffer []byte) int {
-	if this {
-		buffer[0] = 1
-	} else {
-		buffer[0] = 0
-	}
+	buffer[0] = uint8(common.IfThen(bool(this), 1, 0))
 	return BOOL_LEN
 }
 

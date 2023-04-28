@@ -170,7 +170,7 @@ func TestOrderedSetCodec(t *testing.T) {
 	buffer := set.Encode()
 	out := (&OrderedSet{}).Decode(buffer).(*OrderedSet)
 
-	if !common.EqualArray(set.lookup, out.lookup) {
+	if !common.EqualArray(set.Keys(), out.Keys()) {
 		t.Error("Error: Lookup Mismatch")
 	}
 
@@ -186,6 +186,13 @@ func BenchmarkSetInsertion(b *testing.B) {
 		set.Insert(fmt.Sprint(i))
 	}
 	fmt.Println("set.Insert "+fmt.Sprint(1000000), " in ", time.Since(t0))
+
+	t0 = time.Now()
+	m := make(map[string]int)
+	for i := 0; i < 1000000; i++ {
+		m[fmt.Sprint(i)] = i
+	}
+	fmt.Println("golang native map Insert "+fmt.Sprint(1000000), " in ", time.Since(t0))
 }
 
 func BenchmarkSetPopFront(b *testing.B) {
@@ -200,6 +207,13 @@ func BenchmarkSetPopFront(b *testing.B) {
 		set.DeleteByIdx(0)
 	}
 	fmt.Println("set.Insert "+fmt.Sprint(1000), " in ", time.Since(t0))
+
+	t0 = time.Now()
+	m := make(map[string]int)
+	for i := 0; i < 1000000; i++ {
+		m[fmt.Sprint(i)] = i
+	}
+	fmt.Println("golang native map deletion "+fmt.Sprint(1000000), " in ", time.Since(t0))
 
 }
 

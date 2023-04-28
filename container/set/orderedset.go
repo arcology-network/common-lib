@@ -8,41 +8,66 @@ import (
 )
 
 type OrderedSet struct {
-	dict   *orderedmap.OrderedMap // committed keys + added - removed
-	lookup []string
+	dict    *orderedmap.OrderedMap // committed keys + added - removed
+	keys    []string
+	touched bool
 }
 
 func NewOrderedSet(keys []string) *OrderedSet {
 	this := &OrderedSet{
-		dict:   orderedmap.NewOrderedMap(),
-		lookup: keys,
+		dict:    orderedmap.NewOrderedMap(),
+		keys:    keys,
+		touched: false,
 	}
 	return this
 }
 
+func (this *OrderedSet) Equal(other *OrderedSet) bool {
+	if this == other && this == nil {
+		return true
+	}
+
+	if this == nil || other == nil {
+		return false
+	}
+
+	return common.EqualArray(this.keys, other.keys) &&
+		this.touched == other.touched &&
+		this.isSynced() == other.isSynced()
+}
+
+func (this *OrderedSet) isSynced() bool {
+	return (this.dict.Len()) == len(this.keys)
+}
+
+// Sync the look up with the
 func (this *OrderedSet) Sync() *orderedmap.OrderedMap {
-	if (this.dict.Len()) != len(this.lookup) {
+	if !this.isSynced() {
 		if this.dict.Len() > 0 {
-			this.dict = orderedmap.NewOrderedMap()
+			this.dict = orderedmap.NewOrderedMap() // This should never happen
 		}
 
-		for i := 0; i < len(this.lookup); i++ {
-			this.dict.Set(this.lookup[i], uint64(i))
+		for i := 0; i < len(this.keys); i++ {
+			this.dict.Set(this.keys[i], uint64(i))
 		}
 	}
 	return this.dict
 }
 
-func (this *OrderedSet) Len() uint64                  { return uint64(len(this.lookup)) }
-func (this *OrderedSet) Keys() []string               { return this.lookup }
+func (this *OrderedSet) Touched() bool { return this.touched }
+func (this *OrderedSet) Len() uint64   { return uint64(len(this.keys)) }
+func (this *OrderedSet) Keys() []string {
+	return this.keys
+}
 func (this *OrderedSet) Dict() *orderedmap.OrderedMap { return this.Sync() }
 func (this *OrderedSet) Clone() *OrderedSet {
 	if this == nil {
 		return this
 	}
 	return &OrderedSet{
-		this.dict.Copy(),
-		common.DeepCopy(this.lookup),
+		orderedmap.NewOrderedMap(), // Initial an empty one to save time
+		common.DeepCopy(this.keys),
+		this.touched,
 	}
 }
 
@@ -50,14 +75,6 @@ func (this *OrderedSet) Exists(key string) bool {
 	this.Sync()
 	_, ok := this.dict.Get(key)
 	return ok
-}
-
-func (this *OrderedSet) Get(key string) (uint64, bool) {
-	return this.IdxOf(key)
-}
-
-func (this *OrderedSet) Set(key string) {
-	this.Insert(key)
 }
 
 func (this *OrderedSet) Delete(key string) bool { return this.DeleteByKey(key) }
@@ -72,8 +89,8 @@ func (this *OrderedSet) IdxOf(key string) (uint64, bool) {
 }
 
 func (this *OrderedSet) KeyOf(idx uint64) (interface{}, bool) {
-	if idx < uint64(len(this.lookup)) {
-		return this.lookup[idx], true
+	if idx < uint64(len(this.keys)) {
+		return this.keys[idx], true
 	}
 	return nil, false
 }
@@ -84,26 +101,26 @@ func (this *OrderedSet) Insert(key string) {
 		return // Already exists
 	}
 
-	if this.dict.Set(key, uint64(this.dict.Len())) {
-		this.lookup = append(this.lookup, key)
+	if this.touched = this.dict.Set(key, uint64(this.dict.Len())); this.touched { // A new key will be added
+		this.keys = append(this.keys, key)
 	}
 }
 
 func (this *OrderedSet) DeleteByKey(key string) bool {
 	this.Sync()
-
 	idx, ok := this.dict.Get(key)
 	if !ok {
 		return false
 	}
-	this.dict.Delete(key)
-	this.lookup = append(this.lookup[:idx.(uint64)], this.lookup[idx.(uint64)+1:]...)
 
-	if idx.(uint64) == uint64(len(this.lookup)) { // Pop back only
+	this.touched = this.dict.Delete(key) // A key was deleted
+	this.keys = append(this.keys[:idx.(uint64)], this.keys[idx.(uint64)+1:]...)
+
+	if idx.(uint64) == uint64(len(this.keys)) { // Pop back only
 		return true
 	}
 
-	current := this.dict.GetElement(this.lookup[idx.(uint64)])
+	current := this.dict.GetElement(this.keys[idx.(uint64)])
 	for current != nil {
 		current.Value = current.Value.(uint64) - 1
 		current = current.Next()
@@ -114,8 +131,8 @@ func (this *OrderedSet) DeleteByKey(key string) bool {
 func (this *OrderedSet) DeleteByIdx(idx uint64) bool {
 	this.Sync()
 
-	if idx < uint64(len(this.lookup)) {
-		return this.DeleteByKey(this.lookup[idx])
+	if idx < uint64(len(this.keys)) {
+		return this.DeleteByKey(this.keys[idx])
 	}
 	return false
 }
@@ -145,8 +162,8 @@ func (this *OrderedSet) Difference(otherSet *OrderedSet) {
 	}
 
 	// could better problems
-	this.lookup = this.lookup[:0]
+	this.keys = this.keys[:0]
 	for iter := this.dict.Front(); iter != nil; iter = iter.Next() {
-		this.lookup = append(this.lookup, iter.Key.(string))
+		this.keys = append(this.keys, iter.Key.(string))
 	}
 }

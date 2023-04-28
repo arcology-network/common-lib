@@ -30,7 +30,28 @@ func RemoveIf[T any](values *[]T, condition func(T) bool) {
 	(*values) = (*values)[:pos]
 }
 
-func IfThen[T any](condition bool, f0 func() T, f1 func() T) T {
+func IfThen[T any](condition bool, v0 T, v1 T) T {
+	if condition {
+		return v0
+	}
+	return v1
+}
+
+func IfThenDo1st[T any](condition bool, f0 func() T, v1 T) T {
+	if condition {
+		return f0()
+	}
+	return v1
+}
+
+func IfThenDo2nd[T any](condition bool, f0 func() T, v1 T) T {
+	if condition {
+		return f0()
+	}
+	return v1
+}
+
+func IfThenDo[T any](condition bool, f0 func() T, f1 func() T) T {
 	if condition {
 		return f0()
 	}
@@ -149,12 +170,20 @@ func From[T any](src []T) []interface{} {
 	return converted
 }
 
-func To[T any](src []interface{}, typed T) []T {
+func To[T any](src []interface{}, _ T) []T {
 	converted := make([]T, len(src))
 	for i, v := range src {
 		converted[i] = v.(T)
 	}
 	return converted
+}
+
+func CastTo[T0, T1 any](src []T0, predicate func(T0) T1) []T1 {
+	target := make([]T1, len(src))
+	for i := range src {
+		target[i] = predicate(src[i])
+	}
+	return target
 }
 
 func EqualArray[T comparable](lhv []T, rhv []T) bool {

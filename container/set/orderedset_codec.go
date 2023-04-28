@@ -5,14 +5,14 @@ import (
 )
 
 func (this *OrderedSet) Encode(processors ...func(interface{}) interface{}) []byte {
-	return codec.Strings(this.lookup).Encode()
+	return codec.Strings(this.keys).Encode()
 }
 
 func (this *OrderedSet) EncodeToBuffer(buffer []byte, processors ...func(interface{}) interface{}) int {
-	return codec.Strings(this.lookup).EncodeToBuffer(buffer)
+	return codec.Strings(this.keys).EncodeToBuffer(buffer)
 }
 
 func (*OrderedSet) Decode(buffer []byte) interface{} {
-	lookup := []string(codec.Strings{}.Decode(buffer).(codec.Strings))
-	return NewOrderedSet(lookup)
+	keys := []string(codec.Strings{}.Decode(buffer).(codec.Strings))
+	return NewOrderedSet(keys)
 }
