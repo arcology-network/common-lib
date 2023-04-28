@@ -12,7 +12,13 @@ func Fill[T any](values *[]T, v T) {
 	}
 }
 
-func RemoveIf[T any](values *[]T, condition func(T) bool) {
+func CopyRemoveIf[T any](values []T, condition func(T, ...interface{}) bool) []T {
+	array := Clone(values)
+	RemoveIf(&array, condition)
+	return array
+}
+
+func RemoveIf[T any](values *[]T, condition func(T, ...interface{}) bool) {
 	pos := 0
 	for i := 0; i < len(*values); i++ {
 		if condition((*values)[i]) {
@@ -23,6 +29,24 @@ func RemoveIf[T any](values *[]T, condition func(T) bool) {
 
 	for i := pos; i < len(*values); i++ {
 		if !condition((*values)[i]) {
+			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
+			pos++
+		}
+	}
+	(*values) = (*values)[:pos]
+}
+
+func KeepIf[T any](values *[]T, condition func(T, ...interface{}) bool) {
+	pos := 0
+	for i := 0; i < len(*values); i++ {
+		if !condition((*values)[i]) {
+			pos = i
+			break
+		}
+	}
+
+	for i := pos; i < len(*values); i++ {
+		if condition((*values)[i]) {
 			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
 			pos++
 		}
@@ -127,7 +151,7 @@ func FindLastIf[T any](values *[]T, condition func(v T) bool) (int, *T) {
 	return -1, nil
 }
 
-func DeepCopy[T any](src []T) []T {
+func Clone[T any](src []T) []T {
 	dst := make([]T, len(src))
 	copy(dst, src)
 	return dst
@@ -160,22 +184,6 @@ func ConcateFrom[T0, T1 any](array []T0, getter func(T0) []T1) []T1 {
 		offset += len(elems)
 	}
 	return output
-}
-
-func From[T any](src []T) []interface{} {
-	converted := make([]interface{}, len(src))
-	for i, v := range src {
-		converted[i] = v
-	}
-	return converted
-}
-
-func To[T any](src []interface{}, _ T) []T {
-	converted := make([]T, len(src))
-	for i, v := range src {
-		converted[i] = v.(T)
-	}
-	return converted
 }
 
 func CastTo[T0, T1 any](src []T0, predicate func(T0) T1) []T1 {

@@ -66,7 +66,7 @@ func (this *OrderedSet) Clone() *OrderedSet {
 	}
 	return &OrderedSet{
 		orderedmap.NewOrderedMap(), // Initial an empty one to save time
-		common.DeepCopy(this.keys),
+		common.Clone(this.keys),
 		this.touched,
 	}
 }

@@ -271,7 +271,7 @@ func (this *FileDB) BatchGet(nkeys []string) ([][]byte, error) {
 		}
 	}
 	common.ParallelWorker(len(uniqueFiles), 8, reader)
-	common.RemoveIf(&errs, func(v error) bool { return v == nil })
+	common.RemoveIf(&errs, func(v error, _ ...interface{}) bool { return v == nil })
 
 	if len(errs) > 0 {
 		return data, errs[0]
@@ -307,7 +307,7 @@ func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
 	common.ParallelWorker(len(uniqueFiles), 4, maker)
 
 	common.Remove(&newFiles, "")
-	common.RemoveIf(&errs, func(v error) bool { return v == nil })
+	common.RemoveIf(&errs, func(v error, _ ...interface{}) bool { return v == nil })
 
 	this.files = append(this.files, newFiles...)
 	if len(errs) > 0 {
@@ -342,7 +342,7 @@ func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
 		}
 	}
 	common.ParallelWorker(len(uniqueFiles), 8, writer)
-	common.RemoveIf(&errs, func(v error) bool { return v == nil })
+	common.RemoveIf(&errs, func(v error, _ ...interface{}) bool { return v == nil })
 
 	if len(errs) > 0 {
 		return errs[0]
@@ -436,7 +436,7 @@ func (this *FileDB) readAll(paths []string) ([][]byte, error) {
 		}
 	}
 	common.ParallelWorker(len(paths), 8, reader)
-	common.RemoveIf(&errs, func(v error) bool { return v == nil })
+	common.RemoveIf(&errs, func(v error, _ ...interface{}) bool { return v == nil })
 
 	if len(errs) > 0 {
 		return nil, errs[0].(error)
