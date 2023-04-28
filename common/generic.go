@@ -12,46 +12,76 @@ func Fill[T any](values *[]T, v T) {
 	}
 }
 
-func CopyRemoveIf[T any](values []T, condition func(T, ...interface{}) bool) []T {
-	array := Clone(values)
-	RemoveIf(&array, condition)
-	return array
+func RemoveIfMeet[T any](values *[]T, args interface{}, conditions ...func(T, ...interface{}) bool) {
+	if conditions == nil {
+		return
+	}
+
+	pos := 0
+	for _, condition := range conditions {
+		for i := 0; i < len(*values); i++ {
+			if condition((*values)[i], args) {
+				pos = i
+				break
+			}
+		}
+
+		for i := pos; i < len(*values); i++ {
+			if !condition((*values)[i], args) {
+				(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
+				pos++
+			}
+		}
+		(*values) = (*values)[:pos]
+	}
 }
 
-func RemoveIf[T any](values *[]T, condition func(T, ...interface{}) bool) {
-	pos := 0
-	for i := 0; i < len(*values); i++ {
-		if condition((*values)[i]) {
-			pos = i
-			break
-		}
+func RemoveIf[T any](values *[]T, conditions ...func(T) bool) {
+	if conditions == nil {
+		return
 	}
 
-	for i := pos; i < len(*values); i++ {
-		if !condition((*values)[i]) {
-			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
-			pos++
+	pos := 0
+	for _, condition := range conditions {
+		for i := 0; i < len(*values); i++ {
+			if condition((*values)[i]) {
+				pos = i
+				break
+			}
 		}
+
+		for i := pos; i < len(*values); i++ {
+			if !condition((*values)[i]) {
+				(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
+				pos++
+			}
+		}
+		(*values) = (*values)[:pos]
 	}
-	(*values) = (*values)[:pos]
 }
 
-func KeepIf[T any](values *[]T, condition func(T, ...interface{}) bool) {
-	pos := 0
-	for i := 0; i < len(*values); i++ {
-		if !condition((*values)[i]) {
-			pos = i
-			break
-		}
+func KeepIf[T any](values *[]T, conditions ...func(T, ...interface{}) bool) {
+	if conditions == nil {
+		return
 	}
 
-	for i := pos; i < len(*values); i++ {
-		if condition((*values)[i]) {
-			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
-			pos++
+	pos := 0
+	for _, condition := range conditions {
+		for i := 0; i < len(*values); i++ {
+			if !condition((*values)[i]) {
+				pos = i
+				break
+			}
 		}
+
+		for i := pos; i < len(*values); i++ {
+			if condition((*values)[i]) {
+				(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
+				pos++
+			}
+		}
+		(*values) = (*values)[:pos]
 	}
-	(*values) = (*values)[:pos]
 }
 
 func IfThen[T any](condition bool, v0 T, v1 T) T {
