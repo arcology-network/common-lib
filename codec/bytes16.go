@@ -56,8 +56,12 @@ func (hash Hash16) Encode() []byte {
 	return hash[:]
 }
 
-func (this Hash16) Decode(data []byte) interface{} {
-	copy(this[:], data)
+func (this Hash16) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
+	copy(this[:], buffer)
 	return Hash16(this)
 }
 

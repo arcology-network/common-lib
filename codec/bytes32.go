@@ -78,10 +78,14 @@ func (this Hash32s) EncodeToBuffer(buffer []byte) int {
 	return len(this) * HASH32_LEN
 }
 
-func (this Hash32s) Decode(data []byte) interface{} {
-	this = make([][HASH32_LEN]byte, len(data)/HASH32_LEN)
+func (this Hash32s) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
+	this = make([][HASH32_LEN]byte, len(buffer)/HASH32_LEN)
 	for i := 0; i < len(this); i++ {
-		copy(this[i][:], data[i*HASH32_LEN:(i+1)*HASH32_LEN])
+		copy(this[i][:], buffer[i*HASH32_LEN:(i+1)*HASH32_LEN])
 	}
 	return this
 }

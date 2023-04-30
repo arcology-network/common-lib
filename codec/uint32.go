@@ -54,10 +54,14 @@ func (this Uint32s) EncodeToBuffer(buffer []byte) int {
 	return len(this) * UINT32_LEN
 }
 
-func (this Uint32s) Decode(data []byte) interface{} {
-	this = make([]uint32, len(data)/UINT32_LEN)
+func (this Uint32s) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
+	this = make([]uint32, len(buffer)/UINT32_LEN)
 	for i := range this {
-		this[i] = uint32(Uint32(this[i]).Decode(data[i*UINT32_LEN : (i+1)*UINT32_LEN]).(Uint32))
+		this[i] = uint32(Uint32(this[i]).Decode(buffer[i*UINT32_LEN : (i+1)*UINT32_LEN]).(Uint32))
 	}
 	return Uint32s(this)
 }

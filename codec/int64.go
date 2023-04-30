@@ -35,6 +35,10 @@ func (this Int64) EncodeToBuffer(buffer []byte) int {
 }
 
 func (this Int64) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
 	return Int64(int64(binary.LittleEndian.Uint64(buffer)))
 }
 

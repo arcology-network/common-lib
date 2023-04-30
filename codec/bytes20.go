@@ -39,6 +39,10 @@ func (this Bytes20) EncodeToBuffer(buffer []byte) int {
 }
 
 func (this Bytes20) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
 	copy(this[:], buffer)
 	return Bytes20(this)
 }

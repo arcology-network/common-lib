@@ -39,6 +39,10 @@ func (this Uint64) EncodeToBuffer(buffer []byte) int {
 }
 
 func (this Uint64) Decode(data []byte) interface{} {
+	if len(data) == 0 {
+		return this
+	}
+
 	this = Uint64(binary.LittleEndian.Uint64(data))
 	return Uint64(this)
 }
@@ -104,10 +108,14 @@ func (this Uint64s) EncodeToBuffer(buffer []byte) int {
 	return len(this) * UINT64_LEN
 }
 
-func (this Uint64s) Decode(data []byte) interface{} {
-	this = make([]uint64, len(data)/UINT64_LEN)
+func (this Uint64s) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
+	this = make([]uint64, len(buffer)/UINT64_LEN)
 	for i := range this {
-		this[i] = uint64(Uint64(this[i]).Decode(data[i*UINT64_LEN : (i+1)*UINT64_LEN]).(Uint64))
+		this[i] = uint64(Uint64(this[i]).Decode(buffer[i*UINT64_LEN : (i+1)*UINT64_LEN]).(Uint64))
 	}
 	return Uint64s(this)
 }

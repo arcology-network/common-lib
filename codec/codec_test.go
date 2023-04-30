@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+type Type struct {
+	value Uint64
+	delta String
+}
+
 func TestUint8(t *testing.T) {
 	in := Uint8(244)
 	data := in.Encode()

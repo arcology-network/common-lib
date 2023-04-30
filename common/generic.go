@@ -12,33 +12,33 @@ func Fill[T any](values *[]T, v T) {
 	}
 }
 
-func RemoveIfMeet[T any](values *[]T, args interface{}, conditions ...func(T, ...interface{}) bool) {
+// func RemoveIfMeet[T any](values *[]T, args interface{}, conditions ...func(T, ...interface{}) bool) {
+// 	if conditions == nil {
+// 		return
+// 	}
+
+// 	pos := 0
+// 	for _, condition := range conditions {
+// 		for i := 0; i < len(*values); i++ {
+// 			if condition((*values)[i], args) {
+// 				pos = i
+// 				break
+// 			}
+// 		}
+
+// 		for i := pos; i < len(*values); i++ {
+// 			if !condition((*values)[i], args) {
+// 				(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
+// 				pos++
+// 			}
+// 		}
+// 		(*values) = (*values)[:pos]
+// 	}
+// }
+
+func RemoveIf[T any](values *[]T, conditions ...func(T) bool) []T {
 	if conditions == nil {
-		return
-	}
-
-	pos := 0
-	for _, condition := range conditions {
-		for i := 0; i < len(*values); i++ {
-			if condition((*values)[i], args) {
-				pos = i
-				break
-			}
-		}
-
-		for i := pos; i < len(*values); i++ {
-			if !condition((*values)[i], args) {
-				(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
-				pos++
-			}
-		}
-		(*values) = (*values)[:pos]
-	}
-}
-
-func RemoveIf[T any](values *[]T, conditions ...func(T) bool) {
-	if conditions == nil {
-		return
+		return *values
 	}
 
 	pos := 0
@@ -58,11 +58,12 @@ func RemoveIf[T any](values *[]T, conditions ...func(T) bool) {
 		}
 		(*values) = (*values)[:pos]
 	}
+	return *values
 }
 
-func KeepIf[T any](values *[]T, conditions ...func(T, ...interface{}) bool) {
+func KeepIf[T any](values *[]T, conditions ...func(T, ...interface{}) bool) []T {
 	if conditions == nil {
-		return
+		return *values
 	}
 
 	pos := 0
@@ -82,6 +83,7 @@ func KeepIf[T any](values *[]T, conditions ...func(T, ...interface{}) bool) {
 		}
 		(*values) = (*values)[:pos]
 	}
+	return *values
 }
 
 func IfThen[T any](condition bool, v0 T, v1 T) T {
@@ -200,26 +202,34 @@ func Flatten[T any](src [][]T) []T {
 	return buffer
 }
 
-func ConcateFrom[T0, T1 any](array []T0, getter func(T0) []T1) []T1 {
-	total := 0
-	for i := 0; i < len(array); i++ {
-		total += len(getter(array[i]))
-	}
-	output := make([]T1, total) // Pre-allocation for better performance
+// func ConcateFrom[T0, T1 any](array []T0, getter func(T0) []T1) []T1 {
+// 	total := 0
+// 	for i := 0; i < len(array); i++ {
+// 		total += len(getter(array[i]))
+// 	}
+// 	output := make([]T1, total) // Pre-allocation for better performance
 
-	offset := 0
-	for i := 0; i < total; i++ {
-		elems := getter(array[i])
-		copy(output[offset:], elems)
-		offset += len(elems)
-	}
-	return output
-}
+// 	offset := 0
+// 	for i := 0; i < total; i++ {
+// 		elems := getter(array[i])
+// 		copy(output[offset:], elems)
+// 		offset += len(elems)
+// 	}
+// 	return output
+// }
 
 func CastTo[T0, T1 any](src []T0, predicate func(T0) T1) []T1 {
 	target := make([]T1, len(src))
 	for i := range src {
 		target[i] = predicate(src[i])
+	}
+	return target
+}
+
+func To[T0, T1 any](src []T0) []T1 {
+	target := make([]T1, len(src))
+	for i := range src {
+		target[i] = (interface{}((src[i]))).(T1)
 	}
 	return target
 }

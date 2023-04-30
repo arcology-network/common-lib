@@ -50,10 +50,14 @@ func (this Hash64s) EncodeToBuffer(buffer []byte) int {
 	return len(this) * HASH64_LEN
 }
 
-func (this Hash64s) Decode(data []byte) interface{} {
-	this = make([][HASH64_LEN]byte, len(data)/HASH64_LEN)
+func (this Hash64s) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
+	this = make([][HASH64_LEN]byte, len(buffer)/HASH64_LEN)
 	for i := 0; i < len(this); i++ {
-		copy(this[i][:], data[i*HASH64_LEN:(i+1)*HASH64_LEN])
+		copy(this[i][:], buffer[i*HASH64_LEN:(i+1)*HASH64_LEN])
 	}
 	return Hash64s(this)
 }

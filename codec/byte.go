@@ -47,8 +47,11 @@ func (this Bytes) EncodeToBuffer(buffer []byte) int {
 	return len(this)
 }
 
-func (Bytes) Decode(bytes []byte) interface{} {
-	return Bytes(bytes)
+func (this Bytes) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+	return Bytes(buffer)
 }
 
 func (this Bytes) ToString() string {

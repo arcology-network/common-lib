@@ -437,10 +437,10 @@ type testStruct struct {
 	num int
 }
 
-func TestConcateFrom(t *testing.T) {
-	array := []testStruct{{1}, {2}, {3}}
-	out := ConcateFrom(array, func(v testStruct) []int { return []int{v.num} })
-	if len(out) != 3 || out[0] != 1 || out[1] != 2 || out[2] != 3 {
-		t.Error("Error: Failed")
-	}
-}
+// func TestConcateFrom(t *testing.T) {
+// 	array := []testStruct{{1}, {2}, {3}}
+// 	out := ConcateFrom(array, func(v testStruct) []int { return []int{v.num} })
+// 	if len(out) != 3 || out[0] != 1 || out[1] != 2 || out[2] != 3 {
+// 		t.Error("Error: Failed")
+// 	}
+// }

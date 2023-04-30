@@ -79,10 +79,14 @@ func (this Uint8s) EncodeToBuffer(buffer []byte) int {
 	return len(this) * UINT8_LEN
 }
 
-func (Uint8s) Decode(data []byte) interface{} {
-	uint8s := make([]uint8, len(data)/UINT8_LEN)
+func (this Uint8s) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
+	uint8s := make([]uint8, len(buffer)/UINT8_LEN)
 	for i := range uint8s {
-		uint8s[i] = data[i]
+		uint8s[i] = buffer[i]
 	}
 	return Uint8s(uint8s)
 }

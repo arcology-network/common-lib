@@ -31,8 +31,12 @@ func (this Bool) EncodeToBuffer(buffer []byte) int {
 	return BOOL_LEN
 }
 
-func (this Bool) Decode(data []byte) interface{} {
-	this = Bool(data[0] > 0)
+func (this Bool) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
+	this = Bool(buffer[0] > 0)
 	return this
 }
 

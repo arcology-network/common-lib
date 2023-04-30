@@ -223,7 +223,11 @@ func (this Stringset) EncodeToBuffer(buffer []byte) int {
 	return offset
 }
 
-func (Stringset) Decode(buffer []byte) interface{} {
+func (this Stringset) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
 	fields := Byteset{}.Decode(buffer).(Byteset)
 
 	stringset := make([][]string, len(fields))
