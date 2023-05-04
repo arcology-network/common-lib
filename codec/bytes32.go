@@ -24,7 +24,7 @@ func (this Bytes32) Size() uint32 {
 	return uint32(HASH32_LEN)
 }
 
-func (this Bytes32) Clone() Bytes32 {
+func (this Bytes32) Clone() interface{} {
 	target := Bytes32{}
 	copy(target[:], this[:])
 	return target

@@ -6,10 +6,29 @@ func Reverse[T any](values *[]T) {
 	}
 }
 
-func Fill[T any](values *[]T, v T) {
-	for i := 0; i < len(*values); i++ {
-		(*values)[i] = v
+func Fill[T any](values []T, v T) []T {
+	for i := 0; i < len(values); i++ {
+		(values)[i] = v
 	}
+	return values
+}
+
+func Remove[T comparable](values *[]T, target T) {
+	pos := 0
+	for i := 0; i < len(*values); i++ {
+		if target == (*values)[i] {
+			pos = i
+			break
+		}
+	}
+
+	for i := pos; i < len(*values); i++ {
+		if target != (*values)[i] {
+			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
+			pos++
+		}
+	}
+	(*values) = (*values)[:pos]
 }
 
 // func RemoveIfMeet[T any](values *[]T, args interface{}, conditions ...func(T, ...interface{}) bool) {
@@ -107,11 +126,15 @@ func IfThenDo2nd[T any](condition bool, f0 func() T, v1 T) T {
 	return v1
 }
 
-func IfThenDo[T any](condition bool, f0 func() T, f1 func() T) T {
-	if condition {
-		return f0()
+func IfThenDo(condition bool, f0 func(), f1 func()) {
+	if condition && f0 != nil {
+		f0()
+		return
 	}
-	return f1()
+
+	if f1 != nil {
+		f1()
+	}
 }
 
 func EitherOf[T any](lhv interface{}, rhv T) T {
@@ -119,24 +142,6 @@ func EitherOf[T any](lhv interface{}, rhv T) T {
 		return lhv.(T)
 	}
 	return rhv
-}
-
-func Remove[T comparable](values *[]T, target T) {
-	pos := 0
-	for i := 0; i < len(*values); i++ {
-		if target == (*values)[i] {
-			pos = i
-			break
-		}
-	}
-
-	for i := pos; i < len(*values); i++ {
-		if target != (*values)[i] {
-			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
-			pos++
-		}
-	}
-	(*values) = (*values)[:pos]
 }
 
 func Foreach[T any](values *[]T, predicate func(v T)) {
@@ -181,6 +186,11 @@ func FindLastIf[T any](values *[]T, condition func(v T) bool) (int, *T) {
 		}
 	}
 	return -1, nil
+}
+
+func New[T any](v T) *T {
+	v0 := T(v)
+	return &v0
 }
 
 func Clone[T any](src []T) []T {
@@ -232,6 +242,14 @@ func To[T0, T1 any](src []T0) []T1 {
 		target[i] = (interface{}((src[i]))).(T1)
 	}
 	return target
+}
+
+func Equal[T comparable](lhv, rhv *T, wildcard func(*T) bool) bool {
+	return (lhv == rhv) || ((lhv != nil) && (rhv != nil) && (*lhv == *rhv)) || ((lhv == nil && wildcard(rhv)) || (rhv == nil && wildcard(lhv)))
+}
+
+func EqualIf[T any](lhv, rhv *T, equal func(*T, *T) bool, wildcard func(*T) bool) bool {
+	return (lhv == rhv) || ((lhv != nil) && (rhv != nil) && equal(lhv, rhv)) || ((lhv == nil && wildcard(rhv)) || (rhv == nil && wildcard(lhv)))
 }
 
 func EqualArray[T comparable](lhv []T, rhv []T) bool {

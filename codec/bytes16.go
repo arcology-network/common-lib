@@ -40,7 +40,7 @@ func (hash Hash16) Size() uint32 {
 	return uint32(HASH16_LEN)
 }
 
-func (this Hash16) Clone() Hash16 {
+func (this Hash16) Clone() interface{} {
 	target := Hash16{}
 	copy(target[:], this[:])
 	return target

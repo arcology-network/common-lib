@@ -6,6 +6,10 @@ import (
 
 type Bigint big.Int
 
+func (this *Bigint) Clone() interface{} {
+	return (*Bigint)((*big.Int)(this).Set(new(big.Int)))
+}
+
 func (this *Bigint) Size() uint32 {
 	return BOOL_LEN + uint32((*big.Int)(this).BitLen())
 }

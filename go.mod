@@ -8,6 +8,7 @@ require (
 	github.com/dgraph-io/badger v1.6.2
 	github.com/elliotchance/orderedmap v1.5.0
 	github.com/google/uuid v1.3.0
+	github.com/holiman/uint256 v1.2.2
 	github.com/natefinch/atomic v1.0.1
 	golang.org/x/crypto v0.2.0
 	golang.org/x/exp v0.0.0-20221109205753-fc8884afc316

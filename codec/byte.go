@@ -36,7 +36,7 @@ func (this Bytes) Size() uint32 {
 	return uint32(len(this))
 }
 
-func (this Bytes) Clone() Bytes {
+func (this Bytes) Clone() interface{} {
 	target := make([]byte, len(this))
 	copy(target, this)
 	return Bytes(target)
@@ -60,7 +60,7 @@ func (this Bytes) ToString() string {
 
 type Byteset [][]byte
 
-func (this Byteset) Clone() Byteset {
+func (this Byteset) Clone() interface{} {
 	target := make([][]byte, len(this))
 	for i := range this {
 		target[i] = make([]byte, len(this[i]))

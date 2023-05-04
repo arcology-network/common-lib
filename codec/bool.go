@@ -8,6 +8,10 @@ const (
 
 type Bool bool
 
+func (this *Bool) Clone() interface{} {
+	return common.New(*this)
+}
+
 func (this *Bool) Get() interface{} {
 	return *this
 }

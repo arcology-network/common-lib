@@ -326,7 +326,7 @@ func (this *ConcurrentMap) Clear() {
 }
 
 /* -----------------------------------Debug Functions---------------------------------------------------------*/
-type Encodeable interface {
+type Encodable interface {
 	Encode() []byte
 }
 
@@ -370,7 +370,7 @@ func (this *ConcurrentMap) Checksum() [32]byte {
 	k, values := this.Dump()
 	vBytes := []byte{}
 	for _, v := range values {
-		vBytes = append(vBytes, v.(Encodeable).Encode()...)
+		vBytes = append(vBytes, v.(Encodable).Encode()...)
 	}
 
 	kSum := sha256.Sum256(codec.Strings(k).Flatten())

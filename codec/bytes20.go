@@ -23,7 +23,7 @@ func (this Bytes20) Size() uint32 {
 	return uint32(BYTES20_LEN)
 }
 
-func (this Bytes20) Clone() Bytes20 {
+func (this Bytes20) Clone() interface{} {
 	target := Bytes20{}
 	copy(target[:], this[:])
 	return target

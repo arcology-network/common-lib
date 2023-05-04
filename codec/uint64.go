@@ -6,7 +6,7 @@ import (
 	"sort"
 	"unsafe"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	common "github.com/arcology-network/common-lib/common"
 )
 
 const (
@@ -14,6 +14,10 @@ const (
 )
 
 type Uint64 uint64
+
+func (this *Uint64) Clone() interface{} {
+	return common.New(*this)
+}
 
 func (this *Uint64) Get() interface{} {
 	return *this
@@ -47,7 +51,7 @@ func (this Uint64) Decode(data []byte) interface{} {
 	return Uint64(this)
 }
 
-func (v Uint64) Checksum() ethCommon.Hash {
+func (v Uint64) Checksum() [32]byte {
 	return sha256.Sum256(v.Encode())
 }
 

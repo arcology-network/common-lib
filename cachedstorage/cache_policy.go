@@ -209,7 +209,7 @@ func (this *CachePolicy) CheckCapacity(key string, v interface{}) bool {
 		return false
 	}
 
-	m := uint64(v.(TypeAccessibleInterface).Size())
+	m := uint64(v.(TypeAccessibleInterface).MemSize())
 	return m+this.totalAllocated < this.quota
 }
 
@@ -231,7 +231,7 @@ func (this *CachePolicy) BatchCheckCapacity(keys []string, values []interface{})
 	total := uint64(0)
 	for i, v := range values {
 		if len(keys[i]) != 0 && v != nil { // Not in the cache yet
-			total += uint64(v.(TypeAccessibleInterface).Size())
+			total += uint64(v.(TypeAccessibleInterface).MemSize())
 			if flags[i] = total+this.totalAllocated < this.quota; flags[i] { // If no enough space for all
 				count++
 			} else {

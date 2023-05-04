@@ -14,7 +14,7 @@ const (
 
 type String string
 
-func (this String) Clone() String {
+func (this String) Clone() interface{} {
 	b := make([]byte, len(this))
 	copy(b, this)
 	return String(*(*string)(unsafe.Pointer(&b)))
@@ -170,7 +170,7 @@ func (this Strings) Clone() Strings {
 	nStrings := make([]string, len(this))
 	worker := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
-			nStrings[i] = string(String(this[i]).Clone())
+			nStrings[i] = string(String(this[i]).Clone().(String))
 		}
 	}
 	common.ParallelWorker(len(this), 4, worker)

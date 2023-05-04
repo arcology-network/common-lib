@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 
 	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	common "github.com/arcology-network/common-lib/common"
 )
 
 const (
@@ -11,6 +12,10 @@ const (
 )
 
 type Uint8 uint8
+
+func (this *Uint8) Clone() interface{} {
+	return common.New(*this)
+}
 
 func (this *Uint8) Get() interface{} {
 	return *this

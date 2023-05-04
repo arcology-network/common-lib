@@ -30,6 +30,12 @@ func (Hash8) FromSlice(v []byte) Hash8 {
 	return hash8
 }
 
+func (this Hash8) Clone() interface{} {
+	target := Hash8{}
+	copy(target[:], this[:])
+	return target
+}
+
 func (this *Hash8) Get() interface{} {
 	return *this
 }

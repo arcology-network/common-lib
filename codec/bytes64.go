@@ -14,7 +14,7 @@ func (hash Hash64) Size() uint32 {
 	return uint32(HASH64_LEN)
 }
 
-func (this Hash64) Clone() Hash64 {
+func (this Hash64) Clone() interface{} {
 	target := Hash64{}
 	copy(target[:], this[:])
 	return target

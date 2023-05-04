@@ -160,6 +160,11 @@ func TestBigint(t *testing.T) {
 		fmt.Println()
 		fmt.Println(out)
 	}
+
+	out2 := out.Clone().(*Bigint)
+	if (*big.Int)(out).Cmp((*big.Int)(out2)) != 0 {
+		t.Error("Mismatch !")
+	}
 }
 
 func TestByteSetAndClone(t *testing.T) {
@@ -180,7 +185,7 @@ func TestByteSetAndClone(t *testing.T) {
 		}...)
 	}
 
-	clone := Byteset(byteset).Clone()
+	clone := Byteset(byteset).Clone().(Byteset)
 	for i := 0; i < len(byteset); i++ {
 		if !reflect.DeepEqual(clone[i], byteset[i]) {
 			t.Error("Mismatch !")
@@ -381,5 +386,26 @@ func TestHash64s(t *testing.T) {
 
 	if !reflect.DeepEqual(clone[1], in[1]) {
 		t.Error("Hash64s Mismatched !")
+	}
+}
+
+func TestEncodeables(t *testing.T) {
+	t0 := time.Now()
+	v := Uint64(1223)
+	Encodables{String("1223"), String("1223"), String("1223"), &v}.Encode()
+	fmt.Println(time.Since(t0))
+
+	t0 = time.Now()
+	Strings{string("1223"), string("1223"), string("1223"), string("1223")}.Encode()
+	fmt.Println(time.Since(t0))
+}
+
+func TestU256(t *testing.T) {
+	v := (&Uint256{}).NewInt(100)
+	v.Sub(v, (&Uint256{}).NewInt(50))
+	buffer := v.Encode()
+	out := (&Uint256{}).Decode(buffer).(*Uint256)
+	if !out.Eq(v) || int(out[0]) != 50 {
+		t.Error("U256 Mismatched !")
 	}
 }

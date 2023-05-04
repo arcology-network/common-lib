@@ -11,12 +11,8 @@ type AccessibleInterface interface {
 
 type TypeAccessibleInterface interface {
 	Value() interface{}
-	Size() uint32
+	MemSize() uint32
 }
-
-// type MeasurableInterface interface {
-// 	Size() uint32
-// }
 
 const (
 	MEMORY_DB     = 0

@@ -433,14 +433,37 @@ func TestEqualArray(t *testing.T) {
 	}
 }
 
-type testStruct struct {
-	num int
-}
-
-// func TestConcateFrom(t *testing.T) {
-// 	array := []testStruct{{1}, {2}, {3}}
-// 	out := ConcateFrom(array, func(v testStruct) []int { return []int{v.num} })
-// 	if len(out) != 3 || out[0] != 1 || out[1] != 2 || out[2] != 3 {
-// 		t.Error("Error: Failed")
-// 	}
+// type testStruct struct {
+// 	num int
 // }
+
+func TestEqual(t *testing.T) {
+	v0 := uint64(1)
+	v1 := uint64(1)
+	if !Equal(&v0, &v1, func(v *uint64) bool { return *v == 1 }) {
+		t.Error("Error: Not equal")
+	}
+
+	if !Equal(&v0, &v1, func(v *uint64) bool { return *v == 10 }) {
+		t.Error("Error: Not equal")
+	}
+
+	v0 = uint64(1)
+	v1 = uint64(2)
+
+	if Equal(&v0, &v1, func(v *uint64) bool { return *v == 1 }) {
+		t.Error("Error: Should not be equal")
+	}
+
+	if !Equal(&v0, nil, func(v *uint64) bool { return *v == 1 }) {
+		t.Error("Error: Should not be equal")
+	}
+
+	if !Equal(nil, &v1, func(v *uint64) bool { return *v == 2 }) {
+		t.Error("Error: Should not be equal")
+	}
+
+	if !Equal(nil, nil, func(v *uint64) bool { return *v == 2 }) {
+		t.Error("Error: Should not be equal")
+	}
+}

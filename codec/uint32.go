@@ -2,6 +2,8 @@ package codec
 
 import (
 	"encoding/binary"
+
+	common "github.com/arcology-network/common-lib/common"
 )
 
 const (
@@ -9,6 +11,10 @@ const (
 )
 
 type Uint32 uint32
+
+func (this *Uint32) Clone() interface{} {
+	return common.New(*this)
+}
 
 func (this *Uint32) Get() interface{} {
 	return *this

@@ -60,15 +60,11 @@ func (this *OrderedSet) Keys() []string {
 	return this.keys
 }
 func (this *OrderedSet) Dict() *orderedmap.OrderedMap { return this.Sync() }
-func (this *OrderedSet) Clone() *OrderedSet {
+func (this *OrderedSet) Clone() interface{} {
 	if this == nil {
 		return this
 	}
-	return &OrderedSet{
-		orderedmap.NewOrderedMap(), // Initial an empty one to save time
-		common.Clone(this.keys),
-		this.touched,
-	}
+	return NewOrderedSet(this.keys)
 }
 
 func (this *OrderedSet) Exists(key string) bool {

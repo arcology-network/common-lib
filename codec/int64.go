@@ -3,6 +3,8 @@ package codec
 import (
 	"encoding/binary"
 	"unsafe"
+
+	common "github.com/arcology-network/common-lib/common"
 )
 
 const (
@@ -10,6 +12,10 @@ const (
 )
 
 type Int64 int64
+
+func (this *Int64) Clone() interface{} {
+	return common.New(*this)
+}
 
 func (this *Int64) Get() interface{} {
 	return *this
