@@ -8,6 +8,10 @@ type Encodable interface {
 	Decode([]byte) interface{}
 }
 
+func ToEncodable() {
+
+}
+
 type Encodables []Encodable
 
 func (this Encodables) Size() uint32 {

@@ -1,5 +1,7 @@
 package common
 
+import "sort"
+
 func Reverse[T any](values *[]T) {
 	for i, j := 0, len(*values)-1; i < j; i, j = i+1, j-1 {
 		(*values)[i], (*values)[j] = (*values)[j], (*values)[i]
@@ -137,6 +139,7 @@ func IfThenDo(condition bool, f0 func(), f1 func()) {
 	}
 }
 
+// None nil
 func EitherOf[T any](lhv interface{}, rhv T) T {
 	if lhv != nil {
 		return lhv.(T)
@@ -144,9 +147,9 @@ func EitherOf[T any](lhv interface{}, rhv T) T {
 	return rhv
 }
 
-func Foreach[T any](values *[]T, predicate func(v T)) {
-	for i := 0; i < len(*values); i++ {
-		predicate((*values)[i])
+func Foreach[T any](values []T, predicate func(v *T)) {
+	for i := 0; i < len(values); i++ {
+		predicate(&(values)[i])
 	}
 }
 
@@ -210,6 +213,24 @@ func Flatten[T any](src [][]T) []T {
 		positions = positions + copy(buffer[positions:], src[i])
 	}
 	return buffer
+}
+
+func SortBy1st[T0 any, T1 any](first []T0, second []T1, compare func(T0, T0) bool) {
+	array := make([]struct {
+		_0 T0
+		_1 T1
+	}, len(first))
+
+	for i := range array {
+		array[i]._0 = first[i]
+		array[i]._1 = second[i]
+	}
+	sort.SliceStable(array, func(i, j int) bool { return compare(array[i]._0, array[j]._0) })
+
+	for i := range array {
+		first[i] = array[i]._0
+		second[i] = array[i]._1
+	}
 }
 
 // func ConcateFrom[T0, T1 any](array []T0, getter func(T0) []T1) []T1 {

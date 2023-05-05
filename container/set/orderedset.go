@@ -36,6 +36,10 @@ func (this *OrderedSet) Equal(other *OrderedSet) bool {
 		this.isSynced() == other.isSynced()
 }
 
+func (this *OrderedSet) Length() int {
+	return len(this.keys)
+}
+
 func (this *OrderedSet) isSynced() bool {
 	return (this.dict.Len()) == len(this.keys)
 }
