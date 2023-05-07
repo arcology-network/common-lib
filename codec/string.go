@@ -49,13 +49,8 @@ func (this String) Size() uint32 {
 	return uint32(len(this))
 }
 
-func (String) Decode(bytes []byte) interface{} {
-	var s string
-	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&bytes))
-	stringHeader := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	stringHeader.Data = sliceHeader.Data
-	stringHeader.Len = sliceHeader.Len
-	return String(s)
+func (String) Decode(buffer []byte) interface{} {
+	return String(buffer)
 }
 
 type Strings []string

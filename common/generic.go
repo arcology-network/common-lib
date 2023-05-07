@@ -147,6 +147,13 @@ func EitherOf[T any](lhv interface{}, rhv T) T {
 	return rhv
 }
 
+func EitherOfIf[T any](lhv interface{}, rhv T, equal func(v interface{}) bool) T {
+	if equal(lhv) {
+		return lhv.(T)
+	}
+	return rhv
+}
+
 func Foreach[T any](values []T, predicate func(v *T)) {
 	for i := 0; i < len(values); i++ {
 		predicate(&(values)[i])

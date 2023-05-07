@@ -33,7 +33,7 @@ func NewMerkle(n int, hasher func([]byte) []byte) *Merkle {
 	return merkle
 }
 
-func (this *Merkle) Reset() {
+func (this *Merkle) Reset() *Merkle {
 	for i := range this.nodes {
 		this.nodes[i] = this.nodes[i][:0]
 	}
@@ -41,6 +41,7 @@ func (this *Merkle) Reset() {
 	for i := range this.buffers {
 		this.buffers[i] = this.buffers[i][:0]
 	}
+	return this
 }
 
 func (this *Merkle) ExtractParent(id uint32, children []*Node, index int, mempool *mempool.Mempool) *Node {
