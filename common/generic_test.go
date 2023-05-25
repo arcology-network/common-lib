@@ -302,33 +302,33 @@ func TestRemove(t *testing.T) {
 
 func TestUniqueInts(t *testing.T) {
 	nums := []int{4, 5, 5, 6, 1, 4, 2, 3, 3}
-	pos := UniqueInts(nums)
+	nums = UniqueInts(nums)
 
-	if !reflect.DeepEqual(nums[:pos], []int{1, 2, 3, 4, 5, 6}) {
+	if !reflect.DeepEqual(nums, []int{1, 2, 3, 4, 5, 6}) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	nums = []int{4}
-	pos = UniqueInts(nums)
-	if !reflect.DeepEqual(nums[:pos], []int{4}) {
+	nums = UniqueInts(nums)
+	if !reflect.DeepEqual(nums, []int{4}) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	nums = []int{3, 3}
-	pos = UniqueInts(nums)
-	if !reflect.DeepEqual(nums[:pos], []int{3}) {
+	nums = UniqueInts(nums)
+	if !reflect.DeepEqual(nums, []int{3}) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	nums = []int{}
-	pos = UniqueInts(nums)
-	if !reflect.DeepEqual(nums[:pos], []int{}) {
+	nums = UniqueInts(nums)
+	if !reflect.DeepEqual(nums, []int{}) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	nums = []int{7, 6, 5, 4, 3, 2, 1}
-	pos = UniqueInts(nums)
-	if !reflect.DeepEqual(nums[:pos], []int{1, 2, 3, 4, 5, 6, 7}) {
+	nums = UniqueInts(nums)
+	if !reflect.DeepEqual(nums, []int{1, 2, 3, 4, 5, 6, 7}) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
@@ -339,22 +339,18 @@ func TestUniqueInts(t *testing.T) {
 
 	t0 := time.Now()
 	UniqueInts(nums)
-	for k, v := range nums {
-		nums[k] = v
-	}
 	fmt.Println("UniqueInts: ", len(nums), "leafs in ", time.Now().Sub(t0))
 
-	t0 = time.Now()
+	for i := 0; i < 1000000; i++ {
+		nums[i] = rand.Intn(5000000)
+	}
+
 	m := map[int]bool{}
+	t0 = time.Now()
 	for i := 0; i < len(nums); i++ {
 		m[nums[i]] = true
 	}
-
-	counter := 0
-	for k := range m {
-		nums[counter] = k
-		counter++
-	}
+	MapKeys(m)
 	fmt.Println("UniqueMap: ", len(nums), "leafs in ", time.Now().Sub(t0))
 }
 

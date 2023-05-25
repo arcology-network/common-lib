@@ -170,22 +170,9 @@ func CopyIf[T any](values *[]T, condition func(v T) bool) []T {
 	return found
 }
 
-// func Unique[T comparable](strs *[]T) []T {
-// 	dict := make(map[T]bool)
-// 	for i := 0; i < len(*strs); i++ {
-// 		dict[(*strs)[i]] = true
-// 	}
-
-// 	uniques := make([]T, 0, len(dict))
-// 	for k := range dict {
-// 		uniques = append(uniques, k)
-// 	}
-// 	return uniques
-// }
-
-func UniqueInts[T constraints.Integer](nums []T) int {
-	if len(nums) == 0 {
-		return 0
+func UniqueInts[T constraints.Integer](nums []T) []T {
+	if len(nums) <= 1 {
+		return nums
 	}
 
 	sort.Slice(nums, func(i, j int) bool {
@@ -199,7 +186,7 @@ func UniqueInts[T constraints.Integer](nums []T) int {
 			current++
 		}
 	}
-	return current + 1
+	return nums[:current+1]
 }
 
 func Unique[T comparable](nums []T, less func(lhv, rhv T) bool) []T {
