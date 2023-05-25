@@ -7,7 +7,6 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"math"
-	"sort"
 
 	"unsafe"
 
@@ -121,31 +120,15 @@ func GobDecode(data []byte, x interface{}) error {
 	return nil
 }
 
-func Unique[T comparable](strs *[]T) []T {
-	dict := make(map[T]bool)
-	for i := 0; i < len(*strs); i++ {
-		dict[(*strs)[i]] = true
-	}
+// func UniqueIf[T comparable](strs *[]T, equal func(interface{}, interface{}) bool) []T {
+// 	dict := make(map[T]bool)
+// 	for i := 0; i < len(*strs); i++ {
+// 		dict[(*strs)[i]] = true
+// 	}
 
-	uniques := make([]T, 0, len(dict))
-	for k := range dict {
-		uniques = append(uniques, k)
-	}
-	return uniques
-}
-
-func UniqueInts(nums []int) int {
-	if len(nums) == 0 {
-		return 0
-	}
-
-	sort.Ints(nums)
-	current := 0
-	for i := 0; i < len(nums); i++ {
-		if nums[current] != (nums)[i] {
-			nums[current+1] = (nums)[i]
-			current++
-		}
-	}
-	return current + 1
-}
+// 	uniques := make([]T, 0, len(dict))
+// 	for k := range dict {
+// 		uniques = append(uniques, k)
+// 	}
+// 	return uniques
+// }

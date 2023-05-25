@@ -382,7 +382,7 @@ func (this *FileDB) Export(prefixes [][]byte) ([][]byte, error) {
 			}
 		}
 	}
-	paths = common.Unique(&paths)
+	paths = common.Unique(paths, func(s0, s1 string) bool { return s0 < s1 })
 	return this.readAll(paths)
 }
 

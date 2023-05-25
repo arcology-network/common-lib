@@ -34,6 +34,14 @@ func (this String) Reverse() string {
 	return *(*string)(unsafe.Pointer(&reversed))
 }
 
+func (this String) Sum() uint64 {
+	total := uint64(0)
+	for j := 0; j < len(this); j++ {
+		total += uint64(this[j])
+	}
+	return total
+}
+
 func (this String) Encode() []byte {
 	return this.ToBytes()
 }

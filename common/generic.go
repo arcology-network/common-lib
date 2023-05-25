@@ -1,6 +1,10 @@
 package common
 
-import "sort"
+import (
+	"sort"
+
+	"golang.org/x/exp/constraints"
+)
 
 func Reverse[T any](values *[]T) {
 	for i, j := 0, len(*values)-1; i < j; i, j = i+1, j-1 {
@@ -57,6 +61,13 @@ func Remove[T comparable](values *[]T, target T) {
 // 	}
 // }
 
+func SetIndices[T0 any, T1 constraints.Integer](source []T0, indices []T1, setter func(T0) T0) []T0 {
+	for _, idx := range indices {
+		(source)[idx] = setter((source)[idx])
+	}
+	return source
+}
+
 func RemoveIf[T any](values *[]T, conditions ...func(T) bool) []T {
 	if conditions == nil {
 		return *values
@@ -73,31 +84,6 @@ func RemoveIf[T any](values *[]T, conditions ...func(T) bool) []T {
 
 		for i := pos; i < len(*values); i++ {
 			if !condition((*values)[i]) {
-				(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
-				pos++
-			}
-		}
-		(*values) = (*values)[:pos]
-	}
-	return *values
-}
-
-func KeepIf[T any](values *[]T, conditions ...func(T, ...interface{}) bool) []T {
-	if conditions == nil {
-		return *values
-	}
-
-	pos := 0
-	for _, condition := range conditions {
-		for i := 0; i < len(*values); i++ {
-			if !condition((*values)[i]) {
-				pos = i
-				break
-			}
-		}
-
-		for i := pos; i < len(*values); i++ {
-			if condition((*values)[i]) {
 				(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
 				pos++
 			}
@@ -128,6 +114,13 @@ func IfThenDo2nd[T any](condition bool, f0 func() T, v1 T) T {
 	return v1
 }
 
+func IfThenDoBoth[T any](condition bool, f0 func() T, f1 func() T) T {
+	if condition {
+		return f0()
+	}
+	return f1()
+}
+
 func IfThenDo(condition bool, f0 func(), f1 func()) {
 	if condition && f0 != nil {
 		f0()
@@ -147,7 +140,7 @@ func EitherOf[T any](lhv interface{}, rhv T) T {
 	return rhv
 }
 
-func EitherOfIf[T any](lhv interface{}, rhv T, equal func(v interface{}) bool) T {
+func EitherEqualsTo[T any](lhv interface{}, rhv T, equal func(v interface{}) bool) T {
 	if equal(lhv) {
 		return lhv.(T)
 	}
@@ -160,6 +153,88 @@ func Foreach[T any](values []T, predicate func(v *T)) {
 	}
 }
 
+func Accumulate[T any](values []T, initialV uint64, predicate func(v *T) uint64) uint64 {
+	for i := 0; i < len(values); i++ {
+		initialV += predicate(&(values)[i])
+	}
+	return initialV
+}
+
+func CopyIf[T any](values *[]T, condition func(v T) bool) []T {
+	found := []T{}
+	for i := 0; i < len(*values); i++ {
+		if condition((*values)[i]) {
+			found = append(found, (*values)[i])
+		}
+	}
+	return found
+}
+
+// func Unique[T comparable](strs *[]T) []T {
+// 	dict := make(map[T]bool)
+// 	for i := 0; i < len(*strs); i++ {
+// 		dict[(*strs)[i]] = true
+// 	}
+
+// 	uniques := make([]T, 0, len(dict))
+// 	for k := range dict {
+// 		uniques = append(uniques, k)
+// 	}
+// 	return uniques
+// }
+
+func UniqueInts[T constraints.Integer](nums []T) int {
+	if len(nums) == 0 {
+		return 0
+	}
+
+	sort.Slice(nums, func(i, j int) bool {
+		return (nums[i] < nums[j])
+	})
+
+	current := 0
+	for i := 0; i < len(nums); i++ {
+		if nums[current] != (nums)[i] {
+			nums[current+1] = (nums)[i]
+			current++
+		}
+	}
+	return current + 1
+}
+
+func Unique[T comparable](nums []T, less func(lhv, rhv T) bool) []T {
+	if len(nums) <= 1 {
+		return nums
+	}
+
+	sort.Slice(nums, func(i, j int) bool {
+		return less(nums[i], nums[j])
+	})
+
+	current := 0
+	for i := 0; i < len(nums); i++ {
+		if nums[current] != (nums)[i] {
+			nums[current+1] = (nums)[i]
+			current++
+		}
+	}
+	return nums[:current+1]
+}
+
+func FindRange[T comparable](values []T, equal func(v0, v1 T) bool) []int {
+	positions := make([]int, 0, len(values))
+	positions = append(positions, 0)
+	current := values[0]
+	for i := 1; i < len(values); i++ {
+		if !equal(current, values[i]) {
+			current = values[i]
+			positions = append(positions, i)
+		}
+	}
+	positions = append(positions, len(values))
+	return positions
+}
+
 func FindFirst[T comparable](values *[]T, v T) (int, *T) {
 	for i := 0; i < len(*values); i++ {
 		if (*values)[i] == v {
@@ -170,13 +245,22 @@ func FindFirst[T comparable](values *[]T, v T) (int, *T) {
 }
 
 // Find the leftmost index of the element meeting the criteria
-func FindFirstIf[T any](values *[]T, condition func(v T) bool) (int, *T) {
-	for i := 0; i < len(*values); i++ {
-		if condition((*values)[i]) {
-			return i, &(*values)[i]
+func FindFirstIf[T any](values []T, condition func(v T) bool) (int, *T) {
+	for i := 0; i < len(values); i++ {
+		if condition(values[i]) {
+			return i, &(values)[i]
 		}
 	}
 	return -1, nil
+}
+
+func LocateFirstIf[T any](values []T, condition func(v T) bool) int {
+	for i := 0; i < len(values); i++ {
+		if condition(values[i]) {
+			return i
+		}
+	}
+	return -1
 }
 
 func FindLast[T comparable](values *[]T, v T) (int, *T) {

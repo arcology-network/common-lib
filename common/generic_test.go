@@ -10,6 +10,29 @@ import (
 	// "github.com/HPISTechnologies/common-lib/common"
 )
 
+func TestUniqueSorted(t *testing.T) {
+	nums := []int{3, 1, 1, 1, 1, 1, 1, 3, 2}
+	nums = Unique(nums, func(lhv, rhv int) bool { return lhv < rhv })
+	if !reflect.DeepEqual(nums, []int{1, 2, 3}) {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	nums = []int{1, 1, 1, 1, 1, 1}
+	nums = Unique(nums, func(lhv, rhv int) bool { return lhv < rhv })
+	if !reflect.DeepEqual(nums, []int{1}) {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	nums = make([]int, 1000000)
+	for i := 0; i < len(nums); i++ {
+		nums[i] = rand.Intn(100)
+	}
+
+	t0 := time.Now()
+	Unique(nums, func(lhv, rhv int) bool { return lhv < rhv })
+	fmt.Println("Unique: ", 1000000, " entries in:", time.Now().Sub(t0))
+}
+
 func TestRemoveNils(t *testing.T) {
 	encoded := [][]byte{{1}, {1}, {3}, {2}, nil}
 	RemoveIf(&encoded, func(v []byte) bool { return v == nil })
@@ -357,7 +380,7 @@ func TestFindLastIf(t *testing.T) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
-	idx, _ = FindFirstIf(&nums, func(v int) bool { return v == '/' })
+	idx, _ = FindFirstIf(nums, func(v int) bool { return v == '/' })
 	if idx != 1 {
 		t.Error("Error: Failed to remove nil values !")
 	}

@@ -81,7 +81,7 @@ func (this *DataStore) Size() uint32 {
 	return this.localCache.Size()
 }
 
-func (this *DataStore) LocalCache() *ccmap.ConcurrentMap {
+func (this *DataStore) WriteCache() *ccmap.ConcurrentMap {
 	return this.localCache
 }
 
@@ -369,7 +369,7 @@ func (this *DataStore) UpdateCacheStats(nVals []interface{}) {
 }
 
 func (this *DataStore) RefreshCache() (uint64, uint64) {
-	return this.CachePolicy().Refresh(this.LocalCache())
+	return this.CachePolicy().Refresh(this.WriteCache())
 }
 
 func (this *DataStore) Print() {
