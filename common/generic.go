@@ -37,30 +37,6 @@ func Remove[T comparable](values *[]T, target T) {
 	(*values) = (*values)[:pos]
 }
 
-// func RemoveIfMeet[T any](values *[]T, args interface{}, conditions ...func(T, ...interface{}) bool) {
-// 	if conditions == nil {
-// 		return
-// 	}
-
-// 	pos := 0
-// 	for _, condition := range conditions {
-// 		for i := 0; i < len(*values); i++ {
-// 			if condition((*values)[i], args) {
-// 				pos = i
-// 				break
-// 			}
-// 		}
-
-// 		for i := pos; i < len(*values); i++ {
-// 			if !condition((*values)[i], args) {
-// 				(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
-// 				pos++
-// 			}
-// 		}
-// 		(*values) = (*values)[:pos]
-// 	}
-// }
-
 func SetByIndices[T0 any, T1 constraints.Integer](source []T0, indices []T1, setter func(T0) T0) []T0 {
 	for _, idx := range indices {
 		(source)[idx] = setter((source)[idx])
@@ -68,29 +44,30 @@ func SetByIndices[T0 any, T1 constraints.Integer](source []T0, indices []T1, set
 	return source
 }
 
-func RemoveIf[T any](values *[]T, conditions ...func(T) bool) []T {
-	if conditions == nil {
-		return *values
-	}
-
-	pos := 0
-	for _, condition := range conditions {
-		for i := 0; i < len(*values); i++ {
-			if condition((*values)[i]) {
-				pos = i
-				break
-			}
-		}
-
-		for i := pos; i < len(*values); i++ {
-			if !condition((*values)[i]) {
-				(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
-				pos++
-			}
-		}
-		(*values) = (*values)[:pos]
-	}
+func RemoveIf[T any](values *[]T, condition func(T) bool) []T {
+	MoveIf(values, condition)
 	return *values
+}
+
+func MoveIf[T any](values *[]T, condition func(T) bool) []T {
+	pos := 0
+	// for _, condition := range conditions {
+	for i := 0; i < len(*values); i++ {
+		if condition((*values)[i]) {
+			pos = i
+			break
+		}
+	}
+
+	for i := pos; i < len(*values); i++ {
+		if !condition((*values)[i]) {
+			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
+			pos++
+		}
+	}
+	moved := (*values)[pos:]
+	(*values) = (*values)[:pos]
+	return moved
 }
 
 func IfThen[T any](condition bool, v0 T, v1 T) T {
@@ -168,34 +145,6 @@ func CopyIf[T any](values []T, condition func(v T) bool) []T {
 		}
 	}
 	return copied
-}
-
-func MoveIf[T any](values *[]T, conditions ...func(T) bool) []T {
-	if conditions == nil {
-		return *values
-	}
-
-	moved := []T{}
-	pos := 0
-	for _, condition := range conditions {
-		for i := 0; i < len(*values); i++ {
-			if condition((*values)[i]) {
-				pos = i
-				break
-			}
-		}
-
-		for i := pos; i < len(*values); i++ {
-			if !condition((*values)[i]) {
-				(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
-				pos++
-			} else {
-				moved = append(moved, (*values)[pos])
-			}
-		}
-		(*values) = (*values)[:pos]
-	}
-	return moved
 }
 
 func UniqueInts[T constraints.Integer](nums []T) []T {
