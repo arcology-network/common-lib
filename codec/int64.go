@@ -14,6 +14,10 @@ const (
 type Int64 int64
 
 func (this *Int64) Clone() interface{} {
+	if this == nil {
+		return this
+	}
+
 	return common.New(*this)
 }
 

@@ -9,6 +9,10 @@ const (
 type Bool bool
 
 func (this *Bool) Clone() interface{} {
+	if this == nil {
+		return this
+	}
+
 	return common.New(*this)
 }
 

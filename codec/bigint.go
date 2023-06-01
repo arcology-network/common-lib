@@ -7,6 +7,10 @@ import (
 type Bigint big.Int
 
 func (this *Bigint) Clone() interface{} {
+	if this == nil {
+		return this
+	}
+
 	return (*Bigint)((*big.Int)(this).Set(new(big.Int)))
 }
 

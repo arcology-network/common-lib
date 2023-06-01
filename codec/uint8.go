@@ -14,6 +14,10 @@ const (
 type Uint8 uint8
 
 func (this *Uint8) Clone() interface{} {
+	if this == nil {
+		return this
+	}
+
 	return common.New(*this)
 }
 

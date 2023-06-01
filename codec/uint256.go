@@ -7,6 +7,10 @@ import (
 type Uint256 uint256.Int
 
 func (this *Uint256) Clone() interface{} {
+	if this == nil {
+		return this
+	}
+
 	return (*Uint256)((*uint256.Int)(this).Clone())
 }
 

@@ -61,7 +61,7 @@ func Remove[T comparable](values *[]T, target T) {
 // 	}
 // }
 
-func SetIndices[T0 any, T1 constraints.Integer](source []T0, indices []T1, setter func(T0) T0) []T0 {
+func SetByIndices[T0 any, T1 constraints.Integer](source []T0, indices []T1, setter func(T0) T0) []T0 {
 	for _, idx := range indices {
 		(source)[idx] = setter((source)[idx])
 	}
@@ -107,18 +107,11 @@ func IfThenDo1st[T any](condition bool, f0 func() T, v1 T) T {
 	return v1
 }
 
-func IfThenDo2nd[T any](condition bool, f0 func() T, v1 T) T {
+func IfThenDo2nd[T any](condition bool, v1 T, f0 func() T) T {
 	if condition {
 		return f0()
 	}
 	return v1
-}
-
-func IfThenDoBoth[T any](condition bool, f0 func() T, f1 func() T) T {
-	if condition {
-		return f0()
-	}
-	return f1()
 }
 
 func IfThenDo(condition bool, f0 func(), f1 func()) {
@@ -130,6 +123,13 @@ func IfThenDo(condition bool, f0 func(), f1 func()) {
 	if f1 != nil {
 		f1()
 	}
+}
+
+func IfThenDoEither[T any](condition bool, f0 func() T, f1 func() T) T {
+	if condition {
+		return f0()
+	}
+	return f1()
 }
 
 // None nil
@@ -160,14 +160,14 @@ func Accumulate[T any](values []T, initialV uint64, predicate func(v *T) uint64)
 	return initialV
 }
 
-func CopyIf[T any](values *[]T, condition func(v T) bool) []T {
-	found := []T{}
-	for i := 0; i < len(*values); i++ {
-		if condition((*values)[i]) {
-			found = append(found, (*values)[i])
+func CopyIf[T any](values []T, condition func(v T) bool) []T {
+	copied := make([]T, 0, len(values))
+	for i := 0; i < len(values); i++ {
+		if condition(values[i]) {
+			copied = append(copied, values[i])
 		}
 	}
-	return found
+	return copied
 }
 
 func UniqueInts[T constraints.Integer](nums []T) []T {
@@ -280,6 +280,16 @@ func Clone[T any](src []T) []T {
 	return dst
 }
 
+func CloneIf[T any](src []T, condition func(v T) bool) []T {
+	dst := make([]T, 0, len(src))
+	for i := range src {
+		if condition(src[i]) {
+			dst = append(dst, src[i])
+		}
+	}
+	return dst
+}
+
 func Flatten[T any](src [][]T) []T {
 	totalSize := 0
 	for _, data := range src {
@@ -327,6 +337,11 @@ func SortBy1st[T0 any, T1 any](first []T0, second []T1, compare func(T0, T0) boo
 // 	return output
 // }
 
+func Exclude[T comparable](source []T, toRemove []T) []T {
+	dict := MapFromArray(toRemove, true)
+	return CopyIf(source, func(v T) bool { return (*dict)[v] })
+}
+
 func CastTo[T0, T1 any](src []T0, predicate func(T0) T1) []T1 {
 	target := make([]T1, len(src))
 	for i := range src {
@@ -344,7 +359,9 @@ func To[T0, T1 any](src []T0) []T1 {
 }
 
 func Equal[T comparable](lhv, rhv *T, wildcard func(*T) bool) bool {
-	return (lhv == rhv) || ((lhv != nil) && (rhv != nil) && (*lhv == *rhv)) || ((lhv == nil && wildcard(rhv)) || (rhv == nil && wildcard(lhv)))
+	return (lhv == rhv) ||
+		((lhv != nil) && (rhv != nil) && (*lhv == *rhv)) ||
+		((lhv == nil && wildcard(rhv)) || (rhv == nil && wildcard(lhv)))
 }
 
 func EqualIf[T any](lhv, rhv *T, equal func(*T, *T) bool, wildcard func(*T) bool) bool {
@@ -391,12 +408,13 @@ func MergeMaps[M ~map[K]V, K comparable, V any](from, to M) M {
 	return from
 }
 
-// func MergeMapsIf[M ~map[K]V, K comparable, V any](from, to M, func()) M {
-// 	for k, v := range to {
-// 		from[k] = v
-// 	}
-// 	return from
-// }
+func MapFromArray[K comparable, V any](keys []K, v V) *map[K]V {
+	M := make(map[K]V)
+	for _, k := range keys {
+		M[k] = v
+	}
+	return &M
+}
 
 func MapKeys[M ~map[K]V, K comparable, V any](m M) []K {
 	keys := make([]K, len(m))

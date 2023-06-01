@@ -16,6 +16,9 @@ const (
 type Uint64 uint64
 
 func (this *Uint64) Clone() interface{} {
+	if this == nil {
+		return this
+	}
 	return common.New(*this)
 }
 

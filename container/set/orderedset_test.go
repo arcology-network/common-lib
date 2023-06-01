@@ -161,6 +161,25 @@ func TestIndexedSet(t *testing.T) {
 	emptySet.Clone()
 }
 
+func TestSetOperations(t *testing.T) {
+	set := NewOrderedSet([]string{"1", "2"})
+	set.Insert("3")
+	set.Insert("3")
+	set.Insert("4")
+
+	set1 := NewOrderedSet([]string{"1", "2"})
+	set1.Insert("3")
+	set1.Insert("3")
+	set1.Insert("4")
+	set1.Insert("5")
+
+	set.Union(set1)
+
+	if set.Length() != 5 {
+		t.Error("Error: Wrong entry count")
+	}
+}
+
 func TestOrderedSetCodec(t *testing.T) {
 	set := NewOrderedSet([]string{"1", "2"})
 	set.Insert("3")

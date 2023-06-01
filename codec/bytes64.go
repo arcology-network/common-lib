@@ -14,6 +14,14 @@ func (hash Hash64) Size() uint32 {
 	return uint32(HASH64_LEN)
 }
 
+func (this Hash64) Sum(offset uint64) uint64 {
+	total := uint64(0)
+	for j := offset; j < uint64(len(this)); j++ {
+		total += uint64((this)[j])
+	}
+	return total
+}
+
 func (this Hash64) Clone() interface{} {
 	target := Hash64{}
 	copy(target[:], this[:])

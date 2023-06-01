@@ -13,6 +13,10 @@ const (
 type Uint32 uint32
 
 func (this *Uint32) Clone() interface{} {
+	if this == nil {
+		return this
+	}
+
 	return common.New(*this)
 }
 

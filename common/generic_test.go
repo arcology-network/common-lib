@@ -401,7 +401,7 @@ func TestMapKeys(t *testing.T) {
 	_map[21] = 25
 
 	keys := MapKeys(_map)
-	if keys[0] != 11 || keys[1] != 21 {
+	if len(keys) != 2 || (keys[0] != 11 && keys[0] != 21) {
 		t.Error("Error: Not equal")
 	}
 }

@@ -54,6 +54,14 @@ func (hash Hash8) FromBytes(bytes []byte) Hash8 {
 	return hash
 }
 
+func (this Hash8) Sum(offset uint64) uint64 {
+	total := uint64(0)
+	for j := offset; j < uint64(len(this)); j++ {
+		total += uint64(this[j])
+	}
+	return total
+}
+
 func (hash Hash8) Encode() []byte {
 	return hash[:]
 }

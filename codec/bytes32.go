@@ -24,6 +24,14 @@ func (this Bytes32) Size() uint32 {
 	return uint32(HASH32_LEN)
 }
 
+func (this Bytes32) Sum(offset uint64) uint64 {
+	total := uint64(0)
+	for j := offset; j < uint64(len(this)); j++ {
+		total += uint64((this)[j])
+	}
+	return total
+}
+
 func (this Bytes32) Clone() interface{} {
 	target := Bytes32{}
 	copy(target[:], this[:])

@@ -22,6 +22,14 @@ func (this *Bytes) Set(v interface{}) {
 	*this = v.(Bytes)
 }
 
+func (this *Bytes) Sum(offset uint64) uint64 {
+	total := uint64(0)
+	for j := offset; j < uint64(len(*this)); j++ {
+		total += uint64((*this)[j])
+	}
+	return total
+}
+
 func (this *Bytes) Hex() string {
 	bytes := make([]byte, 2*len(*this))
 	hex.Encode(bytes[:], (*this)[:])
@@ -37,6 +45,10 @@ func (this Bytes) Size() uint32 {
 }
 
 func (this Bytes) Clone() interface{} {
+	if this == nil {
+		return this
+	}
+
 	target := make([]byte, len(this))
 	copy(target, this)
 	return Bytes(target)
@@ -61,6 +73,10 @@ func (this Bytes) ToString() string {
 type Byteset [][]byte
 
 func (this Byteset) Clone() interface{} {
+	if this == nil {
+		return this
+	}
+
 	target := make([][]byte, len(this))
 	for i := range this {
 		target[i] = make([]byte, len(this[i]))

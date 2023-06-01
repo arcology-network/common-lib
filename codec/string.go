@@ -34,9 +34,9 @@ func (this String) Reverse() string {
 	return *(*string)(unsafe.Pointer(&reversed))
 }
 
-func (this String) Sum() uint64 {
+func (this String) Sum(offset uint64) uint64 {
 	total := uint64(0)
-	for j := 0; j < len(this); j++ {
+	for j := offset; j < uint64(len(this)); j++ {
 		total += uint64(this[j])
 	}
 	return total
@@ -67,10 +67,11 @@ func (this Strings) Concate() string {
 	return Bytes(this.Flatten()).ToString()
 }
 
-func (this Strings) Sort() {
-	sort.SliceStable(this, func(i, j int) bool {
+func (this Strings) Sort() Strings {
+	sort.Slice(this, func(i, j int) bool {
 		return this[i] < this[j]
 	})
+	return this
 }
 
 func (this Strings) Encode() []byte {
