@@ -170,6 +170,34 @@ func CopyIf[T any](values []T, condition func(v T) bool) []T {
 	return copied
 }
 
+func MoveIf[T any](values *[]T, conditions ...func(T) bool) []T {
+	if conditions == nil {
+		return *values
+	}
+
+	moved := []T{}
+	pos := 0
+	for _, condition := range conditions {
+		for i := 0; i < len(*values); i++ {
+			if condition((*values)[i]) {
+				pos = i
+				break
+			}
+		}
+
+		for i := pos; i < len(*values); i++ {
+			if !condition((*values)[i]) {
+				(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
+				pos++
+			} else {
+				moved = append(moved, (*values)[pos])
+			}
+		}
+		(*values) = (*values)[:pos]
+	}
+	return moved
+}
+
 func UniqueInts[T constraints.Integer](nums []T) []T {
 	if len(nums) <= 1 {
 		return nums

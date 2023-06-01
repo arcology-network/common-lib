@@ -70,28 +70,28 @@ func (this Bytes20) Hex() string {
 // 	return v[:BYTES20_LEN]
 // }
 
-type Byte32s [][BYTES20_LEN]byte
+type Byte20s [][BYTES20_LEN]byte
 
-func (this Byte32s) Clone() Byte32s {
+func (this Byte20s) Clone() Byte20s {
 	target := make([][BYTES20_LEN]byte, len(this))
 	for i := 0; i < len(this); i++ {
 		copy(target[i][:], this[i][:])
 	}
-	return Byte32s(target)
+	return Byte20s(target)
 }
 
-func (this Byte32s) Encode() []byte {
-	return Byte32s(this).Flatten()
+func (this Byte20s) Encode() []byte {
+	return Byte20s(this).Flatten()
 }
 
-func (this Byte32s) EncodeToBuffer(buffer []byte) int {
+func (this Byte20s) EncodeToBuffer(buffer []byte) int {
 	for i := 0; i < len(this); i++ {
 		copy(buffer[i*BYTES20_LEN:], this[i][:])
 	}
 	return len(this) * BYTES20_LEN
 }
 
-func (this Byte32s) Decode(data []byte) interface{} {
+func (this Byte20s) Decode(data []byte) interface{} {
 	this = make([][BYTES20_LEN]byte, len(data)/BYTES20_LEN)
 	for i := 0; i < len(this); i++ {
 		copy(this[i][:], data[i*BYTES20_LEN:(i+1)*BYTES20_LEN])
@@ -99,24 +99,24 @@ func (this Byte32s) Decode(data []byte) interface{} {
 	return this
 }
 
-func (this Byte32s) Size() uint32 {
+func (this Byte20s) Size() uint32 {
 	return uint32(len(this) * BYTES20_LEN)
 }
 
-func (this Byte32s) Flatten() []byte {
+func (this Byte20s) Flatten() []byte {
 	buffer := make([]byte, len(this)*BYTES20_LEN)
 	this.EncodeToBuffer(buffer)
 	return buffer
 }
 
-func (this Byte32s) Len() int {
+func (this Byte20s) Len() int {
 	return len(this)
 }
 
-func (this Byte32s) Less(i, j int) bool {
+func (this Byte20s) Less(i, j int) bool {
 	return bytes.Compare(this[i][:], this[j][:]) < 0
 }
 
-func (this Byte32s) Swap(i, j int) {
+func (this Byte20s) Swap(i, j int) {
 	this[i], this[j] = this[j], this[i]
 }

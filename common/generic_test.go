@@ -150,6 +150,65 @@ func TestRemoveIf(t *testing.T) {
 	}
 }
 
+func TestMoveIf(t *testing.T) {
+	strs := []interface{}{"1", 2, "3", "4"}
+	filter := func(v interface{}) bool { return v == nil }
+	MoveIf(&strs, filter)
+	if len(strs) != 4 && strs[0] != "1" && strs[1] != 2 && strs[2] != "3" && strs[3] != "4" {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	strs = []interface{}{"1"}
+	MoveIf(&strs, filter)
+	if len(strs) != 1 && strs[0] != "1" {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	strs = []interface{}{"1", nil, "3", "4"}
+	MoveIf(&strs, filter)
+	if len(strs) != 3 && strs[0] != "1" && strs[1] != 3 && strs[2] != "4" {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	strs = []interface{}{nil, nil, "3", "4"}
+	moved := MoveIf(&strs, filter)
+	if len(strs) != 2 && strs[0] != "3" && strs[1] != "4" {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	if len(moved) != 2 && moved[0] != nil && moved[1] != nil {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	strs = []interface{}{nil, nil, nil, "4"}
+	moved = MoveIf(&strs, filter)
+	if len(strs) != 1 && strs[0] != "4" {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	if len(moved) != 3 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	strs = []interface{}{nil, nil, nil, nil}
+	MoveIf(&strs, filter)
+	if len(strs) != 0 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	strs = []interface{}{1, nil, nil, nil}
+	MoveIf(&strs, filter)
+	if len(strs) != 1 && strs[0] != 1 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	strs = []interface{}{1, nil, nil, 2}
+	MoveIf(&strs, filter)
+	if len(strs) != 2 && strs[0] != 1 && strs[1] != 2 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+}
+
 func TestRemoveEmptyStrings(t *testing.T) {
 	strs := []string{"1", "2", "3", "4"}
 	Remove(&strs, "")
