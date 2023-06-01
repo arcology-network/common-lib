@@ -189,11 +189,29 @@ func UniqueInts[T constraints.Integer](nums []T) []T {
 	return nums[:current+1]
 }
 
-func Unique[T comparable](nums []T, less func(lhv, rhv T) bool) []T {
-	if len(nums) <= 1 {
-		return nums
+func Unique[T comparable](src []T, less func(lhv, rhv T) bool) []T {
+	if len(src) <= 1 {
+		return src
 	}
 
+	sort.Slice(src, func(i, j int) bool {
+		return less(src[i], src[j])
+	})
+
+	current := 0
+	for i := 0; i < len(src); i++ {
+		if src[current] != (src)[i] {
+			src[current+1] = (src)[i]
+			current++
+		}
+	}
+
+	var uniqueElems []T
+	UniqueDo(src, less, func(offset int) { uniqueElems = src[:current+1] })
+	return uniqueElems
+}
+
+func UniqueDo[T comparable](nums []T, less func(lhv, rhv T) bool, do func(int)) {
 	sort.Slice(nums, func(i, j int) bool {
 		return less(nums[i], nums[j])
 	})
@@ -205,7 +223,7 @@ func Unique[T comparable](nums []T, less func(lhv, rhv T) bool) []T {
 			current++
 		}
 	}
-	return nums[:current+1]
+	do(current + 1)
 }
 
 func FindRange[T comparable](values []T, equal func(v0, v1 T) bool) []int {
