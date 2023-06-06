@@ -13,7 +13,6 @@ func (this *FileDB) Query(pattern string, condition func(string, string) bool) (
 
 		for i := 0; i < len(files); i++ {
 			keys, valBytes, err := this.loadFile(files[i])
-			// keyBytes := codec.Strings.ToBytes(keys)
 			if err != nil {
 				return []string{}, [][]byte{}, err
 			}

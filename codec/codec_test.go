@@ -361,8 +361,8 @@ func TestHash16s(t *testing.T) {
 func TestHash32s(t *testing.T) {
 	in := [][32]byte{{1, 2, 3, 4, 5}, {5, 6, 7, 8, 9}}
 
-	data := Hash32s(in).Encode()
-	out := Hash32s(in).Decode(data).(Hash32s)
+	data := Bytes32s(in).Encode()
+	out := Bytes32s(in).Decode(data).(Bytes32s)
 
 	if !reflect.DeepEqual(in, ([][32]byte)(out)) {
 		t.Error("Uint8s Mismatched !")

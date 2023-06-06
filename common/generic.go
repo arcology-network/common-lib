@@ -6,10 +6,11 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-func Reverse[T any](values *[]T) {
+func Reverse[T any](values *[]T) []T {
 	for i, j := 0, len(*values)-1; i < j; i, j = i+1, j-1 {
 		(*values)[i], (*values)[j] = (*values)[j], (*values)[i]
 	}
+	return *values
 }
 
 func Fill[T any](values []T, v T) []T {
@@ -394,6 +395,14 @@ func EqualArray[T comparable](lhv []T, rhv []T) bool {
 		}
 	}
 	return true
+}
+
+func IsType[T any](v interface{}) bool {
+	switch v.(type) {
+	case T:
+		return true
+	}
+	return false
 }
 
 func MergeMaps[M ~map[K]V, K comparable, V any](from, to M) M {

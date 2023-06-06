@@ -1,7 +1,6 @@
 package codec
 
 import (
-	"reflect"
 	"sort"
 	"unsafe"
 
@@ -21,9 +20,7 @@ func (this String) Clone() interface{} {
 }
 
 func (this String) ToBytes() []byte {
-	return (*[0x7fff0000]byte)(unsafe.Pointer(
-		(*reflect.StringHeader)(unsafe.Pointer(&this)).Data),
-	)[:len(this):len(this)]
+	return []byte(this)
 }
 
 func (this String) Reverse() string {
