@@ -1,9 +1,9 @@
 package types
 
-import ethCommon "github.com/arcology-network/3rd-party/eth/common"
+import evmCommon "github.com/arcology-network/evm/common"
 
 type ArbitratorResponse struct {
-	ConflictedList []*ethCommon.Hash
+	ConflictedList []*evmCommon.Hash
 	CPairLeft      []uint32
 	CPairRight     []uint32
 }

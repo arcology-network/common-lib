@@ -10,7 +10,8 @@ import (
 
 	"unsafe"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	"github.com/arcology-network/common-lib/encoding"
+	evmCommon "github.com/arcology-network/evm/common"
 	"github.com/google/uuid"
 )
 
@@ -19,12 +20,12 @@ const (
 	ThreadNum    = 4
 )
 
-func ToNewHash(h ethCommon.Hash, height, round uint64) ethCommon.Hash {
+func ToNewHash(h evmCommon.Hash, height, round uint64) evmCommon.Hash {
 	keys := Uint64ToBytes(height)
 	keys = append(keys, Uint64ToBytes(round)...)
 	keys = append(keys, h.Bytes()...)
 	newhash := sha256.Sum256(keys)
-	return ethCommon.BytesToHash(newhash[:])
+	return evmCommon.BytesToHash(newhash[:])
 }
 
 func HexToString(src []byte) string {
@@ -126,9 +127,21 @@ func GobDecode(data []byte, x interface{}) error {
 // 		dict[(*strs)[i]] = true
 // 	}
 
-// 	uniques := make([]T, 0, len(dict))
-// 	for k := range dict {
-// 		uniques = append(uniques, k)
-// 	}
-// 	return uniques
-// }
+//		uniques := make([]T, 0, len(dict))
+//		for k := range dict {
+//			uniques = append(uniques, k)
+//		}
+//		return uniques
+//	}
+
+func CalculateHash(hashes []*evmCommon.Hash) evmCommon.Hash {
+	if len(hashes) == 0 {
+		return evmCommon.Hash{}
+	}
+	datas := make([][]byte, len(hashes))
+	for i := range hashes {
+		datas[i] = hashes[i].Bytes()
+	}
+	hash := sha256.Sum256(encoding.Byteset(datas).Encode())
+	return evmCommon.BytesToHash(hash[:])
+}

@@ -1,7 +1,7 @@
 package types
 
 import (
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 const (
@@ -21,7 +21,7 @@ const (
 )
 
 type ApplyListItem struct {
-	Txhash     ethCommon.Hash
+	Txhash     evmCommon.Hash
 	Conclusion byte
 	TxType     byte
 }
@@ -38,7 +38,7 @@ func (al ApplyList) Size() int {
 }
 
 // Range calls f on each key and value present in the map.
-func (al ApplyList) Range(f func(hash *ethCommon.Hash, selected bool)) {
+func (al ApplyList) Range(f func(hash *evmCommon.Hash, selected bool)) {
 	if al.Lists != nil {
 		switch al.SelectedMode {
 		case SelectedMode_FillTx:

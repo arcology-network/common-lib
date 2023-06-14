@@ -1,17 +1,17 @@
 package mhasher
 
 import (
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 // GetTxsHash get transactions roothash
-func GetTxsHash(src2d [][]byte) ethCommon.Hash {
+func GetTxsHash(src2d [][]byte) evmCommon.Hash {
 	if len(src2d) == 0 {
-		return ethCommon.Hash{}
+		return evmCommon.Hash{}
 	}
 	roothash, err := Roothash(src2d, HashType_256)
 	if err != nil {
-		return ethCommon.Hash{}
+		return evmCommon.Hash{}
 	}
-	return ethCommon.BytesToHash(roothash)
+	return evmCommon.BytesToHash(roothash)
 }

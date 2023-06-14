@@ -4,16 +4,16 @@ import (
 	"crypto/sha256"
 	"math/big"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
 	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
 	"github.com/arcology-network/common-lib/encoding"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 type ExecutingSequence struct {
 	Msgs       []*StandardMessage
 	Parallel   bool
-	SequenceId ethCommon.Hash
+	SequenceId evmCommon.Hash
 	Txids      []uint32
 }
 
@@ -27,7 +27,7 @@ func NewExecutingSequence(msgs []*StandardMessage, parallel bool) *ExecutingSequ
 	return &ExecutingSequence{
 		Msgs:       msgs,
 		Parallel:   parallel,
-		SequenceId: ethCommon.BytesToHash(hash[:]),
+		SequenceId: evmCommon.BytesToHash(hash[:]),
 		Txids:      make([]uint32, len(msgs)),
 	}
 }
@@ -85,7 +85,7 @@ func (this *ExecutingSequences) Decode(data []byte) ([]*ExecutingSequence, error
 			if len(parallels) > 0 {
 				executingSequence.Parallel = parallels[0]
 			}
-			executingSequence.SequenceId = ethCommon.BytesToHash(datafields[2])
+			executingSequence.SequenceId = evmCommon.BytesToHash(datafields[2])
 			executingSequence.Txids = new(encoding.Uint32s).Decode(datafields[3])
 			executingSequences[i] = executingSequence
 
@@ -97,8 +97,8 @@ func (this *ExecutingSequences) Decode(data []byte) ([]*ExecutingSequence, error
 
 type ExecutorRequest struct {
 	Sequences     []*ExecutingSequence
-	Precedings    [][]*ethCommon.Hash
-	PrecedingHash []ethCommon.Hash
+	Precedings    [][]*evmCommon.Hash
+	PrecedingHash []evmCommon.Hash
 	Timestamp     *big.Int
 	Parallelism   uint64
 	Debug         bool
@@ -114,7 +114,7 @@ func (this *ExecutorRequest) GobEncode() ([]byte, error) {
 	precedingsBytes := make([][]byte, len(this.Precedings))
 	for i := range this.Precedings {
 		precedings := Ptr2Arr(this.Precedings[i])
-		precedingsBytes[i] = ethCommon.Hashes(precedings).Encode()
+		precedingsBytes[i] = Hashes(precedings).Encode()
 	}
 
 	timeStampData := []byte{}
@@ -125,7 +125,7 @@ func (this *ExecutorRequest) GobEncode() ([]byte, error) {
 	data := [][]byte{
 		executingSequencesData,
 		encoding.Byteset(precedingsBytes).Encode(),
-		ethCommon.Hashes(this.PrecedingHash).Encode(),
+		Hashes(this.PrecedingHash).Encode(),
 		timeStampData,
 		common.Uint64ToBytes(this.Parallelism),
 		codec.Bool(this.Debug).Encode(),
@@ -142,12 +142,12 @@ func (this *ExecutorRequest) GobDecode(data []byte) error {
 	this.Sequences = msgResults
 
 	precedingsBytes := encoding.Byteset{}.Decode(fields[1])
-	this.Precedings = make([][]*ethCommon.Hash, len(precedingsBytes))
+	this.Precedings = make([][]*evmCommon.Hash, len(precedingsBytes))
 	for i := range precedingsBytes {
-		this.Precedings[i] = Arr2Ptr(ethCommon.Hashes([]ethCommon.Hash{}).Decode(precedingsBytes[i]))
+		this.Precedings[i] = Arr2Ptr(Hashes([]evmCommon.Hash{}).Decode(precedingsBytes[i]))
 	}
 
-	this.PrecedingHash = ethCommon.Hashes([]ethCommon.Hash{}).Decode(fields[2])
+	this.PrecedingHash = Hashes([]evmCommon.Hash{}).Decode(fields[2])
 	//if len(fields[3]) > 0 {
 	this.Timestamp = new(big.Int).SetBytes(fields[3])
 	//}

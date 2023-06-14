@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"math/big"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 type AccountInfo struct {
-	Address ethCommon.Address
+	Address evmCommon.Address
 	Account Account
 }
 
@@ -17,7 +17,7 @@ type AccountInfo struct {
 type Account struct {
 	Nonce    uint64
 	Balance  *big.Int
-	Root     ethCommon.Hash // merkle root of the storage trie
+	Root     evmCommon.Hash // merkle root of the storage trie
 	CodeHash []byte
 }
 
