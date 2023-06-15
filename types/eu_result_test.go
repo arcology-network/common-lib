@@ -8,7 +8,7 @@ import (
 )
 
 func TestEuresultEncodingWithDefer(t *testing.T) {
-	in := &DeferCall{
+	in := &DeferredCall{
 		DeferID:         "7777999",
 		ContractAddress: "45678abc",
 		Signature:       "xxxx%123",
@@ -36,14 +36,14 @@ func TestEuresultEncodingWithDefer(t *testing.T) {
 }
 
 func TestDeferEncoding(t *testing.T) {
-	in := &DeferCall{
+	in := &DeferredCall{
 		DeferID:         "7777999",
 		ContractAddress: "45678abc",
 		Signature:       "xxxx%123",
 	}
 
 	buffer := in.Encode()
-	out := (&DeferCall{}).Decode(buffer)
+	out := (&DeferredCall{}).Decode(buffer)
 
 	if !reflect.DeepEqual(in, out) {
 		t.Error("Error")
@@ -51,7 +51,7 @@ func TestDeferEncoding(t *testing.T) {
 }
 
 func TestEuResultEncodingWithDefer(t *testing.T) {
-	dc := &DeferCall{
+	dc := &DeferredCall{
 		DeferID:         "7777",
 		ContractAddress: "45678",
 		Signature:       "xxxx",
@@ -76,7 +76,7 @@ func TestEuResultEncodingWithDefer(t *testing.T) {
 }
 
 func TestEuResultsEncoding(t *testing.T) {
-	dc := &DeferCall{
+	dc := &DeferredCall{
 		DeferID:         "7777",
 		ContractAddress: "45678",
 		Signature:       "xxxx",
@@ -111,7 +111,7 @@ func TestEuResultsEncoding(t *testing.T) {
 }
 
 func BenchmarkEuResultsEncoding(b *testing.B) {
-	dc := &DeferCall{
+	dc := &DeferredCall{
 		DeferID:         "7777",
 		ContractAddress: "45678",
 		Signature:       "xxxx",

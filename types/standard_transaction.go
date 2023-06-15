@@ -15,6 +15,13 @@ const (
 	TxFrom_Block  = 3
 )
 
+const (
+	TX_SOURCE_REMOTE = iota
+	TX_SOURCE_LOCAL
+	TX_SOURCE_BLOCK
+	TX_SOURCE_DEFERRED
+)
+
 type StandardTransaction struct {
 	TxHash    ethCommon.Hash
 	Native    *ethTypes.Transaction

@@ -3,6 +3,7 @@ package types
 import (
 	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
+	interfaces "github.com/arcology-network/concurrenturl/interfaces"
 )
 
 type EuResult struct {
@@ -10,9 +11,11 @@ type EuResult struct {
 	ID           uint32
 	Transitions  [][]byte
 	TransitTypes []byte
-	DC           *DeferCall
-	Status       uint64
-	GasUsed      uint64
+	DC           *DeferredCall
+
+	Trans   []interfaces.Univalue
+	Status  uint64
+	GasUsed uint64
 }
 
 func (this *EuResult) HeaderSize() uint32 {
@@ -75,7 +78,7 @@ func (this *EuResult) Decode(buffer []byte) *EuResult {
 	this.TransitTypes = []byte(codec.Bytes{}.Decode(fields[3]).(codec.Bytes))
 
 	if len(fields[4]) > 0 {
-		this.DC = (&DeferCall{}).Decode(fields[4])
+		this.DC = (&DeferredCall{}).Decode(fields[4])
 	}
 	this.Status = uint64(codec.Uint64(0).Decode(fields[5]).(codec.Uint64))
 	this.GasUsed = uint64(codec.Uint64(0).Decode(fields[6]).(codec.Uint64))

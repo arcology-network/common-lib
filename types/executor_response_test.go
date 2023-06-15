@@ -9,7 +9,7 @@ import (
 )
 
 func Test_ExecutorResponses_EncodingAndDeconing(t *testing.T) {
-	defs := []*DeferCall{
+	defs := []*DeferredCall{
 		{
 			DeferID:         "123123",
 			ContractAddress: Address("defcalll123122121212"),
@@ -27,7 +27,7 @@ func Test_ExecutorResponses_EncodingAndDeconing(t *testing.T) {
 		},
 	}
 
-	defcalls := make([]*DeferCall, 3)
+	defcalls := make([]*DeferredCall, 3)
 	defcalls[0] = defs[0]
 	defcalls[1] = defs[1]
 	defcalls[2] = defs[2]

@@ -20,7 +20,7 @@ func Fill[T any](values []T, v T) []T {
 	return values
 }
 
-func Remove[T comparable](values *[]T, target T) {
+func Remove[T comparable](values *[]T, target T) []T {
 	pos := 0
 	for i := 0; i < len(*values); i++ {
 		if target == (*values)[i] {
@@ -36,6 +36,7 @@ func Remove[T comparable](values *[]T, target T) {
 		}
 	}
 	(*values) = (*values)[:pos]
+	return (*values)
 }
 
 func SetByIndices[T0 any, T1 constraints.Integer](source []T0, indices []T1, setter func(T0) T0) []T0 {
@@ -125,10 +126,11 @@ func EitherEqualsTo[T any](lhv interface{}, rhv T, equal func(v interface{}) boo
 	return rhv
 }
 
-func Foreach[T any](values []T, predicate func(v *T)) {
+func Foreach[T any](values []T, predicate func(v *T)) []T {
 	for i := 0; i < len(values); i++ {
 		predicate(&(values)[i])
 	}
+	return values
 }
 
 func Accumulate[T any](values []T, initialV uint64, predicate func(v *T) uint64) uint64 {
@@ -143,6 +145,16 @@ func CopyIf[T any](values []T, condition func(v T) bool) []T {
 	for i := 0; i < len(values); i++ {
 		if condition(values[i]) {
 			copied = append(copied, values[i])
+		}
+	}
+	return copied
+}
+
+func CopyIfDo[T0, T1 any](values []T0, condition func(T0) bool, do func(T0) T1) []T1 {
+	copied := make([]T1, 0, len(values))
+	for i := 0; i < len(values); i++ {
+		if condition(values[i]) {
+			copied = append(copied, do(values[i]))
 		}
 	}
 	return copied
@@ -286,6 +298,15 @@ func CloneIf[T any](src []T, condition func(v T) bool) []T {
 	return dst
 }
 
+func Concate[T0, T1 any](array []T0, getter func(T0) []T1) []T1 {
+	buffer := make([][]T1, len(array))
+	for i := 0; i < len(array); i++ {
+		buffer[i] = getter(array[i])
+	}
+
+	return Flatten(buffer)
+}
+
 func Flatten[T any](src [][]T) []T {
 	totalSize := 0
 	for _, data := range src {
@@ -316,22 +337,6 @@ func SortBy1st[T0 any, T1 any](first []T0, second []T1, compare func(T0, T0) boo
 		second[i] = array[i]._1
 	}
 }
-
-// func ConcateFrom[T0, T1 any](array []T0, getter func(T0) []T1) []T1 {
-// 	total := 0
-// 	for i := 0; i < len(array); i++ {
-// 		total += len(getter(array[i]))
-// 	}
-// 	output := make([]T1, total) // Pre-allocation for better performance
-
-// 	offset := 0
-// 	for i := 0; i < total; i++ {
-// 		elems := getter(array[i])
-// 		copy(output[offset:], elems)
-// 		offset += len(elems)
-// 	}
-// 	return output
-// }
 
 func Exclude[T comparable](source []T, toRemove []T) []T {
 	dict := MapFromArray(toRemove, true)
@@ -416,6 +421,14 @@ func MapFromArray[K comparable, V any](keys []K, v V) *map[K]V {
 	M := make(map[K]V)
 	for _, k := range keys {
 		M[k] = v
+	}
+	return &M
+}
+
+func MapFromArrayBy[K comparable, T, V any](keys []T, initv V, getter func(t T) K) *map[K]V {
+	M := make(map[K]V)
+	for _, k := range keys {
+		M[getter(k)] = initv
 	}
 	return &M
 }

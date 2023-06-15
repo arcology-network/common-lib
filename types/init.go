@@ -53,7 +53,7 @@ func init() {
 	gob.Register(&[]*TxAccessRecords{})
 	gob.Register(&TxAccessRecordSet{})
 	gob.Register(&Euresults{})
-	gob.Register(&DeferCall{})
+	gob.Register(&DeferredCall{})
 	gob.Register(&RequestParameters{})
 	gob.Register(&RequestBlockEth{})
 	gob.Register(&RequestStorage{})

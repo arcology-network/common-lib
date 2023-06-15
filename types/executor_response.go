@@ -7,14 +7,14 @@ import (
 )
 
 type ExecuteResponse struct {
-	DfCall  *DeferCall
+	DfCall  *DeferredCall
 	Hash    ethCommon.Hash
 	Status  uint64
 	GasUsed uint64
 }
 
 type ExecutorResponses struct {
-	DfCalls     []*DeferCall
+	DfCalls     []*DeferredCall
 	HashList    []ethCommon.Hash
 	StatusList  []uint64
 	GasUsedList []uint64

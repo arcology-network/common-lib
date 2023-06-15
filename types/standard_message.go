@@ -24,7 +24,7 @@ type StandardMessage struct {
 	Source    uint8
 }
 
-func MakeMessageWithDefCall(def *DeferCall, hash ethCommon.Hash, nonce uint64) *StandardMessage {
+func MakeMessageWithDefCall(def *DeferredCall, hash ethCommon.Hash, nonce uint64) *StandardMessage {
 	signature := def.Signature
 	contractAddress := def.ContractAddress
 	data := crypto.Keccak256([]byte(signature))[:4]
