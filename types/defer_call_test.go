@@ -6,7 +6,7 @@ import (
 )
 
 func TestDeferCallEncoding(t *testing.T) {
-	dc := &DeferCall{
+	dc := &DeferredCall{
 		DeferID:         "123",
 		ContractAddress: "45678",
 		Signature:       "xxxx",
@@ -15,7 +15,7 @@ func TestDeferCallEncoding(t *testing.T) {
 	buffer := make([]byte, dc.Size())
 	dc.EncodeToBuffer(buffer)
 
-	out := (&DeferCall{}).Decode(buffer)
+	out := (&DeferredCall{}).Decode(buffer)
 	if !reflect.DeepEqual(dc, out) {
 		t.Error("Error")
 	}

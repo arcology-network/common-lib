@@ -6,13 +6,15 @@ import (
 	encoding "github.com/arcology-network/common-lib/encoding"
 )
 
-type DeferCall struct {
+type DeferredCall struct {
 	DeferID         string
+	GroupBy         [32]byte
 	ContractAddress Address
 	Signature       string
+	Data            []byte
 }
 
-func (this *DeferCall) Encode() []byte {
+func (this *DeferredCall) Encode() []byte {
 	buffers := [][]byte{
 		codec.String(this.DeferID).ToBytes(),
 		codec.String(this.ContractAddress).ToBytes(),
@@ -22,7 +24,7 @@ func (this *DeferCall) Encode() []byte {
 	return codec.Byteset(buffers).Encode()
 }
 
-func (this *DeferCall) Decode(data []byte) *DeferCall {
+func (this *DeferredCall) Decode(data []byte) *DeferredCall {
 	buffers := [][]byte(codec.Byteset{}.Decode(data).(codec.Byteset))
 	this.DeferID = string(buffers[0])
 	this.ContractAddress = Address(buffers[1])
@@ -30,11 +32,11 @@ func (this *DeferCall) Decode(data []byte) *DeferCall {
 	return this
 }
 
-func (this *DeferCall) HeaderSize() uint32 {
+func (this *DeferredCall) HeaderSize() uint32 {
 	return 4 * codec.UINT32_LEN
 }
 
-func (this *DeferCall) Size() uint32 {
+func (this *DeferredCall) Size() uint32 {
 	if this == nil {
 		return 0
 	}
@@ -43,7 +45,7 @@ func (this *DeferCall) Size() uint32 {
 		uint32(len(this.DeferID)+len(this.ContractAddress)+len(this.Signature))
 }
 
-func (this *DeferCall) EncodeToBuffer(buffer []byte) int {
+func (this *DeferredCall) EncodeToBuffer(buffer []byte) int {
 	if this == nil {
 		return 0
 	}
@@ -63,7 +65,7 @@ func (this *DeferCall) EncodeToBuffer(buffer []byte) int {
 	return offset
 }
 
-type DeferCalls []*DeferCall
+type DeferCalls []*DeferredCall
 
 func (dcs DeferCalls) Encode() []byte {
 	if dcs == nil {
@@ -92,19 +94,19 @@ func (dcs DeferCalls) Encode() []byte {
 	return encoding.Byteset(dataSet).Encode()
 }
 
-func (dcs *DeferCalls) Decode(data []byte) []*DeferCall {
+func (dcs *DeferCalls) Decode(data []byte) []*DeferredCall {
 	buffers := encoding.Byteset{}.Decode(data)
-	defs := make([]*DeferCall, len(buffers))
+	defs := make([]*DeferredCall, len(buffers))
 
 	worker := func(start, end, idx int, args ...interface{}) {
 		dataSet := args[0].([]interface{})[0].([][]byte)
-		defcalls := args[0].([]interface{})[1].([]*DeferCall)
+		defcalls := args[0].([]interface{})[1].([]*DeferredCall)
 
 		for i := start; i < end; i++ {
 			if len(dataSet[i]) == 0 {
 				continue
 			}
-			deferCall := new(DeferCall)
+			deferCall := new(DeferredCall)
 			DeferIDLength := 0
 			DeferIDLength = int(encoding.Uint32(DeferIDLength).Decode(dataSet[i][0:encoding.UINT32_LEN]))
 			SignatureLength := 0
