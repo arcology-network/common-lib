@@ -410,6 +410,24 @@ func IsType[T any](v interface{}) bool {
 	return false
 }
 
+func GroupBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) [][]T0 {
+	if len(array) == 1 {
+		return [][]T0{array}
+	}
+
+	dict := make(map[T1][]T0)
+	for _, v := range array {
+		if key := getter(v); key != nil {
+			vec := dict[*key]
+			if vec != nil {
+				vec = []T0{}
+			}
+			dict[*key] = append(vec, v)
+		}
+	}
+	return MapValues(dict)
+}
+
 func MergeMaps[M ~map[K]V, K comparable, V any](from, to M) M {
 	for k, v := range to {
 		from[k] = v
