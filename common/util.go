@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"encoding/hex"
-	"math"
 
 	"unsafe"
 
@@ -88,15 +87,6 @@ func Transpose(slice [][]string) [][]string {
 		}
 	}
 	return result
-}
-
-func GenerateRanges(length int, numThreads int) []int {
-	ranges := make([]int, 0, numThreads+1)
-	step := int(math.Ceil(float64(length) / float64(numThreads)))
-	for i := 0; i <= numThreads; i++ {
-		ranges = append(ranges, int(math.Min(float64(step*i), float64(length))))
-	}
-	return ranges
 }
 
 func GobEncode(x interface{}) ([]byte, error) {
