@@ -1,10 +1,12 @@
 package common
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"math"
 	"math/rand"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 	// "github.com/HPISTechnologies/common-lib/common"
@@ -420,6 +422,27 @@ func TestForeach(t *testing.T) {
 	if nums[0][0] != 5 || nums[1][0] != 6 || nums[2][0] != 6 {
 		t.Error("Error: Failed to remove nil values !")
 	}
+}
+
+func TestParallelForeach(t *testing.T) {
+	nums := []int{3, 5, 5, 6, 6}
+	ParallelForeach(nums, 120, func(lhv *int) int { return (*lhv) + 1 })
+
+	if nums[0] != 4 || nums[1] != 6 || nums[2] != 6 || nums[3] != 7 || nums[4] != 7 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	nums = make([]int, 1000000)
+	for i := 0; i < len(nums); i++ {
+		nums[i] = i
+	}
+
+	t0 := time.Now()
+	ParallelForeach(nums, 32, func(v *int) int {
+		sha256.Sum256([]byte(strconv.Itoa(*v)))
+		return *v
+	})
+	fmt.Println("Time: ", time.Since(t0))
 }
 
 func TestFindLastIf(t *testing.T) {
