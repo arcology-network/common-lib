@@ -10,7 +10,6 @@ import (
 	"github.com/arcology-network/common-lib/encoding"
 	evmCommon "github.com/arcology-network/evm/common"
 	"github.com/arcology-network/evm/core"
-	"github.com/arcology-network/evm/crypto"
 	"github.com/arcology-network/evm/rlp"
 )
 
@@ -25,24 +24,24 @@ type StandardMessage struct {
 	Source    uint8
 }
 
-func MakeMessageWithDefCall(def *DeferredCall, hash evmCommon.Hash, nonce uint64) *StandardMessage {
-	signature := def.Signature
-	contractAddress := def.ContractAddress
-	data := crypto.Keccak256([]byte(signature))[:4]
-	data = append(data, common.AlignToEvmForInt(common.EvmWordSize)...)
-	idLen := common.AlignToEvmForInt(len(def.DeferID))
-	id := common.AlignToEvmForString(def.DeferID)
-	data = append(data, idLen...)
-	data = append(data, id...)
-	contractAddr := evmCommon.BytesToAddress([]byte(contractAddress))
-	//nonce := uint64(time.Now().UnixNano())
-	message := core.NewMessage(contractAddr, &contractAddr, nonce, new(big.Int).SetInt64(0), 1e9, new(big.Int).SetInt64(0), data, nil, false)
-	standardMessager := StandardMessage{
-		Native: &message,
-		TxHash: hash,
-	}
-	return &standardMessager
-}
+// func MakeMessageWithDefCall(def *DeferredCall, hash evmCommon.Hash, nonce uint64) *StandardMessage {
+// 	signature := def.Signature
+// 	contractAddress := def.ContractAddress
+// 	data := crypto.Keccak256([]byte(signature))[:4]
+// 	data = append(data, common.AlignToEvmForInt(common.EvmWordSize)...)
+// 	idLen := common.AlignToEvmForInt(len(def.DeferID))
+// 	id := common.AlignToEvmForString(def.DeferID)
+// 	data = append(data, idLen...)
+// 	data = append(data, id...)
+// 	contractAddr := evmCommon.BytesToAddress([]byte(contractAddress))
+// 	//nonce := uint64(time.Now().UnixNano())
+// 	message := core.NewMessage(contractAddr, &contractAddr, nonce, new(big.Int).SetInt64(0), 1e9, new(big.Int).SetInt64(0), data, nil, false)
+// 	standardMessager := StandardMessage{
+// 		Native: &message,
+// 		TxHash: hash,
+// 	}
+// 	return &standardMessager
+// }
 
 func (this *StandardMessage) Hash() evmCommon.Hash {
 	return this.TxHash

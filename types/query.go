@@ -117,8 +117,8 @@ type QueryReceipt struct {
 	GasUsed         *big.Int    `json:"gasUsed"`
 	Logs            []*QueryLog `json:"logs"`
 	ExecutingLogs   string      `json:"executing logs"`
-	SpawnedTxHash   string      `json:"spawned transactionHash"`
-	Height          int         `json:"height"`
+	// SpawnedTxHash   string      `json:"spawned transactionHash"`
+	Height int `json:"height"`
 }
 
 type ClusterConfig struct {
