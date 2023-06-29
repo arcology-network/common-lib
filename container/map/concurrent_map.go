@@ -177,6 +177,9 @@ func (this *ConcurrentMap) BatchSet(keys []string, values []interface{}, args ..
 }
 
 func (this *ConcurrentMap) DirectBatchSet(shardIDs []uint8, keys []string, values []interface{}, args ...interface{}) {
+	if len(keys) != len(values) {
+		panic("Lengths don't match")
+	}
 	var flags []bool
 	if len(args) > 0 && args[0] != nil {
 		flags = args[0].([]bool)

@@ -389,7 +389,7 @@ func TestHash64s(t *testing.T) {
 	}
 }
 
-func TestEncodeables(t *testing.T) {
+func TestEncodables(t *testing.T) {
 	t0 := time.Now()
 	v := Uint64(1223)
 	Encodables{String("1223"), String("1223"), String("1223"), &v}.Encode()

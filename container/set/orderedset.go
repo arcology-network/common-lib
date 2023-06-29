@@ -8,14 +8,14 @@ import (
 )
 
 type OrderedSet struct {
-	_dict   *orderedmap.OrderedMap // committed keys + added - removed
+	dict    *orderedmap.OrderedMap // committed keys + added - removed
 	keys    []string
 	touched bool
 }
 
 func NewOrderedSet(keys []string) *OrderedSet {
 	this := &OrderedSet{
-		_dict:   orderedmap.NewOrderedMap(),
+		dict:    orderedmap.NewOrderedMap(),
 		keys:    keys,
 		touched: false,
 	}
@@ -41,21 +41,21 @@ func (this *OrderedSet) Length() int {
 }
 
 func (this *OrderedSet) isSynced() bool {
-	return (this._dict.Len()) == len(this.keys)
+	return (this.dict.Len()) == len(this.keys)
 }
 
 // Sync the look up with the
 func (this *OrderedSet) Dict() *orderedmap.OrderedMap {
 	if !this.isSynced() {
-		if this._dict.Len() > 0 {
-			this._dict = orderedmap.NewOrderedMap() // This should never happen
+		if this.dict.Len() > 0 {
+			this.dict = orderedmap.NewOrderedMap() // This should never happen
 		}
 
 		for i := 0; i < len(this.keys); i++ {
-			this._dict.Set(this.keys[i], uint64(i))
+			this.dict.Set(this.keys[i], uint64(i))
 		}
 	}
-	return this._dict
+	return this.dict
 }
 
 func (this *OrderedSet) Touched() bool { return this.touched }
