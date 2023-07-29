@@ -26,26 +26,26 @@ func TestIndexedSet(t *testing.T) {
 		t.Error("Error: Wrong entry count")
 	}
 
-	if v, ok := set.IdxOf("1"); !ok || v != 0 {
+	if v := set.IdxOf("1"); v != 0 {
 		t.Error("Error: Failed to 1")
 	}
-	if v, ok := set.IdxOf("2"); !ok || v != 1 {
+	if v := set.IdxOf("2"); v != 1 {
 		t.Error("Error: Failed to 2")
 	}
-	if v, ok := set.IdxOf("3"); !ok || v != 2 {
+	if v := set.IdxOf("3"); v != 2 {
 		t.Error("Error: Failed to 3")
 	}
-	if v, ok := set.IdxOf("4"); !ok || v != 3 {
+	if v := set.IdxOf("4"); v != 3 {
 		t.Error("Error: Failed to 4")
 	}
 
-	if v, ok := set.KeyOf(0); !ok || v.(string) != "1" {
+	if v := set.KeyAt(0); v != "1" {
 		t.Error("Error: Failed to 1")
 	}
-	if v, ok := set.KeyOf(1); !ok || v.(string) != "2" {
+	if v := set.KeyAt(1); v != "2" {
 		t.Error("Error: Failed to 2")
 	}
-	if v, ok := set.KeyOf(2); !ok || v.(string) != "3" {
+	if v := set.KeyAt(2); v != "3" {
 		t.Error("Error: Failed to 3")
 	}
 
@@ -53,13 +53,13 @@ func TestIndexedSet(t *testing.T) {
 		t.Error("Error: Failed to delete by index 0")
 	}
 
-	if v, ok := set.KeyOf(0); !ok || v.(string) != "2" {
+	if v := set.KeyAt(0); v != "2" {
 		t.Error("Error: Failed to get")
 	}
-	if v, ok := set.KeyOf(1); !ok || v.(string) != "3" {
+	if v := set.KeyAt(1); v != "3" {
 		t.Error("Error: Failed to get")
 	}
-	if v, ok := set.KeyOf(2); !ok || v.(string) != "4" {
+	if v := set.KeyAt(2); v != "4" {
 		t.Error("Error: Failed to get")
 	}
 
@@ -71,11 +71,11 @@ func TestIndexedSet(t *testing.T) {
 		t.Error("Error: Wrong entry count")
 	}
 
-	if v, ok := set.KeyOf(0); !ok || v.(string) != "2" {
+	if v := set.KeyAt(0); v != "2" {
 		t.Error("Error: Failed to get")
 	}
 
-	if v, ok := set.KeyOf(1); !ok || v.(string) != "4" {
+	if v := set.KeyAt(1); v != "4" {
 		t.Error("Error: Failed to get")
 	}
 
@@ -87,11 +87,11 @@ func TestIndexedSet(t *testing.T) {
 		t.Error("Error: Failed to delete by index 0")
 	}
 
-	if v, ok := set.KeyOf(0); !ok || v.(string) != "2" {
+	if v := set.KeyAt(0); v != "2" {
 		t.Error("Error: Failed to get")
 	}
 
-	if _, ok := set.KeyOf(1); ok {
+	if len(set.KeyAt(1)) != 0 {
 		t.Error("Error: should failed")
 	}
 
@@ -103,11 +103,11 @@ func TestIndexedSet(t *testing.T) {
 		t.Error("Error: Wrong entry count")
 	}
 
-	if _, ok := set.KeyOf(0); ok {
+	if len(set.KeyAt(0)) != 0 {
 		t.Error("Error: should failed")
 	}
 
-	if _, ok := set.IdxOf("1"); ok {
+	if len(set.KeyAt(1)) != 0 {
 		t.Error("Error: should failed")
 	}
 
