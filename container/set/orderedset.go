@@ -81,19 +81,19 @@ func (this *OrderedSet) Exists(key string) bool {
 
 func (this *OrderedSet) Delete(key string) bool { return this.DeleteByKey(key) }
 
-func (this *OrderedSet) IdxOf(key string) (uint64, bool) {
+func (this *OrderedSet) IdxOf(key string) uint64 {
 	v, ok := this.Dict().Get(key)
 	if !ok {
-		return math.MaxUint64, false
+		return math.MaxUint64
 	}
-	return v.(uint64), ok
+	return v.(uint64)
 }
 
-func (this *OrderedSet) KeyOf(idx uint64) (interface{}, bool) {
+func (this *OrderedSet) KeyAt(idx uint64) string {
 	if idx < uint64(len(this.keys)) {
-		return this.keys[idx], true
+		return this.keys[idx]
 	}
-	return nil, false
+	return ""
 }
 
 func (this *OrderedSet) Insert(key string) {

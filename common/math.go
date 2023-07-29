@@ -39,6 +39,18 @@ func Sum[T0, T1 constraints.Integer | float32 | float64 | byte](values []T0, sum
 	return sum
 }
 
+func IsHex(bytes []byte) bool {
+	if len(bytes)%2 != 0 {
+		return false
+	}
+	for _, c := range bytes {
+		if !(('0' <= c && c <= '9') || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F')) {
+			return false
+		}
+	}
+	return true
+}
+
 // func Accumulate[T0, T1 constraints.Integer | float32 | float64 | byte](values []T0, Type T1) []T1 {
 // 	if len(values) == 0 {
 // 		return []T1{}
