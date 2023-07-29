@@ -12,7 +12,7 @@ import (
 )
 
 func IsPath(path string) bool {
-	return !(len(path) == 0 || path[len(path)-1] != '/')
+	return len(path) > 0 && path[len(path)-1] == '/'
 }
 
 func GetParentPath(key string) string {

@@ -68,3 +68,10 @@ func ParallelForeach[T any](values []T, nThds uint8, do func(v *T) T) []T {
 	wg.Wait()
 	return values
 }
+
+type Daemons struct {
+}
+
+func ParallelDaemons() {
+
+}

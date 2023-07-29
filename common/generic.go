@@ -20,6 +20,20 @@ func Fill[T any](values []T, v T) []T {
 	return values
 }
 
+func PadRight[T any](values []T, v T, targetLen int) []T {
+	if targetLen <= len(values) {
+		return values
+	}
+	return append(values, make([]T, targetLen-len(values))...)
+}
+
+func PadLeft[T any](values []T, v T, targetLen int) []T {
+	if targetLen < len(values) {
+		return values
+	}
+	return append(make([]T, targetLen-len(values)), values...)
+}
+
 func Remove[T comparable](values *[]T, target T) []T {
 	pos := 0
 	for i := 0; i < len(*values); i++ {
@@ -133,9 +147,9 @@ func Foreach[T any](values []T, predicate func(v *T)) []T {
 	return values
 }
 
-func Accumulate[T any](values []T, initialV uint64, predicate func(v *T) uint64) uint64 {
+func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, initialV T1, predicate func(v T) T1) T1 {
 	for i := 0; i < len(values); i++ {
-		initialV += predicate(&(values)[i])
+		initialV += predicate((values)[i])
 	}
 	return initialV
 }
@@ -426,6 +440,23 @@ func GroupBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) [][]T0 {
 		}
 	}
 	return MapValues(dict)
+}
+
+func MapRemoveIf[M ~map[K]V, K comparable, V any](source M, condition func(k K, v V) bool) {
+	for k, v := range source {
+		if condition(k, v) {
+			delete(source, k)
+		}
+	}
+}
+
+func MapMoveIf[M ~map[K]V, K comparable, V any](source, target M, condition func(k K, v V) bool) {
+	for k, v := range source {
+		if condition(k, v) {
+			target[k] = v
+			delete(source, k)
+		}
+	}
 }
 
 func MergeMaps[M ~map[K]V, K comparable, V any](from, to M) M {

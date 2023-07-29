@@ -152,11 +152,37 @@ func TestRemoveIf(t *testing.T) {
 	}
 }
 
+func TestMapMoveIf(t *testing.T) {
+	m := map[string]bool{
+		"1": true,
+		"2": false,
+		"3": true,
+		"4": false,
+	}
+
+	MapRemoveIf(m, func(k string, _ bool) bool { return k == "1" })
+	if len(m) != 3 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	target := map[string]bool{}
+	MapMoveIf(m, target, func(k string, _ bool) bool { return k == "2" })
+	if len(m) != 2 || len(target) != 1 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+}
+
 func TestMoveIf(t *testing.T) {
 	strs := []interface{}{"1", 2, "3", "4"}
-	filter := func(v interface{}) bool { return v == nil }
-	MoveIf(&strs, filter)
-	if len(strs) != 4 && strs[0] != "1" && strs[1] != 2 && strs[2] != "3" && strs[3] != "4" {
+	filter := func(v interface{}) bool { return v == 2 }
+	moved := MoveIf(&strs, filter)
+
+	if len(moved) != 1 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	if len(strs) != 3 || strs[0] != "1" || strs[1] != "3" || strs[2] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
@@ -166,14 +192,15 @@ func TestMoveIf(t *testing.T) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
+	filter = func(v interface{}) bool { return v == nil }
 	strs = []interface{}{"1", nil, "3", "4"}
 	MoveIf(&strs, filter)
-	if len(strs) != 3 && strs[0] != "1" && strs[1] != 3 && strs[2] != "4" {
+	if len(strs) != 3 || strs[0] != "1" || strs[1] != "3" || strs[2] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{nil, nil, "3", "4"}
-	moved := MoveIf(&strs, filter)
+	moved = MoveIf(&strs, filter)
 	if len(strs) != 2 && strs[0] != "3" && strs[1] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}

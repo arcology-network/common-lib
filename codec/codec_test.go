@@ -16,6 +16,7 @@ type Type struct {
 }
 
 func TestUint8(t *testing.T) {
+	fmt.Print(len("blcc://eth1.0/account/"))
 	in := Uint8(244)
 	data := in.Encode()
 	out := in.Decode(data).(Uint8)

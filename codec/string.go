@@ -13,6 +13,15 @@ const (
 
 type String string
 
+func UnsafeStringToBytes(s *string) *[]byte {
+	return (*[]byte)(unsafe.Pointer(s))
+}
+
+// Avoid copying the data.
+func UnsafeBytesToString(b *[]byte) *string {
+	return (*string)(unsafe.Pointer(b))
+}
+
 func (this String) Clone() interface{} {
 	b := make([]byte, len(this))
 	copy(b, this)
