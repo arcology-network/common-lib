@@ -6,6 +6,10 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"encoding/hex"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"unsafe"
 
@@ -134,4 +138,21 @@ func CalculateHash(hashes []*evmCommon.Hash) evmCommon.Hash {
 	}
 	hash := sha256.Sum256(encoding.Byteset(datas).Encode())
 	return evmCommon.BytesToHash(hash[:])
+}
+
+// TrapSignal catches the SIGTERM and executes cb function. After that it exits
+// with code 1.
+func TrapSignal(cb func()) {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		for sig := range c {
+			fmt.Printf("captured %v, exiting...\n", sig)
+			if cb != nil {
+				cb()
+			}
+			os.Exit(1)
+		}
+	}()
+	select {}
 }

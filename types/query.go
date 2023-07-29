@@ -100,7 +100,7 @@ type Block struct {
 	Timestamp    int           `json:"timestamp"`
 }
 
-type QueryLog struct {
+type Log struct {
 	Address     string   `json:"address"`
 	Topics      []string `json:"topics"`
 	Data        string   `json:"data"`
@@ -112,13 +112,12 @@ type QueryLog struct {
 }
 
 type QueryReceipt struct {
-	Status          int         `json:"status"`
-	ContractAddress string      `json:"contractAddress"`
-	GasUsed         *big.Int    `json:"gasUsed"`
-	Logs            []*QueryLog `json:"logs"`
-	ExecutingLogs   string      `json:"executing logs"`
-	// SpawnedTxHash   string      `json:"spawned transactionHash"`
-	Height int `json:"height"`
+	Status          int      `json:"status"`
+	ContractAddress string   `json:"contractAddress"`
+	GasUsed         *big.Int `json:"gasUsed"`
+	Logs            []*Log   `json:"logs"`
+	ExecutingLogs   string   `json:"executing logs"`
+	Height          int      `json:"height"`
 }
 
 type ClusterConfig struct {

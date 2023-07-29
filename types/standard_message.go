@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"fmt"
 	"math/big"
 	"math/rand"
 	"sort"
@@ -140,6 +141,7 @@ func (this *SendingStandardMessages) ToMessages() []*StandardMessage {
 			// err := msg.GobDecode(fields[2])
 			msg, err := MsgDecode(fields[2])
 			if err != nil {
+				fmt.Printf("SendingStandardMessages decode err:%v", err)
 				return
 			}
 			standredMessage.Native = msg
