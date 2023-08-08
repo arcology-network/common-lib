@@ -138,7 +138,8 @@ func AliceAccount() string {
 }
 
 func BobAccount() string {
-	var letters = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
+	var letters = []rune("9876543210zyxwvutsrqponmlkjihgfedcba")
+
 	// rand.Seed(2)
 	b := make([]rune, 40)
 	for i := range b {

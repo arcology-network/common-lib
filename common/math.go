@@ -32,9 +32,10 @@ func Remainder(numShards int, key string) int {
 	return total % numShards
 }
 
-func Sum[T0, T1 constraints.Integer | float32 | float64 | byte](values []T0, sum T1) T1 {
+func Sum[T0 constraints.Integer | float32 | float64 | byte](values []T0) T0 {
+	var sum T0 = 0
 	for j := 0; j < len(values); j++ {
-		sum += T1(values[j])
+		sum += (values[j])
 	}
 	return sum
 }
