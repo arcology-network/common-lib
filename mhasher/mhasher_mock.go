@@ -4,7 +4,7 @@
 package mhasher
 
 import (
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 const (
@@ -12,7 +12,7 @@ const (
 	HashType_256 = 32
 )
 
-func SortByHash(hashes []ethCommon.Hash) ([]uint64, error) {
+func SortByHash(hashes []evmCommon.Hash) ([]uint64, error) {
 
 	return make([]uint64, len(hashes)), nil
 }

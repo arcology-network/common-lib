@@ -3,16 +3,16 @@ package types
 import (
 	"math/big"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
 	encoding "github.com/arcology-network/common-lib/encoding"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 type ReapingList struct {
-	List      []*ethCommon.Hash
+	List      []*evmCommon.Hash
 	Timestamp *big.Int
 }
 
-func (rl *ReapingList) GetList() (selectList []*ethCommon.Hash, clearList []*ethCommon.Hash) {
+func (rl *ReapingList) GetList() (selectList []*evmCommon.Hash, clearList []*evmCommon.Hash) {
 	selectList = rl.List
 	clearList = rl.List
 	return
@@ -26,15 +26,15 @@ func (rl *ReapingList) GobEncode() ([]byte, error) {
 	}
 
 	data := [][]byte{
-		ethCommon.Hashes(hashArray).Encode(),
+		Hashes(hashArray).Encode(),
 		timeStampData,
 	}
 	return encoding.Byteset(data).Encode(), nil
 }
 func (rl *ReapingList) GobDecode(data []byte) error {
 	fields := encoding.Byteset{}.Decode(data)
-	arrs := []ethCommon.Hash{}
-	arrs = ethCommon.Hashes(arrs).Decode(fields[0])
+	arrs := []evmCommon.Hash{}
+	arrs = Hashes(arrs).Decode(fields[0])
 	rl.List = Arr2Ptr(arrs)
 	if len(fields[1]) > 0 {
 		rl.Timestamp = new(big.Int).SetBytes(fields[1])

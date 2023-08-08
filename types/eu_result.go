@@ -11,7 +11,7 @@ type EuResult struct {
 	ID           uint32
 	Transitions  [][]byte
 	TransitTypes []byte
-	DC           *DeferredCall
+	// DC           *DeferredCall
 
 	Trans   []interfaces.Univalue
 	Status  uint64
@@ -28,7 +28,7 @@ func (this *EuResult) Size() uint32 {
 		codec.UINT32_LEN +
 		codec.Byteset(this.Transitions).Size() +
 		codec.Bytes(this.TransitTypes).Size() +
-		this.DC.Size() +
+		// this.DC.Size() +
 		codec.UINT64_LEN +
 		codec.UINT64_LEN
 }
@@ -51,7 +51,7 @@ func (this *EuResult) EncodeToBuffer(buffer []byte) int {
 			codec.Uint32(this.ID).Size(),
 			codec.Byteset(this.Transitions).Size(),
 			codec.Bytes(this.TransitTypes).Size(),
-			this.DC.Size(),
+			// this.DC.Size(),
 			codec.UINT64_LEN,
 			codec.UINT64_LEN,
 		},
@@ -61,7 +61,7 @@ func (this *EuResult) EncodeToBuffer(buffer []byte) int {
 	offset += codec.Uint32(this.ID).EncodeToBuffer(buffer[offset:])
 	offset += codec.Byteset(this.Transitions).EncodeToBuffer(buffer[offset:])
 	offset += codec.Bytes(this.TransitTypes).EncodeToBuffer(buffer[offset:])
-	offset += this.DC.EncodeToBuffer(buffer[offset:])
+	// offset += this.DC.EncodeToBuffer(buffer[offset:])
 	offset += codec.Uint64(this.Status).EncodeToBuffer(buffer[offset:])
 	offset += codec.Uint64(this.GasUsed).EncodeToBuffer(buffer[offset:])
 
@@ -77,11 +77,11 @@ func (this *EuResult) Decode(buffer []byte) *EuResult {
 	this.Transitions = [][]byte(codec.Byteset{}.Decode(fields[2]).(codec.Byteset))
 	this.TransitTypes = []byte(codec.Bytes{}.Decode(fields[3]).(codec.Bytes))
 
-	if len(fields[4]) > 0 {
-		this.DC = (&DeferredCall{}).Decode(fields[4])
-	}
-	this.Status = uint64(codec.Uint64(0).Decode(fields[5]).(codec.Uint64))
-	this.GasUsed = uint64(codec.Uint64(0).Decode(fields[6]).(codec.Uint64))
+	// if len(fields[4]) > 0 {
+	// 	this.DC = (&DeferredCall{}).Decode(fields[4])
+	// }
+	this.Status = uint64(codec.Uint64(0).Decode(fields[4]).(codec.Uint64))
+	this.GasUsed = uint64(codec.Uint64(0).Decode(fields[5]).(codec.Uint64))
 	return this
 }
 

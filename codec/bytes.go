@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"unsafe"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 const (
@@ -120,7 +120,7 @@ func (this Byteset) Flatten() []byte {
 	return buffer
 }
 
-func (this Byteset) Checksum() ethCommon.Hash {
+func (this Byteset) Checksum() evmCommon.Hash {
 	return sha256.Sum256(this.Flatten())
 }
 

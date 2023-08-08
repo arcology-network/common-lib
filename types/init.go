@@ -4,7 +4,7 @@ import (
 	"encoding/gob"
 	"math/big"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 var arEncoder *arbReqEncoder
@@ -39,7 +39,7 @@ func init() {
 	gob.Register(&RequestReceipt{})
 	gob.Register(Block{})
 	gob.Register(Log{})
-	gob.Register([]*Receipt{})
+	gob.Register([]*QueryReceipt{})
 	gob.Register([][]byte{})
 	gob.Register([]byte{})
 	gob.Register(&MetaBlock{})
@@ -47,13 +47,13 @@ func init() {
 	gob.Register(&big.Int{})
 	gob.Register(SendingStandardMessages{})
 	gob.Register(ExecutingLogs{})
-	gob.Register([]*SpawnedRelation{})
-	gob.Register(map[ethCommon.Hash]ethCommon.Hash{})
+	// gob.Register([]*SpawnedRelation{})
+	gob.Register(map[evmCommon.Hash]evmCommon.Hash{})
 
 	gob.Register(&[]*TxAccessRecords{})
 	gob.Register(&TxAccessRecordSet{})
 	gob.Register(&Euresults{})
-	gob.Register(&DeferredCall{})
+	// gob.Register(&DeferredCall{})
 	gob.Register(&RequestParameters{})
 	gob.Register(&RequestBlockEth{})
 	gob.Register(&RequestStorage{})

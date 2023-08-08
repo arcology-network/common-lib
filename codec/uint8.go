@@ -3,8 +3,8 @@ package codec
 import (
 	"crypto/sha256"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
 	common "github.com/arcology-network/common-lib/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 const (
@@ -49,7 +49,7 @@ func (this Uint8) Decode(data []byte) interface{} {
 	return this
 }
 
-func (v Uint8) Checksum() ethCommon.Hash {
+func (v Uint8) Checksum() evmCommon.Hash {
 	return sha256.Sum256(v.Encode())
 }
 
