@@ -321,6 +321,20 @@ func Concate[T0, T1 any](array []T0, getter func(T0) []T1) []T1 {
 	return Flatten(buffer)
 }
 
+func ConcateDo[T0, T1 any](array []T0, sizer func(T0) uint64, getter func(T0) []T1) []T1 {
+	totalSize := uint64(0)
+	for i := 0; i < len(array); i++ {
+		totalSize += sizer(array[i])
+	}
+
+	buffer := make([]T1, totalSize)
+	positions := 0
+	for i := range array {
+		positions += copy(buffer[positions:], getter(array[i]))
+	}
+	return buffer
+}
+
 func Flatten[T any](src [][]T) []T {
 	totalSize := 0
 	for _, data := range src {
@@ -329,7 +343,7 @@ func Flatten[T any](src [][]T) []T {
 	buffer := make([]T, totalSize)
 	positions := 0
 	for i := range src {
-		positions = positions + copy(buffer[positions:], src[i])
+		positions += copy(buffer[positions:], src[i])
 	}
 	return buffer
 }
