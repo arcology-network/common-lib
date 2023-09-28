@@ -13,6 +13,14 @@ func Reverse[T any](values *[]T) []T {
 	return *values
 }
 
+func NewArray[T any](length int, v T) []T {
+	array := make([]T, length)
+	for i := 0; i < len(array); i++ {
+		array[i] = v
+	}
+	return array
+}
+
 func Fill[T any](values []T, v T) []T {
 	for i := 0; i < len(values); i++ {
 		(values)[i] = v
@@ -230,7 +238,7 @@ func UniqueDo[T comparable](nums []T, less func(lhv, rhv T) bool, do func(int)) 
 	do(current + 1)
 }
 
-func FindAllIndices[T comparable](values []T, equal func(v0, v1 T) bool) []int {
+func FindAllIndics[T comparable](values []T, equal func(v0, v1 T) bool) []int {
 	positions := make([]int, 0, len(values))
 	positions = append(positions, 0)
 	current := values[0]
@@ -335,6 +343,13 @@ func ConcateDo[T0, T1 any](array []T0, sizer func(T0) uint64, getter func(T0) []
 	return buffer
 }
 
+func ConcateToBuffer[T0, T1 any](array []T0, buffer *[]T1, getter func(T0) []T1) {
+	positions := 0
+	for i := range array {
+		positions += copy((*buffer)[positions:], getter(array[i]))
+	}
+}
+
 func Flatten[T any](src [][]T) []T {
 	totalSize := 0
 	for _, data := range src {
@@ -371,7 +386,11 @@ func Exclude[T comparable](source []T, toRemove []T) []T {
 	return CopyIf(source, func(v T) bool { return (*dict)[v] })
 }
 
-func CastTo[T0, T1 any](src []T0, predicate func(T0) T1) []T1 {
+func CastTo[T0, T1 any](src T0, predicate func(T0) T1) T1 {
+	return predicate(src)
+}
+
+func ArrayCastTo[T0, T1 any](src []T0, predicate func(T0) T1) []T1 {
 	target := make([]T1, len(src))
 	for i := range src {
 		target[i] = predicate(src[i])
