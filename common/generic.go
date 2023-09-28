@@ -230,7 +230,7 @@ func UniqueDo[T comparable](nums []T, less func(lhv, rhv T) bool, do func(int)) 
 	do(current + 1)
 }
 
-func FindRange[T comparable](values []T, equal func(v0, v1 T) bool) []int {
+func FindAllIndices[T comparable](values []T, equal func(v0, v1 T) bool) []int {
 	positions := make([]int, 0, len(values))
 	positions = append(positions, 0)
 	current := values[0]
