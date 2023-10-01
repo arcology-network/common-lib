@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 type ExecutingLog struct {
@@ -21,7 +21,7 @@ func (this *ExecutingLog) GetValue() string {
 }
 
 type ExecutingLogs struct {
-	Txhash ethCommon.Hash `json:"txhash"`
+	Txhash evmCommon.Hash `json:"txhash"`
 	Logs   []ExecutingLog `json:"this"`
 }
 

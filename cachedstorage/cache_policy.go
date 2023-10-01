@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"sync"
 
-	cccontainer "github.com/arcology-network/common-lib/concurrentcontainer/map"
+	ccmap "github.com/arcology-network/common-lib/container/map"
 )
 
 const (
@@ -18,7 +18,7 @@ type CachePolicy struct {
 	totalAllocated    uint64
 	quota             uint64
 	threshold         float64
-	scoreboard        *cccontainer.ConcurrentMap
+	scoreboard        *ccmap.ConcurrentMap
 	scoreDistribution *Distribution
 
 	keys   []string
@@ -33,7 +33,7 @@ func NewCachePolicy(hardQuota uint64, threshold float64) *CachePolicy {
 		totalAllocated:    0,
 		quota:             hardQuota,
 		threshold:         threshold,
-		scoreboard:        cccontainer.NewConcurrentMap(),
+		scoreboard:        ccmap.NewConcurrentMap(),
 		scoreDistribution: NewDistribution(),
 
 		keys:   make([]string, 0, 65536),
@@ -117,7 +117,7 @@ func (this *CachePolicy) AddToStats(keys []string, vals []AccessibleInterface) {
 	//there are some dupilicate keys
 }
 
-func (this *CachePolicy) freeEntries(threshold uint32, probability float64, localCache *cccontainer.ConcurrentMap) (uint64, uint64) {
+func (this *CachePolicy) freeEntries(threshold uint32, probability float64, localCache *ccmap.ConcurrentMap) (uint64, uint64) {
 	if this.isFixed() {
 		return 0, 0
 	}
@@ -153,7 +153,7 @@ func (this *CachePolicy) freeEntries(threshold uint32, probability float64, loca
 	return entries, memory
 }
 
-func (this *CachePolicy) Refresh(cache *cccontainer.ConcurrentMap) (uint64, uint64) {
+func (this *CachePolicy) Refresh(cache *ccmap.ConcurrentMap) (uint64, uint64) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -184,7 +184,7 @@ func (this *CachePolicy) Refresh(cache *cccontainer.ConcurrentMap) (uint64, uint
 	return this.freeMemory(cache)
 }
 
-func (this *CachePolicy) freeMemory(localChache *cccontainer.ConcurrentMap) (uint64, uint64) {
+func (this *CachePolicy) freeMemory(localChache *ccmap.ConcurrentMap) (uint64, uint64) {
 	if this.isFixed() {
 		return 0, 0
 	}
@@ -209,7 +209,7 @@ func (this *CachePolicy) CheckCapacity(key string, v interface{}) bool {
 		return false
 	}
 
-	m := uint64(v.(TypeAccessibleInterface).Size())
+	m := uint64(v.(TypeAccessibleInterface).MemSize())
 	return m+this.totalAllocated < this.quota
 }
 
@@ -231,7 +231,7 @@ func (this *CachePolicy) BatchCheckCapacity(keys []string, values []interface{})
 	total := uint64(0)
 	for i, v := range values {
 		if len(keys[i]) != 0 && v != nil { // Not in the cache yet
-			total += uint64(v.(TypeAccessibleInterface).Size())
+			total += uint64(v.(TypeAccessibleInterface).MemSize())
 			if flags[i] = total+this.totalAllocated < this.quota; flags[i] { // If no enough space for all
 				count++
 			} else {

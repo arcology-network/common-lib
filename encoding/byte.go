@@ -3,7 +3,7 @@ package encoding
 import (
 	"crypto/sha256"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 const (
@@ -31,7 +31,7 @@ func (byteset Byteset) Flatten() []byte {
 	return buffer
 }
 
-func (byteset Byteset) Checksum() ethCommon.Hash {
+func (byteset Byteset) Checksum() evmCommon.Hash {
 	return sha256.Sum256(byteset.Flatten())
 }
 

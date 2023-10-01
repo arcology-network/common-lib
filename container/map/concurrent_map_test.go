@@ -1,4 +1,4 @@
-package concurrentMap
+package concurrentmap
 
 import (
 	"bytes"

@@ -1,4 +1,4 @@
-package concurrentMap
+package concurrentmap
 
 import (
 	"crypto/sha256"
@@ -177,6 +177,9 @@ func (this *ConcurrentMap) BatchSet(keys []string, values []interface{}, args ..
 }
 
 func (this *ConcurrentMap) DirectBatchSet(shardIDs []uint8, keys []string, values []interface{}, args ...interface{}) {
+	if len(keys) != len(values) {
+		panic("Lengths don't match")
+	}
 	var flags []bool
 	if len(args) > 0 && args[0] != nil {
 		flags = args[0].([]bool)
@@ -326,7 +329,7 @@ func (this *ConcurrentMap) Clear() {
 }
 
 /* -----------------------------------Debug Functions---------------------------------------------------------*/
-type Encodeable interface {
+type Encodable interface {
 	Encode() []byte
 }
 
@@ -370,7 +373,7 @@ func (this *ConcurrentMap) Checksum() [32]byte {
 	k, values := this.Dump()
 	vBytes := []byte{}
 	for _, v := range values {
-		vBytes = append(vBytes, v.(Encodeable).Encode()...)
+		vBytes = append(vBytes, v.(Encodable).Encode()...)
 	}
 
 	kSum := sha256.Sum256(codec.Strings(k).Flatten())

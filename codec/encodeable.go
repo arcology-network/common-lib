@@ -1,45 +1,37 @@
 package codec
 
-type Encodeable interface {
+type Encodable interface {
+	Clone() interface{}
 	Size() uint32
-	EncodeToBuffer([]byte)
+	Encode() []byte
+	EncodeToBuffer([]byte) int
 	Decode([]byte) interface{}
 }
 
-type Encoder struct{}
+type Encodables []Encodable
 
-func (Encoder) Size(args []interface{}) uint32 {
+func (this Encodables) Size() uint32 {
 	length := uint32(0)
-	for i := 0; i < len(args); i++ {
-		if args[i] != nil {
-			length += args[i].(Encodeable).Size()
+	for i := 0; i < len(this); i++ {
+		if this[i] != nil {
+			length += this[i].Size()
 		}
 	}
-	return UINT32_LEN*uint32(len(args)+1) + uint32(length)
+	return UINT32_LEN*uint32(len(this)+1) + uint32(length)
 }
 
-func (this Encoder) ToBuffer(buffer []byte, args []interface{}) {
-	offset := uint32(0)
-	Uint32(len(args)).EncodeToBuffer(buffer)
-	for i := 0; i < len(args); i++ {
-		Uint32(offset).EncodeToBuffer(buffer[(i+1)*UINT32_LEN:]) // Fill header info
-		if args[i] != nil {
-			offset += args[i].(Encodeable).Size()
+func (this Encodables) Sizes() []uint32 {
+	lengths := make([]uint32, len(this))
+	for i := 0; i < len(lengths); i++ {
+		if this[i] != nil {
+			lengths[i] += this[i].Size()
 		}
 	}
-	headerSize := uint32((len(args) + 1) * UINT32_LEN)
-
-	offset = uint32(0)
-	for i := 0; i < len(args); i++ {
-		if args[i] != nil {
-			end := headerSize + offset + args[i].(Encodeable).Size()
-			args[i].(Encodeable).EncodeToBuffer(buffer[headerSize+offset : end])
-			offset += args[i].(Encodeable).Size()
-		}
-	}
+	return lengths
 }
 
-func (Encoder) FillHeader(buffer []byte, lengths []uint32) int {
+func (this Encodables) FillHeader(buffer []byte) int {
+	lengths := this.Sizes()
 	Uint32(len(lengths)).EncodeToBuffer(buffer[UINT32_LEN*0:])
 	offset := uint32(0)
 	for i := 0; i < len(lengths); i++ {
@@ -47,4 +39,30 @@ func (Encoder) FillHeader(buffer []byte, lengths []uint32) int {
 		offset += uint32(lengths[i])
 	}
 	return (len(lengths) + 1) * UINT32_LEN
+}
+
+func (this Encodables) Encode() []byte {
+	total := this.Size()
+	buffer := make([]byte, total)
+	this.EncodeToBuffer(buffer)
+	return buffer
+}
+
+func (this Encodables) EncodeToBuffer(buffer []byte) int {
+	offset := this.FillHeader(buffer)
+	for i := 0; i < len(this); i++ {
+		// if selectors[i] {
+		offset += this[i].EncodeToBuffer(buffer[offset:])
+		// }
+	}
+	return offset
+}
+
+func (this Encodables) Decode(buffer []byte, decoders ...func([]byte) interface{}) []interface{} {
+	fields := Byteset{}.Decode(buffer).(Byteset)
+	values := make([]interface{}, len(fields))
+	for i := 0; i < len(fields); i++ {
+		values[i] = decoders[i](fields[i])
+	}
+	return values
 }

@@ -1,8 +1,6 @@
 package types
 
 import (
-	"crypto/sha256"
-
 	"github.com/arcology-network/common-lib/common"
 	"github.com/arcology-network/common-lib/encoding"
 )
@@ -13,15 +11,17 @@ const (
 )
 
 type MonacoBlock struct {
-	Height  uint64
-	Headers [][]byte
-	Txs     [][]byte
+	Height    uint64
+	Blockhash []byte
+	Headers   [][]byte
+	Txs       [][]byte
 }
 
 func (mb MonacoBlock) Hash() []byte {
-	bys := [][]byte{encoding.Byteset(mb.Headers).Flatten(), encoding.Byteset(mb.Txs).Flatten(), common.Uint64ToBytes(mb.Height)}
-	sum := sha256.Sum256(encoding.Byteset(bys).Flatten())
-	return sum[:]
+	// bys := [][]byte{encoding.Byteset(mb.Headers).Flatten(), encoding.Byteset(mb.Txs).Flatten(), common.Uint64ToBytes(mb.Height)}
+	// sum := sha256.Sum256(encoding.Byteset(bys).Flatten())
+	// return sum[:]
+	return mb.Blockhash
 }
 
 func (mb MonacoBlock) GobEncode() ([]byte, error) {

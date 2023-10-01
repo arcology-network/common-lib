@@ -10,12 +10,12 @@ import (
 
 	codec "github.com/arcology-network/common-lib/codec"
 	common "github.com/arcology-network/common-lib/common"
-	cccontainer "github.com/arcology-network/common-lib/concurrentcontainer/map"
+	ccmap "github.com/arcology-network/common-lib/container/map"
 )
 
 type CompressionLut struct {
 	IdxToKeyLut []string
-	dict        *cccontainer.ConcurrentMap
+	dict        *ccmap.ConcurrentMap
 	tempLut     *CompressionLut
 	length      uint32
 	offset      uint32
@@ -37,7 +37,7 @@ func NewCompressionLut() *CompressionLut {
 
 	tempLut := &CompressionLut{
 		IdxToKeyLut: syspath,
-		dict:        cccontainer.NewConcurrentMap(),
+		dict:        ccmap.NewConcurrentMap(),
 		tempLut:     nil,
 		length:      0,
 		offset:      0,
@@ -46,10 +46,10 @@ func NewCompressionLut() *CompressionLut {
 	lut := &CompressionLut{
 		IdxToKeyLut: []string{},
 		length:      0,
-		dict:        cccontainer.NewConcurrentMap(),
+		dict:        ccmap.NewConcurrentMap(),
 		tempLut: &CompressionLut{
 			IdxToKeyLut: []string{},
-			dict:        cccontainer.NewConcurrentMap(),
+			dict:        ccmap.NewConcurrentMap(),
 			tempLut:     tempLut,
 			length:      0,
 			offset:      0,

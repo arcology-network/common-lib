@@ -2,6 +2,7 @@ package cachedstorage
 
 import (
 	"bytes"
+	"os"
 	"testing"
 )
 
@@ -43,4 +44,9 @@ func TestBadgerDBFunctions(t *testing.T) {
 	keys, values, _ := db.Query("a", nil)
 	t.Log(keys)
 	t.Log(values)
+
+	err := os.RemoveAll("./badger-test/")
+	if err != nil {
+		t.Log(keys)
+	}
 }

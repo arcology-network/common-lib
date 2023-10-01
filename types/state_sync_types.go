@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	ethcmn "github.com/arcology-network/3rd-party/eth/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 const (
@@ -23,7 +23,7 @@ type SyncStatus struct {
 type SyncPoint struct {
 	From       uint64
 	To         uint64
-	Slices     []ethcmn.Hash
+	Slices     []evmCommon.Hash
 	Parent     *ParentInfo
 	SchdStates interface{}
 }

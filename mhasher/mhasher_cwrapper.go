@@ -19,9 +19,10 @@ import (
 	"errors"
 	"unsafe"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
 	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/encoding"
+	"github.com/arcology-network/common-lib/types"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 const (
@@ -76,11 +77,11 @@ func UniqueKeys(keys [][]byte) ([][]byte, error) {
 	return outBytes, err
 }
 
-func SortByHash(hashes []ethCommon.Hash) ([]uint64, error) {
+func SortByHash(hashes []evmCommon.Hash) ([]uint64, error) {
 	if len(hashes) == 0 {
 		return []uint64{}, nil
 	}
-	chars := ethCommon.Hashes(hashes).Flatten()
+	chars := types.Hashes(hashes).Flatten()
 	c_char := (*C.char)(unsafe.Pointer(&chars[0]))
 
 	count := len(hashes)

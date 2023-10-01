@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"math"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 const (
@@ -30,6 +30,12 @@ func (Hash8) FromSlice(v []byte) Hash8 {
 	return hash8
 }
 
+func (this Hash8) Clone() interface{} {
+	target := Hash8{}
+	copy(target[:], this[:])
+	return target
+}
+
 func (this *Hash8) Get() interface{} {
 	return *this
 }
@@ -48,23 +54,35 @@ func (hash Hash8) FromBytes(bytes []byte) Hash8 {
 	return hash
 }
 
+func (this Hash8) Sum(offset uint64) uint64 {
+	total := uint64(0)
+	for j := offset; j < uint64(len(this)); j++ {
+		total += uint64(this[j])
+	}
+	return total
+}
+
 func (hash Hash8) Encode() []byte {
 	return hash[:]
 }
 
-func (this Hash8) Decode(data []byte) interface{} {
-	copy(this[:], data)
+func (this Hash8) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
+	copy(this[:], buffer)
 	return Hash8(this)
 }
 
-type Hash8s []ethCommon.Hash
+type Hash8s []evmCommon.Hash
 
 func (hashes Hash8s) Encode() []byte {
 	return Hash8s(hashes).Flatten()
 }
 
 func (hashes Hash8s) Decode(data []byte) interface{} {
-	hashes = make([]ethCommon.Hash, len(data)/HASH8_LEN)
+	hashes = make([]evmCommon.Hash, len(data)/HASH8_LEN)
 	for i := 0; i < len(hashes); i++ {
 		copy(hashes[i][:], data[i*HASH8_LEN:(i+1)*HASH8_LEN])
 	}

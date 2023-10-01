@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 func TestAssert(t *testing.T) {
@@ -22,7 +22,7 @@ func TestJson(t *testing.T) {
 	logs.Append("start", "s")
 	logs.Append("doing", "s")
 	logs.Append("end", "s")
-	logs.Txhash = ethCommon.BytesToHash([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
+	logs.Txhash = evmCommon.BytesToHash([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
 
 	str, err := logs.Marshal()
 	if err != nil {

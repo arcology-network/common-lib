@@ -1,11 +1,11 @@
 package types
 
 import (
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 type PartialHeader struct {
-	TxRoothash    ethCommon.Hash
-	RcptRoothash  ethCommon.Hash
-	StateRoothash ethCommon.Hash
+	TxRoothash    evmCommon.Hash
+	RcptRoothash  evmCommon.Hash
+	StateRoothash evmCommon.Hash
 }

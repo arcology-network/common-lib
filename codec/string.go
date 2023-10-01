@@ -1,10 +1,10 @@
 package codec
 
 import (
-	"reflect"
+	"sort"
 	"unsafe"
 
-	"github.com/arcology-network/common-lib/common"
+	common "github.com/arcology-network/common-lib/common"
 )
 
 const (
@@ -13,16 +13,39 @@ const (
 
 type String string
 
-func (this String) Clone() String {
+func UnsafeStringToBytes(s *string) *[]byte {
+	return (*[]byte)(unsafe.Pointer(s))
+}
+
+// Avoid copying the data.
+func UnsafeBytesToString(b *[]byte) *string {
+	return (*string)(unsafe.Pointer(b))
+}
+
+func (this String) Clone() interface{} {
 	b := make([]byte, len(this))
 	copy(b, this)
 	return String(*(*string)(unsafe.Pointer(&b)))
 }
 
 func (this String) ToBytes() []byte {
-	return (*[0x7fff0000]byte)(unsafe.Pointer(
-		(*reflect.StringHeader)(unsafe.Pointer(&this)).Data),
-	)[:len(this):len(this)]
+	return []byte(this)
+}
+
+func (this String) Reverse() string {
+	reversed := []byte(this)
+	for i, j := 0, len(reversed)-1; i < j; i, j = i+1, j-1 {
+		reversed[i], reversed[j] = reversed[j], reversed[i]
+	}
+	return *(*string)(unsafe.Pointer(&reversed))
+}
+
+func (this String) Sum(offset uint64) uint64 {
+	total := uint64(0)
+	for j := offset; j < uint64(len(this)); j++ {
+		total += uint64(this[j])
+	}
+	return total
 }
 
 func (this String) Encode() []byte {
@@ -40,16 +63,22 @@ func (this String) Size() uint32 {
 	return uint32(len(this))
 }
 
-func (String) Decode(bytes []byte) interface{} {
-	var s string
-	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&bytes))
-	stringHeader := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	stringHeader.Data = sliceHeader.Data
-	stringHeader.Len = sliceHeader.Len
-	return String(s)
+func (String) Decode(buffer []byte) interface{} {
+	return String(buffer)
 }
 
 type Strings []string
+
+func (this Strings) Concate() string {
+	return Bytes(this.Flatten()).ToString()
+}
+
+func (this Strings) Sort() Strings {
+	sort.Slice(this, func(i, j int) bool {
+		return this[i] < this[j]
+	})
+	return this
+}
 
 func (this Strings) Encode() []byte {
 	buffer := make([]byte, this.Size())
@@ -151,7 +180,7 @@ func (this Strings) Clone() Strings {
 	nStrings := make([]string, len(this))
 	worker := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
-			nStrings[i] = string(String(this[i]).Clone())
+			nStrings[i] = string(String(this[i]).Clone().(String))
 		}
 	}
 	common.ParallelWorker(len(this), 4, worker)
@@ -175,6 +204,48 @@ func (Strings) FromBytes(byteSet [][]byte) []string {
 }
 
 type Stringset [][]string
+
+func (this Stringset) Size() uint32 {
+	length := 0
+	for i := 0; i < len(this); i++ {
+		length += int(Strings(this[i]).Size())
+	}
+	return uint32(len(this)+1)*UINT32_LEN + uint32(length)
+}
+
+func (this Stringset) Encode() []byte {
+	length := int(this.Size())
+	buffer := make([]byte, length)
+	this.EncodeToBuffer(buffer)
+	return buffer
+}
+
+func (this Stringset) EncodeToBuffer(buffer []byte) int {
+	lengths := make([]uint32, len(this))
+	for i := 0; i < len(this); i++ {
+		lengths[i] = Strings(this[i]).Size()
+	}
+
+	offset := Encoder{}.FillHeader(buffer, lengths)
+	for i := 0; i < len(this); i++ {
+		offset += Strings(this[i]).EncodeToBuffer(buffer[offset:])
+	}
+	return offset
+}
+
+func (this Stringset) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
+	fields := Byteset{}.Decode(buffer).(Byteset)
+
+	stringset := make([][]string, len(fields))
+	for i := 0; i < len(fields); i++ {
+		stringset[i] = []string(Strings{}.Decode(fields[i]).(Strings))
+	}
+	return Stringset(stringset)
+}
 
 func (this Stringset) Flatten() []string {
 	positions := make([]int, len(this)+1)

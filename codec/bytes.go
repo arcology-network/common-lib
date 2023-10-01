@@ -2,9 +2,10 @@ package codec
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"unsafe"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 const (
@@ -21,6 +22,20 @@ func (this *Bytes) Set(v interface{}) {
 	*this = v.(Bytes)
 }
 
+func (this *Bytes) Sum(offset uint64) uint64 {
+	total := uint64(0)
+	for j := offset; j < uint64(len(*this)); j++ {
+		total += uint64((*this)[j])
+	}
+	return total
+}
+
+func (this *Bytes) Hex() string {
+	bytes := make([]byte, 2*len(*this))
+	hex.Encode(bytes[:], (*this)[:])
+	return string(bytes)
+}
+
 func (this Bytes) Encode() []byte {
 	return []byte(this)
 }
@@ -29,7 +44,11 @@ func (this Bytes) Size() uint32 {
 	return uint32(len(this))
 }
 
-func (this Bytes) Clone() Bytes {
+func (this Bytes) Clone() interface{} {
+	if this == nil {
+		return this
+	}
+
 	target := make([]byte, len(this))
 	copy(target, this)
 	return Bytes(target)
@@ -40,8 +59,11 @@ func (this Bytes) EncodeToBuffer(buffer []byte) int {
 	return len(this)
 }
 
-func (Bytes) Decode(bytes []byte) interface{} {
-	return Bytes(bytes)
+func (this Bytes) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+	return Bytes(buffer)
 }
 
 func (this Bytes) ToString() string {
@@ -50,7 +72,11 @@ func (this Bytes) ToString() string {
 
 type Byteset [][]byte
 
-func (this Byteset) Clone() Byteset {
+func (this Byteset) Clone() interface{} {
+	if this == nil {
+		return this
+	}
+
 	target := make([][]byte, len(this))
 	for i := range this {
 		target[i] = make([]byte, len(this[i]))
@@ -94,7 +120,7 @@ func (this Byteset) Flatten() []byte {
 	return buffer
 }
 
-func (this Byteset) Checksum() ethCommon.Hash {
+func (this Byteset) Checksum() evmCommon.Hash {
 	return sha256.Sum256(this.Flatten())
 }
 

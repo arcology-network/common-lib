@@ -14,7 +14,15 @@ func (hash Hash64) Size() uint32 {
 	return uint32(HASH64_LEN)
 }
 
-func (this Hash64) Clone() Hash64 {
+func (this Hash64) Sum(offset uint64) uint64 {
+	total := uint64(0)
+	for j := offset; j < uint64(len(this)); j++ {
+		total += uint64((this)[j])
+	}
+	return total
+}
+
+func (this Hash64) Clone() interface{} {
 	target := Hash64{}
 	copy(target[:], this[:])
 	return target
@@ -50,10 +58,14 @@ func (this Hash64s) EncodeToBuffer(buffer []byte) int {
 	return len(this) * HASH64_LEN
 }
 
-func (this Hash64s) Decode(data []byte) interface{} {
-	this = make([][HASH64_LEN]byte, len(data)/HASH64_LEN)
+func (this Hash64s) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
+	this = make([][HASH64_LEN]byte, len(buffer)/HASH64_LEN)
 	for i := 0; i < len(this); i++ {
-		copy(this[i][:], data[i*HASH64_LEN:(i+1)*HASH64_LEN])
+		copy(this[i][:], buffer[i*HASH64_LEN:(i+1)*HASH64_LEN])
 	}
 	return Hash64s(this)
 }

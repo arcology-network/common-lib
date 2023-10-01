@@ -15,7 +15,7 @@ func NewBackupPolicy(datastore *DataStore, interval uint32) *BackupPolicy {
 }
 
 func (this *BackupPolicy) FullBackup() {
-	keys, values := this.datastore.LocalCache().KVs()
+	keys, values := this.datastore.Cache().KVs()
 	codec.Strings(keys).Encode()
 
 	encoder := this.datastore.Encoder()

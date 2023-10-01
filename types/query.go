@@ -111,13 +111,12 @@ type Log struct {
 	Index       uint     `json:"logIndex"`
 }
 
-type Receipt struct {
+type QueryReceipt struct {
 	Status          int      `json:"status"`
 	ContractAddress string   `json:"contractAddress"`
 	GasUsed         *big.Int `json:"gasUsed"`
 	Logs            []*Log   `json:"logs"`
 	ExecutingLogs   string   `json:"executing logs"`
-	SpawnedTxHash   string   `json:"spawned transactionHash"`
 	Height          int      `json:"height"`
 }
 

@@ -10,7 +10,13 @@ import (
 	"time"
 )
 
+type Type struct {
+	value Uint64
+	delta String
+}
+
 func TestUint8(t *testing.T) {
+	fmt.Print(len("blcc://eth1.0/account/"))
 	in := Uint8(244)
 	data := in.Encode()
 	out := in.Decode(data).(Uint8)
@@ -83,9 +89,24 @@ func TestString(t *testing.T) {
 
 func TestStrings(t *testing.T) {
 	in := []string{"", "111", "2222", "33333", ""}
+	in2 := []string{"999", "111", "2222", "33333", ""}
 	bytes := Strings(in).Encode()
 	out := Strings([]string{}).Decode(bytes).(Strings)
 	if !reflect.DeepEqual(Strings(in), (out)) {
+		t.Error("strings mismatch !")
+	}
+
+	buffer := Byteset([][]byte{
+		Strings(in).Encode(),
+		Strings(in2).Encode(),
+	}).Encode()
+
+	fields := Byteset{}.Decode(buffer).(Byteset)
+
+	str1 := (Strings{}).Decode(fields[0]).(Strings)[0]
+	str2 := (Strings{}).Decode(fields[1]).(Strings)[2]
+	if str1 != in[0] ||
+		str2 != in2[2] {
 		t.Error("strings mismatch !")
 	}
 }
@@ -140,6 +161,11 @@ func TestBigint(t *testing.T) {
 		fmt.Println()
 		fmt.Println(out)
 	}
+
+	out2 := out.Clone().(*Bigint)
+	if (*big.Int)(out).Cmp((*big.Int)(out2)) != 0 {
+		t.Error("Mismatch !")
+	}
 }
 
 func TestByteSetAndClone(t *testing.T) {
@@ -160,7 +186,7 @@ func TestByteSetAndClone(t *testing.T) {
 		}...)
 	}
 
-	clone := Byteset(byteset).Clone()
+	clone := Byteset(byteset).Clone().(Byteset)
 	for i := 0; i < len(byteset); i++ {
 		if !reflect.DeepEqual(clone[i], byteset[i]) {
 			t.Error("Mismatch !")
@@ -307,6 +333,21 @@ func TestStringsetFlatten(t *testing.T) {
 	}
 }
 
+func TestStringsetCodec(t *testing.T) {
+	str0 := []string{"123456", "987654"}
+	str1 := []string{"abcdef", "zqwert"}
+
+	buffer := Stringset([][]string{str0, str1}).Encode()
+	out := Stringset{}.Decode(buffer).(Stringset)
+
+	if out[0][0] != "123456" ||
+		out[0][1] != "987654" ||
+		out[1][0] != "abcdef" ||
+		out[1][1] != "zqwert" {
+		t.Error("Mismatch !")
+	}
+}
+
 func TestHash16s(t *testing.T) {
 	in := [][16]byte{{1, 2, 3, 4, 5}, {5, 6, 7, 8, 9}}
 
@@ -321,8 +362,8 @@ func TestHash16s(t *testing.T) {
 func TestHash32s(t *testing.T) {
 	in := [][32]byte{{1, 2, 3, 4, 5}, {5, 6, 7, 8, 9}}
 
-	data := Hash32s(in).Encode()
-	out := Hash32s(in).Decode(data).(Hash32s)
+	data := Bytes32s(in).Encode()
+	out := Bytes32s(in).Decode(data).(Bytes32s)
 
 	if !reflect.DeepEqual(in, ([][32]byte)(out)) {
 		t.Error("Uint8s Mismatched !")
@@ -346,5 +387,26 @@ func TestHash64s(t *testing.T) {
 
 	if !reflect.DeepEqual(clone[1], in[1]) {
 		t.Error("Hash64s Mismatched !")
+	}
+}
+
+func TestEncodables(t *testing.T) {
+	t0 := time.Now()
+	v := Uint64(1223)
+	Encodables{String("1223"), String("1223"), String("1223"), &v}.Encode()
+	fmt.Println(time.Since(t0))
+
+	t0 = time.Now()
+	Strings{string("1223"), string("1223"), string("1223"), string("1223")}.Encode()
+	fmt.Println(time.Since(t0))
+}
+
+func TestU256(t *testing.T) {
+	v := (&Uint256{}).NewInt(100)
+	v.Sub(v, (&Uint256{}).NewInt(50))
+	buffer := v.Encode()
+	out := (&Uint256{}).Decode(buffer).(*Uint256)
+	if !out.Eq(v) || int(out[0]) != 50 {
+		t.Error("U256 Mismatched !")
 	}
 }

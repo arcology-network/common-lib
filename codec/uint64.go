@@ -4,8 +4,9 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"sort"
+	"unsafe"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	common "github.com/arcology-network/common-lib/common"
 )
 
 const (
@@ -13,6 +14,13 @@ const (
 )
 
 type Uint64 uint64
+
+func (this *Uint64) Clone() interface{} {
+	if this == nil {
+		return this
+	}
+	return common.New(*this)
+}
 
 func (this *Uint64) Get() interface{} {
 	return *this
@@ -38,12 +46,20 @@ func (this Uint64) EncodeToBuffer(buffer []byte) int {
 }
 
 func (this Uint64) Decode(data []byte) interface{} {
+	if len(data) == 0 {
+		return this
+	}
+
 	this = Uint64(binary.LittleEndian.Uint64(data))
 	return Uint64(this)
 }
 
-func (v Uint64) Checksum() ethCommon.Hash {
+func (v Uint64) Checksum() [32]byte {
 	return sha256.Sum256(v.Encode())
+}
+
+func (v Uint64) ToInt64() int64 {
+	return *(*int64)(unsafe.Pointer(&v))
 }
 
 type Uint64s []uint64
@@ -99,10 +115,14 @@ func (this Uint64s) EncodeToBuffer(buffer []byte) int {
 	return len(this) * UINT64_LEN
 }
 
-func (this Uint64s) Decode(data []byte) interface{} {
-	this = make([]uint64, len(data)/UINT64_LEN)
+func (this Uint64s) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
+	this = make([]uint64, len(buffer)/UINT64_LEN)
 	for i := range this {
-		this[i] = uint64(Uint64(this[i]).Decode(data[i*UINT64_LEN : (i+1)*UINT64_LEN]).(Uint64))
+		this[i] = uint64(Uint64(this[i]).Decode(buffer[i*UINT64_LEN : (i+1)*UINT64_LEN]).(Uint64))
 	}
 	return Uint64s(this)
 }

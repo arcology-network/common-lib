@@ -2,15 +2,16 @@ package types
 
 import (
 	"bytes"
+	"fmt"
 	"math/big"
 	"math/rand"
 	"sort"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
-	ethTypes "github.com/arcology-network/3rd-party/eth/types"
 	"github.com/arcology-network/common-lib/common"
 	"github.com/arcology-network/common-lib/encoding"
-	"github.com/arcology-network/evm/crypto"
+	evmCommon "github.com/arcology-network/evm/common"
+	"github.com/arcology-network/evm/core"
+	"github.com/arcology-network/evm/rlp"
 )
 
 const (
@@ -18,32 +19,32 @@ const (
 )
 
 type StandardMessage struct {
-	TxHash    ethCommon.Hash
-	Native    *ethTypes.Message
+	TxHash    evmCommon.Hash
+	Native    *core.Message
 	TxRawData []byte
 	Source    uint8
 }
 
-func MakeMessageWithDefCall(def *DeferCall, hash ethCommon.Hash, nonce uint64) *StandardMessage {
-	signature := def.Signature
-	contractAddress := def.ContractAddress
-	data := crypto.Keccak256([]byte(signature))[:4]
-	data = append(data, ethCommon.AlignToEvmForInt(ethCommon.EvmWordSize)...)
-	idLen := ethCommon.AlignToEvmForInt(len(def.DeferID))
-	id := ethCommon.AlignToEvmForString(def.DeferID)
-	data = append(data, idLen...)
-	data = append(data, id...)
-	contractAddr := ethCommon.BytesToAddress([]byte(contractAddress))
-	//nonce := uint64(time.Now().UnixNano())
-	message := ethTypes.NewMessage(contractAddr, &contractAddr, nonce, new(big.Int).SetInt64(0), 1e9, new(big.Int).SetInt64(0), data, false)
-	standardMessager := StandardMessage{
-		Native: &message,
-		TxHash: hash,
-	}
-	return &standardMessager
-}
+// func MakeMessageWithDefCall(def *DeferredCall, hash evmCommon.Hash, nonce uint64) *StandardMessage {
+// 	signature := def.Signature
+// 	contractAddress := def.ContractAddress
+// 	data := crypto.Keccak256([]byte(signature))[:4]
+// 	data = append(data, common.AlignToEvmForInt(common.EvmWordSize)...)
+// 	idLen := common.AlignToEvmForInt(len(def.DeferID))
+// 	id := common.AlignToEvmForString(def.DeferID)
+// 	data = append(data, idLen...)
+// 	data = append(data, id...)
+// 	contractAddr := evmCommon.BytesToAddress([]byte(contractAddress))
+// 	//nonce := uint64(time.Now().UnixNano())
+// 	message := core.NewMessage(contractAddr, &contractAddr, nonce, new(big.Int).SetInt64(0), 1e9, new(big.Int).SetInt64(0), data, nil, false)
+// 	standardMessager := StandardMessage{
+// 		Native: &message,
+// 		TxHash: hash,
+// 	}
+// 	return &standardMessager
+// }
 
-func (this *StandardMessage) Hash() ethCommon.Hash {
+func (this *StandardMessage) Hash() evmCommon.Hash {
 	return this.TxHash
 }
 
@@ -60,12 +61,12 @@ func (this *StandardMessage) CompareHash(rgt *StandardMessage) bool {
 }
 
 func (this *StandardMessage) CompareGas(rgt *StandardMessage) bool {
-	lftFrom, rgtFrom := this.Native.From(), rgt.Native.From()
+	lftFrom, rgtFrom := this.Native.From, rgt.Native.From
 	if bytes.Compare(lftFrom[:], rgtFrom[:]) == 0 { // by nonce if from the same address
-		return this.Native.Nonce() < rgt.Native.Nonce()
+		return this.Native.Nonce < rgt.Native.Nonce
 	}
 
-	if v := this.Native.GasPrice().Cmp(rgt.Native.GasPrice()); v == 0 { // by address if fees are the same
+	if v := this.Native.GasPrice.Cmp(rgt.Native.GasPrice); v == 0 { // by address if fees are the same
 		return bytes.Compare(this.TxHash[:], rgt.TxHash[:]) < 0
 	} else {
 		return v > 0 // by fee otherwise in descending order
@@ -73,12 +74,12 @@ func (this *StandardMessage) CompareGas(rgt *StandardMessage) bool {
 }
 
 func (this *StandardMessage) CompareFee(rgt *StandardMessage) bool {
-	lftFrom, rgtFrom := this.Native.From(), rgt.Native.From()
+	lftFrom, rgtFrom := this.Native.From, rgt.Native.From
 	if bytes.Compare(lftFrom[:], rgtFrom[:]) == 0 { // by nonce if from the same address
-		return this.Native.Nonce() < rgt.Native.Nonce()
+		return this.Native.Nonce < rgt.Native.Nonce
 	}
 
-	if v := this.Native.Fee().Cmp(rgt.Native.Fee()); v == 0 { // by address if fees are the same
+	if v := MsgFee(this.Native).Cmp(MsgFee(rgt.Native)); v == 0 { // by address if fees are the same
 		return bytes.Compare(this.TxHash[:], rgt.TxHash[:]) < 0
 	} else {
 		return v > 0 // by fee otherwise in descending order
@@ -133,11 +134,14 @@ func (this *SendingStandardMessages) ToMessages() []*StandardMessage {
 			standredMessage := new(StandardMessage)
 
 			fields := encoding.Byteset{}.Decode(data[i])
-			standredMessage.TxHash = ethCommon.BytesToHash(fields[0])
+			standredMessage.TxHash = evmCommon.BytesToHash(fields[0])
 			standredMessage.Source = uint8(fields[1][0])
-			msg := new(ethTypes.Message)
-			err := msg.GobDecode(fields[2])
+
+			// msg := new(core.Message)
+			// err := msg.GobDecode(fields[2])
+			msg, err := MsgDecode(fields[2])
 			if err != nil {
+				fmt.Printf("SendingStandardMessages decode err:%v", err)
 				return
 			}
 			standredMessage.Native = msg
@@ -153,8 +157,8 @@ func (this *SendingStandardMessages) ToMessages() []*StandardMessage {
 
 type StandardMessages []*StandardMessage
 
-func (this StandardMessages) Hashes() []ethCommon.Hash {
-	hashes := make([]ethCommon.Hash, len(this))
+func (this StandardMessages) Hashes() []evmCommon.Hash {
+	hashes := make([]evmCommon.Hash, len(this))
 	for i := range this {
 		hashes[i] = this[i].TxHash
 	}
@@ -213,7 +217,7 @@ func (this StandardMessages) EncodeToBytes() [][]byte {
 		data := args[0].([]interface{})[1].([][]byte)
 
 		for i := start; i < end; i++ {
-			if encoded, err := this[i].Native.GobEncode(); err == nil {
+			if encoded, err := MsgEncode(this[i].Native); err == nil {
 				tmpData := [][]byte{
 					this[i].TxHash.Bytes(),
 					[]byte{this[i].Source},
@@ -239,7 +243,8 @@ func (this StandardMessages) Encode() ([]byte, error) {
 		data := args[0].([]interface{})[1].([][]byte)
 
 		for i := start; i < end; i++ {
-			if encoded, err := this[i].Native.GobEncode(); err == nil {
+
+			if encoded, err := MsgEncode(this[i].Native); err == nil {
 				//data[i] = encoding.Byteset([][]byte{this[i].TxHash.Bytes()[:], {this[i].Source}, encoded}).Flatten()
 				tmpData := [][]byte{
 					this[i].TxHash.Bytes(),
@@ -267,10 +272,11 @@ func (this *StandardMessages) Decode(data []byte) ([]*StandardMessage, error) {
 			standredMessage := new(StandardMessage)
 
 			fields := encoding.Byteset{}.Decode(data[i])
-			standredMessage.TxHash = ethCommon.BytesToHash(fields[0])
+			standredMessage.TxHash = evmCommon.BytesToHash(fields[0])
 			standredMessage.Source = uint8(fields[1][0])
-			msg := new(ethTypes.Message)
-			err := msg.GobDecode(fields[2])
+			// msg := new(core.Message)
+			msg, err := MsgDecode(fields[2])
+			// err := msg.GobDecode(fields[2])
 			if err != nil {
 				return
 			}
@@ -284,3 +290,23 @@ func (this *StandardMessages) Decode(data []byte) ([]*StandardMessage, error) {
 
 	return msgs, nil
 }
+
+//---------------------------------------------------
+
+func EntrySignature(m core.Message) string {
+	if len(m.Data) >= 4 {
+		return string(m.Data[:4])
+	}
+	return ""
+}
+func MsgEncode(m *core.Message) ([]byte, error) {
+	return rlp.EncodeToBytes(m)
+}
+func MsgDecode(data []byte) (*core.Message, error) {
+	m := core.Message{}
+	return &m, rlp.DecodeBytes(data, &m)
+}
+
+func MsgFee(m *core.Message) *big.Int {
+	return big.NewInt(0).Mul(big.NewInt(int64(m.GasLimit)), m.GasPrice)
+} // Max fee possible

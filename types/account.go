@@ -1,14 +1,14 @@
 package types
 
 import (
+	"bytes"
 	"math/big"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
-	"github.com/arcology-network/common-lib/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 type AccountInfo struct {
-	Address ethCommon.Address
+	Address evmCommon.Address
 	Account Account
 }
 
@@ -17,7 +17,7 @@ type AccountInfo struct {
 type Account struct {
 	Nonce    uint64
 	Balance  *big.Int
-	Root     ethCommon.Hash // merkle root of the storage trie
+	Root     evmCommon.Hash // merkle root of the storage trie
 	CodeHash []byte
 }
 
@@ -26,6 +26,6 @@ func (a *Account) Clone() *Account {
 		Nonce:    a.Nonce,
 		Balance:  a.Balance,
 		Root:     a.Root,
-		CodeHash: common.ArrayCopy(a.CodeHash),
+		CodeHash: bytes.Clone(a.CodeHash),
 	}
 }

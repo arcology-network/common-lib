@@ -2,6 +2,9 @@ package codec
 
 import (
 	"encoding/binary"
+	"unsafe"
+
+	common "github.com/arcology-network/common-lib/common"
 )
 
 const (
@@ -9,6 +12,14 @@ const (
 )
 
 type Int64 int64
+
+func (this *Int64) Clone() interface{} {
+	if this == nil {
+		return this
+	}
+
+	return common.New(*this)
+}
 
 func (this *Int64) Get() interface{} {
 	return *this
@@ -34,7 +45,15 @@ func (this Int64) EncodeToBuffer(buffer []byte) int {
 }
 
 func (this Int64) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
 	return Int64(int64(binary.LittleEndian.Uint64(buffer)))
+}
+
+func (this Int64) ToUint64(src1 int64) uint64 {
+	return *(*uint64)(unsafe.Pointer(&src1))
 }
 
 type Int64s []Int64

@@ -3,7 +3,8 @@ package codec
 import (
 	"crypto/sha256"
 
-	ethCommon "github.com/arcology-network/3rd-party/eth/common"
+	common "github.com/arcology-network/common-lib/common"
+	evmCommon "github.com/arcology-network/evm/common"
 )
 
 const (
@@ -11,6 +12,14 @@ const (
 )
 
 type Uint8 uint8
+
+func (this *Uint8) Clone() interface{} {
+	if this == nil {
+		return this
+	}
+
+	return common.New(*this)
+}
 
 func (this *Uint8) Get() interface{} {
 	return *this
@@ -40,7 +49,7 @@ func (this Uint8) Decode(data []byte) interface{} {
 	return this
 }
 
-func (v Uint8) Checksum() ethCommon.Hash {
+func (v Uint8) Checksum() evmCommon.Hash {
 	return sha256.Sum256(v.Encode())
 }
 
@@ -79,10 +88,14 @@ func (this Uint8s) EncodeToBuffer(buffer []byte) int {
 	return len(this) * UINT8_LEN
 }
 
-func (Uint8s) Decode(data []byte) interface{} {
-	uint8s := make([]uint8, len(data)/UINT8_LEN)
+func (this Uint8s) Decode(buffer []byte) interface{} {
+	if len(buffer) == 0 {
+		return this
+	}
+
+	uint8s := make([]uint8, len(buffer)/UINT8_LEN)
 	for i := range uint8s {
-		uint8s[i] = data[i]
+		uint8s[i] = buffer[i]
 	}
 	return Uint8s(uint8s)
 }
