@@ -14,7 +14,7 @@ func TestBinaryMerkle(t *testing.T) { // Create a new merkle tree with 2 branche
 		bytes = append(bytes, []byte(fmt.Sprint(i)))
 	}
 
-	in := NewMerkle(2, Sha256)
+	in := NewMerkle(2, Concatenator{}, Sha256{})
 	nodePool := mempool.NewMempool("nodes", func() interface{} {
 		return NewNode()
 	})
@@ -27,16 +27,16 @@ func TestBinaryMerkle(t *testing.T) { // Create a new merkle tree with 2 branche
 		t.Error("Keys don't match")
 	}
 
-	proofs := merkle.NodesToHashes(merkle.GetProofNodes(Sha256([]byte(fmt.Sprint(0)))))
+	proofs := merkle.NodesToHashes(merkle.GetProofNodes([]byte(fmt.Sprint(0))))
 
 	// In the original tree
-	seed := Sha256([]byte(fmt.Sprint(0)))
-	if !merkle.Verify(proofs[:], merkle.GetRoot(), seed[:]) {
+	target := in.Hasher()([]byte(fmt.Sprint(0)))
+	if !merkle.Verify(proofs[:], merkle.GetRoot(), target[:]) {
 		t.Error("Error: Merkle Proofs weren't found")
 	}
 
 	// In the decoded tree
-	if !in.Verify(proofs[:], in.GetRoot(), seed[:]) {
+	if !in.Verify(proofs[:], in.GetRoot(), target[:]) {
 		t.Error("Error: Merkle Proofs weren't found")
 	}
 }
@@ -47,17 +47,17 @@ func TestQuadMerkle(t *testing.T) { // Create a new merkle tree with 4 branches 
 		bytes = append(bytes, []byte(fmt.Sprint(i)))
 	}
 
-	merkle := NewMerkle(4, Sha256)
+	merkle := NewMerkle(4, Concatenator{}, Sha256{})
 	nodePool := mempool.NewMempool("nodes", func() interface{} {
 		return NewNode()
 	})
 	merkle.Init(bytes, nodePool)
 
-	proofNodes := merkle.GetProofNodes(Sha256([]byte(fmt.Sprint(16))))
+	proofNodes := merkle.GetProofNodes([]byte(fmt.Sprint(16)))
 	proofs := merkle.NodesToHashes(proofNodes)
 
-	seed := Sha256([]byte(fmt.Sprint(16)))
-	if !merkle.Verify(proofs[:], merkle.GetRoot(), seed[:]) {
+	target := Sha256{}.Hash([]byte(fmt.Sprint(16)))
+	if !merkle.Verify(proofs[:], merkle.GetRoot(), target[:]) {
 		t.Error("Error: Merkle Proofs weren't found")
 	}
 }
@@ -68,17 +68,17 @@ func TestOctodecMerkle(t *testing.T) { // Create a new merkle tree with 16 branc
 		bytes = append(bytes, []byte(fmt.Sprint(i)))
 	}
 
-	merkle := NewMerkle(8, Sha256)
+	merkle := NewMerkle(8, Concatenator{}, Sha256{})
 	nodePool := mempool.NewMempool("nodes", func() interface{} {
 		return NewNode()
 	})
 	merkle.Init(bytes, nodePool)
 
-	proofNodes := merkle.GetProofNodes(Sha256([]byte(fmt.Sprint(0))))
+	proofNodes := merkle.GetProofNodes([]byte(fmt.Sprint(0)))
 	proofs := merkle.NodesToHashes(proofNodes)
 
-	seed := Sha256([]byte(fmt.Sprint(0)))
-	if !merkle.Verify(proofs[:], merkle.GetRoot(), seed[:]) {
+	target := Sha256{}.Hash([]byte(fmt.Sprint(0)))
+	if !merkle.Verify(proofs[:], merkle.GetRoot(), target[:]) {
 		t.Error("Error: Merkle Proofs weren't found")
 	}
 }
@@ -89,17 +89,17 @@ func TestKeccakOctodecMerkle(t *testing.T) { // Create a new merkle tree with 16
 		bytes = append(bytes, []byte(fmt.Sprint(i)))
 	}
 
-	merkle := NewMerkle(8, Keccak256)
+	merkle := NewMerkle(8, Concatenator{}, Keccak256{})
 	nodePool := mempool.NewMempool("nodes", func() interface{} {
 		return NewNode()
 	})
 	merkle.Init(bytes, nodePool)
 
-	proofNodes := merkle.GetProofNodes(Keccak256([]byte(fmt.Sprint(0))))
+	proofNodes := merkle.GetProofNodes([]byte(fmt.Sprint(0)))
 	proofs := merkle.NodesToHashes(proofNodes)
 
-	seed := Keccak256([]byte(fmt.Sprint(0)))
-	if !merkle.Verify(proofs[:], merkle.GetRoot(), seed[:]) {
+	target := Keccak256{}.Hash([]byte(fmt.Sprint(0)))
+	if !merkle.Verify(proofs[:], merkle.GetRoot(), target[:]) {
 		t.Error("Error: Merkle Proofs weren't found")
 	}
 }
@@ -107,17 +107,17 @@ func TestKeccakOctodecMerkle(t *testing.T) { // Create a new merkle tree with 16
 func TestKeccakOctodecMerkleSingleEntry(t *testing.T) { // Create a new merkle tree with 16 branches under each non-leaf node and using Keccak256 hashing algorithm
 	bytes := [][]byte{[]byte(fmt.Sprint(0))}
 
-	merkle := NewMerkle(8, Keccak256)
+	merkle := NewMerkle(10, Concatenator{}, Keccak256{})
 	nodePool := mempool.NewMempool("nodes", func() interface{} {
 		return NewNode()
 	})
 	merkle.Init(bytes, nodePool)
 
-	proofNodes := merkle.GetProofNodes(Keccak256([]byte(fmt.Sprint(0))))
+	proofNodes := merkle.GetProofNodes([]byte(fmt.Sprint(0)))
 	proofs := merkle.NodesToHashes(proofNodes)
 
-	seed := Keccak256([]byte(fmt.Sprint(0)))
-	if !merkle.Verify(proofs[:], merkle.GetRoot(), seed[:]) {
+	target := Keccak256{}.Hash([]byte(fmt.Sprint(0)))
+	if !merkle.Verify(proofs[:], merkle.GetRoot(), target[:]) {
 		t.Error("Error: Merkle Proofs weren't found")
 	}
 }
@@ -125,17 +125,38 @@ func TestKeccakOctodecMerkleSingleEntry(t *testing.T) { // Create a new merkle t
 func TestKeccakHexadecaMerkleSingleEntry(t *testing.T) { // Create a new merkle tree with 16 branches under each non-leaf node and using Keccak256 hashing algorithm
 	bytes := [][]byte{[]byte(fmt.Sprint(0))}
 
-	merkle := NewMerkle(16, Keccak256)
+	merkle := NewMerkle(16, Concatenator{}, Keccak256{})
 	nodePool := mempool.NewMempool("nodes", func() interface{} {
 		return NewNode()
 	})
 	merkle.Init(bytes, nodePool)
 
-	proofNodes := merkle.GetProofNodes(Keccak256([]byte(fmt.Sprint(0))))
+	proofNodes := merkle.GetProofNodes([]byte(fmt.Sprint(0)))
 	proofs := merkle.NodesToHashes(proofNodes)
 
-	seed := Keccak256([]byte(fmt.Sprint(0)))
-	if !merkle.Verify(proofs[:], merkle.GetRoot(), seed[:]) {
+	target := Keccak256{}.Hash([]byte(fmt.Sprint(0)))
+	if !merkle.Verify(proofs[:], merkle.GetRoot(), target[:]) {
+		t.Error("Error: Merkle Proofs weren't found")
+	}
+}
+
+func TestKeccakHexadecaMerkleMultiEntry(t *testing.T) { // Create a new merkle tree with 16 branches under each non-leaf node and using Keccak256 hashing algorithm
+	bytes := [][]byte{}
+	for i := 0; i < 1000; i++ {
+		bytes = append(bytes, []byte(fmt.Sprint(i)))
+	}
+
+	merkle := NewMerkle(8, Concatenator{}, Sha256{})
+	nodePool := mempool.NewMempool("nodes", func() interface{} {
+		return NewNode()
+	})
+	merkle.Init(bytes, nodePool)
+
+	proofNodes := merkle.GetProofNodes([]byte(fmt.Sprint(999)))
+	proofs := merkle.NodesToHashes(proofNodes)
+
+	target := Sha256{}.Hash([]byte(fmt.Sprint(999)))
+	if !merkle.Verify(proofs[:], merkle.GetRoot(), target[:]) {
 		t.Error("Error: Merkle Proofs weren't found")
 	}
 }
@@ -143,17 +164,17 @@ func TestKeccakHexadecaMerkleSingleEntry(t *testing.T) { // Create a new merkle 
 func TestKeccakDotriacontaMerkleSingleEntry(t *testing.T) { // Create a new merkle tree with 16 branches under each non-leaf node and using Keccak256 hashing algorithm
 	bytes := [][]byte{[]byte(fmt.Sprint(0))}
 
-	merkle := NewMerkle(32, Keccak256)
+	merkle := NewMerkle(32, Concatenator{}, Keccak256{})
 	nodePool := mempool.NewMempool("nodes", func() interface{} {
 		return NewNode()
 	})
 	merkle.Init(bytes, nodePool)
 
-	proofNodes := merkle.GetProofNodes(Keccak256([]byte(fmt.Sprint(0))))
+	proofNodes := merkle.GetProofNodes([]byte(fmt.Sprint(0)))
 	proofs := merkle.NodesToHashes(proofNodes)
 
-	seed := Keccak256([]byte(fmt.Sprint(0)))
-	if !merkle.Verify(proofs[:], merkle.GetRoot(), seed[:]) {
+	target := Keccak256{}.Hash([]byte(fmt.Sprint(0)))
+	if !merkle.Verify(proofs[:], merkle.GetRoot(), target[:]) {
 		t.Error("Error: Merkle Proofs weren't found")
 	}
 }
@@ -168,18 +189,18 @@ func TestMerkleRootConsistency(t *testing.T) {
 		return NewNode()
 	})
 
-	merkle := NewMerkle(32, Keccak256)
+	merkle := NewMerkle(32, Concatenator{}, Keccak256{})
 	merkle.Init(bytes, nodePool)
 
 	nodePool2 := mempool.NewMempool("nodes", func() interface{} {
 		return NewNode()
 	})
 
-	tree0 := NewMerkle(2, Sha256)
+	tree0 := NewMerkle(2, Concatenator{}, Sha256{})
 	tree0.Init(bytes, nodePool2)
 	r0 := tree0.GetRoot()
 
-	tree1 := NewMerkle(2, Sha256)
+	tree1 := NewMerkle(2, Concatenator{}, Sha256{})
 	nodePool3 := mempool.NewMempool("nodes", func() interface{} {
 		return NewNode()
 	})
@@ -196,7 +217,7 @@ func TestMerklePaths(t *testing.T) {
 	for i := 0; i < len(bytes); i++ {
 		bytes[i] = []byte(fmt.Sprint(i))
 	}
-	merkle := NewMerkle(2, Sha256)
+	merkle := NewMerkle(8, Concatenator{}, Sha256{})
 	nodePool := mempool.NewMempool("nodes", func() interface{} {
 		return NewNode()
 	})
@@ -206,12 +227,12 @@ func TestMerklePaths(t *testing.T) {
 	merkle = (&Merkle{}).Decode(merkleBytes).(*Merkle) // decode the tree
 
 	for i := 0; i < len(bytes); i++ {
-		proofNodes := merkle.GetProofNodes(Sha256(bytes[i]))
+		proofNodes := merkle.GetProofNodes(bytes[i])
 		proofs := merkle.NodesToHashes(proofNodes)
 
-		seed := Sha256(bytes[i])
-		if !merkle.Verify(proofs[:], merkle.GetRoot(), seed[:]) {
-			t.Error("Error: Merkle Proofs weren't found")
+		target := Sha256{}.Hash(bytes[i])
+		if !merkle.Verify(proofs[:], merkle.GetRoot(), target[:]) {
+			t.Error("Error: Merkle Pro ofs weren't found")
 		}
 	}
 }

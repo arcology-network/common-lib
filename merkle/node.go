@@ -29,6 +29,8 @@ func (this *Node) Init(id uint32, level uint32, hash []byte) {
 	this.hash = hash
 }
 
+func (this *Node) Children() []uint32 { return this.children }
+
 func (this *Node) Encode() []byte {
 	return codec.Byteset{
 		codec.Uint32(this.id).Encode(),

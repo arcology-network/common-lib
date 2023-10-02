@@ -14,9 +14,7 @@ func TestDatastore(t *testing.T) {
 	}
 
 	keys := []string{"123", "456"}
-	values := make([][]byte, 2)
-	values[0] = []byte{1, 2, 3}
-	values[1] = []byte{4, 5, 6}
+	values := [][]byte{{1, 2, 3}, {4, 5, 6}}
 
 	//policy := NewCachePolicy(1234, 1.0)
 	encoder := func(v interface{}) []byte {
@@ -35,8 +33,14 @@ func TestDatastore(t *testing.T) {
 	for i := 0; i < len(values); i++ {
 		vs[i] = values[i]
 	}
-	store.batchWritePersistentStorage(keys, vs)
-	store.BatchInject(keys, vs)
+
+	if err := store.batchWritePersistentStorage(keys, values); err != nil {
+		t.Error(err)
+	}
+
+	if err := store.BatchInject(keys, vs); err != nil {
+		t.Error(err)
+	}
 
 	v, _ := store.Retrive(keys[0])
 	if string(v.([]byte)) != string(values[0]) {
@@ -86,7 +90,7 @@ func TestDatastorePrefetch(t *testing.T) {
 	for i := 0; i < len(values); i++ {
 		vs[i] = values[i]
 	}
-	store.batchWritePersistentStorage(keys, vs)
+	store.batchWritePersistentStorage(keys, values)
 	store.BatchInject(keys, vs)
 
 	v, _ := store.Retrive(keys[0])

@@ -363,6 +363,14 @@ func Flatten[T any](src [][]T) []T {
 	return buffer
 }
 
+func ReorderBy[T any, T1 constraints.Integer](src []T, indices []T1) []T {
+	reordered := make([]T, len(src))
+	for i := range src {
+		reordered[i] = src[indices[i]]
+	}
+	return reordered
+}
+
 func SortBy1st[T0 any, T1 any](first []T0, second []T1, compare func(T0, T0) bool) {
 	array := make([]struct {
 		_0 T0
@@ -404,6 +412,16 @@ func To[T0, T1 any](src []T0) []T1 {
 		target[i] = (interface{}((src[i]))).(T1)
 	}
 	return target
+}
+
+func Count[T comparable](values []T, target T) uint64 {
+	total := uint64(0)
+	for i := 0; i < len(values); i++ {
+		if target == values[i] {
+			total++
+		}
+	}
+	return total
 }
 
 func Equal[T comparable](lhv, rhv *T, wildcard func(*T) bool) bool {

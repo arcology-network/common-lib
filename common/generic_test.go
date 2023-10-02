@@ -595,3 +595,21 @@ func TestEqual(t *testing.T) {
 		t.Error("Error: Should not be equal")
 	}
 }
+
+func TestReorderBy(t *testing.T) {
+	src := []int{4, 2, 6, 3, 1}
+	indices := []int{4, 1, 3, 0, 2}
+	reordered := ReorderBy(src, indices)
+
+	if !reflect.DeepEqual(reordered, []int{1, 2, 3, 4, 6}) {
+		t.Error("Error: Not equal")
+	}
+}
+
+func TestAnyIs(t *testing.T) {
+	var e []byte
+	v := []interface{}{1, 2, e, nil}
+	if Count(v, nil) != 1 {
+		t.Error("Error: Not equal")
+	}
+}

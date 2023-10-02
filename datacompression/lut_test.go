@@ -164,6 +164,44 @@ func TestMultiAccounts(t *testing.T) {
 	}
 }
 
+func TestMultiAccountCompresssion(t *testing.T) {
+	paths := []string{}
+	for j := 0; j < 3; j++ {
+		acct := RandomAccount()
+		for i := 0; i < 1; i++ {
+			paths = append(paths, []string{
+				"blcc://eth1.0/account/" + acct + "/",
+				"blcc://eth1.0/account/" + acct + "/code",
+				"blcc://eth1.0/account/" + acct + "/nonce",
+				"blcc://eth1.0/account/" + acct + "/balance",
+				"blcc://eth1.0/account/" + acct + "/defer/",
+				"blcc://eth1.0/account/" + acct + "/storage/",
+				"blcc://eth1.0/account/" + acct + "/storage/containers/",
+				"blcc://eth1.0/account/" + acct + "/storage/native/",
+				"blcc://eth1.0/account/" + acct + "/storage/containers/!/",
+			}...)
+		}
+	}
+	source := Deepcopy(paths)
+	lut := NewCompressionLut()
+
+	compressed := lut.CompressOnTemp(paths)
+	lut.Commit()
+	lut.TryBatchUncompress(compressed)
+
+	if !reflect.DeepEqual(source, compressed) {
+		t.Error("Error: Failed to uncompress")
+	}
+
+	acct := RandomAccount()
+	compressed = []string{"[1]/" + acct + "/"}
+	lut.TryBatchUncompress(compressed)
+
+	if compressed[0] != "blcc://eth1.0/account/"+acct+"/" {
+		t.Error("Error: Failed to uncompress")
+	}
+}
+
 func BenchmarkStringToBytes(b *testing.B) {
 	accounts := make([]string, 1000000)
 	for i := 0; i < len(accounts); i++ {

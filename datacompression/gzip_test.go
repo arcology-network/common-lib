@@ -1,11 +1,14 @@
 package datacompression
 
 import (
-	"reflect"
+	"bytes"
+	"fmt"
 	"testing"
+
+	codec "github.com/arcology-network/common-lib/codec"
 )
 
-func TestCodec(t *testing.T) {
+func TestCompression(t *testing.T) {
 	paths := []string{
 		"blcc://eth1.0/account/" + "0x123456780x123456780x123456780x12345678" + "/",
 		"blcc://eth1.0/account/" + "0x123456780x123456780x123456780x12345678" + "/code",
@@ -17,16 +20,12 @@ func TestCodec(t *testing.T) {
 		"blcc://eth1.0/account/" + "0x123456780x123456780x123456780x12345678" + "/storage/native/",
 		"blcc://eth1.0/account/" + "0x123456780x123456780x123456780x12345678" + "/storage/containers/!/",
 	}
+	str := codec.Strings(paths).Flatten()
+	compressed, _ := CompressGZip(str, "test", "A test string")
+	fmt.Println("Uncompressed size:", len(str), " Compressed size:", len(compressed), " Ratio:", float64(len(compressed))/float64(len(str)))
 
-	inLut := NewCompressionLut()
-	//inLut.CompressOnTemp(paths)
-	compressed := inLut.CompressOnTemp(paths)
-	inLut.Commit()
-	bytes := inLut.Encode()
-	outLut := (&CompressionLut{}).Decode(bytes).(*CompressionLut)
-
-	outLut.TryBatchUncompress(compressed)
-	if !reflect.DeepEqual(paths, compressed) {
-		t.Error("Error: Failed to uncompress")
+	original, name, comment, _ := DecompressGZip(compressed)
+	if name != "test" || comment != "A test string" || !bytes.Equal(str, original) {
+		t.Error("Mismatch")
 	}
 }
