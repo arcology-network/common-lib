@@ -11,11 +11,12 @@ type Concatenator struct{}
 
 func (Concatenator) Encode(bytes [][]byte) []byte { return common.Flatten(bytes) }
 
-// func Flattener(bytes [][]byte) []byte { return common.Flatten(bytes) }
+// func Keccak256(bytes []byte) []byte {
+// 	keccak := sha3.NewLegacyKeccak256()
+// 	return keccak.Sum(bytes)
+// }
 
-type Sha256 struct{}
-
-func (Sha256) Hash(data []byte) []byte {
+func Sha256(data []byte) []byte {
 	if len(data) == 0 {
 		return []byte{}
 	}
@@ -24,9 +25,7 @@ func (Sha256) Hash(data []byte) []byte {
 	return hash[:]
 }
 
-type Keccak256 struct{}
-
-func (Keccak256) Hash(data []byte) []byte {
+func Keccak256(data []byte) []byte {
 	if len(data) == 0 {
 		return []byte{}
 	}

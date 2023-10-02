@@ -18,17 +18,17 @@ type Merkle struct {
 	branch  uint32
 	nodes   [][]*Node
 	buffers [concurrency][]byte
-	hasher  interface{ Hash([]byte) []byte }
-	encoder interface{ Encode([][]byte) []byte }
+	hasher  func([]byte) []byte
+	encoder func([][]byte) []byte
 	mempool *mempool.Mempool
 }
 
-func NewMerkle(numBranches int, encoder interface{ Encode([][]byte) []byte }, hasher interface{ Hash([]byte) []byte }) *Merkle {
+func NewMerkle(numBranches int, hasher func([]byte) []byte) *Merkle {
 	merkle := &Merkle{
 		branch:  uint32(numBranches),
 		nodes:   [][]*Node{},
 		hasher:  hasher,
-		encoder: encoder,
+		encoder: Concatenator{}.Encode,
 	}
 	for i := range merkle.buffers {
 		merkle.buffers[i] = make([]byte, 0, bufferSize)
@@ -37,7 +37,7 @@ func NewMerkle(numBranches int, encoder interface{ Encode([][]byte) []byte }, ha
 }
 
 func (this *Merkle) Hasher() func([]byte) []byte {
-	return this.hasher.Hash
+	return this.hasher
 }
 
 func (this *Merkle) Reset() *Merkle {
@@ -55,7 +55,7 @@ func (this *Merkle) BuildParent(id uint32, children []*Node, index int, mempool 
 	this.buffers[index] = common.Concate(children, func(node *Node) []byte { return node.hash })
 
 	parent := mempool.Get().(*Node)
-	parent.Init(id, children[0].level+1, this.hasher.Hash(this.buffers[index]))
+	parent.Init(id, children[0].level+1, this.hasher(this.buffers[index]))
 	for i, v := range children {
 		parent.children = append(parent.children, v.id)
 		children[i].parent = parent.id
@@ -88,7 +88,7 @@ func (this *Merkle) newLeafNodes(data [][]byte) []*Node {
 		mempool := this.mempool.GetTlsMempool(index)
 		for i := start; i < end; i++ {
 			leafNodes[i] = mempool.Get().(*Node)
-			leafNodes[i].Init(uint32(i), 0, this.hasher.Hash(data[i]))
+			leafNodes[i].Init(uint32(i), 0, this.hasher(data[i]))
 		}
 	}
 	common.ParallelWorker(len(data), common.IfThen(len(data) < 1024, 1, concurrency), worker)
@@ -103,7 +103,7 @@ func (this *Merkle) Init(data [][]byte, mempool *mempool.Mempool) {
 	this.mempool = mempool
 	if len(data) == 1 {
 		node := this.mempool.Get().(*Node)
-		node.Init(uint32(0), 0, this.hasher.Hash(data[0]))
+		node.Init(uint32(0), 0, this.hasher(data[0]))
 		this.nodes = [][]*Node{{node}}
 		return
 	}
@@ -138,7 +138,7 @@ func (this *Merkle) GetRoot() []byte {
 }
 
 func (this *Merkle) GetProofNodes(key []byte) []*Node {
-	hash := this.hasher.Hash(key)
+	hash := this.hasher(key)
 	depth := 0
 	mainPath := []*Node{}
 	for _, v := range this.nodes[depth] {
@@ -166,7 +166,7 @@ func (this *Merkle) Verify(proofs [][][]byte, root []byte, seed []byte) bool {
 		if math.MaxUint32 == idx {
 			return false
 		}
-		seed = this.ComputeHash(proofs[i])
+		seed = this.hasher(this.encoder(proofs[i]))
 	}
 	return bytes.Equal(seed[:], root[:])
 }
@@ -182,8 +182,8 @@ func (this *Merkle) ComputeHash(data [][]byte) []byte {
 	// }
 
 	// buffer = common.Flatten(data)
-	return this.encoder.Encode(data)
-	// return this.hasher(common.Flatten(data))
+
+	return this.hasher(this.encoder(data))
 }
 
 func (this *Merkle) NodesToHashes(path []*Node) [][][]byte {
