@@ -8,7 +8,6 @@ import (
 	"github.com/arcology-network/common-lib/merkle"
 	"github.com/arcology-network/evm/rlp"
 	"github.com/stretchr/testify/require"
-	// "github.com/HPISTechnologies/evm/rlp"
 )
 
 func TestEncodeDecodeSingle(t *testing.T) {

@@ -42,24 +42,24 @@ func FileToLines(fileName string) []string {
 	return lines
 }
 
-func JsonToCsv(lines []string) ([]string, [][]string) {
-	logs := make(map[string][]string)
-	var result map[string]interface{}
-	for _, line := range lines {
-		json.Unmarshal([]byte(line), &result)
-		for k, v := range result {
-			logs[k] = append(logs[k], fmt.Sprintf("%v", v))
-		}
-	}
+// func JsonToCsv(lines []string) ([]string, [][]string) {
+// 	logs := make(map[string][]string)
+// 	var result map[string]interface{}
+// 	for _, line := range lines {
+// 		json.Unmarshal([]byte(line), &result)
+// 		for k, v := range result {
+// 			logs[k] = append(logs[k], fmt.Sprintf("%v", v))
+// 		}
+// 	}
 
-	columns := make([]string, 0, len(logs))
-	rows := make([][]string, 0, len(logs))
-	for k, v := range logs {
-		columns = append(columns, k)
-		rows = append(rows, v)
-	}
-	return columns, Transpose(rows)
-}
+// 	columns := make([]string, 0, len(logs))
+// 	rows := make([][]string, 0, len(logs))
+// 	for k, v := range logs {
+// 		columns = append(columns, k)
+// 		rows = append(rows, v)
+// 	}
+// 	return columns, Transpose(rows)
+// }
 
 func FileExists(filename string) bool {
 	info, err := os.Stat(filename)

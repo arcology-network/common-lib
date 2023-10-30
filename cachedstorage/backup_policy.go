@@ -21,7 +21,7 @@ func (this *BackupPolicy) FullBackup() {
 	encoder := this.datastore.Encoder()
 	byteset := make([][]byte, len(keys))
 	for i := 0; i < len(keys); i++ {
-		byteset[i] = encoder(values[i])
+		byteset[i] = encoder(keys[i], values[i])
 	}
 	codec.Strings(keys).Encode()
 }

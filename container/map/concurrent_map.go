@@ -50,10 +50,6 @@ func (this *ConcurrentMap) Size() uint32 {
 
 func (this *ConcurrentMap) Get(key string, args ...interface{}) (interface{}, bool) {
 	shardID := this.Hash8(key)
-	if shardID >= uint8(len(this.sharded)) {
-		return nil, true
-	}
-
 	this.shardLocks[shardID].RLock()
 	defer this.shardLocks[shardID].RUnlock()
 

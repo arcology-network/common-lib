@@ -162,6 +162,14 @@ func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, i
 	return initialV
 }
 
+func Append[T any, T1 any](values []T, predicate func(v T) T1) []T1 {
+	vec := []T1{}
+	for i := 0; i < len(values); i++ {
+		vec = append(vec, predicate(values[i]))
+	}
+	return vec
+}
+
 func CopyIf[T any](values []T, condition func(v T) bool) []T {
 	copied := make([]T, 0, len(values))
 	for i := 0; i < len(values); i++ {
@@ -252,13 +260,22 @@ func FindAllIndics[T comparable](values []T, equal func(v0, v1 T) bool) []int {
 	return positions
 }
 
-func FindFirst[T comparable](values *[]T, v T) (int, *T) {
-	for i := 0; i < len(*values); i++ {
-		if (*values)[i] == v {
-			return i, &(*values)[i]
+func FindFirst[T comparable](values []T, v T) (int, *T) {
+	for i := 0; i < len(values); i++ {
+		if (values)[i] == v {
+			return i, &(values)[i]
 		}
 	}
 	return -1, nil
+}
+
+func Contains[T any](values []T, target T, equal func(v0, v1 T) bool) bool {
+	for i := 0; i < len(values); i++ {
+		if equal(values[i], target) {
+			return true
+		}
+	}
+	return false
 }
 
 // Find the leftmost index of the element meeting the criteria
@@ -468,11 +485,13 @@ func EqualArray[T comparable](lhv []T, rhv []T) bool {
 }
 
 func IsType[T any](v interface{}) bool {
-	switch v.(type) {
-	case T:
-		return true
-	}
-	return false
+	_, ok := v.(T)
+	return ok
+	// switch v.(type) {
+	// case T:
+	// 	return true
+	// }
+	// return false
 }
 
 func GroupBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) [][]T0 {
@@ -564,3 +583,10 @@ func MapKVs[M ~map[K]V, K comparable, V any](m M) ([]K, []V) {
 	}
 	return keys, values
 }
+
+func FilterFirst[T0, T1 any](v0 T0, v1 T1) T0  { return v0 }
+func FilterSecond[T0, T1 any](v0 T0, v1 T1) T1 { return v1 }
+
+// func CloneAny[T0 any](f T0) any {
+// 	return f.(interface{ Clone() T0 }).Clone()
+// }

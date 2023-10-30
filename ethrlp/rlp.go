@@ -72,22 +72,6 @@ func (Bytes) EncodeSingle(item []byte) []byte {
 	return buffer
 }
 
-// Decode decodes an RLP-encoded byte slice into a [][]byte slice.
-func (Bytes) Decode(encodedBytes []byte) ([][]byte, error) {
-	output := make([][]byte, 0, 32)
-
-	for len(encodedBytes) > 0 {
-		item, bytesRead, err := decodeItem(encodedBytes)
-		if err != nil {
-			return nil, err
-		}
-		output = append(output, item)
-		encodedBytes = encodedBytes[bytesRead:]
-	}
-
-	return output, nil
-}
-
 func precalculate(length int, v byte) (int, int) {
 	if length == 1 && v < 0x80 {
 		return 1, 0
@@ -113,6 +97,22 @@ func encodeLengthToVec(buffer []byte, length int, offset int) []byte {
 
 	copy(buffer[1:], buffer[9-numBytes:])
 	return buffer[:numBytes+1]
+}
+
+// Decode decodes an RLP-encoded byte slice into a [][]byte slice.
+func (Bytes) Decode(encodedBytes []byte) ([][]byte, error) {
+	output := make([][]byte, 0, 32)
+
+	for len(encodedBytes) > 0 {
+		item, bytesRead, err := decodeItem(encodedBytes)
+		if err != nil {
+			return nil, err
+		}
+		output = append(output, item)
+		encodedBytes = encodedBytes[bytesRead:]
+	}
+
+	return output, nil
 }
 
 // decodeItem decodes a single RLP-encoded item.

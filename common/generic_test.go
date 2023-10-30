@@ -490,7 +490,7 @@ func TestFindLastIf(t *testing.T) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
-	idx, _ = FindFirst(&nums, '/')
+	idx, _ = FindFirst(nums, '/')
 	if idx != 1 {
 		t.Error("Error: Failed to remove nil values !")
 	}

@@ -201,7 +201,7 @@ func (this *CachePolicy) freeMemory(localChache *ccmap.ConcurrentMap) (uint64, u
 }
 
 func (this *CachePolicy) CheckCapacity(key string, v interface{}) bool {
-	if this.quota == math.MaxUint64 { // All in cache
+	if this.quota == math.MaxUint64 || v == nil { // All in cache
 		return true
 	}
 
@@ -213,19 +213,23 @@ func (this *CachePolicy) CheckCapacity(key string, v interface{}) bool {
 	return m+this.totalAllocated < this.quota
 }
 
-func (this *CachePolicy) BatchCheckCapacity(keys []string, values []interface{}) ([]bool, uint32) {
+func (this *CachePolicy) BatchCheckCapacity(keys []string, values []interface{}) ([]bool, uint32, bool) {
+	if this.quota == math.MaxUint64 {
+		return nil, 0, true
+	}
+
 	flags := make([]bool, len(keys))
 	count := uint32(0)
 
 	if this.quota == 0 {
-		return flags, 0 // Non in cache
+		return flags, 0, false // Non in cache
 	}
 
 	if this.quota == math.MaxUint64 {
 		for i := 0; i < len(flags); i++ {
 			flags[i] = true
 		}
-		return flags, uint32(len(keys)) // All in the cache
+		return flags, uint32(len(keys)), false // All in the cache
 	}
 
 	total := uint64(0)
@@ -239,7 +243,7 @@ func (this *CachePolicy) BatchCheckCapacity(keys []string, values []interface{})
 			}
 		}
 	}
-	return flags, count // Good for all entries to stay in the memory
+	return flags, count, false // Good for all entries to stay in the memory
 }
 
 func (this *CachePolicy) PrintScores() {

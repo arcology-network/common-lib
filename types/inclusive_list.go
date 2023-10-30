@@ -1,7 +1,6 @@
 package types
 
 import (
-	"github.com/arcology-network/common-lib/common"
 	encoding "github.com/arcology-network/common-lib/encoding"
 	evmCommon "github.com/arcology-network/evm/common"
 )
@@ -20,11 +19,11 @@ type InclusiveList struct {
 func (il *InclusiveList) CopyListAddHeight(height, round uint64) *InclusiveList {
 	hashList := make([]*evmCommon.Hash, len(il.HashList))
 
-	for i := range il.HashList {
-		hash := il.HashList[i]
-		newhash := common.ToNewHash(*hash, height, round)
-		hashList[i] = &newhash
-	}
+	// for i := range il.HashList {
+	// 	// hash := il.HashList[i]
+	// 	//newhash := common.ToNewHash(*hash, height, round)
+	// 	// hashList[i] = &newhash
+	// }
 
 	return &InclusiveList{
 		Successful: il.Successful,
