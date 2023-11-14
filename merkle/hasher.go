@@ -28,5 +28,8 @@ func (Keccak256) Hash(data []byte) []byte {
 	if len(data) == 0 {
 		return []byte{}
 	}
-	return sha3.NewLegacyKeccak256().Sum(data)
+
+	hasher := sha3.NewLegacyKeccak256()
+	hasher.Write(data)
+	return hasher.Sum(nil)
 }

@@ -36,43 +36,26 @@ type DataStore struct {
 	cacheGuard  sync.RWMutex
 }
 
-func NewDataStore(args ...interface{}) *DataStore {
-	dataStore := DataStore{
-		partitionIDs: make([]uint8, 0, 65536),
-		localCache:   ccmap.NewConcurrentMap(),
-		globalCache:  make(map[string]interface{}),
+func NewDataStore(
+	compressionLut *datacompression.CompressionLut,
+	cachePolicy *CachePolicy,
+	db PersistentStorageInterface,
+	encoder func(string, interface{}) []byte,
+	decoder func([]byte, any) interface{},
+) *DataStore {
+	dataStore := &DataStore{
+		partitionIDs:   make([]uint8, 0, 65536),
+		localCache:     ccmap.NewConcurrentMap(),
+		globalCache:    make(map[string]interface{}),
+		compressionLut: compressionLut,
+		cachePolicy:    cachePolicy,
+		db:             db,
+		encoder:        encoder,
+		decoder:        decoder,
 	}
 
-	if len(args) > 0 && args[0] != nil {
-		dataStore.compressionLut = args[0].(*datacompression.CompressionLut)
-	}
-
-	if len(args) > 1 && args[1] != nil {
-		dataStore.cachePolicy = args[1].(*CachePolicy)
-	}
-
-	if len(args) > 2 && args[2] != nil {
-		dataStore.db = args[2].(PersistentStorageInterface)
-		dataStore.cachePolicy.Customize(dataStore.db)
-	}
-
-	if len(args) > 3 && args[3] != nil {
-		dataStore.encoder = args[3].(func(string, interface{}) []byte)
-	}
-
-	if len(args) > 4 && args[4] != nil {
-		dataStore.decoder = args[4].(func([]byte, any) interface{})
-	}
-
-	// if len(args) > 5 && args[5] != nil {
-	// 	dataStore.dbfilter = DbFilter(args[5].(func(PersistentStorageInterface) bool))
-	// }
-
-	// if dataStore.db != nil && (dataStore.encoder == nil || dataStore.decoder == nil) {
-	// 	panic("Error: DB Encoder or Decoder haven't been specified !")
-	// }
-
-	return &dataStore
+	dataStore.cachePolicy.Customize(dataStore.db)
+	return dataStore
 }
 
 func (this *DataStore) Encoder() func(string, interface{}) []byte {
@@ -208,7 +191,12 @@ func (this *DataStore) batchWritePersistentStorage(keys []string, encodedValues 
 }
 
 func (this *DataStore) addToCache(key string, value interface{}) {
-	if this.cachePolicy == nil || !this.cachePolicy.IsFullCache() {
+	if this.cachePolicy == nil || this.cachePolicy.IsFull() {
+		return
+	}
+
+	if this.cachePolicy.InfinitCache() {
+		this.localCache.Set(key, value)
 		return
 	}
 
@@ -218,7 +206,12 @@ func (this *DataStore) addToCache(key string, value interface{}) {
 }
 
 func (this *DataStore) batchAddToCache(ids []uint8, keys []string, values []interface{}) {
-	if this.cachePolicy == nil || !this.cachePolicy.IsFullCache() {
+	if this.cachePolicy == nil {
+		return
+	}
+
+	if this.cachePolicy.InfinitCache() {
+		this.localCache.DirectBatchSet(ids, keys, values, common.NewArray(len(keys), true))
 		return
 	}
 
@@ -245,7 +238,7 @@ func (this *DataStore) Retrive(key string, T any) (interface{}, error) {
 		return v, nil
 	}
 
-	// if v == nil && this.cachePolicy != nil && !this.cachePolicy.IsFullCache() {
+	// if v == nil && this.cachePolicy != nil && !this.cachePolicy.InfinitCache() {
 	v, err := this.fetchPersistentStorage(key, T)
 	if err == nil {
 		// if this.cachePolicy.CheckCapacity(key, v) { // need to check the cache status first
@@ -266,7 +259,7 @@ func (this *DataStore) BatchRetrive(keys []string, T []any) []interface{} {
 	}
 
 	values := this.localCache.BatchGet(keys) // From the local cache first
-	if common.Count(values, nil) == 0 {
+	if common.Count(values, nil) == 0 {      // All found
 		return values
 	}
 
@@ -322,7 +315,7 @@ func (this *DataStore) Clear() {
 }
 
 // Get the shard ids, values, and preupdate the compression dict
-func (this *DataStore) Precommit(keys []string, values interface{}) {
+func (this *DataStore) Precommit(keys []string, values interface{}) [32]byte {
 	this.commitLock.Lock()
 	this.keyBuffer = common.IfThenDo1st(
 		this.compressionLut != nil,
@@ -338,6 +331,7 @@ func (this *DataStore) Precommit(keys []string, values interface{}) {
 		}
 	}
 	this.partitionIDs = this.GetParitions(keys)
+	return [32]byte{}
 }
 
 func (this *DataStore) GetParitions(keys []string) []uint8 {

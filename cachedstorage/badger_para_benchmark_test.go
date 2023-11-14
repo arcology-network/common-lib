@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/arcology-network/common-lib/common"
-	"github.com/dgraph-io/badger"
 )
 
 func BenchmarkParaBadgerBatchSet(b *testing.B) {
@@ -68,71 +67,71 @@ func BenchmarkBadgerBatchSet2(b *testing.B) {
 	os.RemoveAll("./badger-test/")
 }
 
-func TestParaBadgerIterator(t *testing.T) {
-	opt := badger.DefaultOptions("./badger")
-	bdg, err := badger.Open(opt)
-	if err != nil {
-		t.Error(err)
-	}
-	defer bdg.Close()
+// func TestParaBadgerIterator(t *testing.T) {
+// 	opt := badger.DefaultOptions("./badger")
+// 	bdg, err := badger.Open(opt)
+// 	if err != nil {
+// 		t.Error(err)
+// 	}
+// 	defer bdg.Close()
 
-	total := 0
-	for i := 0; i < 256; i++ {
-		timer(fmt.Sprintf("iteration %d", i), func() {
-			bdg.View(func(txn *badger.Txn) error {
-				it := txn.NewIterator(badger.IteratorOptions{
-					PrefetchValues: true,
-					PrefetchSize:   1000,
-					Prefix:         []byte{byte(i)},
-				})
-				defer it.Close()
+// 	total := 0
+// 	for i := 0; i < 256; i++ {
+// 		timer(fmt.Sprintf("iteration %d", i), func() {
+// 			bdg.View(func(txn *badger.Txn) error {
+// 				it := txn.NewIterator(badger.IteratorOptions{
+// 					PrefetchValues: true,
+// 					PrefetchSize:   1000,
+// 					Prefix:         []byte{byte(i)},
+// 				})
+// 				defer it.Close()
 
-				count := 0
-				for it.Rewind(); it.Valid(); it.Next() {
-					if count == 0 {
-						t.Log(it.Item().Key())
-					}
-					count++
-				}
-				t.Logf("iteration %d", count)
-				total += count
-				return nil
-			})
-		})
-	}
-	t.Logf("total: %d", total)
-	os.RemoveAll("./badger")
-	// timer("iteration", func() {
-	// 	txn := bdg.NewTransaction(false)
-	// 	it := txn.NewIterator(badger.IteratorOptions{
-	// 		PrefetchValues: true,
-	// 		PrefetchSize:   1000,
-	// 	})
+// 				count := 0
+// 				for it.Rewind(); it.Valid(); it.Next() {
+// 					if count == 0 {
+// 						t.Log(it.Item().Key())
+// 					}
+// 					count++
+// 				}
+// 				t.Logf("iteration %d", count)
+// 				total += count
+// 				return nil
+// 			})
+// 		})
+// 	}
+// 	t.Logf("total: %d", total)
+// 	os.RemoveAll("./badger")
+// 	// timer("iteration", func() {
+// 	// 	txn := bdg.NewTransaction(false)
+// 	// 	it := txn.NewIterator(badger.IteratorOptions{
+// 	// 		PrefetchValues: true,
+// 	// 		PrefetchSize:   1000,
+// 	// 	})
 
-	// 	count := 0
-	// 	for it.Rewind(); it.Valid(); it.Next() {
-	// 		item := it.Item()
-	// 		if count%10000 == 0 && count != 0 {
-	// 			t.Log(item.Key())
-	// 		}
-	// 		count++
-	// 	}
-	// 	t.Log(count)
-	// })
-}
+// 	// 	count := 0
+// 	// 	for it.Rewind(); it.Valid(); it.Next() {
+// 	// 		item := it.Item()
+// 	// 		if count%10000 == 0 && count != 0 {
+// 	// 			t.Log(item.Key())
+// 	// 		}
+// 	// 		count++
+// 	// 	}
+// 	// 	t.Log(count)
+// 	// })
+// }
 
-func ParaBatchSet(db *badger.DB, keys []string, values [][]byte) {
-	index := 0
-	for index < len(keys) {
-		db.Update(func(txn *badger.Txn) error {
-			for i := index; i < len(keys); i++ {
-				if err := txn.Set([]byte(keys[i]), values[i]); err != nil {
-					return nil
-				} else {
-					index++
-				}
-			}
-			return nil
-		})
-	}
-}
+// func ParaBatchSet(db *badger.DB, keys []string, values [][]byte) {
+// 	index := 0
+// 	for index < len(keys) {
+// 		db.Update(func(txn *badger.Txn) error {
+// 			for i := index; i < len(keys); i++ {
+// 				if err := txn.Set([]byte(keys[i]), values[i]); err != nil {
+// 					return nil
+// 				} else {
+// 					index++
+// 				}
+// 			}
+// 			return nil
+// 		})
+// 	}
+// }

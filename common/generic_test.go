@@ -386,6 +386,27 @@ func TestRemove(t *testing.T) {
 	if len(strs) != 0 {
 		t.Error("Error: Failed to remove nil values !")
 	}
+
+	strs = []uint64{1, 2, 3, 4}
+	RemoveAt(&strs, 1)
+	if !reflect.DeepEqual(strs, []uint64{1, 3, 4}) {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	RemoveAt(&strs, 2)
+	if !reflect.DeepEqual(strs, []uint64{1, 3}) {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	RemoveAt(&strs, 0)
+	if !reflect.DeepEqual(strs, []uint64{3}) {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	RemoveAt(&strs, 0)
+	if !reflect.DeepEqual(strs, []uint64{}) {
+		t.Error("Error: Failed to remove nil values !")
+	}
 }
 
 func TestUniqueInts(t *testing.T) {
@@ -611,5 +632,19 @@ func TestAnyIs(t *testing.T) {
 	v := []interface{}{1, 2, e, nil}
 	if Count(v, nil) != 1 {
 		t.Error("Error: Not equal")
+	}
+}
+
+func TestAppend(t *testing.T) {
+	src := []int{4, 2, 6, 3, 1}
+
+	target := Append(src, func(v int) int { return v + 1 })
+	if !reflect.DeepEqual(target, []int{5, 3, 7, 4, 2}) {
+		t.Error("Expected: ", target)
+	}
+
+	target = ParallelAppend(target, func(v int) int { return v + 1 })
+	if !reflect.DeepEqual(target, []int{6, 4, 8, 5, 3}) {
+		t.Error("Expected: ", target)
 	}
 }

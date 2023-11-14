@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"reflect"
 	"sync"
 
 	ccmap "github.com/arcology-network/common-lib/container/map"
@@ -13,6 +12,11 @@ import (
 const (
 	Cache_Quota_Full = math.MaxUint64
 )
+
+type TypeAccessibleInterface interface {
+	Value() interface{}
+	MemSize() uint32
+}
 
 type CachePolicy struct {
 	totalAllocated    uint64
@@ -44,18 +48,20 @@ func NewCachePolicy(hardQuota uint64, threshold float64) *CachePolicy {
 	return policy
 }
 
-func (this *CachePolicy) Customize(db PersistentStorageInterface) {
-	if this == nil {
-		return
+func (this *CachePolicy) Customize(db PersistentStorageInterface) *CachePolicy {
+	if this != nil {
+		if _, ok := db.(*MemDB); ok { // A memory DB doesn't need a in-memory cache
+			this.quota = 0
+		}
 	}
-
-	name := reflect.TypeOf(db).String()
-	if name == "*cachedstorage.MemDB" { // A memory DB doesn't need a in-memory cache
-		this.quota = 0
-	}
+	return this
 }
 
-func (this *CachePolicy) IsFullCache() bool {
+func (this *CachePolicy) IsFull() bool {
+	return this.quota == 0 || this.totalAllocated >= this.quota
+}
+
+func (this *CachePolicy) InfinitCache() bool {
 	return this.quota == Cache_Quota_Full
 }
 
@@ -241,6 +247,11 @@ func (this *CachePolicy) BatchCheckCapacity(keys []string, values []interface{})
 			} else {
 				break
 			}
+		}
+
+		if v == nil {
+			flags[i] = true // Delete is always fine
+			count++
 		}
 	}
 	return flags, count, false // Good for all entries to stay in the memory
