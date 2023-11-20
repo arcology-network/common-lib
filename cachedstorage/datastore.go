@@ -12,8 +12,8 @@ import (
 )
 
 type DataStore struct {
-	db     PersistentStorageInterface
-	dblock sync.RWMutex
+	db   PersistentStorageInterface
+	lock sync.RWMutex
 
 	cachePolicy      *CachePolicy
 	compressionLut   *datacompression.CompressionLut
@@ -87,8 +87,8 @@ func (this *DataStore) Checksum() [32]byte {
 }
 
 func (this *DataStore) Query(pattern string, condition func(string, string) bool) ([]string, [][]byte, error) {
-	this.dblock.RLock()
-	defer this.dblock.RUnlock()
+	this.lock.RLock()
+	defer this.lock.RUnlock()
 
 	return this.db.Query(pattern, condition)
 }
@@ -136,9 +136,9 @@ func (this *DataStore) BatchInject(keys []string, values []interface{}) error {
 
 // 	pattern := filepath.Dir(key)
 
-// 	this.dblock.RLock()
+// 	this.lock.RLock()
 // 	prefetchedKeys, valBytes, err := this.db.Query(pattern, Under)
-// 	this.dblock.RUnlock()
+// 	this.lock.RUnlock()
 
 // 	prefetchedValues := make([]interface{}, len(valBytes))
 // 	for i := 0; i < len(valBytes); i++ {
@@ -157,9 +157,9 @@ func (this *DataStore) fetchPersistentStorage(key string, T any) (interface{}, e
 		return nil, errors.New("Error: DB not found")
 	}
 
-	this.dblock.RLock()
+	this.lock.RLock()
 	bytes, err := this.db.Get(key)
-	this.dblock.RUnlock()
+	this.lock.RUnlock()
 
 	if len(bytes) > 0 && err == nil { // Get from the cache
 		if T == nil {
@@ -175,8 +175,8 @@ func (this *DataStore) batchFetchPersistentStorage(keys []string) ([][]byte, err
 		return nil, errors.New("Error: DB not found")
 	}
 
-	this.dblock.RLock()
-	defer this.dblock.RUnlock()
+	this.lock.RLock()
+	defer this.lock.RUnlock()
 	return this.db.BatchGet(keys) // Get from the cache
 }
 
@@ -185,8 +185,8 @@ func (this *DataStore) batchWritePersistentStorage(keys []string, encodedValues 
 		return errors.New("Error: DB not found")
 	}
 
-	this.dblock.Lock()
-	defer this.dblock.Unlock()
+	this.lock.Lock()
+	defer this.lock.Unlock()
 	return this.db.BatchSet(keys, encodedValues)
 }
 

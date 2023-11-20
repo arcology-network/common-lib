@@ -156,9 +156,9 @@ func EitherEqualsTo[T any](lhv interface{}, rhv T, equal func(v interface{}) boo
 	return rhv
 }
 
-func Foreach[T any](values []T, predicate func(v *T)) []T {
+func Foreach[T any](values []T, predicate func(v *T, idx int)) []T {
 	for i := 0; i < len(values); i++ {
-		predicate(&(values)[i])
+		predicate(&(values)[i], i)
 	}
 	return values
 }
@@ -546,9 +546,44 @@ func FromPairs[T0, T1 any](pairs []struct {
 	return arr0, arr1
 }
 
-func GroupBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) [][]T0 {
+func ToTuples[T0, T1, T2 any](arr0 []T0, arr1 []T1, arr2 []T2) []struct {
+	First  T0
+	Second T1
+	Third  T2
+} {
+	pairs := make([]struct {
+		First  T0
+		Second T1
+		Third  T2
+	}, len(arr0))
+
+	for i := range arr0 {
+		pairs[i] = struct {
+			First  T0
+			Second T1
+			Third  T2
+		}{arr0[i], arr1[i], arr2[i]}
+	}
+	return pairs
+}
+
+func FromTuples[T0, T1, T2 any](tuples []struct {
+	First  T0
+	Second T1
+	Third  T2
+}) ([]T0, []T1, []T2) {
+	arr0, arr1, arr2 := make([]T0, len(tuples)), make([]T1, len(tuples)), make([]T2, len(tuples))
+	for i, pair := range tuples {
+		arr0[i] = pair.First
+		arr1[i] = pair.Second
+		arr2[i] = pair.Third
+	}
+	return arr0, arr1, arr2
+}
+
+func GroupBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) ([]T1, [][]T0) {
 	if len(array) == 1 {
-		return [][]T0{array}
+		return []T1{*getter(array[0])}, [][]T0{array}
 	}
 
 	dict := make(map[T1][]T0)
@@ -561,7 +596,7 @@ func GroupBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) [][]T0 {
 			dict[*key] = append(vec, v)
 		}
 	}
-	return MapValues(dict)
+	return MapKVs(dict)
 }
 
 func GroupIndicesBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) ([]int, int) {
