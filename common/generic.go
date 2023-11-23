@@ -156,33 +156,42 @@ func EitherEqualsTo[T any](lhv interface{}, rhv T, equal func(v interface{}) boo
 	return rhv
 }
 
-func Foreach[T any](values []T, predicate func(v *T, idx int)) []T {
+func Foreach[T any](values []T, do func(v *T, idx int)) []T {
 	for i := 0; i < len(values); i++ {
-		predicate(&(values)[i], i)
+		do(&values[i], i)
 	}
 	return values
 }
 
-func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, initialV T1, predicate func(v T) T1) T1 {
+func ParallelForeach[T any](values []T, nThds int, do func(*T, int)) {
+	processor := func(start, end, index int, args ...interface{}) {
+		for i := start; i < end; i++ {
+			do(&values[i], i)
+		}
+	}
+	ParallelWorker(len(values), nThds, processor)
+}
+
+func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, initialV T1, do func(v T) T1) T1 {
 	for i := 0; i < len(values); i++ {
-		initialV += predicate((values)[i])
+		initialV += do((values)[i])
 	}
 	return initialV
 }
 
-func Append[T any, T1 any](values []T, predicate func(v T) T1) []T1 {
+func Append[T any, T1 any](values []T, do func(v T) T1) []T1 {
 	vec := make([]T1, len(values))
 	for i := 0; i < len(values); i++ {
-		vec[i] = predicate(values[i])
+		vec[i] = do(values[i])
 	}
 	return vec
 }
 
-func ParallelAppend[T any, T1 any](values []T, predicate func(i int) T1) []T1 {
+func ParallelAppend[T any, T1 any](values []T, do func(i int) T1) []T1 {
 	appended := make([]T1, len(values))
 	encoder := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
-			appended[i] = predicate(i)
+			appended[i] = do(i)
 		}
 	}
 	ParallelWorker(len(values), 8, encoder)

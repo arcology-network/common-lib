@@ -3,7 +3,6 @@ package concurrentmap
 import (
 	"crypto/sha256"
 	"fmt"
-	"math"
 	"sort"
 	"sync"
 
@@ -50,11 +49,15 @@ func (this *ConcurrentMap) Size() uint32 {
 
 func (this *ConcurrentMap) Get(key string, args ...interface{}) (interface{}, bool) {
 	shardID := this.Hash8(key)
+	if shardID > uint8(len(this.sharded)) {
+		return nil, false
+	}
+
 	this.shardLocks[shardID].RLock()
 	defer this.shardLocks[shardID].RUnlock()
+	k, v := this.sharded[shardID][key]
+	return k, v
 
-	v, ok := this.sharded[shardID][key]
-	return v, ok
 }
 
 func (this *ConcurrentMap) BatchGet(keys []string, args ...interface{}) []interface{} {
@@ -238,7 +241,7 @@ func (this *ConcurrentMap) Keys() []string {
 
 func (this *ConcurrentMap) Hash8(key string) uint8 {
 	if len(key) == 0 {
-		return math.MaxUint8
+		return 0 //math.MaxUint8
 	}
 
 	var total uint32 = 0
@@ -252,11 +255,11 @@ func (this *ConcurrentMap) Hash8s(keys []string) []uint8 {
 	shardIds := make([]uint8, len(keys))
 	worker := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
-			if len(keys[i]) > 0 {
-				shardIds[i] = this.Hash8(keys[i])
-			} else {
-				shardIds[i] = math.MaxUint8
-			}
+			// if len(keys[i]) > 0 {
+			shardIds[i] = this.Hash8(keys[i])
+			// } else {
+			// 	shardIds[i] = math.MaxUint8
+			// }
 		}
 	}
 	common.ParallelWorker(len(keys), 8, worker)
@@ -304,6 +307,30 @@ func (this *ConcurrentMap) Foreach(predicate func(interface{}) interface{}) {
 				} else {
 					this.sharded[i][k] = v
 				}
+			}
+		}
+	}
+	common.ParallelWorker(len(this.sharded), len(this.sharded), worker)
+}
+
+func (this *ConcurrentMap) ForeachDo(predicate func(interface{}, interface{})) {
+	for i := 0; i < len(this.sharded); i++ {
+		this.shardLocks[i].RLock()
+		for k, v := range this.sharded[i] {
+			predicate(k, v)
+		}
+		this.shardLocks[i].RUnlock()
+	}
+}
+
+func (this *ConcurrentMap) ParallelForeachDo(predicate func(interface{}, interface{})) {
+	worker := func(start, end, index int, args ...interface{}) {
+		this.shardLocks[start].RLock()
+		defer this.shardLocks[start].RUnlock()
+
+		for i := start; i < end; i++ {
+			for k, v := range this.sharded[i] {
+				predicate(k, v)
 			}
 		}
 	}

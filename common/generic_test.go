@@ -465,7 +465,7 @@ func TestUniqueInts(t *testing.T) {
 
 func TestForeach(t *testing.T) {
 	nums := [][]int{{4}, {5}, {5}, {6}}
-	Foreach(nums, func(lhv *[]int) { (*lhv)[0] += 1 })
+	Foreach(nums, func(lhv *[]int, _ int) { (*lhv)[0] += 1 })
 
 	if nums[0][0] != 5 || nums[1][0] != 6 || nums[2][0] != 6 {
 		t.Error("Error: Failed to remove nil values !")
@@ -474,7 +474,7 @@ func TestForeach(t *testing.T) {
 
 func TestParallelForeach(t *testing.T) {
 	nums := []int{3, 5, 5, 6, 6}
-	ParallelForeach(nums, 120, func(lhv *int) int { return (*lhv) + 1 })
+	ParallelForeach(nums, 120, func(lhv *int, _ int) { (*lhv) = (*lhv) + 1 })
 
 	if nums[0] != 4 || nums[1] != 6 || nums[2] != 6 || nums[3] != 7 || nums[4] != 7 {
 		t.Error("Error: Failed to remove nil values !")
@@ -486,9 +486,8 @@ func TestParallelForeach(t *testing.T) {
 	}
 
 	t0 := time.Now()
-	ParallelForeach(nums, 32, func(v *int) int {
+	ParallelForeach(nums, 32, func(v *int, i int) {
 		sha256.Sum256([]byte(strconv.Itoa(*v)))
-		return *v
 	})
 	fmt.Println("Time: ", time.Since(t0))
 }
@@ -643,7 +642,7 @@ func TestAppend(t *testing.T) {
 		t.Error("Expected: ", target)
 	}
 
-	target = ParallelAppend(target, func(v int) int { return v + 1 })
+	target = ParallelAppend(target, func(i int) int { return target[i] + 1 })
 	if !reflect.DeepEqual(target, []int{6, 4, 8, 5, 3}) {
 		t.Error("Expected: ", target)
 	}
