@@ -187,14 +187,14 @@ func Append[T any, T1 any](values []T, do func(v T) T1) []T1 {
 	return vec
 }
 
-func ParallelAppend[T any, T1 any](values []T, do func(i int) T1) []T1 {
+func ParallelAppend[T any, T1 any](values []T, numThd int, do func(i int) T1) []T1 {
 	appended := make([]T1, len(values))
 	encoder := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
 			appended[i] = do(i)
 		}
 	}
-	ParallelWorker(len(values), 8, encoder)
+	ParallelWorker(len(values), numThd, encoder)
 	return appended
 }
 
