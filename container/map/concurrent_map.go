@@ -313,28 +313,22 @@ func (this *ConcurrentMap) Foreach(predicate func(interface{}) interface{}) {
 	common.ParallelWorker(len(this.sharded), len(this.sharded), worker)
 }
 
-func (this *ConcurrentMap) ForeachDo(predicate func(interface{}, interface{})) {
+func (this *ConcurrentMap) ForeachDo(do func(interface{}, interface{})) {
 	for i := 0; i < len(this.sharded); i++ {
 		this.shardLocks[i].RLock()
 		for k, v := range this.sharded[i] {
-			predicate(k, v)
+			do(k, v)
 		}
 		this.shardLocks[i].RUnlock()
 	}
 }
 
-func (this *ConcurrentMap) ParallelForeachDo(predicate func(interface{}, interface{})) {
-	worker := func(start, end, index int, args ...interface{}) {
-		this.shardLocks[start].RLock()
-		defer this.shardLocks[start].RUnlock()
-
-		for i := start; i < end; i++ {
-			for k, v := range this.sharded[i] {
-				predicate(k, v)
-			}
+func (this *ConcurrentMap) ParallelForeachDo(do func(interface{}, interface{})) {
+	common.ParallelForeach(this.sharded, len(this.sharded), func(shard *map[string]interface{}, idx int) {
+		for k, v := range *shard {
+			do(k, v)
 		}
-	}
-	common.ParallelWorker(len(this.sharded), len(this.sharded), worker)
+	})
 }
 
 func (this *ConcurrentMap) KVs() ([]string, []interface{}) {

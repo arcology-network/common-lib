@@ -519,11 +519,6 @@ func EqualArray[T comparable](lhv []T, rhv []T) bool {
 func IsType[T any](v interface{}) bool {
 	_, ok := v.(T)
 	return ok
-	// switch v.(type) {
-	// case T:
-	// 	return true
-	// }
-	// return false
 }
 
 func ToPairs[T0, T1 any](arr0 []T0, arr1 []T1) []struct {
