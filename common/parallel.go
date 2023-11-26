@@ -40,39 +40,3 @@ func ParallelWorker(total, nThds int, worker func(start, end, idx int, args ...i
 	}
 	wg.Wait()
 }
-
-func ParallelForeach[T any](values []T, nThds int, do func(T, int)) {
-	processor := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			do(values[i], i)
-		}
-	}
-	ParallelWorker(len(values), nThds, processor)
-}
-
-// func ParallelForeach[T any](values []T, nThds uint8, do func(v *T) T) []T {
-// 	if len(values) == 0 {
-// 		return values
-// 	}
-
-// 	last := uint64(0)
-// 	values[last] = do(&(values)[last])
-
-// 	var wg sync.WaitGroup
-// 	for i := 0; i < int(nThds); i++ {
-// 		wg.Add(1)
-// 		go func() {
-// 			for {
-// 				idx := atomic.AddUint64(&last, 1)
-// 				if idx < uint64(len(values)) {
-// 					values[idx] = do(&(values)[idx])
-// 				} else {
-// 					wg.Done()
-// 					break
-// 				}
-// 			}
-// 		}()
-// 	}
-// 	wg.Wait()
-// 	return values
-// }
