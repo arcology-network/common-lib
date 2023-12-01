@@ -2,13 +2,11 @@ module github.com/arcology-network/common-lib
 
 go 1.21
 
-replace github.com/arcology-network/concurrenturl => ../concurrenturl/
+// replace github.com/arcology-network/concurrenturl => ../concurrenturl/
 
-replace github.com/arcology-network/evm => ../evm/
+// replace github.com/arcology-network/evm => ../evm/
 
 require (
-	// github.com/arcology-network/concurrenturl v1.8.0
-	// github.com/arcology-network/evm v1.8.0
 	github.com/dgraph-io/badger v1.6.2
 	github.com/elliotchance/orderedmap v1.5.0
 	github.com/holiman/uint256 v1.2.3
@@ -18,13 +16,11 @@ require (
 	golang.org/x/exp v0.0.0-20230206171751-46f607a40771
 )
 
-// github.com/arcology-network/concurrenturl v1.8.0
-// github.com/arcology-network/evm v1.8.0
 require github.com/google/uuid v1.3.0
 
 require (
-	github.com/arcology-network/concurrenturl v0.0.0-00010101000000-000000000000
-	github.com/arcology-network/evm v0.0.0-00010101000000-000000000000
+	github.com/arcology-network/concurrenturl v1.8.1-0.20231201070429-1a95383da422
+	github.com/arcology-network/evm v1.9.0
 )
 
 require (
