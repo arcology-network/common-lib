@@ -23,6 +23,7 @@ func BenchmarkBadgerBatchSet(b *testing.B) {
 	for i := range keys {
 		unique[keys[i]] = struct{}{}
 	}
+
 	timer("setup", func() {
 		batchSet(bdg, keys, values)
 

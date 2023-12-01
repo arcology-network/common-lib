@@ -61,6 +61,14 @@ func Remove[T comparable](values *[]T, target T) []T {
 	return (*values)
 }
 
+func RemoveAt[T any](values *[]T, pos int) []T {
+	for i := pos; i < len(*values)-1; i++ {
+		(*values)[i] = (*values)[i+1]
+	}
+	(*values) = (*values)[:len((*values))-1]
+	return (*values)
+}
+
 func SetByIndices[T0 any, T1 constraints.Integer](source []T0, indices []T1, setter func(T0) T0) []T0 {
 	for _, idx := range indices {
 		(source)[idx] = setter((source)[idx])
@@ -148,18 +156,46 @@ func EitherEqualsTo[T any](lhv interface{}, rhv T, equal func(v interface{}) boo
 	return rhv
 }
 
-func Foreach[T any](values []T, predicate func(v *T)) []T {
+func Foreach[T any](values []T, do func(v *T, idx int)) []T {
 	for i := 0; i < len(values); i++ {
-		predicate(&(values)[i])
+		do(&values[i], i)
 	}
 	return values
 }
 
-func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, initialV T1, predicate func(v T) T1) T1 {
+func ParallelForeach[T any](values []T, nThds int, do func(*T, int)) {
+	processor := func(start, end, index int, args ...interface{}) {
+		for i := start; i < end; i++ {
+			do(&values[i], i)
+		}
+	}
+	ParallelWorker(len(values), nThds, processor)
+}
+
+func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, initialV T1, do func(v T) T1) T1 {
 	for i := 0; i < len(values); i++ {
-		initialV += predicate((values)[i])
+		initialV += do((values)[i])
 	}
 	return initialV
+}
+
+func Append[T any, T1 any](values []T, do func(v T) T1) []T1 {
+	vec := make([]T1, len(values))
+	for i := 0; i < len(values); i++ {
+		vec[i] = do(values[i])
+	}
+	return vec
+}
+
+func ParallelAppend[T any, T1 any](values []T, numThd int, do func(i int) T1) []T1 {
+	appended := make([]T1, len(values))
+	encoder := func(start, end, index int, args ...interface{}) {
+		for i := start; i < end; i++ {
+			appended[i] = do(i)
+		}
+	}
+	ParallelWorker(len(values), numThd, encoder)
+	return appended
 }
 
 func CopyIf[T any](values []T, condition func(v T) bool) []T {
@@ -252,13 +288,22 @@ func FindAllIndics[T comparable](values []T, equal func(v0, v1 T) bool) []int {
 	return positions
 }
 
-func FindFirst[T comparable](values *[]T, v T) (int, *T) {
-	for i := 0; i < len(*values); i++ {
-		if (*values)[i] == v {
-			return i, &(*values)[i]
+func FindFirst[T comparable](values []T, v T) (int, *T) {
+	for i := 0; i < len(values); i++ {
+		if (values)[i] == v {
+			return i, &(values)[i]
 		}
 	}
 	return -1, nil
+}
+
+func Contains[T any](values []T, target T, equal func(v0, v1 T) bool) bool {
+	for i := 0; i < len(values); i++ {
+		if equal(values[i], target) {
+			return true
+		}
+	}
+	return false
 }
 
 // Find the leftmost index of the element meeting the criteria
@@ -363,27 +408,39 @@ func Flatten[T any](src [][]T) []T {
 	return buffer
 }
 
+func ReorderBy[T any, T1 constraints.Integer](src []T, indices []T1) []T {
+	reordered := make([]T, len(src))
+	for i := range src {
+		reordered[i] = src[indices[i]]
+	}
+	return reordered
+}
+
 func SortBy1st[T0 any, T1 any](first []T0, second []T1, compare func(T0, T0) bool) {
 	array := make([]struct {
-		_0 T0
-		_1 T1
+		First  T0
+		Second T1
 	}, len(first))
 
 	for i := range array {
-		array[i]._0 = first[i]
-		array[i]._1 = second[i]
+		array[i].First = first[i]
+		array[i].Second = second[i]
 	}
-	sort.SliceStable(array, func(i, j int) bool { return compare(array[i]._0, array[j]._0) })
+	sort.SliceStable(array, func(i, j int) bool { return compare(array[i].First, array[j].First) })
 
 	for i := range array {
-		first[i] = array[i]._0
-		second[i] = array[i]._1
+		first[i] = array[i].First
+		second[i] = array[i].Second
 	}
 }
 
 func Exclude[T comparable](source []T, toRemove []T) []T {
 	dict := MapFromArray(toRemove, true)
-	return CopyIf(source, func(v T) bool { return (*dict)[v] })
+	return RemoveIf(&source, func(v T) bool {
+		_, ok := (*dict)[v]
+		return ok
+	})
+	return source
 }
 
 func CastTo[T0, T1 any](src T0, predicate func(T0) T1) T1 {
@@ -404,6 +461,16 @@ func To[T0, T1 any](src []T0) []T1 {
 		target[i] = (interface{}((src[i]))).(T1)
 	}
 	return target
+}
+
+func Count[T comparable](values []T, target T) uint64 {
+	total := uint64(0)
+	for i := 0; i < len(values); i++ {
+		if target == values[i] {
+			total++
+		}
+	}
+	return total
 }
 
 func Equal[T comparable](lhv, rhv *T, wildcard func(*T) bool) bool {
@@ -450,29 +517,110 @@ func EqualArray[T comparable](lhv []T, rhv []T) bool {
 }
 
 func IsType[T any](v interface{}) bool {
-	switch v.(type) {
-	case T:
-		return true
-	}
-	return false
+	_, ok := v.(T)
+	return ok
 }
 
-func GroupBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) [][]T0 {
+func ToPairs[T0, T1 any](arr0 []T0, arr1 []T1) []struct {
+	First  T0
+	Second T1
+} {
+	pairs := make([]struct {
+		First  T0
+		Second T1
+	}, len(arr0))
+	for i := range arr0 {
+		pairs[i] = struct {
+			First  T0
+			Second T1
+		}{arr0[i], arr1[i]}
+	}
+	return pairs
+}
+
+func FromPairs[T0, T1 any](pairs []struct {
+	First  T0
+	Second T1
+}) ([]T0, []T1) {
+	arr0, arr1 := make([]T0, len(pairs)), make([]T1, len(pairs))
+	for i, pair := range pairs {
+		arr0[i] = pair.First
+		arr1[i] = pair.Second
+	}
+	return arr0, arr1
+}
+
+func ToTuples[T0, T1, T2 any](arr0 []T0, arr1 []T1, arr2 []T2) []struct {
+	First  T0
+	Second T1
+	Third  T2
+} {
+	pairs := make([]struct {
+		First  T0
+		Second T1
+		Third  T2
+	}, len(arr0))
+
+	for i := range arr0 {
+		pairs[i] = struct {
+			First  T0
+			Second T1
+			Third  T2
+		}{arr0[i], arr1[i], arr2[i]}
+	}
+	return pairs
+}
+
+func FromTuples[T0, T1, T2 any](tuples []struct {
+	First  T0
+	Second T1
+	Third  T2
+}) ([]T0, []T1, []T2) {
+	arr0, arr1, arr2 := make([]T0, len(tuples)), make([]T1, len(tuples)), make([]T2, len(tuples))
+	for i, pair := range tuples {
+		arr0[i] = pair.First
+		arr1[i] = pair.Second
+		arr2[i] = pair.Third
+	}
+	return arr0, arr1, arr2
+}
+
+func GroupBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) ([]T1, [][]T0) {
 	if len(array) == 1 {
-		return [][]T0{array}
+		return []T1{*getter(array[0])}, [][]T0{array}
 	}
 
 	dict := make(map[T1][]T0)
 	for _, v := range array {
 		if key := getter(v); key != nil {
 			vec := dict[*key]
-			if vec != nil {
+			if vec == nil {
 				vec = []T0{}
 			}
 			dict[*key] = append(vec, v)
 		}
 	}
-	return MapValues(dict)
+	return MapKVs(dict)
+}
+
+func GroupIndicesBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) ([]int, int) {
+	if len(array) == 1 {
+		return []int{0}, 1
+	}
+
+	indices := make([]int, len(array))
+	dict := make(map[T1]int)
+	for i, v := range array {
+		if key := getter(v); key != nil {
+			if v, ok := dict[*key]; ok {
+				indices[i] = v
+				continue
+			}
+			indices[i] = len(dict)
+			dict[*key] = len(dict)
+		}
+	}
+	return indices, len(dict)
 }
 
 func MapRemoveIf[M ~map[K]V, K comparable, V any](source M, condition func(k K, v V) bool) {
@@ -546,3 +694,10 @@ func MapKVs[M ~map[K]V, K comparable, V any](m M) ([]K, []V) {
 	}
 	return keys, values
 }
+
+func FilterFirst[T0, T1 any](v0 T0, v1 T1) T0  { return v0 }
+func FilterSecond[T0, T1 any](v0 T0, v1 T1) T1 { return v1 }
+
+// func CloneAny[T0 any](f T0) any {
+// 	return f.(interface{ Clone() T0 }).Clone()
+// }

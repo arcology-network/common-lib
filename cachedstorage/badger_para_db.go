@@ -13,8 +13,8 @@ import (
 )
 
 type ParaBadgerDB struct {
-	impls      [64]*BadgerDB
-	shardLocks [64]sync.RWMutex
+	impls      [16]*BadgerDB
+	shardLocks [16]sync.RWMutex
 	shardFunc  func(int, string) int
 }
 
@@ -92,7 +92,6 @@ func (this *ParaBadgerDB) BatchSet(keys []string, values [][]byte) error {
 	finder := func(start, end, index int, args ...interface{}) {
 		this.shardLocks[start].Lock()
 		defer this.shardLocks[start].Unlock() // Using start is correct, as start + 1 == end
-
 		errors[start] = this.impls[start].BatchSet(categorizedKeys[start], categorizedVals[start])
 	}
 	common.ParallelWorker(len(categorizedKeys), len(categorizedKeys), finder)

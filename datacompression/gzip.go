@@ -6,29 +6,37 @@ import (
 	"io"
 )
 
-func CompressGZip(buffer []byte) ([]byte, error) {
+func CompressGZip(buffer []byte, name, comment string) ([]byte, error) {
 	var buf bytes.Buffer
-	w := gzip.NewWriter(&buf)
-	if _, err := w.Write(buffer); err != nil {
+	writer := gzip.NewWriter(&buf)
+	writer.Name = name
+	writer.Comment = comment
+
+	if _, err := writer.Write(buffer); err != nil {
 		return []byte{}, err
 	}
 
-	if err := w.Close(); err != nil {
+	if err := writer.Close(); err != nil {
 		return []byte{}, err
 	}
 	return buf.Bytes(), nil
 }
 
-func DecompressGZip(compressed []byte) ([]byte, error) {
+func DecompressGZip(compressed []byte) ([]byte, string, string, error) {
 	var buf bytes.Buffer
 	buf.Write(compressed)
 	reader, err := gzip.NewReader(&buf)
 	if err != nil {
-		return []byte{}, err
+		return []byte{}, "", "", err
 	}
 
 	if err := reader.Close(); err != nil {
-		return []byte{}, err
+		return []byte{}, "", "", err
 	}
-	return io.ReadAll(reader)
+
+	uncompressed, err := io.ReadAll(reader)
+	if err != nil {
+		return []byte{}, "", "", err
+	}
+	return uncompressed, reader.Name, reader.Comment, err
 }

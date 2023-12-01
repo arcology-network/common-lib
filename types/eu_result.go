@@ -3,6 +3,7 @@ package types
 import (
 	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
+	interfaces "github.com/arcology-network/concurrenturl/interfaces"
 )
 
 type EuResult struct {
@@ -11,8 +12,7 @@ type EuResult struct {
 	Transitions  [][]byte
 	TransitTypes []byte
 	// DC           *DeferredCall
-
-	// Trans   []interfaces.Univalue
+	Trans   []interfaces.Univalue
 	Status  uint64
 	GasUsed uint64
 }

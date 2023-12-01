@@ -9,11 +9,6 @@ type AccessibleInterface interface {
 	Size() uint32
 }
 
-type TypeAccessibleInterface interface {
-	Value() interface{}
-	MemSize() uint32
-}
-
 const (
 	MEMORY_DB     = 0
 	PERSISTENT_DB = 1

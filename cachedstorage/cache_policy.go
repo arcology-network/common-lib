@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"reflect"
 	"sync"
 
 	ccmap "github.com/arcology-network/common-lib/container/map"
@@ -13,6 +12,11 @@ import (
 const (
 	Cache_Quota_Full = math.MaxUint64
 )
+
+type TypeAccessibleInterface interface {
+	Value() interface{}
+	MemSize() uint32
+}
 
 type CachePolicy struct {
 	totalAllocated    uint64
@@ -44,18 +48,20 @@ func NewCachePolicy(hardQuota uint64, threshold float64) *CachePolicy {
 	return policy
 }
 
-func (this *CachePolicy) Customize(db PersistentStorageInterface) {
-	if this == nil {
-		return
+func (this *CachePolicy) Customize(db PersistentStorageInterface) *CachePolicy {
+	if this != nil {
+		if _, ok := db.(*MemDB); ok { // A memory DB doesn't need a in-memory cache
+			this.quota = 0
+		}
 	}
-
-	name := reflect.TypeOf(db).String()
-	if name == "*cachedstorage.MemDB" { // A memory DB doesn't need a in-memory cache
-		this.quota = 0
-	}
+	return this
 }
 
-func (this *CachePolicy) IsFullCache() bool {
+func (this *CachePolicy) IsFull() bool {
+	return this.quota == 0 || this.totalAllocated >= this.quota
+}
+
+func (this *CachePolicy) InfinitCache() bool {
 	return this.quota == Cache_Quota_Full
 }
 
@@ -201,7 +207,7 @@ func (this *CachePolicy) freeMemory(localChache *ccmap.ConcurrentMap) (uint64, u
 }
 
 func (this *CachePolicy) CheckCapacity(key string, v interface{}) bool {
-	if this.quota == math.MaxUint64 { // All in cache
+	if this.quota == math.MaxUint64 || v == nil { // All in cache
 		return true
 	}
 
@@ -213,19 +219,23 @@ func (this *CachePolicy) CheckCapacity(key string, v interface{}) bool {
 	return m+this.totalAllocated < this.quota
 }
 
-func (this *CachePolicy) BatchCheckCapacity(keys []string, values []interface{}) ([]bool, uint32) {
+func (this *CachePolicy) BatchCheckCapacity(keys []string, values []interface{}) ([]bool, uint32, bool) {
+	if this.quota == math.MaxUint64 {
+		return nil, 0, true
+	}
+
 	flags := make([]bool, len(keys))
 	count := uint32(0)
 
 	if this.quota == 0 {
-		return flags, 0 // Non in cache
+		return flags, 0, false // Non in cache
 	}
 
 	if this.quota == math.MaxUint64 {
 		for i := 0; i < len(flags); i++ {
 			flags[i] = true
 		}
-		return flags, uint32(len(keys)) // All in the cache
+		return flags, uint32(len(keys)), false // All in the cache
 	}
 
 	total := uint64(0)
@@ -238,8 +248,13 @@ func (this *CachePolicy) BatchCheckCapacity(keys []string, values []interface{})
 				break
 			}
 		}
+
+		if v == nil {
+			flags[i] = true // Delete is always fine
+			count++
+		}
 	}
-	return flags, count // Good for all entries to stay in the memory
+	return flags, count, false // Good for all entries to stay in the memory
 }
 
 func (this *CachePolicy) PrintScores() {

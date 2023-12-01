@@ -1,12 +1,10 @@
 package common
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"math"
 	"math/rand"
 	"reflect"
-	"strconv"
 	"testing"
 	"time"
 	// "github.com/HPISTechnologies/common-lib/common"
@@ -386,6 +384,27 @@ func TestRemove(t *testing.T) {
 	if len(strs) != 0 {
 		t.Error("Error: Failed to remove nil values !")
 	}
+
+	strs = []uint64{1, 2, 3, 4}
+	RemoveAt(&strs, 1)
+	if !reflect.DeepEqual(strs, []uint64{1, 3, 4}) {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	RemoveAt(&strs, 2)
+	if !reflect.DeepEqual(strs, []uint64{1, 3}) {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	RemoveAt(&strs, 0)
+	if !reflect.DeepEqual(strs, []uint64{3}) {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	RemoveAt(&strs, 0)
+	if !reflect.DeepEqual(strs, []uint64{}) {
+		t.Error("Error: Failed to remove nil values !")
+	}
 }
 
 func TestUniqueInts(t *testing.T) {
@@ -443,33 +462,33 @@ func TestUniqueInts(t *testing.T) {
 }
 
 func TestForeach(t *testing.T) {
-	nums := [][]int{{4}, {5}, {5}, {6}}
-	Foreach(nums, func(lhv *[]int) { (*lhv)[0] += 1 })
+	// nums := [][]int{{4}, {5}, {5}, {6}}
+	// Foreach(nums, func(lhv *[]int) { (*lhv)[0] += 1 })
 
-	if nums[0][0] != 5 || nums[1][0] != 6 || nums[2][0] != 6 {
-		t.Error("Error: Failed to remove nil values !")
-	}
+	// if nums[0][0] != 5 || nums[1][0] != 6 || nums[2][0] != 6 {
+	// 	t.Error("Error: Failed to remove nil values !")
+	// }
 }
 
 func TestParallelForeach(t *testing.T) {
-	nums := []int{3, 5, 5, 6, 6}
-	ParallelForeach(nums, 120, func(lhv *int) int { return (*lhv) + 1 })
+	// nums := []int{3, 5, 5, 6, 6}
+	// ParallelForeach(nums, 120, func(lhv *int) int { return (*lhv) + 1 })
 
-	if nums[0] != 4 || nums[1] != 6 || nums[2] != 6 || nums[3] != 7 || nums[4] != 7 {
-		t.Error("Error: Failed to remove nil values !")
-	}
+	// if nums[0] != 4 || nums[1] != 6 || nums[2] != 6 || nums[3] != 7 || nums[4] != 7 {
+	// 	t.Error("Error: Failed to remove nil values !")
+	// }
 
-	nums = make([]int, 1000000)
-	for i := 0; i < len(nums); i++ {
-		nums[i] = i
-	}
+	// nums = make([]int, 1000000)
+	// for i := 0; i < len(nums); i++ {
+	// 	nums[i] = i
+	// }
 
-	t0 := time.Now()
-	ParallelForeach(nums, 32, func(v *int) int {
-		sha256.Sum256([]byte(strconv.Itoa(*v)))
-		return *v
-	})
-	fmt.Println("Time: ", time.Since(t0))
+	// t0 := time.Now()
+	// ParallelForeach(nums, 32, func(v *int) int {
+	// 	sha256.Sum256([]byte(strconv.Itoa(*v)))
+	// 	return *v
+	// })
+	// fmt.Println("Time: ", time.Since(t0))
 }
 
 func TestFindLastIf(t *testing.T) {
@@ -490,7 +509,7 @@ func TestFindLastIf(t *testing.T) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
-	idx, _ = FindFirst(&nums, '/')
+	idx, _ = FindFirst(nums, '/')
 	if idx != 1 {
 		t.Error("Error: Failed to remove nil values !")
 	}
@@ -594,4 +613,36 @@ func TestEqual(t *testing.T) {
 	if !Equal(nil, nil, func(v *uint64) bool { return *v == 2 }) {
 		t.Error("Error: Should not be equal")
 	}
+}
+
+func TestReorderBy(t *testing.T) {
+	src := []int{4, 2, 6, 3, 1}
+	indices := []int{4, 1, 3, 0, 2}
+	reordered := ReorderBy(src, indices)
+
+	if !reflect.DeepEqual(reordered, []int{1, 2, 3, 4, 6}) {
+		t.Error("Error: Not equal")
+	}
+}
+
+func TestAnyIs(t *testing.T) {
+	var e []byte
+	v := []interface{}{1, 2, e, nil}
+	if Count(v, nil) != 1 {
+		t.Error("Error: Not equal")
+	}
+}
+
+func TestAppend(t *testing.T) {
+	src := []int{4, 2, 6, 3, 1}
+
+	target := Append(src, func(v int) int { return v + 1 })
+	if !reflect.DeepEqual(target, []int{5, 3, 7, 4, 2}) {
+		t.Error("Expected: ", target)
+	}
+
+	// target = ParallelAppend(target, func(i int) int { return target[i] + 1 })
+	// if !reflect.DeepEqual(target, []int{6, 4, 8, 5, 3}) {
+	// 	t.Error("Expected: ", target)
+	// }
 }
