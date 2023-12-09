@@ -3,31 +3,31 @@ package types
 import (
 	"github.com/arcology-network/common-lib/codec"
 	encoding "github.com/arcology-network/common-lib/encoding"
-	evmCommon "github.com/arcology-network/evm/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type ExecuteResponse struct {
 	// DfCall  *DeferredCall
-	Hash    evmCommon.Hash
+	Hash    ethCommon.Hash
 	Status  uint64
 	GasUsed uint64
 }
 
 type ExecutorResponses struct {
 	// DfCalls     []*DeferredCall
-	HashList    []evmCommon.Hash
+	HashList    []ethCommon.Hash
 	StatusList  []uint64
 	GasUsedList []uint64
 
-	// SpawnedKeys       []evmCommon.Hash
-	// SpawnedTxs        []evmCommon.Hash
-	// RelationKeys      []evmCommon.Hash
+	// SpawnedKeys       []ethCommon.Hash
+	// SpawnedTxs        []ethCommon.Hash
+	// RelationKeys      []ethCommon.Hash
 	// RelationSizes     []uint64
-	// RelationValues    []evmCommon.Hash
-	ContractAddresses []evmCommon.Address
-	// TxidsHash         []evmCommon.Hash
+	// RelationValues    []ethCommon.Hash
+	ContractAddresses []ethCommon.Address
+	// TxidsHash         []ethCommon.Hash
 	// TxidsId           []uint32
-	// TxidsAddress      []evmCommon.Address
+	// TxidsAddress      []ethCommon.Address
 	CallResults [][]byte
 }
 

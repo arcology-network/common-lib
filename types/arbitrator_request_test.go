@@ -8,18 +8,18 @@ import (
 	"testing"
 	"time"
 
-	evmCommon "github.com/arcology-network/evm/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 func PrepareNewArbitrator() *ArbitratorRequest {
-	hashes := []evmCommon.Hash{
-		evmCommon.BytesToHash([]byte{1, 2, 3}),
-		evmCommon.BytesToHash([]byte{4, 5, 6}),
-		evmCommon.BytesToHash([]byte{7, 8, 9}),
-		evmCommon.BytesToHash([]byte{10, 11, 12}),
-		evmCommon.BytesToHash([]byte{13, 14, 15}),
-		evmCommon.BytesToHash([]byte{16, 17, 18}),
-		evmCommon.BytesToHash([]byte{19, 20, 21}),
+	hashes := []ethCommon.Hash{
+		ethCommon.BytesToHash([]byte{1, 2, 3}),
+		ethCommon.BytesToHash([]byte{4, 5, 6}),
+		ethCommon.BytesToHash([]byte{7, 8, 9}),
+		ethCommon.BytesToHash([]byte{10, 11, 12}),
+		ethCommon.BytesToHash([]byte{13, 14, 15}),
+		ethCommon.BytesToHash([]byte{16, 17, 18}),
+		ethCommon.BytesToHash([]byte{19, 20, 21}),
 	}
 	list := [][]*TxElement{
 		{
@@ -121,7 +121,7 @@ func BenchmarkArbitratorRequestEncode(b *testing.B) {
 	for i := 0; i < size; i++ {
 		list[i] = []*TxElement{
 			{
-				TxHash:  &evmCommon.Hash{},
+				TxHash:  &ethCommon.Hash{},
 				Batchid: 1,
 			},
 		}
@@ -143,7 +143,7 @@ func BenchmarkArbitratorRequestDecode(b *testing.B) {
 	for i := 0; i < size; i++ {
 		list[i] = []*TxElement{
 			{
-				TxHash:  &evmCommon.Hash{},
+				TxHash:  &ethCommon.Hash{},
 				Batchid: 1,
 			},
 		}
@@ -178,7 +178,7 @@ func TestArbitratorRequestPerformanec(t *testing.T) {
 	for i := 0; i < len(txInfo); i++ {
 		txInfo[i] = []*TxElement{}
 		for j := 0; j < cols; j++ {
-			hash := evmCommon.BytesToHash([]byte{1})
+			hash := ethCommon.BytesToHash([]byte{1})
 			txInfo[i] = append(txInfo[i], &TxElement{&hash, uint64(i), uint32(0)})
 
 		}

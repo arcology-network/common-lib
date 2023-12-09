@@ -2,7 +2,7 @@ package types
 
 import (
 	encoding "github.com/arcology-network/common-lib/encoding"
-	evmCommon "github.com/arcology-network/evm/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -11,13 +11,13 @@ const (
 )
 
 type InclusiveList struct {
-	HashList   []*evmCommon.Hash
+	HashList   []*ethCommon.Hash
 	Successful []bool
 	Mode       byte
 }
 
 func (il *InclusiveList) CopyListAddHeight(height, round uint64) *InclusiveList {
-	hashList := make([]*evmCommon.Hash, len(il.HashList))
+	hashList := make([]*ethCommon.Hash, len(il.HashList))
 
 	// for i := range il.HashList {
 	// 	// hash := il.HashList[i]
@@ -31,9 +31,9 @@ func (il *InclusiveList) CopyListAddHeight(height, round uint64) *InclusiveList 
 		HashList:   hashList,
 	}
 }
-func (il InclusiveList) GetList() (selectList []*evmCommon.Hash, clearList []*evmCommon.Hash) {
-	selectList = make([]*evmCommon.Hash, 0, len(il.HashList))
-	clearList = make([]*evmCommon.Hash, 0, len(il.HashList))
+func (il InclusiveList) GetList() (selectList []*ethCommon.Hash, clearList []*ethCommon.Hash) {
+	selectList = make([]*ethCommon.Hash, 0, len(il.HashList))
+	clearList = make([]*ethCommon.Hash, 0, len(il.HashList))
 	for i, hashItem := range il.HashList {
 		if hashItem == nil {
 			continue
@@ -64,22 +64,22 @@ func (il *InclusiveList) GobEncode() ([]byte, error) {
 }
 func (il *InclusiveList) GobDecode(data []byte) error {
 	fields := encoding.Byteset{}.Decode(data)
-	arrs := Hashes([]evmCommon.Hash{}).Decode(fields[0])
+	arrs := Hashes([]ethCommon.Hash{}).Decode(fields[0])
 	il.Successful = encoding.Bools(il.Successful).Decode(fields[1])
 	il.HashList = Arr2Ptr(arrs)
 	return nil
 }
 
-func Ptr2Arr(array []*evmCommon.Hash) []evmCommon.Hash {
-	hashArray := make([]evmCommon.Hash, len(array))
+func Ptr2Arr(array []*ethCommon.Hash) []ethCommon.Hash {
+	hashArray := make([]ethCommon.Hash, len(array))
 	for i := range array {
 		hashArray[i] = *array[i]
 	}
 	return hashArray
 }
 
-func Arr2Ptr(array []evmCommon.Hash) []*evmCommon.Hash {
-	hashArray := make([]*evmCommon.Hash, len(array))
+func Arr2Ptr(array []ethCommon.Hash) []*ethCommon.Hash {
+	hashArray := make([]*ethCommon.Hash, len(array))
 	for i := range array {
 		hashArray[i] = &array[i]
 	}

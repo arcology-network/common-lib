@@ -5,21 +5,21 @@ import (
 	"reflect"
 	"testing"
 
-	evmCommon "github.com/arcology-network/evm/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 func TestAccountClone(t *testing.T) {
 	a := Account{
 		Nonce:    uint64(10),
 		Balance:  big.NewInt(20),
-		Root:     evmCommon.BytesToHash([]byte{1, 2, 3, 4, 5, 6}),
+		Root:     ethCommon.BytesToHash([]byte{1, 2, 3, 4, 5, 6}),
 		CodeHash: []byte{11, 12, 13, 14, 15, 16},
 	}
 	b := a.Clone()
 
 	b.Nonce = uint64(100)
 	b.Balance = big.NewInt(2000)
-	b.Root = evmCommon.BytesToHash([]byte{21, 22, 23, 24, 25, 26})
+	b.Root = ethCommon.BytesToHash([]byte{21, 22, 23, 24, 25, 26})
 	b.CodeHash[3] = byte(90)
 
 	if reflect.DeepEqual(a.Nonce, b.Nonce) {

@@ -3,42 +3,42 @@ package types
 import (
 	"sync"
 
-	evmCommon "github.com/arcology-network/evm/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"math"
 
-	"github.com/arcology-network/evm/rlp"
+	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
 )
 
-func Size(hash evmCommon.Hash) uint32 {
-	return uint32(evmCommon.HashLength)
+func Size(hash ethCommon.Hash) uint32 {
+	return uint32(ethCommon.HashLength)
 }
 
-func Encode(hash evmCommon.Hash) []byte {
+func Encode(hash ethCommon.Hash) []byte {
 	return hash[:]
 }
 
-func Decode(data []byte) evmCommon.Hash {
-	hash := evmCommon.Hash{}
+func Decode(data []byte) ethCommon.Hash {
+	hash := ethCommon.Hash{}
 	copy(hash[:], data)
 	return hash
 }
 
-func Checksum(hash evmCommon.Hash) []byte {
+func Checksum(hash ethCommon.Hash) []byte {
 	return Encode(hash)
 }
 
-func ToUint32(hash evmCommon.Hash) uint32 {
+func ToUint32(hash ethCommon.Hash) uint32 {
 	return binary.BigEndian.Uint32(hash[0:4])
 }
 
-type Hashes []evmCommon.Hash
+type Hashes []ethCommon.Hash
 
-func (hashes Hashes) Intersected(lft []evmCommon.Hash, rgt []evmCommon.Hash) bool {
+func (hashes Hashes) Intersected(lft []ethCommon.Hash, rgt []ethCommon.Hash) bool {
 	for i := range lft {
 		for j := range rgt {
 			if bytes.Equal(lft[i][:], rgt[j][:]) {
@@ -49,8 +49,8 @@ func (hashes Hashes) Intersected(lft []evmCommon.Hash, rgt []evmCommon.Hash) boo
 	return false
 }
 
-func (hashes Hashes) Checksum() evmCommon.Hash {
-	combined := make([]evmCommon.Hash, 64)
+func (hashes Hashes) Checksum() ethCommon.Hash {
+	combined := make([]ethCommon.Hash, 64)
 	worker := func(start, end int, args ...interface{}) {
 		stride := int(math.Ceil(float64(len(hashes)) / float64(len(combined))))
 		i := int(math.Ceil(float64(start) / float64(stride)))
@@ -64,22 +64,22 @@ func (hashes Hashes) Encode() []byte {
 	return Hashes(hashes).Flatten()
 }
 
-func (hashes Hashes) Decode(data []byte) []evmCommon.Hash {
-	hashes = make([]evmCommon.Hash, len(data)/evmCommon.HashLength)
+func (hashes Hashes) Decode(data []byte) []ethCommon.Hash {
+	hashes = make([]ethCommon.Hash, len(data)/ethCommon.HashLength)
 	for i := 0; i < len(hashes); i++ {
-		copy(hashes[i][:], data[i*evmCommon.HashLength:(i+1)*evmCommon.HashLength])
+		copy(hashes[i][:], data[i*ethCommon.HashLength:(i+1)*ethCommon.HashLength])
 	}
 	return hashes
 }
 
 func (hashes Hashes) Size() uint32 {
-	return uint32(len(hashes) * evmCommon.HashLength)
+	return uint32(len(hashes) * ethCommon.HashLength)
 }
 
 func (hashes Hashes) Flatten() []byte {
-	buffer := make([]byte, len(hashes)*evmCommon.HashLength)
+	buffer := make([]byte, len(hashes)*ethCommon.HashLength)
 	for i := 0; i < len(hashes); i++ {
-		copy(buffer[i*evmCommon.HashLength:(i+1)*evmCommon.HashLength], hashes[i][:])
+		copy(buffer[i*ethCommon.HashLength:(i+1)*ethCommon.HashLength], hashes[i][:])
 	}
 	return buffer
 }
@@ -95,34 +95,34 @@ func (hashes Hashes) ToUint32s() []uint32 {
 	return keys
 }
 
-type Hashset [][]evmCommon.Hash
+type Hashset [][]ethCommon.Hash
 
-func (hashes Hashset) Flatten() []evmCommon.Hash {
-	buffer := make([]evmCommon.Hash, len(hashes))
+func (hashes Hashset) Flatten() []ethCommon.Hash {
+	buffer := make([]ethCommon.Hash, len(hashes))
 	for i := 0; i < len(hashes); i++ {
 		buffer = append(buffer, hashes[i]...)
 	}
 	return buffer
 }
 
-type Hashgroup [][][]evmCommon.Hash
+type Hashgroup [][][]ethCommon.Hash
 
-func (hashgroup Hashgroup) Flatten() [][]evmCommon.Hash {
-	buffer := make([][]evmCommon.Hash, len(hashgroup))
+func (hashgroup Hashgroup) Flatten() [][]ethCommon.Hash {
+	buffer := make([][]ethCommon.Hash, len(hashgroup))
 	for i := 0; i < len(hashgroup); i++ {
 		buffer = append(buffer, hashgroup[i]...)
 	}
 	return buffer
 }
 
-func RlpHash(x interface{}) (h evmCommon.Hash) {
+func RlpHash(x interface{}) (h ethCommon.Hash) {
 	hw := sha3.NewLegacyKeccak256()
 	rlp.Encode(hw, x)
 	hw.Sum(h[:0])
 	return h
 }
 
-func TxHash(data []byte) (h evmCommon.Hash) {
+func TxHash(data []byte) (h ethCommon.Hash) {
 	return RlpHash(data[1:])
 }
 func ParallelWorker(total, nThds int, worker func(start, end int, args ...interface{}), args ...interface{}) {

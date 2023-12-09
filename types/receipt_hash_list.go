@@ -2,18 +2,18 @@ package types
 
 import (
 	encoding "github.com/arcology-network/common-lib/encoding"
-	evmCommon "github.com/arcology-network/evm/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type ReceiptHash struct {
-	Txhash      *evmCommon.Hash
-	Receipthash *evmCommon.Hash
+	Txhash      *ethCommon.Hash
+	Receipthash *ethCommon.Hash
 	GasUsed     uint64
 }
 
 type ReceiptHashList struct {
-	TxHashList      []evmCommon.Hash
-	ReceiptHashList []evmCommon.Hash
+	TxHashList      []ethCommon.Hash
+	ReceiptHashList []ethCommon.Hash
 	GasUsedList     []uint64
 }
 

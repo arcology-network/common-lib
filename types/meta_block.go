@@ -2,12 +2,12 @@ package types
 
 import (
 	"github.com/arcology-network/common-lib/codec"
-	evmCommon "github.com/arcology-network/evm/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type MetaBlock struct {
 	Txs      [][]byte
-	Hashlist []*evmCommon.Hash
+	Hashlist []*ethCommon.Hash
 }
 
 func (this MetaBlock) HeaderSize() uint32 {
@@ -58,7 +58,7 @@ func (this MetaBlock) GobEncode() ([]byte, error) {
 func (this *MetaBlock) GobDecode(buffer []byte) error {
 	fields := codec.Byteset{}.Decode(buffer).(codec.Byteset)
 	this.Txs = codec.Byteset{}.Decode(fields[0]).(codec.Byteset)
-	arrs := Hashes([]evmCommon.Hash{}).Decode(fields[1])
+	arrs := Hashes([]ethCommon.Hash{}).Decode(fields[1])
 	this.Hashlist = Arr2Ptr(arrs)
 	return nil
 }

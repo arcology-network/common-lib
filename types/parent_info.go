@@ -1,10 +1,10 @@
 package types
 
 import (
-	evmCommon "github.com/arcology-network/evm/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type ParentInfo struct {
-	ParentRoot evmCommon.Hash
-	ParentHash evmCommon.Hash
+	ParentRoot ethCommon.Hash
+	ParentHash ethCommon.Hash
 }

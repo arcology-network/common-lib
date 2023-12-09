@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 
 	common "github.com/arcology-network/common-lib/common"
-	evmCommon "github.com/arcology-network/evm/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -49,7 +49,7 @@ func (this Uint8) Decode(data []byte) interface{} {
 	return this
 }
 
-func (v Uint8) Checksum() evmCommon.Hash {
+func (v Uint8) Checksum() ethCommon.Hash {
 	return sha256.Sum256(v.Encode())
 }
 

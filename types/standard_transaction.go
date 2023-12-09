@@ -2,8 +2,8 @@ package types
 
 import (
 	encoding "github.com/arcology-network/common-lib/encoding"
-	evmCommon "github.com/arcology-network/evm/common"
-	evmTypes "github.com/arcology-network/evm/core/types"
+	ethCommon "github.com/ethereum/go-ethereum/common"
+	evmTypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 const (
@@ -23,13 +23,13 @@ const (
 )
 
 type StandardTransaction struct {
-	TxHash    evmCommon.Hash
+	TxHash    ethCommon.Hash
 	Native    *evmTypes.Transaction
 	TxRawData []byte
 	Source    uint8
 }
 
-func (stdTx *StandardTransaction) Hash() evmCommon.Hash { return stdTx.TxHash }
+func (stdTx *StandardTransaction) Hash() ethCommon.Hash { return stdTx.TxHash }
 
 func (stdTx *StandardTransaction) GobEncode() ([]byte, error) {
 	data := [][]byte{
@@ -41,7 +41,7 @@ func (stdTx *StandardTransaction) GobEncode() ([]byte, error) {
 }
 func (stdTx *StandardTransaction) GobDecode(data []byte) error {
 	fields := encoding.Byteset{}.Decode(data)
-	stdTx.TxHash = evmCommon.BytesToHash(fields[0])
+	stdTx.TxHash = ethCommon.BytesToHash(fields[0])
 	stdTx.Source = uint8(fields[1][0])
 	stdTx.TxRawData = fields[2]
 	return nil

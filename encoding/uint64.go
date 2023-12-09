@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"sort"
 
-	evmCommon "github.com/arcology-network/evm/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -28,7 +28,7 @@ func (_ Uint64) Decode(data []byte) uint64 {
 	return uint64(binary.LittleEndian.Uint64(data[0:UINT64_LEN]))
 }
 
-func (v Uint64) Checksum() evmCommon.Hash {
+func (v Uint64) Checksum() ethCommon.Hash {
 	return sha256.Sum256(v.Encode())
 }
 
