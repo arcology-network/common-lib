@@ -4,7 +4,7 @@ import (
 	"encoding/gob"
 	"math/big"
 
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 var arEncoder *arbReqEncoder

@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 
 	common "github.com/arcology-network/common-lib/common"
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 const (

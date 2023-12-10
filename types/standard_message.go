@@ -9,9 +9,9 @@ import (
 
 	"github.com/arcology-network/common-lib/common"
 	"github.com/arcology-network/common-lib/encoding"
-	evmCommon "github.com/arcology-network/evm/common"
-	"github.com/arcology-network/evm/core"
-	"github.com/arcology-network/evm/rlp"
+	evmCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 const (

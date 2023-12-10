@@ -1,6 +1,6 @@
 package signature
 
-import "github.com/arcology-network/evm/crypto"
+import "github.com/ethereum/go-ethereum/crypto"
 
 func GetParallelFuncList() [][]byte {
 	funcs := []string{

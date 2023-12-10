@@ -3,14 +3,14 @@ package types
 import (
 	"sync"
 
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"math"
 
-	"github.com/arcology-network/evm/rlp"
+	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
 )
 

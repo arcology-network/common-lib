@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	evmCommon "github.com/arcology-network/evm/common"
-	"github.com/arcology-network/evm/core"
-	"github.com/arcology-network/evm/crypto"
+	evmCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func TestStandardMessageEncodingAndDeconing(t *testing.T) {

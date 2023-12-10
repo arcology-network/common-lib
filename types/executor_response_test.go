@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 func Test_ExecutorResponses_EncodingAndDeconing(t *testing.T) {

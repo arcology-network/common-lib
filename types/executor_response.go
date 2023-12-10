@@ -3,7 +3,7 @@ package types
 import (
 	"github.com/arcology-network/common-lib/codec"
 	encoding "github.com/arcology-network/common-lib/encoding"
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type ExecuteResponse struct {

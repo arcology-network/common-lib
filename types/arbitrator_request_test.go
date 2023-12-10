@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 func PrepareNewArbitrator() *ArbitratorRequest {

@@ -3,7 +3,7 @@ package encoding
 import (
 	"crypto/sha256"
 
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 const (

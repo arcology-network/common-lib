@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type ExecutingLog struct {

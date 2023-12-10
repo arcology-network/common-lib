@@ -2,8 +2,8 @@ package types
 
 import (
 	encoding "github.com/arcology-network/common-lib/encoding"
-	evmCommon "github.com/arcology-network/evm/common"
-	evmTypes "github.com/arcology-network/evm/core/types"
+	evmCommon "github.com/ethereum/go-ethereum/common"
+	evmTypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 const (

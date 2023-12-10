@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"time"
 
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -22,8 +22,11 @@ const (
 	QueryType_TransactionCount = "transactionCount"
 	QueryType_Storage          = "storage"
 	QueryType_Receipt_Eth      = "receiptEth"
+	QueryType_Block_Receipts   = "blockReceipts"
 	QueryType_Transaction      = "transaction"
 	QueryType_Block_Eth        = "blockEth"
+	QueryType_HeaderByHash     = "headerByHash"
+	QueryType_HeaderByNumber   = "headerByNumber"
 	QueryType_BlocByHash       = "blockbyhash"
 	QueryType_Logs             = "logs"
 

@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 func TestUniqueStringss(t *testing.T) {

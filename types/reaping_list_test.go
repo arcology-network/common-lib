@@ -2,9 +2,10 @@ package types
 
 import (
 	"fmt"
-	evmCommon "github.com/arcology-network/evm/common"
 	"math/big"
 	"testing"
+
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 func TestReapinglist(t *testing.T) {
