@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/arcology-network/common-lib/merkle"
-	"github.com/ethereum/go-ethereum/rlp"
+	rlp "github.com/ethereum/go-ethereum/rlp"
 	"github.com/stretchr/testify/require"
 )
 

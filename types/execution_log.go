@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	evmCommon "github.com/ethereum/go-ethereum/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type ExecutingLog struct {
@@ -21,7 +21,7 @@ func (this *ExecutingLog) GetValue() string {
 }
 
 type ExecutingLogs struct {
-	Txhash evmCommon.Hash `json:"txhash"`
+	Txhash ethCommon.Hash `json:"txhash"`
 	Logs   []ExecutingLog `json:"this"`
 }
 

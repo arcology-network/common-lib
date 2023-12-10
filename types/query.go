@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"time"
 
-	evmCommon "github.com/ethereum/go-ethereum/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -54,18 +54,18 @@ type QueryResult struct {
 
 type RequestParameters struct {
 	Number  int64
-	Address evmCommon.Address
+	Address ethCommon.Address
 }
 
 type RequestBlockEth struct {
 	Number int64
-	Hash   evmCommon.Hash
+	Hash   ethCommon.Hash
 	Index  int
 	FullTx bool
 }
 type RequestStorage struct {
 	Number  int64
-	Address evmCommon.Address
+	Address ethCommon.Address
 	Key     string
 }
 

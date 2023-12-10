@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	evmCommon "github.com/ethereum/go-ethereum/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 func Test_ExecutorResponses_EncodingAndDeconing(t *testing.T) {
@@ -32,22 +32,22 @@ func Test_ExecutorResponses_EncodingAndDeconing(t *testing.T) {
 	// defcalls[1] = defs[1]
 	// defcalls[2] = defs[2]
 
-	hashes := []evmCommon.Hash{
-		evmCommon.BytesToHash([]byte{1, 2, 3}),
-		evmCommon.BytesToHash([]byte{4, 5, 6}),
-		evmCommon.BytesToHash([]byte{7, 8, 9}),
+	hashes := []ethCommon.Hash{
+		ethCommon.BytesToHash([]byte{1, 2, 3}),
+		ethCommon.BytesToHash([]byte{4, 5, 6}),
+		ethCommon.BytesToHash([]byte{7, 8, 9}),
 	}
 	statusList := []uint64{1, 1, 0}
 	gasUsedList := []uint64{10, 11, 12}
 
-	// spawnedTxs := []evmCommon.Hash{
-	// 	evmCommon.BytesToHash([]byte{1, 1, 1}),
-	// 	evmCommon.BytesToHash([]byte{2, 2, 2}),
+	// spawnedTxs := []ethCommon.Hash{
+	// 	ethCommon.BytesToHash([]byte{1, 1, 1}),
+	// 	ethCommon.BytesToHash([]byte{2, 2, 2}),
 	// }
 
-	// relationKeys := []evmCommon.Hash{
-	// 	evmCommon.BytesToHash([]byte{3, 3, 3}),
-	// 	evmCommon.BytesToHash([]byte{4, 4, 4}),
+	// relationKeys := []ethCommon.Hash{
+	// 	ethCommon.BytesToHash([]byte{3, 3, 3}),
+	// 	ethCommon.BytesToHash([]byte{4, 4, 4}),
 	// }
 
 	// relationSizes := []uint64{
@@ -55,11 +55,11 @@ func Test_ExecutorResponses_EncodingAndDeconing(t *testing.T) {
 	// 	uint64(2),
 	// }
 
-	// relationValues := []evmCommon.Hash{
-	// 	evmCommon.BytesToHash([]byte{5, 5, 5}),
-	// 	evmCommon.BytesToHash([]byte{6, 6, 6}),
-	// 	evmCommon.BytesToHash([]byte{7, 7, 7}),
-	// 	evmCommon.BytesToHash([]byte{8, 8, 8}),
+	// relationValues := []ethCommon.Hash{
+	// 	ethCommon.BytesToHash([]byte{5, 5, 5}),
+	// 	ethCommon.BytesToHash([]byte{6, 6, 6}),
+	// 	ethCommon.BytesToHash([]byte{7, 7, 7}),
+	// 	ethCommon.BytesToHash([]byte{8, 8, 8}),
 	// }
 
 	er := ExecutorResponses{

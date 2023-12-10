@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"math"
 
-	evmCommon "github.com/ethereum/go-ethereum/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -75,14 +75,14 @@ func (this Hash8) Decode(buffer []byte) interface{} {
 	return Hash8(this)
 }
 
-type Hash8s []evmCommon.Hash
+type Hash8s []ethCommon.Hash
 
 func (hashes Hash8s) Encode() []byte {
 	return Hash8s(hashes).Flatten()
 }
 
 func (hashes Hash8s) Decode(data []byte) interface{} {
-	hashes = make([]evmCommon.Hash, len(data)/HASH8_LEN)
+	hashes = make([]ethCommon.Hash, len(data)/HASH8_LEN)
 	for i := 0; i < len(hashes); i++ {
 		copy(hashes[i][:], data[i*HASH8_LEN:(i+1)*HASH8_LEN])
 	}

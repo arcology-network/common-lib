@@ -345,7 +345,7 @@ func (this *DataStore) GetParitions(keys []string) []uint8 {
 	return partitionIDs
 }
 
-func (this *DataStore) Commit() error {
+func (this *DataStore) Commit(_ uint64) error {
 	defer this.commitLock.Unlock()
 
 	this.batchAddToCache(this.partitionIDs, this.keyBuffer, this.valueBuffer)

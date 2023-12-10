@@ -3,7 +3,7 @@ package encoding
 import (
 	"crypto/sha256"
 
-	evmCommon "github.com/ethereum/go-ethereum/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -31,7 +31,7 @@ func (byteset Byteset) Flatten() []byte {
 	return buffer
 }
 
-func (byteset Byteset) Checksum() evmCommon.Hash {
+func (byteset Byteset) Checksum() ethCommon.Hash {
 	return sha256.Sum256(byteset.Flatten())
 }
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	evmCommon "github.com/ethereum/go-ethereum/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -23,7 +23,7 @@ type SyncStatus struct {
 type SyncPoint struct {
 	From       uint64
 	To         uint64
-	Slices     []evmCommon.Hash
+	Slices     []ethCommon.Hash
 	Parent     *ParentInfo
 	SchdStates interface{}
 }

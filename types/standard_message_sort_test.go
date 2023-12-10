@@ -9,16 +9,16 @@ import (
 	"testing"
 	"time"
 
-	evmCommon "github.com/ethereum/go-ethereum/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func TestStandardMessageEncodingAndDeconing(t *testing.T) {
-	to := evmCommon.BytesToAddress(crypto.Keccak256([]byte("1"))[:])
+	to := ethCommon.BytesToAddress(crypto.Keccak256([]byte("1"))[:])
 
-	ethMsg_serial_0 := core.NewMessage(evmCommon.Address{}, &to, 1, big.NewInt(int64(1)), 100, big.NewInt(int64(8)), []byte{1, 2, 3}, nil, false)
-	ethMsg_serial_1 := core.NewMessage(evmCommon.Address{}, &to, 3, big.NewInt(int64(100)), 200, big.NewInt(int64(9)), []byte{4, 5, 6}, nil, false)
+	ethMsg_serial_0 := core.NewMessage(ethCommon.Address{}, &to, 1, big.NewInt(int64(1)), 100, big.NewInt(int64(8)), []byte{1, 2, 3}, nil, false)
+	ethMsg_serial_1 := core.NewMessage(ethCommon.Address{}, &to, 3, big.NewInt(int64(100)), 200, big.NewInt(int64(9)), []byte{4, 5, 6}, nil, false)
 	hash1 := RlpHash(ethMsg_serial_0)
 	hash2 := RlpHash(ethMsg_serial_1)
 	stdMsgs := []*StandardMessage{
@@ -48,16 +48,16 @@ func TestStandardMessageEncodingAndDeconing(t *testing.T) {
 }
 
 func TestStandardMessageSortingByFee(t *testing.T) {
-	to := evmCommon.BytesToAddress(crypto.Keccak256([]byte("1"))[:])
+	to := ethCommon.BytesToAddress(crypto.Keccak256([]byte("1"))[:])
 
-	ethMsg_serial_0 := core.NewMessage(evmCommon.Address{}, &to, 1, big.NewInt(int64(1)), 100, big.NewInt(int64(8)), []byte{}, nil, false)
-	ethMsg_serial_1 := core.NewMessage(evmCommon.Address{}, &to, 3, big.NewInt(int64(100)), 200, big.NewInt(int64(9)), []byte{}, nil, false)
-	ethMsg_serial_2 := core.NewMessage(evmCommon.Address{}, &to, 2, big.NewInt(int64(500)), 100, big.NewInt(int64(1)), []byte{}, nil, false)
+	ethMsg_serial_0 := core.NewMessage(ethCommon.Address{}, &to, 1, big.NewInt(int64(1)), 100, big.NewInt(int64(8)), []byte{}, nil, false)
+	ethMsg_serial_1 := core.NewMessage(ethCommon.Address{}, &to, 3, big.NewInt(int64(100)), 200, big.NewInt(int64(9)), []byte{}, nil, false)
+	ethMsg_serial_2 := core.NewMessage(ethCommon.Address{}, &to, 2, big.NewInt(int64(500)), 100, big.NewInt(int64(1)), []byte{}, nil, false)
 
-	from_3 := evmCommon.BytesToAddress([]byte("1"))
+	from_3 := ethCommon.BytesToAddress([]byte("1"))
 	ethMsg_serial_3 := core.NewMessage(from_3, &to, 1, big.NewInt(int64(200)), 500, big.NewInt(int64(8)), []byte{}, nil, false)
 
-	from_4 := evmCommon.BytesToAddress([]byte("2"))
+	from_4 := ethCommon.BytesToAddress([]byte("2"))
 	ethMsg_serial_4 := core.NewMessage(from_4, &to, 1, big.NewInt(int64(10)), 2, big.NewInt(int64(9)), []byte{}, nil, false)
 
 	stdMsgs := []*StandardMessage{
@@ -77,16 +77,16 @@ func TestStandardMessageSortingByFee(t *testing.T) {
 }
 
 func TestStandardMessageSortingByGas(t *testing.T) {
-	to := evmCommon.BytesToAddress(crypto.Keccak256([]byte("1"))[:])
+	to := ethCommon.BytesToAddress(crypto.Keccak256([]byte("1"))[:])
 
-	ethMsg_serial_0 := core.NewMessage(evmCommon.Address{}, &to, 1, big.NewInt(int64(1)), 100, big.NewInt(int64(8)), []byte{}, nil, false)
-	ethMsg_serial_1 := core.NewMessage(evmCommon.Address{}, &to, 3, big.NewInt(int64(100)), 200, big.NewInt(int64(9)), []byte{}, nil, false)
-	ethMsg_serial_2 := core.NewMessage(evmCommon.Address{}, &to, 2, big.NewInt(int64(500)), 100, big.NewInt(int64(1)), []byte{}, nil, false)
+	ethMsg_serial_0 := core.NewMessage(ethCommon.Address{}, &to, 1, big.NewInt(int64(1)), 100, big.NewInt(int64(8)), []byte{}, nil, false)
+	ethMsg_serial_1 := core.NewMessage(ethCommon.Address{}, &to, 3, big.NewInt(int64(100)), 200, big.NewInt(int64(9)), []byte{}, nil, false)
+	ethMsg_serial_2 := core.NewMessage(ethCommon.Address{}, &to, 2, big.NewInt(int64(500)), 100, big.NewInt(int64(1)), []byte{}, nil, false)
 
-	from_3 := evmCommon.BytesToAddress([]byte("1"))
+	from_3 := ethCommon.BytesToAddress([]byte("1"))
 	ethMsg_serial_3 := core.NewMessage(from_3, &to, 1, big.NewInt(int64(200)), 500, big.NewInt(int64(8)), []byte{}, nil, false)
 
-	from_4 := evmCommon.BytesToAddress([]byte("2"))
+	from_4 := ethCommon.BytesToAddress([]byte("2"))
 	ethMsg_serial_4 := core.NewMessage(from_4, &to, 1, big.NewInt(int64(10)), 2, big.NewInt(int64(9)), []byte{}, nil, false)
 
 	stdMsgs := []*StandardMessage{
@@ -108,10 +108,10 @@ func PrepareData(max int) []*StandardMessage {
 	stdMsgs := make([]*StandardMessage, max)
 
 	for i := 0; i < len(stdMsgs); i++ {
-		to := evmCommon.BytesToAddress([]byte{11, 8, 9, 10})
+		to := ethCommon.BytesToAddress([]byte{11, 8, 9, 10})
 		bytes := sha256.Sum256([]byte{byte(i)})
 		ethMsg := core.NewMessage(
-			evmCommon.BytesToAddress(bytes[:]),
+			ethCommon.BytesToAddress(bytes[:]),
 			&to,
 			uint64(10),
 			big.NewInt(12000000),

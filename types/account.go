@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"math/big"
 
-	evmCommon "github.com/ethereum/go-ethereum/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type AccountInfo struct {
-	Address evmCommon.Address
+	Address ethCommon.Address
 	Account Account
 }
 
@@ -17,7 +17,7 @@ type AccountInfo struct {
 type Account struct {
 	Nonce    uint64
 	Balance  *big.Int
-	Root     evmCommon.Hash // merkle root of the storage trie
+	Root     ethCommon.Hash // merkle root of the storage trie
 	CodeHash []byte
 }
 

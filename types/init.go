@@ -4,7 +4,7 @@ import (
 	"encoding/gob"
 	"math/big"
 
-	evmCommon "github.com/ethereum/go-ethereum/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 var arEncoder *arbReqEncoder
@@ -48,7 +48,7 @@ func init() {
 	gob.Register(SendingStandardMessages{})
 	gob.Register(ExecutingLogs{})
 	// gob.Register([]*SpawnedRelation{})
-	gob.Register(map[evmCommon.Hash]evmCommon.Hash{})
+	gob.Register(map[ethCommon.Hash]ethCommon.Hash{})
 
 	gob.Register(&[]*TxAccessRecords{})
 	gob.Register(&TxAccessRecordSet{})

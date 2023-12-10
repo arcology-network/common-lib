@@ -9,7 +9,7 @@ import (
 
 	"github.com/arcology-network/common-lib/common"
 	"github.com/arcology-network/common-lib/encoding"
-	evmCommon "github.com/ethereum/go-ethereum/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/rlp"
 )
@@ -19,13 +19,13 @@ const (
 )
 
 type StandardMessage struct {
-	TxHash    evmCommon.Hash
+	TxHash    ethCommon.Hash
 	Native    *core.Message
 	TxRawData []byte
 	Source    uint8
 }
 
-// func MakeMessageWithDefCall(def *DeferredCall, hash evmCommon.Hash, nonce uint64) *StandardMessage {
+// func MakeMessageWithDefCall(def *DeferredCall, hash ethCommon.Hash, nonce uint64) *StandardMessage {
 // 	signature := def.Signature
 // 	contractAddress := def.ContractAddress
 // 	data := crypto.Keccak256([]byte(signature))[:4]
@@ -34,7 +34,7 @@ type StandardMessage struct {
 // 	id := common.AlignToEvmForString(def.DeferID)
 // 	data = append(data, idLen...)
 // 	data = append(data, id...)
-// 	contractAddr := evmCommon.BytesToAddress([]byte(contractAddress))
+// 	contractAddr := ethCommon.BytesToAddress([]byte(contractAddress))
 // 	//nonce := uint64(time.Now().UnixNano())
 // 	message := core.NewMessage(contractAddr, &contractAddr, nonce, new(big.Int).SetInt64(0), 1e9, new(big.Int).SetInt64(0), data, nil, false)
 // 	standardMessager := StandardMessage{
@@ -44,7 +44,7 @@ type StandardMessage struct {
 // 	return &standardMessager
 // }
 
-func (this *StandardMessage) Hash() evmCommon.Hash {
+func (this *StandardMessage) Hash() ethCommon.Hash {
 	return this.TxHash
 }
 
@@ -134,7 +134,7 @@ func (this *SendingStandardMessages) ToMessages() []*StandardMessage {
 			standredMessage := new(StandardMessage)
 
 			fields := encoding.Byteset{}.Decode(data[i])
-			standredMessage.TxHash = evmCommon.BytesToHash(fields[0])
+			standredMessage.TxHash = ethCommon.BytesToHash(fields[0])
 			standredMessage.Source = uint8(fields[1][0])
 
 			// msg := new(core.Message)
@@ -157,8 +157,8 @@ func (this *SendingStandardMessages) ToMessages() []*StandardMessage {
 
 type StandardMessages []*StandardMessage
 
-func (this StandardMessages) Hashes() []evmCommon.Hash {
-	hashes := make([]evmCommon.Hash, len(this))
+func (this StandardMessages) Hashes() []ethCommon.Hash {
+	hashes := make([]ethCommon.Hash, len(this))
 	for i := range this {
 		hashes[i] = this[i].TxHash
 	}
@@ -272,7 +272,7 @@ func (this *StandardMessages) Decode(data []byte) ([]*StandardMessage, error) {
 			standredMessage := new(StandardMessage)
 
 			fields := encoding.Byteset{}.Decode(data[i])
-			standredMessage.TxHash = evmCommon.BytesToHash(fields[0])
+			standredMessage.TxHash = ethCommon.BytesToHash(fields[0])
 			standredMessage.Source = uint8(fields[1][0])
 			// msg := new(core.Message)
 			msg, err := MsgDecode(fields[2])

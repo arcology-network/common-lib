@@ -4,7 +4,7 @@ import (
 	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
 	encoding "github.com/arcology-network/common-lib/encoding"
-	evmCommon "github.com/ethereum/go-ethereum/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type ArbitratorRequest struct {
@@ -12,7 +12,7 @@ type ArbitratorRequest struct {
 }
 
 type TxElement struct {
-	TxHash  *evmCommon.Hash
+	TxHash  *ethCommon.Hash
 	Batchid uint64
 	Txid    uint32
 }
@@ -28,7 +28,7 @@ func (this TxElement) Encode() []byte {
 
 func (this *TxElement) Decode(data []byte) *TxElement {
 	fields := encoding.Byteset{}.Decode(data)
-	hash := evmCommon.BytesToHash(fields[0])
+	hash := ethCommon.BytesToHash(fields[0])
 	this.TxHash = &hash
 	this.Batchid = encoding.Uint64(0).Decode(fields[1])
 	this.Txid = encoding.Uint32(0).Decode(fields[2])
@@ -36,7 +36,7 @@ func (this *TxElement) Decode(data []byte) *TxElement {
 }
 
 func (tx TxElement) Size() uint32 {
-	return Size(evmCommon.Hash{}) + encoding.Uint64(0).Size() + uint32(encoding.Uint32(0).Size())
+	return Size(ethCommon.Hash{}) + encoding.Uint64(0).Size() + uint32(encoding.Uint32(0).Size())
 }
 
 type TxElements []*TxElement
@@ -191,7 +191,7 @@ func (this *arbReqDecoder) Decode(r *arbReq) *ArbitratorRequest {
 		for j := uint32(0); j < count; j++ {
 			this.list[offset] = this.list[offset][:0]
 			for k := uint32(0); k < subListSize; k++ {
-				hash := evmCommon.BytesToHash(r.Hashes[hashOffset : hashOffset+32])
+				hash := ethCommon.BytesToHash(r.Hashes[hashOffset : hashOffset+32])
 				this.list[offset] = append(this.list[offset], &TxElement{
 					TxHash:  &hash,
 					Batchid: uint64(r.Batches[batchOffset]),

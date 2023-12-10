@@ -9,6 +9,7 @@ replace github.com/ethereum/go-ethereum => ../concurrent-evm/
 require (
 	github.com/dgraph-io/badger v1.6.2
 	github.com/elliotchance/orderedmap v1.5.0
+	github.com/ethereum/go-ethereum v1.13.5
 	github.com/holiman/uint256 v1.2.3
 	github.com/natefinch/atomic v1.0.1
 	github.com/stretchr/testify v1.8.4
@@ -18,7 +19,6 @@ require (
 
 require (
 	github.com/arcology-network/concurrenturl v0.0.0-00010101000000-000000000000
-	github.com/ethereum/go-ethereum v0.0.0-00010101000000-000000000000
 	github.com/google/uuid v1.3.0
 )
 

@@ -1,7 +1,7 @@
 package types
 
 import (
-	evmCommon "github.com/ethereum/go-ethereum/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -21,7 +21,7 @@ const (
 )
 
 type ApplyListItem struct {
-	Txhash     evmCommon.Hash
+	Txhash     ethCommon.Hash
 	Conclusion byte
 	TxType     byte
 }
@@ -38,7 +38,7 @@ func (al ApplyList) Size() int {
 }
 
 // Range calls f on each key and value present in the map.
-func (al ApplyList) Range(f func(hash *evmCommon.Hash, selected bool)) {
+func (al ApplyList) Range(f func(hash *ethCommon.Hash, selected bool)) {
 	if al.Lists != nil {
 		switch al.SelectedMode {
 		case SelectedMode_FillTx:

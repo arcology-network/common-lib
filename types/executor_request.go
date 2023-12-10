@@ -7,13 +7,13 @@ import (
 	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
 	"github.com/arcology-network/common-lib/encoding"
-	evmCommon "github.com/ethereum/go-ethereum/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type ExecutingSequence struct {
 	Msgs       []*StandardMessage
 	Parallel   bool
-	SequenceId evmCommon.Hash
+	SequenceId ethCommon.Hash
 	Txids      []uint32
 }
 
@@ -27,7 +27,7 @@ func NewExecutingSequence(msgs []*StandardMessage, parallel bool) *ExecutingSequ
 	return &ExecutingSequence{
 		Msgs:       msgs,
 		Parallel:   parallel,
-		SequenceId: evmCommon.BytesToHash(hash[:]),
+		SequenceId: ethCommon.BytesToHash(hash[:]),
 		Txids:      make([]uint32, len(msgs)),
 	}
 }
@@ -85,7 +85,7 @@ func (this *ExecutingSequences) Decode(data []byte) ([]*ExecutingSequence, error
 			if len(parallels) > 0 {
 				executingSequence.Parallel = parallels[0]
 			}
-			executingSequence.SequenceId = evmCommon.BytesToHash(datafields[2])
+			executingSequence.SequenceId = ethCommon.BytesToHash(datafields[2])
 			executingSequence.Txids = new(encoding.Uint32s).Decode(datafields[3])
 			executingSequences[i] = executingSequence
 
@@ -97,8 +97,8 @@ func (this *ExecutingSequences) Decode(data []byte) ([]*ExecutingSequence, error
 
 type ExecutorRequest struct {
 	Sequences     []*ExecutingSequence
-	Precedings    [][]*evmCommon.Hash
-	PrecedingHash []evmCommon.Hash
+	Precedings    [][]*ethCommon.Hash
+	PrecedingHash []ethCommon.Hash
 	Timestamp     *big.Int
 	Parallelism   uint64
 	Debug         bool
@@ -142,12 +142,12 @@ func (this *ExecutorRequest) GobDecode(data []byte) error {
 	this.Sequences = msgResults
 
 	precedingsBytes := encoding.Byteset{}.Decode(fields[1])
-	this.Precedings = make([][]*evmCommon.Hash, len(precedingsBytes))
+	this.Precedings = make([][]*ethCommon.Hash, len(precedingsBytes))
 	for i := range precedingsBytes {
-		this.Precedings[i] = Arr2Ptr(Hashes([]evmCommon.Hash{}).Decode(precedingsBytes[i]))
+		this.Precedings[i] = Arr2Ptr(Hashes([]ethCommon.Hash{}).Decode(precedingsBytes[i]))
 	}
 
-	this.PrecedingHash = Hashes([]evmCommon.Hash{}).Decode(fields[2])
+	this.PrecedingHash = Hashes([]ethCommon.Hash{}).Decode(fields[2])
 	//if len(fields[3]) > 0 {
 	this.Timestamp = new(big.Int).SetBytes(fields[3])
 	//}

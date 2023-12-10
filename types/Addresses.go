@@ -1,10 +1,10 @@
 package types
 
 import (
-	evmCommon "github.com/ethereum/go-ethereum/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
-type Addresses []evmCommon.Address
+type Addresses []ethCommon.Address
 
 // Len()
 func (as Addresses) Len() int {
@@ -35,8 +35,8 @@ func (addresses Addresses) Encode() []byte {
 	return Addresses(addresses).Flatten()
 }
 
-func (addresses Addresses) Decode(data []byte) []evmCommon.Address {
-	addresses = make([]evmCommon.Address, len(data)/AddressLength)
+func (addresses Addresses) Decode(data []byte) []ethCommon.Address {
+	addresses = make([]ethCommon.Address, len(data)/AddressLength)
 	for i := 0; i < len(addresses); i++ {
 		copy(addresses[i][:], data[i*AddressLength:(i+1)*AddressLength])
 	}
