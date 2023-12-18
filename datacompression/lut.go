@@ -71,7 +71,7 @@ func (this *CompressionLut) CompressOnTemp(originals []string) []string {
 	fmt.Println("findPositions", time.Since(t0))
 
 	t0 = time.Now()
-	nKeys := Flatten(this.parseKeys(originals, positions))
+	nKeys := common.Flatten(this.parseKeys(originals, positions))
 	fmt.Println("Flatten", time.Since(t0))
 
 	t0 = time.Now()

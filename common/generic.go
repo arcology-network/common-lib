@@ -297,15 +297,6 @@ func FindFirst[T comparable](values []T, v T) (int, *T) {
 	return -1, nil
 }
 
-func Contains[T any](values []T, target T, equal func(v0, v1 T) bool) bool {
-	for i := 0; i < len(values); i++ {
-		if equal(values[i], target) {
-			return true
-		}
-	}
-	return false
-}
-
 // Find the leftmost index of the element meeting the criteria
 func FindFirstIf[T any](values []T, condition func(v T) bool) (int, *T) {
 	for i := 0; i < len(values); i++ {
@@ -342,6 +333,15 @@ func FindLastIf[T any](values *[]T, condition func(v T) bool) (int, *T) {
 		}
 	}
 	return -1, nil
+}
+
+func Contains[T any](values []T, target T, equal func(v0, v1 T) bool) bool {
+	for i := 0; i < len(values); i++ {
+		if equal(values[i], target) {
+			return true
+		}
+	}
+	return false
 }
 
 func New[T any](v T) *T {
@@ -408,6 +408,14 @@ func Flatten[T any](src [][]T) []T {
 	return buffer
 }
 
+func Reshape[T any](bytes []T, columns int) [][]T {
+	hashes := make([][]T, len(bytes)/columns)
+	for i := range hashes {
+		hashes[i] = bytes[i*columns : (i+1)*columns]
+	}
+	return hashes
+}
+
 func ReorderBy[T any, T1 constraints.Integer](src []T, indices []T1) []T {
 	reordered := make([]T, len(src))
 	for i := range src {
@@ -440,7 +448,6 @@ func Exclude[T comparable](source []T, toRemove []T) []T {
 		_, ok := (*dict)[v]
 		return ok
 	})
-	return source
 }
 
 func CastTo[T0, T1 any](src T0, predicate func(T0) T1) T1 {
@@ -459,6 +466,14 @@ func To[T0, T1 any](src []T0) []T1 {
 	target := make([]T1, len(src))
 	for i := range src {
 		target[i] = (interface{}((src[i]))).(T1)
+	}
+	return target
+}
+
+func ToInterfaces[T0 any](src []T0) []interface{} {
+	target := make([]interface{}, len(src))
+	for i := range src {
+		target[i] = (interface{}((src[i])))
 	}
 	return target
 }

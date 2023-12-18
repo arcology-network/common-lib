@@ -8,29 +8,6 @@ import (
 	common "github.com/arcology-network/common-lib/common"
 )
 
-func Flatten(originals [][]string) []string {
-	total := 0
-	for i := 0; i < len(originals); i++ {
-		for j := 0; j < len(originals[i]); j++ {
-			if len(originals[i]) > 0 {
-				total++
-			}
-		}
-	}
-
-	keys := make([]string, total)
-	counter := 0
-	for i := 0; i < len(originals); i++ {
-		for j := 0; j < len(originals[i]); j++ {
-			if len(originals[i]) > 0 {
-				keys[counter] = originals[i][j]
-				counter++
-			}
-		}
-	}
-	return keys
-}
-
 func GetByDepth(originals []string, depth int) []string {
 	keys := make([]string, len(originals))
 	finder := func(start, end, idx int, args ...interface{}) {
@@ -72,22 +49,6 @@ func LocateWildcards(patten string, wildcard string) []int {
 		}
 	}
 	return pos
-}
-
-func GetBetween(originals []string, p0, p1 int) []string {
-	newKeys := make([]string, len(originals))
-	finder := func(start, end, idx int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			if len(originals[i]) >= p1 {
-				acctKey := originals[i][p0:p1]
-				newKeys[i] = acctKey
-			} else {
-				newKeys[i] = originals[i]
-			}
-		}
-	}
-	common.ParallelWorker(len(originals), 4, finder)
-	return newKeys
 }
 
 // Find the nth occurrence of a target string

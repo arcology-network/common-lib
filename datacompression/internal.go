@@ -6,7 +6,6 @@ import (
 
 	common "github.com/arcology-network/common-lib/common"
 	ccmap "github.com/arcology-network/common-lib/container/map"
-	"github.com/arcology-network/common-lib/mhasher"
 )
 
 func (this *CompressionLut) singleThreadedUncompressor(compressed []string) {
@@ -147,8 +146,8 @@ func (this *CompressionLut) insertToDict(newKeys []string, dict *ccmap.Concurren
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	newKeys, _ = mhasher.UniqueSortStrings(newKeys)
-	newKeys = this.filterExistingKeys(newKeys, dict)
+	uniqueKeys := common.Unique(newKeys, func(str0, str1 string) bool { return str0 < str1 })
+	newKeys = this.filterExistingKeys(uniqueKeys, dict)
 	if len(newKeys) == 0 {
 		return
 	}

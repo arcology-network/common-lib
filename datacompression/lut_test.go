@@ -7,6 +7,7 @@ import (
 	"time"
 	"unsafe"
 
+	common "github.com/arcology-network/common-lib/common"
 	"github.com/arcology-network/common-lib/mhasher"
 )
 
@@ -36,7 +37,7 @@ func TestFlattenStrings(t *testing.T) {
 	}
 
 	t0 := time.Now()
-	if len(Flatten(paths)) != len(paths)*10 {
+	if len(common.Flatten(paths)) != len(paths)*10 {
 		t.Error("Error")
 	}
 	fmt.Println("Flatten "+fmt.Sprint(100000*10), time.Since(t0))

@@ -12,29 +12,6 @@ import (
 	// "github.com/HPISTechnologies/common-lib/common"
 )
 
-func TestUniqueSorted(t *testing.T) {
-	nums := []int{3, 1, 1, 1, 1, 1, 1, 3, 2}
-	nums = Unique(nums, func(lhv, rhv int) bool { return lhv < rhv })
-	if !reflect.DeepEqual(nums, []int{1, 2, 3}) {
-		t.Error("Error: Failed to remove nil values !")
-	}
-
-	nums = []int{1, 1, 1, 1, 1, 1}
-	nums = Unique(nums, func(lhv, rhv int) bool { return lhv < rhv })
-	if !reflect.DeepEqual(nums, []int{1}) {
-		t.Error("Error: Failed to remove nil values !")
-	}
-
-	nums = make([]int, 1000000)
-	for i := 0; i < len(nums); i++ {
-		nums[i] = rand.Intn(100)
-	}
-
-	t0 := time.Now()
-	Unique(nums, func(lhv, rhv int) bool { return lhv < rhv })
-	fmt.Println("Unique: ", 1000000, " entries in:", time.Now().Sub(t0))
-}
-
 func TestRemoveNils(t *testing.T) {
 	encoded := [][]byte{{1}, {1}, {3}, {2}, nil}
 	RemoveIf(&encoded, func(v []byte) bool { return v == nil })
@@ -409,6 +386,29 @@ func TestRemove(t *testing.T) {
 	}
 }
 
+func TestUniqueSorted(t *testing.T) {
+	nums := []int{3, 1, 1, 1, 1, 1, 1, 3, 2}
+	nums = Unique(nums, func(lhv, rhv int) bool { return lhv < rhv })
+	if !reflect.DeepEqual(nums, []int{1, 2, 3}) {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	nums = []int{1, 1, 1, 1, 1, 1}
+	nums = Unique(nums, func(lhv, rhv int) bool { return lhv < rhv })
+	if !reflect.DeepEqual(nums, []int{1}) {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	nums = make([]int, 1000000)
+	for i := 0; i < len(nums); i++ {
+		nums[i] = rand.Intn(100)
+	}
+
+	t0 := time.Now()
+	Unique(nums, func(lhv, rhv int) bool { return lhv < rhv })
+	fmt.Println("Unique: ", 1000000, " entries in:", time.Now().Sub(t0))
+}
+
 func TestUniqueInts(t *testing.T) {
 	nums := []int{4, 5, 5, 6, 1, 4, 2, 3, 3}
 	nums = UniqueInts(nums)
@@ -461,6 +461,22 @@ func TestUniqueInts(t *testing.T) {
 	}
 	MapKeys(m)
 	fmt.Println("UniqueMap: ", len(nums), "leafs in ", time.Now().Sub(t0))
+}
+
+func TestUnique(t *testing.T) {
+	nums := []int{4, 5, 5, 6, 1, 3, 4, 2, 3}
+	nums = Unique(nums, func(lhv, rhv int) bool { return lhv < rhv })
+
+	if !reflect.DeepEqual(nums, []int{1, 2, 3, 4, 5, 6}) {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	strs := []string{"4", "5", "5", "6", "1", "3", "4", "2", "3"}
+	strs = Unique(strs, func(lhv, rhv string) bool { return lhv < rhv })
+
+	if !reflect.DeepEqual(strs, []string{"1", "2", "3", "4", "5", "6"}) {
+		t.Error("Error: Failed to remove nil values !")
+	}
 }
 
 func TestForeach(t *testing.T) {
@@ -642,7 +658,7 @@ func TestAppend(t *testing.T) {
 		t.Error("Expected: ", target)
 	}
 
-	target = ParallelAppend(target, func(i int) int { return target[i] + 1 })
+	target = ParallelAppend(target, 4, func(i int) int { return target[i] + 1 })
 	if !reflect.DeepEqual(target, []int{6, 4, 8, 5, 3}) {
 		t.Error("Expected: ", target)
 	}
