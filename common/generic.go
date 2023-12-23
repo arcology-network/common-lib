@@ -198,6 +198,13 @@ func ParallelAppend[T any, T1 any](values []T, numThd int, do func(i int) T1) []
 	return appended
 }
 
+func Resize[T any](values []T, newSize int) []T {
+	if len(values) >= newSize {
+		return values[:newSize]
+	}
+	return append(values, make([]T, newSize-len(values))...)
+}
+
 func CopyIf[T any](values []T, condition func(v T) bool) []T {
 	copied := make([]T, 0, len(values))
 	for i := 0; i < len(values); i++ {
