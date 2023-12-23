@@ -8,7 +8,6 @@ import (
 	"unsafe"
 
 	common "github.com/arcology-network/common-lib/common"
-	"github.com/arcology-network/common-lib/mhasher"
 )
 
 func TestMapDelete(t *testing.T) {
@@ -62,8 +61,11 @@ func TestCompressString(t *testing.T) {
 
 func TestSingleAccount(t *testing.T) {
 	strs := []string{"2", "1", "1"}
-	newKeys, _ := mhasher.UniqueStrings(strs)
-	fmt.Println(newKeys)
+	newKeys := common.Unique(strs, func(str0, str1 string) bool { return str0 < str1 })
+
+	if !reflect.DeepEqual(newKeys, []string{"1", "2"}) {
+		t.Error("Expected [1,2] but got ", strs)
+	}
 
 	acct := RandomAccount()
 	if len(acct) != 40 {
@@ -102,10 +104,6 @@ func TestSingleAccount(t *testing.T) {
 }
 
 func TestShortPath(t *testing.T) {
-	strs := []string{"2", "1", "1"}
-	newKeys, _ := mhasher.UniqueStrings(strs)
-	fmt.Println(newKeys)
-
 	acct := RandomAccount()
 	if len(acct) != 40 {
 		t.Error("Error: Account Address must be 40 byte long")
@@ -243,22 +241,4 @@ func BenchmarkStringToBytesUnsafePtr(b *testing.B) {
 		byteset[i] = (*[]byte)(unsafe.Pointer(&accounts[i]))
 	}
 	fmt.Println("1000000 "+fmt.Sprint(100000*9), time.Since(t0))
-}
-
-func BenchmarkKeccak256(b *testing.B) {
-	accounts := make([]string, 1000000)
-	for i := 0; i < len(accounts); i++ {
-		accounts[i] = RandomAccount()
-	}
-
-	t0 := time.Now()
-	byteset := make([][]byte, 1000000)
-	for i := 0; i < len(accounts); i++ {
-		byteset[i] = *(*[]byte)(unsafe.Pointer(&accounts[i]))
-	}
-	fmt.Println("1000000 "+fmt.Sprint(100000*9), time.Since(t0))
-
-	t0 = time.Now()
-	mhasher.Sha3256(byteset)
-	fmt.Println("mhasher.Keccak256 :", time.Since(t0))
 }
