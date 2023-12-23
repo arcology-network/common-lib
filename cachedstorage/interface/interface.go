@@ -1,8 +1,8 @@
-package cachedstorage
+package interfaces
 
 import "reflect"
 
-type AccessibleInterface interface {
+type Accessible interface {
 	Value() interface{}
 	Reads() uint32
 	Writes() uint32
@@ -14,7 +14,7 @@ const (
 	PERSISTENT_DB = 1
 )
 
-type PersistentStorageInterface interface {
+type PersistentStorage interface {
 	Get(string) ([]byte, error)
 	Set(string, []byte) error
 	BatchGet([]string) ([][]byte, error)
@@ -22,9 +22,9 @@ type PersistentStorageInterface interface {
 	Query(string, func(string, string) bool) ([]string, [][]byte, error)
 }
 
-type DbFilter func(PersistentStorageInterface) bool
+type DbFilter func(PersistentStorage) bool
 
-func NotQueryRpc(db PersistentStorageInterface) bool { // Do not access MemDB
+func NotQueryRpc(db PersistentStorage) bool { // Do not access MemDB
 	name := reflect.TypeOf(db).String()
 	return name == "*storage.ReadonlyRpcClient"
 }

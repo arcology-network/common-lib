@@ -1,17 +1,13 @@
-package cachedstorage
+package badgerdb
 
 import (
 	"bytes"
 	"os"
 	"testing"
-
-	common "github.com/arcology-network/common-lib/common"
 )
 
-func TestParaBadgerDBFunctions(t *testing.T) {
-	os.RemoveAll("./badger-test/")
-
-	db := NewParaBadgerDB("./badger-test/", common.Remainder)
+func TestBadgerDBFunctions(t *testing.T) {
+	db := NewBadgerDB(TEST_ROOT_PATH)
 	db.BatchSet([]string{
 		"a01",
 		"a02",
@@ -48,5 +44,9 @@ func TestParaBadgerDBFunctions(t *testing.T) {
 	keys, values, _ := db.Query("a", nil)
 	t.Log(keys)
 	t.Log(values)
-	os.RemoveAll("./badger-test/")
+
+	err := os.RemoveAll(TEST_ROOT_PATH)
+	if err != nil {
+		t.Log(keys)
+	}
 }

@@ -1,4 +1,4 @@
-package cachedstorage
+package badgerdb
 
 import (
 	"github.com/dgraph-io/badger"

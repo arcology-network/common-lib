@@ -1,4 +1,4 @@
-package cachedstorage
+package badgerdb
 
 import (
 	"crypto/sha256"
@@ -12,8 +12,8 @@ import (
 )
 
 func BenchmarkParaBadgerBatchSet(b *testing.B) {
-	os.RemoveAll("./badger-test/")
-	fileDB := NewParaBadgerDB("./badger-test/", common.Remainder)
+	os.RemoveAll(TEST_ROOT_PATH)
+	fileDB := NewParaBadgerDB(TEST_ROOT_PATH, common.Remainder)
 
 	keys := make([]string, 2000000)
 	values := make([][]byte, len(keys))
@@ -36,12 +36,12 @@ func BenchmarkParaBadgerBatchSet(b *testing.B) {
 		b.Error(err)
 	}
 	fmt.Println("BatchGet() ", len(keys), " Entries from files:", time.Since(t0))
-	os.RemoveAll("./badger-test/")
+	os.RemoveAll(TEST_ROOT_PATH)
 }
 
 func BenchmarkBadgerBatchSet2(b *testing.B) {
-	os.RemoveAll("./badger-test/")
-	fileDB := NewBadgerDB("./badger-test/")
+	os.RemoveAll(TEST_ROOT_PATH)
+	fileDB := NewBadgerDB(TEST_ROOT_PATH)
 
 	keys := make([]string, 2000000)
 	values := make([][]byte, len(keys))
@@ -64,7 +64,7 @@ func BenchmarkBadgerBatchSet2(b *testing.B) {
 		b.Error(err)
 	}
 	fmt.Println("BatchGet() ", len(keys), " Entries from files:", time.Since(t0))
-	os.RemoveAll("./badger-test/")
+	os.RemoveAll(TEST_ROOT_PATH)
 }
 
 // func TestParaBadgerIterator(t *testing.T) {

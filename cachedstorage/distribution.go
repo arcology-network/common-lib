@@ -3,6 +3,7 @@ package cachedstorage
 import (
 	"math"
 
+	intf "github.com/arcology-network/common-lib/cachedstorage/interface"
 	ccmap "github.com/arcology-network/common-lib/container/map"
 )
 
@@ -59,7 +60,7 @@ func (this *Distribution) getCurrentSizes(keys []string, cache *ccmap.Concurrent
 		if curtValues[i] == nil {
 			curtSizes[i] = 0
 		} else {
-			curtSizes[i] = curtValues[i].(AccessibleInterface).Size() // Get the sizes of the existing values.
+			curtSizes[i] = curtValues[i].(intf.Accessible).Size() // Get the sizes of the existing values.
 		}
 	}
 	return curtSizes

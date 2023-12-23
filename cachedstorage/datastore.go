@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 
+	intf "github.com/arcology-network/common-lib/cachedstorage/interface"
 	codec "github.com/arcology-network/common-lib/codec"
 	common "github.com/arcology-network/common-lib/common"
 	ccmap "github.com/arcology-network/common-lib/container/map"
@@ -12,7 +13,7 @@ import (
 )
 
 type DataStore struct {
-	db   PersistentStorageInterface
+	db   intf.PersistentStorage
 	lock sync.RWMutex
 
 	cachePolicy      *CachePolicy
@@ -39,7 +40,7 @@ type DataStore struct {
 func NewDataStore(
 	compressionLut *datacompression.CompressionLut,
 	cachePolicy *CachePolicy,
-	db PersistentStorageInterface,
+	db intf.PersistentStorage,
 	encoder func(string, interface{}) []byte,
 	decoder func([]byte, any) interface{},
 ) *DataStore {
@@ -326,7 +327,7 @@ func (this *DataStore) Precommit(keys []string, values interface{}) [32]byte {
 	this.encodedBuffer = make([][]byte, len(this.valueBuffer))
 	for i := 0; i < len(this.valueBuffer); i++ {
 		if this.valueBuffer[i] != nil {
-			this.valueBuffer[i] = this.valueBuffer[i].(AccessibleInterface).Value() // Strip access info
+			this.valueBuffer[i] = this.valueBuffer[i].(intf.Accessible).Value() // Strip access info
 			this.encodedBuffer[i] = this.encoder(keys[i], this.valueBuffer[i])
 		}
 	}
@@ -371,9 +372,9 @@ func (this *DataStore) Commit(_ uint64) error {
 
 func (this *DataStore) UpdateCacheStats(nVals []interface{}) {
 	// if this.cachePolicy != nil {
-	// 	objs := make([]AccessibleInterface, len(nVals))
+	// 	objs := make([]Accessible, len(nVals))
 	// 	for i := range nVals {
-	// 		objs[i] = nVals[i].(AccessibleInterface)
+	// 		objs[i] = nVals[i].(Accessible)
 	// 	}
 	// 	this.CachePolicy().AddToStats(keys, objs)
 	// }

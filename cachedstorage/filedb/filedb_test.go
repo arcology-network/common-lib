@@ -1,4 +1,4 @@
-package cachedstorage
+package filedb
 
 import (
 	"bytes"
@@ -6,17 +6,18 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	"path"
 	"testing"
 	"time"
 )
 
-const (
-	ROOT_PATH   = "/tmp/filedb/"
-	BACKUP_PATH = "/tmp/filedb-back/"
+var (
+	TEST_ROOT_PATH   = path.Join(os.TempDir(), "/filedb/")
+	TEST_BACKUP_PATH = path.Join(os.TempDir(), "/filedb-back/")
 )
 
 func TestFileDB(t *testing.T) {
-	fileDB, err := NewFileDB(ROOT_PATH, 8, 2)
+	fileDB, err := NewFileDB(TEST_ROOT_PATH, 8, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -70,7 +71,7 @@ func TestFileDB(t *testing.T) {
 }
 
 func TestFileDBBatch(t *testing.T) {
-	fileDB, err := NewFileDB(ROOT_PATH, 8, 2)
+	fileDB, err := NewFileDB(TEST_ROOT_PATH, 8, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -99,7 +100,7 @@ func TestFileDBBatch(t *testing.T) {
 }
 
 func TestFileDbBatch(t *testing.T) {
-	fileDB, err := NewFileDB(ROOT_PATH, 16, 2)
+	fileDB, err := NewFileDB(TEST_ROOT_PATH, 16, 2)
 
 	if err != nil {
 		t.Error(err)
@@ -143,7 +144,7 @@ func TestFileDbBatch(t *testing.T) {
 }
 
 func TestFileDbExport(t *testing.T) {
-	fileDB, err := NewFileDB(ROOT_PATH, 4, 2)
+	fileDB, err := NewFileDB(TEST_ROOT_PATH, 4, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -170,7 +171,7 @@ func TestFileDbExport(t *testing.T) {
 }
 
 func TestFileDbExportAll(t *testing.T) {
-	fileDB, err := NewFileDB(ROOT_PATH, 4, 2)
+	fileDB, err := NewFileDB(TEST_ROOT_PATH, 4, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -200,7 +201,7 @@ func TestFileDbExportAll(t *testing.T) {
 		t.Error(err)
 	}
 
-	fileDb, err := LoadFileDB(ROOT_PATH, 4, 2)
+	fileDb, err := LoadFileDB(TEST_ROOT_PATH, 4, 2)
 	if err == nil {
 		if err := fileDb.Import(data); err != nil {
 			t.Error(err)
@@ -217,7 +218,7 @@ func TestFileDbExportAll(t *testing.T) {
 }
 
 func TestLoadFileDB(t *testing.T) {
-	fileDB, err := NewFileDB(ROOT_PATH, 4, 2)
+	fileDB, err := NewFileDB(TEST_ROOT_PATH, 4, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -243,7 +244,7 @@ func TestLoadFileDB(t *testing.T) {
 		t.Error(err)
 	}
 
-	fileDb, err := LoadFileDB(ROOT_PATH, 4, 2)
+	fileDb, err := LoadFileDB(TEST_ROOT_PATH, 4, 2)
 	if err == nil {
 		if err := fileDb.Import(data); err != nil {
 			t.Error(err)
@@ -256,12 +257,12 @@ func TestLoadFileDB(t *testing.T) {
 		t.Error("Error: Two files are different")
 	}
 
-	os.RemoveAll(ROOT_PATH)
-	os.RemoveAll(BACKUP_PATH)
+	os.RemoveAll(TEST_ROOT_PATH)
+	os.RemoveAll(TEST_BACKUP_PATH)
 }
 
 func BenchmarkFileDbBatch(b *testing.B) {
-	fileDB, err := NewFileDB(ROOT_PATH, 128, 2)
+	fileDB, err := NewFileDB(TEST_ROOT_PATH, 128, 2)
 	if err != nil {
 		b.Error(err)
 	}

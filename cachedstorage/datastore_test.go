@@ -2,13 +2,20 @@ package cachedstorage
 
 import (
 	"math"
+	"os"
+	"path"
 	"testing"
 
+	filedb "github.com/arcology-network/common-lib/cachedstorage/filedb"
 	"github.com/arcology-network/common-lib/codec"
 )
 
+var (
+	TEST_ROOT_PATH = path.Join(os.TempDir(), "/filedb/")
+)
+
 func TestDatastoreBasic(t *testing.T) {
-	fileDB, err := NewFileDB(ROOT_PATH, 8, 2)
+	fileDB, err := filedb.NewFileDB(TEST_ROOT_PATH, 8, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -49,7 +56,7 @@ func TestDatastoreBasic(t *testing.T) {
 }
 
 func TestDatastorePersistentStorage(t *testing.T) {
-	fileDB, err := NewFileDB(ROOT_PATH, 8, 2)
+	fileDB, err := filedb.NewFileDB(TEST_ROOT_PATH, 8, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -90,7 +97,7 @@ func TestDatastorePersistentStorage(t *testing.T) {
 }
 
 func TestDatastorePrefetch(t *testing.T) {
-	fileDB, err := NewFileDB(ROOT_PATH, 8, 2)
+	fileDB, err := filedb.NewFileDB(TEST_ROOT_PATH, 8, 2)
 	if err != nil {
 		t.Error(err)
 	}

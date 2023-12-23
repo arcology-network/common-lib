@@ -1,4 +1,4 @@
-package cachedstorage
+package filedb
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	intf "github.com/arcology-network/common-lib/cachedstorage/interface"
 	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
 )
@@ -87,7 +88,7 @@ func NewFileDB(rootPath string, shards uint32, depth uint8) (*FileDB, error) {
 }
 
 func (this *FileDB) Type() uint8 {
-	return PERSISTENT_DB
+	return intf.PERSISTENT_DB
 }
 
 func (this *FileDB) Root() string {

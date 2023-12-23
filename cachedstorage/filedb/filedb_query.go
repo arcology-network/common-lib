@@ -1,4 +1,4 @@
-package cachedstorage
+package filedb
 
 import (
 	"github.com/arcology-network/common-lib/codec"

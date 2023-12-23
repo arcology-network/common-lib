@@ -1,12 +1,17 @@
-package cachedstorage
+package badgerdb
 
 import (
 	"crypto/sha256"
 	"fmt"
 	"math/rand"
-	"strings"
-	"testing"
+	"os"
+	"path"
 	"time"
+)
+
+var (
+	TEST_ROOT_PATH   = path.Join(os.TempDir(), "/badgerdb/")
+	TEST_BACKUP_PATH = path.Join(os.TempDir(), "/badgerdb-back/")
 )
 
 var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -21,60 +26,6 @@ var containers = []string{
 
 var accounts = make([]string, 10000000)
 var contracts = make([]string, 10000)
-var db *FileDB
-
-func BenchmarkFileDBBatchWrite(b *testing.B) {
-	db, _ = NewFileDB("./benchmark/", 64, 2)
-
-	keys, values := setup()
-	timer("setup", func() {
-		db.BatchSet(keys, values)
-	})
-
-	n := 10
-	var sum time.Duration
-	for i := 0; i < n; i++ {
-		keys, values := newBlock()
-		sum += timer("commit", func() {
-			db.BatchSet(keys, values)
-		})
-	}
-	b.Logf("average batch write: %v", sum/time.Duration(n))
-
-	// total := 0
-	// for i := 0; i < 256; i++ {
-	// 	timer(fmt.Sprintf("iteration %d", i), func() {
-	// 		keys, _, _ := db.Query(string([]byte{byte(i)}), func(pattern string, target string) bool {
-	// 			return strings.HasPrefix(target, pattern)
-	// 		})
-	// 		if len(keys) != 0 {
-	// 			b.Log([]byte(keys[0]))
-	// 		}
-	// 		b.Log(len(keys))
-	// 		total += len(keys)
-	// 	})
-	// }
-	// b.Logf("total: %d", total)
-}
-
-func BenchmarkFileDBQuery(b *testing.B) {
-	db, _ := NewFileDB("./benchmark/", 128, 2)
-
-	total := 0
-	for i := 0; i < 256; i++ {
-		timer(fmt.Sprintf("iteration %d", i), func() {
-			keys, _, _ := db.Query(string([]byte{byte(i)}), func(pattern string, target string) bool {
-				return strings.HasPrefix(target, pattern)
-			})
-			if len(keys) != 0 {
-				b.Log(keys[0])
-			}
-			b.Log(len(keys))
-			total += len(keys)
-		})
-	}
-	b.Logf("total: %d", total)
-}
 
 func setup() ([]string, [][]byte) {
 	var keys []string

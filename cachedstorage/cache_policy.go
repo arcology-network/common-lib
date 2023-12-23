@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"sync"
 
+	intf "github.com/arcology-network/common-lib/cachedstorage/interface"
+	memdb "github.com/arcology-network/common-lib/cachedstorage/memdb"
 	ccmap "github.com/arcology-network/common-lib/container/map"
 )
 
@@ -48,9 +50,9 @@ func NewCachePolicy(hardQuota uint64, threshold float64) *CachePolicy {
 	return policy
 }
 
-func (this *CachePolicy) Customize(db PersistentStorageInterface) *CachePolicy {
+func (this *CachePolicy) Customize(db intf.PersistentStorage) *CachePolicy {
 	if this != nil {
-		if _, ok := db.(*MemDB); ok { // A memory DB doesn't need a in-memory cache
+		if _, ok := db.(*memdb.MemDB); ok { // A memory DB doesn't need a in-memory cache
 			this.quota = 0
 		}
 	}
@@ -95,7 +97,7 @@ func (this *CachePolicy) Size() uint32 {
 	return this.scoreboard.Size()
 }
 
-func (this *CachePolicy) AddToStats(keys []string, vals []AccessibleInterface) {
+func (this *CachePolicy) AddToStats(keys []string, vals []intf.Accessible) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -142,7 +144,7 @@ func (this *CachePolicy) freeEntries(threshold uint32, probability float64, loca
 
 			if (math.Abs(probability-1) < 0.05) || (rand.Float64() < probability) {
 				v := (*cacheShards)[i][k]
-				freedMem[i] += uint64(v.(AccessibleInterface).Size())
+				freedMem[i] += uint64(v.(intf.Accessible).Size())
 				delete((*scoreShards)[i], k)
 				delete((*cacheShards)[i], k)
 				freedEntries[i]++
