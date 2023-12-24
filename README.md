@@ -14,7 +14,7 @@ The `common` package comprises utility and generic functions used in different p
 
 - **Basic Math Functions**: Some mathematical operations. 🧮
 
-### codec 🖨
+### codec
 
 An efficient encoding/decoding library focused on performance and parallelism, primarily used for internal inter-process communication among modules.
 
