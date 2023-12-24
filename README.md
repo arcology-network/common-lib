@@ -2,7 +2,7 @@
 
 common-lib is a Golang library designed for the Arcology Network, providing a range of tools and utilities used across different modules within the system.
 
-## Packages 📦
+## Packages 
 
 ### common 🖇
 
@@ -12,7 +12,7 @@ The `common` package comprises utility and generic functions used in different p
 
 - **Parallel Utilities**: Tools for parallel processing, efficiently distributing work among multiple ranges and assigning each range to a dedicated worker function.
 
-- **Basic Math Functions**: Some mathematical operations. 
+- **Basic Math Functions**: Some mathematical operations. 🧮
 
 ### codec 🖨
 
