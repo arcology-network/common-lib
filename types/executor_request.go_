@@ -6,7 +6,7 @@ import (
 
 	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
-	"github.com/arcology-network/common-lib/encoding"
+	"github.com/arcology-network/common-lib/codec"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 

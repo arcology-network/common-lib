@@ -1,7 +1,7 @@
 package types
 
 import (
-	encoding "github.com/arcology-network/common-lib/encoding"
+	codec "github.com/arcology-network/common-lib/codec"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	evmTypes "github.com/ethereum/go-ethereum/core/types"
 )
@@ -37,10 +37,10 @@ func (stdTx *StandardTransaction) GobEncode() ([]byte, error) {
 		[]byte{stdTx.Source},
 		stdTx.TxRawData,
 	}
-	return encoding.Byteset(data).Encode(), nil
+	return codec.Byteset(data).Encode(), nil
 }
 func (stdTx *StandardTransaction) GobDecode(data []byte) error {
-	fields := encoding.Byteset{}.Decode(data)
+	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
 	stdTx.TxHash = ethCommon.BytesToHash(fields[0])
 	stdTx.Source = uint8(fields[1][0])
 	stdTx.TxRawData = fields[2]

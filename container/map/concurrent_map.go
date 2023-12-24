@@ -1,3 +1,6 @@
+// The ConcurrentMap class is a concurrent map implementation allowing
+// multiple goroutines to access and modify the map concurrently.
+
 package concurrentmap
 
 import (
@@ -10,12 +13,15 @@ import (
 	"github.com/arcology-network/common-lib/common"
 )
 
+// ConcurrentMap represents a concurrent map data structure.
 type ConcurrentMap struct {
 	numShards  uint8
 	sharded    []map[string]interface{}
 	shardLocks []sync.RWMutex
 }
 
+// NewConcurrentMap creates a new instance of ConcurrentMap with the specified number of shards.
+// If no number of shards is provided, it defaults to 6.
 func NewConcurrentMap(args ...interface{}) *ConcurrentMap {
 	defaultShards := uint8(6)
 	if len(args) > 0 && args[0] != nil {
@@ -37,6 +43,7 @@ func NewConcurrentMap(args ...interface{}) *ConcurrentMap {
 	return ccmap
 }
 
+// Size returns the total number of key-value pairs in the ConcurrentMap.
 func (this *ConcurrentMap) Size() uint32 {
 	total := 0
 	for i := 0; i < int(this.numShards); i++ {
@@ -47,6 +54,8 @@ func (this *ConcurrentMap) Size() uint32 {
 	return uint32(total)
 }
 
+// Get retrieves the value associated with the specified key from the ConcurrentMap.
+// It returns the value and a boolean indicating whether the key was found.
 func (this *ConcurrentMap) Get(key string, args ...interface{}) (interface{}, bool) {
 	shardID := this.Hash8(key)
 	if shardID > uint8(len(this.sharded)) {
@@ -57,9 +66,10 @@ func (this *ConcurrentMap) Get(key string, args ...interface{}) (interface{}, bo
 	defer this.shardLocks[shardID].RUnlock()
 	k, v := this.sharded[shardID][key]
 	return k, v
-
 }
 
+// BatchGet retrieves the values associated with the specified keys from the ConcurrentMap.
+// It returns a slice of values in the same order as the keys.
 func (this *ConcurrentMap) BatchGet(keys []string, args ...interface{}) []interface{} {
 	shardIds := this.Hash8s(keys)
 	values := make([]interface{}, len(keys))
@@ -83,6 +93,8 @@ func (this *ConcurrentMap) BatchGet(keys []string, args ...interface{}) []interf
 	return values
 }
 
+// DirectBatchGet retrieves the values associated with the specified shard IDs and keys from the ConcurrentMap.
+// It returns a slice of values in the same order as the keys.
 func (this *ConcurrentMap) DirectBatchGet(shardIDs []uint8, keys []string, args ...interface{}) []interface{} {
 	values := make([]interface{}, len(keys))
 	setter := func(start, end, index int, args ...interface{}) {
@@ -98,6 +110,9 @@ func (this *ConcurrentMap) delete(shardID uint8, key string) {
 	delete(this.sharded[shardID], key)
 }
 
+// Set associates the specified value with the specified key in the ConcurrentMap.
+// If the value is nil, the key-value pair is deleted from the map.
+// It returns an error if the shard ID is out of range.
 func (this *ConcurrentMap) Set(key string, v interface{}, args ...interface{}) error {
 	shardID := this.Hash8(key)
 	if shardID >= uint8(len(this.sharded)) {
@@ -115,6 +130,8 @@ func (this *ConcurrentMap) Set(key string, v interface{}, args ...interface{}) e
 	return nil
 }
 
+// BatchUpdate updates the values associated with the specified keys in the ConcurrentMap using the provided updater function.
+// The updater function takes the original value, the index of the key in the keys slice, the key, and the new value as arguments.
 func (this *ConcurrentMap) BatchUpdate(keys []string, values []interface{}, Updater func(origin interface{}, index int, key string, value interface{}) interface{}) {
 	shards := this.Hash8s(keys)
 	var wg sync.WaitGroup
@@ -137,6 +154,10 @@ func (this *ConcurrentMap) BatchUpdate(keys []string, values []interface{}, Upda
 	wg.Wait()
 }
 
+// Traverse applies the specified operator function to each key-value pair in the ConcurrentMap.
+// The operator function takes a key and a value as arguments and returns a new value and an optional result.
+// The new value replaces the original value in the map, and the result is appended to the results slice.
+// It returns a slice of result slices, one for each shard.
 func (this *ConcurrentMap) Traverse(Operator func(key string, value interface{}) (interface{}, interface{})) [][]interface{} {
 	results := make([][]interface{}, this.numShards)
 	var wg sync.WaitGroup
@@ -165,6 +186,9 @@ func (this *ConcurrentMap) Traverse(Operator func(key string, value interface{})
 	return results
 }
 
+// BatchSet associates the specified values with the specified keys in the ConcurrentMap.
+// If the values slice is shorter than the keys slice, the remaining keys are deleted from the map.
+// If the values slice is longer than the keys slice, the extra values are ignored.
 func (this *ConcurrentMap) BatchSet(keys []string, values []interface{}, args ...interface{}) {
 	shardIDs := this.Hash8s(keys)
 
@@ -175,6 +199,9 @@ func (this *ConcurrentMap) BatchSet(keys []string, values []interface{}, args ..
 	}
 }
 
+// DirectBatchSet associates the specified values with the specified shard IDs and keys in the ConcurrentMap.
+// If the values slice is shorter than the keys slice, the remaining keys are deleted from the map.
+// If the values slice is longer than the keys slice, the extra values are ignored.
 func (this *ConcurrentMap) DirectBatchSet(shardIDs []uint8, keys []string, values []interface{}, args ...interface{}) {
 	if len(keys) != len(values) {
 		panic("Lengths don't match")
@@ -214,6 +241,7 @@ func (this *ConcurrentMap) DirectBatchSet(shardIDs []uint8, keys []string, value
 	wg.Wait()
 }
 
+// Keys returns a slice containing all the keys in the ConcurrentMap.
 func (this *ConcurrentMap) Keys() []string {
 	total := uint32(0)
 	offsets := make([]uint32, this.numShards+1)
@@ -239,6 +267,7 @@ func (this *ConcurrentMap) Keys() []string {
 	return keys
 }
 
+// Hash8 calculates the shard ID for the specified key using a simple hash function.
 func (this *ConcurrentMap) Hash8(key string) uint8 {
 	if len(key) == 0 {
 		return 0 //math.MaxUint8
@@ -251,6 +280,8 @@ func (this *ConcurrentMap) Hash8(key string) uint8 {
 	return uint8(total % uint32(this.numShards))
 }
 
+// Hash8s calculates the shard IDs for the specified keys using the Hash8 function.
+// It returns a slice of shard IDs in the same order as the keys.
 func (this *ConcurrentMap) Hash8s(keys []string) []uint8 {
 	shardIds := make([]uint8, len(keys))
 	worker := func(start, end, index int, args ...interface{}) {
@@ -266,10 +297,14 @@ func (this *ConcurrentMap) Hash8s(keys []string) []uint8 {
 	return shardIds
 }
 
+// Shards returns a pointer to the slice of maps representing the shards in the ConcurrentMap.
 func (this *ConcurrentMap) Shards() *[]map[string]interface{} {
 	return &this.sharded
 }
 
+// Find searches for the value in the ConcurrentMap that satisfies the specified comparison function.
+// The comparison function takes two values as arguments and returns true if the first value is considered "less" than the second value.
+// It returns the value that satisfies the comparison function, or nil if no such value is found.
 func (this *ConcurrentMap) Find(Compare func(interface{}, interface{}) bool) interface{} {
 	values := make([]interface{}, len(this.sharded))
 	worker := func(start, end, index int, args ...interface{}) {
@@ -295,6 +330,10 @@ func (this *ConcurrentMap) Find(Compare func(interface{}, interface{}) bool) int
 	return val
 }
 
+// Foreach applies the specified predicate function to each value in the ConcurrentMap.
+// The predicate function takes a value as an argument and returns a new value.
+// If the new value is nil, the key-value pair is deleted from the map.
+// Otherwise, the new value replaces the original value in the map.
 func (this *ConcurrentMap) Foreach(predicate func(interface{}) interface{}) {
 	worker := func(start, end, index int, args ...interface{}) {
 		this.shardLocks[start].RLock()
@@ -313,6 +352,8 @@ func (this *ConcurrentMap) Foreach(predicate func(interface{}) interface{}) {
 	common.ParallelWorker(len(this.sharded), len(this.sharded), worker)
 }
 
+// ForeachDo applies the specified do function to each key-value pair in the ConcurrentMap.
+// The do function takes a key and a value as arguments and performs some action.
 func (this *ConcurrentMap) ForeachDo(do func(interface{}, interface{})) {
 	for i := 0; i < len(this.sharded); i++ {
 		this.shardLocks[i].RLock()
@@ -323,6 +364,8 @@ func (this *ConcurrentMap) ForeachDo(do func(interface{}, interface{})) {
 	}
 }
 
+// ParallelForeachDo applies the specified do function to each key-value pair in the ConcurrentMap in parallel.
+// The do function takes a key and a value as arguments and performs some action.
 func (this *ConcurrentMap) ParallelForeachDo(do func(interface{}, interface{})) {
 	common.ParallelForeach(this.sharded, len(this.sharded), func(shard *map[string]interface{}, idx int) {
 		for k, v := range *shard {
@@ -331,11 +374,13 @@ func (this *ConcurrentMap) ParallelForeachDo(do func(interface{}, interface{})) 
 	})
 }
 
+// KVs returns two slices: one containing all the keys in the ConcurrentMap, and one containing the corresponding values.
 func (this *ConcurrentMap) KVs() ([]string, []interface{}) {
 	keys := this.Keys()
 	return keys, this.BatchGet(keys)
 }
 
+// Clear removes all key-value pairs from the ConcurrentMap.
 func (this *ConcurrentMap) Clear() {
 	cleaner := func(start, end, index int, args ...interface{}) {
 		this.shardLocks[start].RLock()
@@ -350,6 +395,8 @@ type Encodable interface {
 	Encode() []byte
 }
 
+// Dump returns two slices: one containing all the keys in the ConcurrentMap, and one containing the corresponding values.
+// The keys are sorted in ascending order.
 func (this *ConcurrentMap) Dump() ([]string, []interface{}) {
 	keys := this.Keys()
 	sort.SliceStable(keys, func(i, j int) bool {
@@ -363,6 +410,7 @@ func (this *ConcurrentMap) Dump() ([]string, []interface{}) {
 	return keys, vStr
 }
 
+// Print prints all the key-value pairs in the ConcurrentMap to the standard output.
 func (this *ConcurrentMap) Print() {
 	keys := []string{}
 	partitionID := []int{}
@@ -386,6 +434,8 @@ func (this *ConcurrentMap) Print() {
 	}
 }
 
+// Checksum calculates the checksum of the ConcurrentMap by concatenating the SHA256 hashes of the keys and values.
+// It returns a 32-byte checksum.
 func (this *ConcurrentMap) Checksum() [32]byte {
 	k, values := this.Dump()
 	vBytes := []byte{}

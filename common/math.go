@@ -6,6 +6,7 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+// Min returns the minimum value between two values of type T.
 func Min[T ~int8 | ~int32 | ~int | ~int64 | ~uint8 | ~uint32 | ~uint64 | ~float64](a, b T) T {
 	if a < b {
 		return a
@@ -13,6 +14,7 @@ func Min[T ~int8 | ~int32 | ~int | ~int64 | ~uint8 | ~uint32 | ~uint64 | ~float6
 	return b
 }
 
+// Max returns the maximum value between two values of type T.
 func Max[T ~int8 | ~int32 | ~int | ~int64 | ~uint8 | ~uint32 | ~uint64 | ~float64](a, b T) T {
 	if a > b {
 		return a
@@ -20,6 +22,7 @@ func Max[T ~int8 | ~int32 | ~int | ~int64 | ~uint8 | ~uint32 | ~uint64 | ~float6
 	return b
 }
 
+// Remainder calculates the remainder of dividing the total sum of the ASCII values of the characters in the key by numShards.
 func Remainder(numShards int, key string) int {
 	if len(key) == 0 {
 		return math.MaxInt
@@ -32,6 +35,7 @@ func Remainder(numShards int, key string) int {
 	return total % numShards
 }
 
+// Sum calculates the sum of all values in the given slice.
 func Sum[T0 constraints.Integer | float32 | float64 | byte](values []T0) T0 {
 	var sum T0 = 0
 	for j := 0; j < len(values); j++ {
@@ -40,6 +44,7 @@ func Sum[T0 constraints.Integer | float32 | float64 | byte](values []T0) T0 {
 	return sum
 }
 
+// IsHex checks if the given byte slice represents a valid hexadecimal string.
 func IsHex(bytes []byte) bool {
 	if len(bytes)%2 != 0 {
 		return false
@@ -51,16 +56,3 @@ func IsHex(bytes []byte) bool {
 	}
 	return true
 }
-
-// func Accumulate[T0, T1 constraints.Integer | float32 | float64 | byte](values []T0, Type T1) []T1 {
-// 	if len(values) == 0 {
-// 		return []T1{}
-// 	}
-
-// 	summed := make([]T1, len(values))
-// 	summed[0] = T1(values[0])
-// 	for i := 1; i < len(values); i++ {
-// 		summed[i] = summed[i-1] + T1(values[i])
-// 	}
-// 	return summed
-// }

@@ -1,3 +1,5 @@
+// Package common provides common utility functions for parallel execution.
+
 package common
 
 import (
@@ -5,6 +7,8 @@ import (
 	"sync"
 )
 
+// GenerateRanges generates a slice of ranges based on the length and number of threads.
+// Each range represents a portion of the total length that can be processed by a single thread.
 func GenerateRanges(length int, numThreads int) []int {
 	ranges := make([]int, 0, numThreads+1)
 	step := int(math.Ceil(float64(length) / float64(numThreads)))
@@ -14,6 +18,8 @@ func GenerateRanges(length int, numThreads int) []int {
 	return ranges
 }
 
+// ParallelExecute executes the given tasks in parallel using goroutines.
+// It waits for all the tasks to complete before returning.
 func ParallelExecute(tasks ...interface{}) {
 	var wg sync.WaitGroup
 	for i := 0; i < len(tasks); i++ {
@@ -26,6 +32,9 @@ func ParallelExecute(tasks ...interface{}) {
 	wg.Wait()
 }
 
+// ParallelWorker divides the total work into multiple ranges and assigns each range to a worker function.
+// The worker function is called in parallel for each range.
+// The number of threads determines the number of ranges and worker functions.
 func ParallelWorker(total, nThds int, worker func(start, end, idx int, args ...interface{}), args ...interface{}) {
 	idxRanges := GenerateRanges(total, nThds)
 	var wg sync.WaitGroup

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"sync"
 
+	addrcompression "github.com/arcology-network/common-lib/addrcompression"
 	intf "github.com/arcology-network/common-lib/cachedstorage/interface"
 	codec "github.com/arcology-network/common-lib/codec"
 	common "github.com/arcology-network/common-lib/common"
 	ccmap "github.com/arcology-network/common-lib/container/map"
-	datacompression "github.com/arcology-network/common-lib/datacompression"
 )
 
 type DataStore struct {
@@ -17,7 +17,7 @@ type DataStore struct {
 	lock sync.RWMutex
 
 	cachePolicy      *CachePolicy
-	compressionLut   *datacompression.CompressionLut
+	compressionLut   *addrcompression.CompressionLut
 	localCache       *ccmap.ConcurrentMap
 	maxCacheCapacity int
 
@@ -38,7 +38,7 @@ type DataStore struct {
 }
 
 func NewDataStore(
-	compressionLut *datacompression.CompressionLut,
+	compressionLut *addrcompression.CompressionLut,
 	cachePolicy *CachePolicy,
 	db intf.PersistentStorage,
 	encoder func(string, interface{}) []byte,

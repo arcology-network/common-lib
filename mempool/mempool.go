@@ -1,3 +1,4 @@
+// Mempool is responsible for managing a pool of objects of the same type. It is thread-safe.
 package mempool
 
 import (
@@ -5,6 +6,7 @@ import (
 	"sync"
 )
 
+// Mempool represents a pool of objects of the same type.
 type Mempool struct {
 	nf      func() interface{}
 	id      string
@@ -15,6 +17,7 @@ type Mempool struct {
 	guard   sync.Mutex
 }
 
+// NewMempool creates a new Mempool instance with the given ID and object creation function.
 func NewMempool(id interface{}, nf func() interface{}) *Mempool {
 	return &Mempool{
 		id:      fmt.Sprintf("%v", id),
@@ -26,6 +29,8 @@ func NewMempool(id interface{}, nf func() interface{}) *Mempool {
 	}
 }
 
+// GetTlsMempool returns the thread-local Mempool associated with the given ID.
+// If the thread-local Mempool does not exist, it creates a new one.
 func (m *Mempool) GetTlsMempool(id interface{}) *Mempool {
 	m.guard.Lock()
 	defer m.guard.Unlock()
@@ -43,6 +48,7 @@ func (m *Mempool) GetTlsMempool(id interface{}) *Mempool {
 	return m.tls[newId]
 }
 
+// Get returns an object from the Mempool.
 func (m *Mempool) Get() interface{} {
 	// if len(m.objects) <= m.next {
 	// 	m.objects = append(m.objects, make([]interface{}, 1024)...)
@@ -57,19 +63,20 @@ func (m *Mempool) Get() interface{} {
 	return m.nf()
 }
 
+// Reclaim resets the Mempool, allowing the objects to be reused.
 func (m *Mempool) Reclaim() {
-	// fmt.Println("Mempool.Reclaim:", m.id, "next =", m.next)
 	m.next = 0
 }
 
+// ReclaimRecursive resets the Mempool and all its thread-local Mempools recursively.
 func (m *Mempool) ReclaimRecursive() {
-	// fmt.Println("Mempool.ReclaimRecursive:", m.id)
 	for _, v := range m.tls {
 		v.ReclaimRecursive()
 	}
 	m.Reclaim()
 }
 
+// ForEachAllocated iterates over all allocated objects in the Mempool and executes the given function on each object.
 func (m *Mempool) ForEachAllocated(f func(obj interface{})) {
 	for _, v := range m.tls {
 		v.ForEachAllocated(f)

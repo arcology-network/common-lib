@@ -3,8 +3,7 @@ package types
 import (
 	"time"
 
-	// "github.com/arcology-network/common-lib/common"
-	encoding "github.com/arcology-network/common-lib/encoding"
+	codec "github.com/arcology-network/common-lib/codec"
 )
 
 type StatisticalInformation struct {
@@ -19,10 +18,10 @@ func (si StatisticalInformation) EncodeToBytes() []byte {
 		[]byte(si.Value),
 		// common.Uint64ToBytes(common.Int64ToUint64(int64(si.TimeUsed))),
 	}
-	return encoding.Byteset(data).Encode()
+	return codec.Byteset(data).Encode()
 }
 func (si *StatisticalInformation) Decode(data []byte) error {
-	fields := encoding.Byteset{}.Decode(data)
+	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
 	si.Key = string(fields[0])
 	si.Value = string(fields[1])
 	// si.TimeUsed = time.Duration(common.Uint64ToInt64(common.BytesToUint64(fields[2])))

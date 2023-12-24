@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"github.com/arcology-network/common-lib/common"
-	"github.com/arcology-network/common-lib/encoding"
+	"github.com/arcology-network/common-lib/codec"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/rlp"

@@ -1,9 +1,12 @@
 package common
 
+// EvmWordSize represents the size of a word in the Ethereum Virtual Machine (EVM).
 const (
 	EvmWordSize = 32
 )
 
+// AlignToEvmForString aligns a string to the EVM word size by padding it with null bytes.
+// It takes a string as input and returns a byte slice with the aligned string.
 func AlignToEvmForString(str string) []byte {
 	strLength := len(str)
 	EvmWordBytes := strLength / EvmWordSize
@@ -21,6 +24,8 @@ func AlignToEvmForString(str string) []byte {
 	return finalLengths
 }
 
+// AlignToEvmForInt aligns an integer to the EVM word size by converting it to a byte slice.
+// It takes an integer as input and returns a byte slice with the aligned integer.
 func AlignToEvmForInt(length int) []byte {
 	lens := []byte{}
 	for {

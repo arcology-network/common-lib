@@ -1,3 +1,5 @@
+// Package common provides common utility functions for file operations.
+
 package common
 
 import (
@@ -11,10 +13,15 @@ import (
 	"strings"
 )
 
+// IsPath checks if the given path ends with a forward slash.
+// It returns true if the path is not empty and ends with a forward slash, false otherwise.
 func IsPath(path string) bool {
 	return len(path) > 0 && path[len(path)-1] == '/'
 }
 
+// GetParentPath returns the parent path of the given key.
+// If the key is empty or the root ("/"), it returns the key itself.
+// Otherwise, it returns the substring of the key up to the last occurrence of "/".
 func GetParentPath(key string) string {
 	if len(key) == 0 || key == "/" { //Root or empty
 		return key
@@ -23,6 +30,7 @@ func GetParentPath(key string) string {
 	return path
 }
 
+// FileToLines reads the contents of the file with the given fileName and returns them as a slice of strings.
 func FileToLines(fileName string) []string {
 	file, err := os.Open(fileName)
 	defer file.Close()
@@ -42,25 +50,8 @@ func FileToLines(fileName string) []string {
 	return lines
 }
 
-// func JsonToCsv(lines []string) ([]string, [][]string) {
-// 	logs := make(map[string][]string)
-// 	var result map[string]interface{}
-// 	for _, line := range lines {
-// 		json.Unmarshal([]byte(line), &result)
-// 		for k, v := range result {
-// 			logs[k] = append(logs[k], fmt.Sprintf("%v", v))
-// 		}
-// 	}
-
-// 	columns := make([]string, 0, len(logs))
-// 	rows := make([][]string, 0, len(logs))
-// 	for k, v := range logs {
-// 		columns = append(columns, k)
-// 		rows = append(rows, v)
-// 	}
-// 	return columns, Transpose(rows)
-// }
-
+// FileExists checks if the file with the given filename exists.
+// It returns true if the file exists, false otherwise.
 func FileExists(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
@@ -69,6 +60,8 @@ func FileExists(filename string) bool {
 	return !info.IsDir()
 }
 
+// DirExists checks if the directory with the given path exists.
+// It returns true if the directory exists, false otherwise.
 func DirExists(path string) bool {
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
@@ -77,6 +70,8 @@ func DirExists(path string) bool {
 	return info.IsDir()
 }
 
+// GetCurrentDirectory returns the current working directory.
+// It uses the filepath package to get the absolute path of the directory.
 func GetCurrentDirectory() (string, error) {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
@@ -86,6 +81,8 @@ func GetCurrentDirectory() (string, error) {
 	return strings.Replace(dir, "\\", "/", -1), nil
 }
 
+// AppendToFile appends the given content to the file with the given filename.
+// If the file does not exist, it creates a new file.
 func AppendToFile(filename, content string) error {
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0664)
 	if err != nil {
@@ -104,6 +101,8 @@ func AppendToFile(filename, content string) error {
 	return nil
 }
 
+// AddToLogFile appends the given field and value to the log file with the given filename.
+// It marshals the value to JSON format before appending.
 func AddToLogFile(filename, field string, v interface{}) {
 	data, err := json.Marshal(v)
 	if err != nil {
@@ -113,6 +112,8 @@ func AddToLogFile(filename, field string, v interface{}) {
 	AppendToFile(filename, field+" : "+string(data))
 }
 
+// CopyFile copies the file from the source path to the destination path.
+// It returns an error if the copy operation fails.
 func CopyFile(src, dst string) error {
 	if src == dst {
 		return nil
@@ -153,6 +154,8 @@ func CopyFile(src, dst string) error {
 	return nil
 }
 
+// MoveFile moves the file from the source path to the destination path.
+// It returns an error if the move operation fails.
 func MoveFile(src, dst string) error {
 	if src == dst {
 		return nil
