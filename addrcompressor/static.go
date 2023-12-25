@@ -1,4 +1,4 @@
-package datacompression
+package addrcompressor
 
 import (
 	"strconv"

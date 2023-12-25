@@ -1,6 +1,6 @@
 // The package offers fast data compression using a lookup table, replacing addresses with index numbers.
 
-package datacompression
+package addrcompressor
 
 import (
 	"bytes"

@@ -1,4 +1,4 @@
-package datacompression
+package addrcompressor
 
 import (
 	codec "github.com/arcology-network/common-lib/codec"

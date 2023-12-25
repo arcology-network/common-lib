@@ -2,7 +2,7 @@
 // to map keys to their corresponding indices and vice versa. This can be useful in scenarios where you want to reduce
 // the size of data by replacing repetitive keys with their corresponding indices
 
-package datacompression
+package addrcompressor
 
 import (
 	"strconv"
