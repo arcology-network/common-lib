@@ -14,6 +14,7 @@ type MonacoBlock struct {
 	Blockhash []byte
 	Headers   [][]byte
 	Txs       [][]byte
+	Signer    uint8
 }
 
 func (mb MonacoBlock) Hash() []byte {
@@ -25,10 +26,11 @@ func (mb MonacoBlock) Hash() []byte {
 
 func (mb MonacoBlock) GobEncode() ([]byte, error) {
 	data := [][]byte{
-		// common.Uint64ToBytes(mb.Height),
 		encoding.Uint64(mb.Height).Encode(),
 		encoding.Byteset(mb.Headers).Encode(),
 		encoding.Byteset(mb.Txs).Encode(),
+		mb.Blockhash,
+		[]byte{mb.Signer},
 	}
 	return encoding.Byteset(data).Encode(), nil
 }
@@ -37,5 +39,7 @@ func (mb *MonacoBlock) GobDecode(data []byte) error {
 	mb.Height = encoding.Uint64(0).Decode(fields[0]) //common.BytesToUint64(fields[0])
 	mb.Headers = encoding.Byteset{}.Decode(fields[1])
 	mb.Txs = encoding.Byteset{}.Decode(fields[2])
+	mb.Blockhash = fields[3]
+	mb.Signer = uint8(fields[4][0])
 	return nil
 }

@@ -11,13 +11,13 @@ import (
 )
 
 type ExecutingSequence struct {
-	Msgs       []*StandardMessage
+	Msgs       []*StandardTransaction
 	Parallel   bool
 	SequenceId ethCommon.Hash
 	Txids      []uint32
 }
 
-func NewExecutingSequence(msgs []*StandardMessage, parallel bool) *ExecutingSequence {
+func NewExecutingSequence(msgs []*StandardTransaction, parallel bool) *ExecutingSequence {
 	buffers := make([][]byte, len(msgs))
 	for i, msg := range msgs {
 		buffers[i] = msg.TxHash.Bytes()
@@ -44,7 +44,7 @@ func (this ExecutingSequences) Encode() ([]byte, error) {
 		executingSequences := args[0].([]interface{})[0].(ExecutingSequences)
 		data := args[0].([]interface{})[1].([][]byte)
 		for i := start; i < end; i++ {
-			standardMessages := StandardMessages(executingSequences[i].Msgs)
+			standardMessages := StandardTransactions(executingSequences[i].Msgs)
 			standardMessagesData, err := standardMessages.Encode()
 			if err != nil {
 				standardMessagesData = []byte{}
@@ -76,9 +76,9 @@ func (this *ExecutingSequences) Decode(data []byte) ([]*ExecutingSequence, error
 			executingSequence := new(ExecutingSequence)
 
 			datafields := codec.Byteset{}.Decode(datas[i]).(codec.Byteset)
-			msgResults, err := new(StandardMessages).Decode(datafields[0])
+			msgResults, err := new(StandardTransactions).Decode(datafields[0])
 			if err != nil {
-				msgResults = StandardMessages{}
+				msgResults = StandardTransactions{}
 			}
 			executingSequence.Msgs = msgResults
 			parallels := new(encoding.Bools).Decode(datafields[1])

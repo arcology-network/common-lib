@@ -25,11 +25,10 @@ func init() {
 	gob.Register(&ArbitratorResponse{})
 	gob.Register(&ExecutorRequest{})
 	gob.Register(&ExecutorResponses{})
-	gob.Register(&StandardMessage{})
-	gob.Register(StandardMessages{})
-	gob.Register(Txs{})
 	gob.Register(&StandardTransaction{})
-	gob.Register([]*StandardMessage{})
+	// gob.Register(StandardMessages{})
+	gob.Register(Txs{})
+	gob.Register([]*StandardTransaction{})
 	gob.Register([]*StandardTransaction{})
 	gob.Register(&StatisticalInformation{})
 
@@ -45,7 +44,7 @@ func init() {
 	gob.Register(&MetaBlock{})
 	gob.Register(&MonacoBlock{})
 	gob.Register(&big.Int{})
-	gob.Register(SendingStandardMessages{})
+	// gob.Register(SendingStandardMessages{})
 	gob.Register(ExecutingLogs{})
 	// gob.Register([]*SpawnedRelation{})
 	gob.Register(map[ethCommon.Hash]ethCommon.Hash{})
@@ -64,7 +63,9 @@ func init() {
 	gob.Register(&SyncDataResponse{})
 
 	gob.Register(&IncomingTxs{})
-	gob.Register(&IncomingMsgs{})
+	// gob.Register(&IncomingMsgs{})
+
+	gob.Register(&BlockResult{})
 
 	arEncoder = newArbReqEncoder()
 	arDecoder = newArbReqDecoder()

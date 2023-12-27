@@ -21,11 +21,11 @@ func TestStandardMessageEncodingAndDeconing(t *testing.T) {
 	ethMsg_serial_1 := core.NewMessage(ethCommon.Address{}, &to, 3, big.NewInt(int64(100)), 200, big.NewInt(int64(9)), []byte{4, 5, 6}, nil, false)
 	hash1 := RlpHash(ethMsg_serial_0)
 	hash2 := RlpHash(ethMsg_serial_1)
-	stdMsgs := []*StandardMessage{
-		{Source: 0, Native: &ethMsg_serial_0, TxHash: hash1},
-		{Source: 1, Native: &ethMsg_serial_1, TxHash: hash2},
+	stdMsgs := []*StandardTransaction{
+		{Source: 0, NativeMessage: &ethMsg_serial_0, TxHash: hash1},
+		{Source: 1, NativeMessage: &ethMsg_serial_1, TxHash: hash2},
 	}
-	standardMessages := StandardMessages(stdMsgs)
+	standardMessages := StandardTransactions(stdMsgs)
 	data, err := standardMessages.Encode()
 	if err != nil {
 		fmt.Printf("StandardMessages encode err=%v\n", err)
@@ -33,7 +33,7 @@ func TestStandardMessageEncodingAndDeconing(t *testing.T) {
 	}
 	fmt.Printf("StandardMessages encode result=%v\n", data)
 
-	standardMessages2 := new(StandardMessages)
+	standardMessages2 := new(StandardTransactions)
 
 	standardMessagesResult, err := standardMessages2.Decode(data)
 
@@ -42,7 +42,7 @@ func TestStandardMessageEncodingAndDeconing(t *testing.T) {
 		return
 	}
 	for _, v := range standardMessagesResult {
-		fmt.Printf("StandardMessages dncode result=%v,Native=%v\n", v, v.Native)
+		fmt.Printf("StandardMessages dncode result=%v,Native=%v\n", v, v.NativeMessage)
 	}
 
 }
@@ -60,15 +60,15 @@ func TestStandardMessageSortingByFee(t *testing.T) {
 	from_4 := ethCommon.BytesToAddress([]byte("2"))
 	ethMsg_serial_4 := core.NewMessage(from_4, &to, 1, big.NewInt(int64(10)), 2, big.NewInt(int64(9)), []byte{}, nil, false)
 
-	stdMsgs := []*StandardMessage{
-		{Source: 0, Native: &ethMsg_serial_0},
-		{Source: 1, Native: &ethMsg_serial_1},
-		{Source: 2, Native: &ethMsg_serial_2},
-		{Source: 3, Native: &ethMsg_serial_3},
-		{Source: 4, Native: &ethMsg_serial_4},
+	stdMsgs := []*StandardTransaction{
+		{Source: 0, NativeMessage: &ethMsg_serial_0},
+		{Source: 1, NativeMessage: &ethMsg_serial_1},
+		{Source: 2, NativeMessage: &ethMsg_serial_2},
+		{Source: 3, NativeMessage: &ethMsg_serial_3},
+		{Source: 4, NativeMessage: &ethMsg_serial_4},
 	}
 
-	StandardMessages(stdMsgs).SortByFee()
+	StandardTransactions(stdMsgs).SortByFee()
 
 	if (*stdMsgs[0]).Source != 3 || (*stdMsgs[1]).Source != 0 || (*stdMsgs[2]).Source != 2 || (*stdMsgs[3]).Source != 1 || (*stdMsgs[4]).Source != 4 {
 		t.Error("Wrong order")
@@ -89,23 +89,23 @@ func TestStandardMessageSortingByGas(t *testing.T) {
 	from_4 := ethCommon.BytesToAddress([]byte("2"))
 	ethMsg_serial_4 := core.NewMessage(from_4, &to, 1, big.NewInt(int64(10)), 2, big.NewInt(int64(9)), []byte{}, nil, false)
 
-	stdMsgs := []*StandardMessage{
-		{Source: 0, Native: &ethMsg_serial_0},
-		{Source: 1, Native: &ethMsg_serial_1},
-		{Source: 2, Native: &ethMsg_serial_2},
-		{Source: 3, Native: &ethMsg_serial_3},
-		{Source: 4, Native: &ethMsg_serial_4},
+	stdMsgs := []*StandardTransaction{
+		{Source: 0, NativeMessage: &ethMsg_serial_0},
+		{Source: 1, NativeMessage: &ethMsg_serial_1},
+		{Source: 2, NativeMessage: &ethMsg_serial_2},
+		{Source: 3, NativeMessage: &ethMsg_serial_3},
+		{Source: 4, NativeMessage: &ethMsg_serial_4},
 	}
 
-	StandardMessages(stdMsgs).SortByGas()
+	StandardTransactions(stdMsgs).SortByGas()
 
 	if (*stdMsgs[0]).Source != 0 || (*stdMsgs[1]).Source != 2 || (*stdMsgs[2]).Source != 1 || (*stdMsgs[3]).Source != 4 || (*stdMsgs[4]).Source != 3 {
 		t.Error("Wrong order")
 	}
 }
 
-func PrepareData(max int) []*StandardMessage {
-	stdMsgs := make([]*StandardMessage, max)
+func PrepareData(max int) []*StandardTransaction {
+	stdMsgs := make([]*StandardTransaction, max)
 
 	for i := 0; i < len(stdMsgs); i++ {
 		to := ethCommon.BytesToAddress([]byte{11, 8, 9, 10})
@@ -122,10 +122,10 @@ func PrepareData(max int) []*StandardMessage {
 			false,
 		)
 
-		stdMsgs[i] = &StandardMessage{
-			Source: 1,
-			TxHash: bytes,
-			Native: &ethMsg,
+		stdMsgs[i] = &StandardTransaction{
+			Source:        1,
+			TxHash:        bytes,
+			NativeMessage: &ethMsg,
 		}
 
 	}
@@ -136,12 +136,12 @@ func TestQuickSort(t *testing.T) {
 	stdmsg0 := PrepareData(4)
 	stdmsg1 := PrepareData(4)
 
-	worker := func(lft *StandardMessage, rgt *StandardMessage) bool {
+	worker := func(lft *StandardTransaction, rgt *StandardTransaction) bool {
 		return bytes.Compare(lft.TxHash[:], rgt.TxHash[:]) < 0
 	}
 
-	StandardMessages(stdmsg0).QuickSort(worker)
-	StandardMessages(stdmsg1).SortByHash()
+	StandardTransactions(stdmsg0).QuickSort(worker)
+	StandardTransactions(stdmsg1).SortByHash()
 	if !reflect.DeepEqual(stdmsg0, stdmsg1) {
 		t.Error("mismatch")
 	}
@@ -150,10 +150,10 @@ func TestQuickSort(t *testing.T) {
 func TestQuickSortPerformance(t *testing.T) {
 	stdmsgs := PrepareData(500000)
 	t0 := time.Now()
-	worker := func(lft *StandardMessage, rgt *StandardMessage) bool {
+	worker := func(lft *StandardTransaction, rgt *StandardTransaction) bool {
 		return bytes.Compare(lft.TxHash[:], rgt.TxHash[:]) < 0
 	}
-	StandardMessages(stdmsgs).QuickSort(worker)
+	StandardTransactions(stdmsgs).QuickSort(worker)
 
 	fmt.Println("append:", time.Now().Sub(t0))
 }
