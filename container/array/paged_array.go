@@ -5,7 +5,7 @@
 // It allows you to perform operations such as adding elements, retrieving elements by index, updating elements, and more.
 // By dividing the array into blocks, it can optimize memory usage and improve performance.
 
-package pagedarray
+package array
 
 import (
 	"math"

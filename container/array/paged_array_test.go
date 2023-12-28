@@ -1,4 +1,4 @@
-package pagedarray
+package array
 
 import (
 	"fmt"

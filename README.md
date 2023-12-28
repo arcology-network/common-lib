@@ -52,7 +52,7 @@ This package facilitates Files DBs, memory DB, and offers wrappers for various t
 
 <h2> Usage  <img align="center" height="32" src="./img/ruler-cross-pen.svg">  </h2>
 
-Include detailed instructions and examples to assist users in integrating and utilizing the common-lib library within their projects.
+For detailed instructions and examples to assist users in integrating and utilizing the common-lib library, please check out the source code.
 
 
 <h2> License  <img align="center" height="32" src="./img/copyright.svg">  </h2>
