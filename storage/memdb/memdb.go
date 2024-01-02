@@ -4,21 +4,21 @@ import (
 	ccmap "github.com/arcology-network/common-lib/container/map"
 )
 
-type MemDB struct {
+type MemoryDB struct {
 	db *ccmap.ConcurrentMap
 }
 
-func NewMemDB() *MemDB {
-	return &MemDB{
+func NewMemoryDB() *MemoryDB {
+	return &MemoryDB{
 		db: ccmap.NewConcurrentMap(),
 	}
 }
 
-func (this *MemDB) Set(key string, v []byte) error {
+func (this *MemoryDB) Set(key string, v []byte) error {
 	return this.db.Set(key, v)
 }
 
-func (this *MemDB) Get(key string) ([]byte, error) {
+func (this *MemoryDB) Get(key string) ([]byte, error) {
 	v, _ := this.db.Get(key)
 	if v == nil {
 		return nil, nil
@@ -26,7 +26,7 @@ func (this *MemDB) Get(key string) ([]byte, error) {
 	return v.([]byte), nil
 }
 
-func (this *MemDB) BatchGet(keys []string) ([][]byte, error) {
+func (this *MemoryDB) BatchGet(keys []string) ([][]byte, error) {
 	values := this.db.BatchGet(keys)
 	byteset := make([][]byte, len(keys))
 	for i, v := range values {
@@ -37,7 +37,7 @@ func (this *MemDB) BatchGet(keys []string) ([][]byte, error) {
 	return byteset, nil
 }
 
-func (this *MemDB) BatchSet(keys []string, byteset [][]byte) error {
+func (this *MemoryDB) BatchSet(keys []string, byteset [][]byte) error {
 	values := make([]interface{}, len(keys))
 	for i, v := range byteset {
 		if v != nil {
@@ -49,6 +49,6 @@ func (this *MemDB) BatchSet(keys []string, byteset [][]byte) error {
 	return nil
 }
 
-func (this *MemDB) Query(key string, functor func(string, string) bool) ([]string, [][]byte, error) {
+func (this *MemoryDB) Query(key string, functor func(string, string) bool) ([]string, [][]byte, error) {
 	return []string{}, [][]byte{}, nil
 }

@@ -24,7 +24,7 @@ type PersistentStorage interface {
 
 type DbFilter func(PersistentStorage) bool
 
-func NotQueryRpc(db PersistentStorage) bool { // Do not access MemDB
+func NotQueryRpc(db PersistentStorage) bool { // Do not access MemoryDB
 	name := reflect.TypeOf(db).String()
 	return name == "*storage.ReadonlyRpcClient"
 }

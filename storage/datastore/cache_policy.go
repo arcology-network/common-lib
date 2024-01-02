@@ -52,7 +52,7 @@ func NewCachePolicy(hardQuota uint64, threshold float64) *CachePolicy {
 
 func (this *CachePolicy) Customize(db intf.PersistentStorage) *CachePolicy {
 	if this != nil {
-		if _, ok := db.(*memdb.MemDB); ok { // A memory DB doesn't need a in-memory cache
+		if _, ok := db.(*memdb.MemoryDB); ok { // A memory DB doesn't need a in-memory cache
 			this.quota = 0
 		}
 	}

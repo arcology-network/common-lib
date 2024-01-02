@@ -4,6 +4,8 @@ go 1.21
 
 replace github.com/arcology-network/common-lib => ../common-lib/
 
+replace github.com/arcology-network/arcology-network/btree => ../btree/
+
 replace github.com/ethereum/go-ethereum => ../concurrent-evm/
 
 require (
@@ -40,6 +42,10 @@ require (
 	github.com/getsentry/sentry-go v0.18.0 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/google/btree v1.1.2 // indirect
+	github.com/hashicorp/go-immutable-radix v1.3.0 // indirect
+	github.com/hashicorp/go-memdb v1.3.4 // indirect
+	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/mmcloughlin/addchain v0.4.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

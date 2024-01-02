@@ -6,7 +6,7 @@ import (
 )
 
 func TestMemDB(t *testing.T) {
-	memDB := NewMemDB()
+	memDB := NewMemoryDB()
 	keys := []string{"123", "456"}
 	values := make([][]byte, 2)
 	values[0] = []byte{1, 2, 3}
