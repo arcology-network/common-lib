@@ -15,7 +15,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package memdb
+package indexer
 
 import (
 	"github.com/arcology-network/common-lib/common"
@@ -52,11 +52,37 @@ func NewIndex[T any](name string, compare func(T, T) bool) *Index[T] {
 	}
 }
 
+// Add new values to the index.
 func (this *Index[T]) Add(vals []T) {
-	sortables := common.Append(vals, func(v T) *sortable[T] { return newSortable[T](v, &this.compare) })
+	sortables := common.Append(vals, func(_ int, v T) *sortable[T] { return newSortable[T](v, &this.compare) })
 	for _, v := range sortables {
 		this.indexTree.ReplaceOrInsert(v)
 	}
+}
+
+// Remove the values from the index.
+func (this *Index[T]) Remove(vals []T) {
+	sortables := common.Append(vals, func(_ int, v T) *sortable[T] { return newSortable[T](v, &this.compare) })
+	for _, v := range sortables {
+		this.indexTree.Delete(v)
+	}
+}
+
+// Export the index, return a slice of all the values in the index.
+func (this *Index[T]) Export() []T {
+	vals := make([]T, 0, this.indexTree.Len())
+	this.indexTree.Ascend(func(node btree.Item) bool {
+		vals = append(vals, node.(*sortable[T]).v)
+		return true
+	})
+	return vals
+}
+
+// Clear the index, return the number of items cleared.
+func (this *Index[T]) Clear() int {
+	size := this.indexTree.Len()
+	this.indexTree.Clear(false)
+	return size
 }
 
 func (this *Index[T]) GreaterThan(lower T) []T {
@@ -69,7 +95,7 @@ func (this *Index[T]) GreaterThan(lower T) []T {
 		got = append(got, node)
 		return true
 	})
-	return common.Append(got, func(v btree.Item) T { return v.(*sortable[T]).v })
+	return common.Append(got, func(_ int, v btree.Item) T { return v.(*sortable[T]).v })
 }
 
 func (this *Index[T]) GreaterEqualThan(lower T) []T {
@@ -78,7 +104,7 @@ func (this *Index[T]) GreaterEqualThan(lower T) []T {
 		got = append(got, node)
 		return true
 	})
-	return common.Append(got, func(v btree.Item) T { return v.(*sortable[T]).v })
+	return common.Append(got, func(_ int, v btree.Item) T { return v.(*sortable[T]).v })
 }
 
 func (this *Index[T]) LessThan(upper T) []T {
@@ -91,7 +117,7 @@ func (this *Index[T]) LessThan(upper T) []T {
 		got = append(got, node)
 		return true
 	})
-	return common.Append(got, func(v btree.Item) T { return v.(*sortable[T]).v }) // Move the result to a slice.
+	return common.Append(got, func(_ int, v btree.Item) T { return v.(*sortable[T]).v }) // Move the result to a slice.
 }
 
 func (this *Index[T]) LessEqualThan(lower T) []T {
@@ -100,7 +126,7 @@ func (this *Index[T]) LessEqualThan(lower T) []T {
 		got = append(got, node)
 		return true
 	})
-	return common.Append(got, func(v btree.Item) T { return v.(*sortable[T]).v })
+	return common.Append(got, func(_ int, v btree.Item) T { return v.(*sortable[T]).v })
 }
 
 // This function is inclusive, both lower and upper are included.
@@ -113,7 +139,7 @@ func (this *Index[T]) Between(lower, upper T) []T {
 		got = append(got, node)
 		return true
 	})
-	return common.Append(got, func(v btree.Item) T { return v.(*sortable[T]).v }) // Move the result to a slice.
+	return common.Append(got, func(_ int, v btree.Item) T { return v.(*sortable[T]).v }) // Move the result to a slice.
 }
 
 func (this *Index[T]) Find(v T) (T, bool) {

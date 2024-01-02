@@ -154,10 +154,10 @@ func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, i
 }
 
 // Append applies a function to each element in a slice and returns a new slice with the results.
-func Append[T any, T1 any](values []T, do func(v T) T1) []T1 {
+func Append[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
 	vec := make([]T1, len(values))
 	for i := 0; i < len(values); i++ {
-		vec[i] = do(values[i])
+		vec[i] = do(i, values[i])
 	}
 	return vec
 }
@@ -637,4 +637,13 @@ func GroupIndicesBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) ([]i
 		}
 	}
 	return indices, len(dict)
+}
+
+// GroupIndicesBy groups the elements of an array based on a key getter function and returns the group indices.
+func Reference[T any](array []T) []*T {
+	return Append(array, func(i int, v T) *T { return &v })
+}
+
+func Dereference[T any](array []*T) []T {
+	return Append(array, func(i int, v *T) T { return *v })
 }

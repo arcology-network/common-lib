@@ -15,7 +15,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package querycache
+package memdb
 
 import (
 	"fmt"
@@ -25,6 +25,20 @@ import (
 	"github.com/arcology-network/common-lib/common"
 	// queryablecache "github.com/arcology-network/common-lib/storage/cache"
 )
+
+type CachedTx struct {
+	Hash        string      // Transaction hash.
+	Tx          []byte      // The encoded transaction.
+	Height      uint64      // Block height.
+	Index       uint64      // The index of the transaction in the block.
+	ReceiptHash string      // The hash of the transaction receipt.
+	ExecRecipt  interface{} // The execution receipt of the transaction.
+}
+
+type CachedBlock struct {
+	Hash   string
+	Height uint64
+}
 
 func TestQueryCacheTx(t *testing.T) {
 	txTable := NewTable("tx",
@@ -55,7 +69,7 @@ func TestQueryCacheTx(t *testing.T) {
 			},
 		}
 
-		if err := cache.Add("block", common.Append(blocks, func(v *CachedBlock) interface{} { return v })...); err != nil {
+		if err := cache.Add("block", common.Append(blocks, func(_ int, v *CachedBlock) interface{} { return v })...); err != nil {
 			panic(err)
 		}
 
@@ -103,7 +117,7 @@ func TestQueryCacheTx(t *testing.T) {
 			},
 		}
 
-		if err := cache.Add("tx", common.Append(txs, func(v *CachedTx) interface{} { return v })...); err != nil {
+		if err := cache.Add("tx", common.Append(txs, func(_ int, v *CachedTx) interface{} { return v })...); err != nil {
 			panic(err)
 		}
 
@@ -182,7 +196,7 @@ func TestQueryCacheTxPerformance1M(t *testing.T) {
 			Hash:   "0x" + fmt.Sprint(i),
 		}
 	}
-	txInterfaces := common.Append(txs, func(v *CachedTx) interface{} { return v })
+	txInterfaces := common.Append(txs, func(_ int, v *CachedTx) interface{} { return v })
 
 	t0 := time.Now()
 	if err := cache.Add("tx", txInterfaces...); err != nil {

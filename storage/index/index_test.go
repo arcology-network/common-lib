@@ -15,7 +15,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package memdb
+package indexer
 
 import (
 	"fmt"
@@ -47,12 +47,7 @@ func TestBTree(t *testing.T) {
 func TestInteger(t *testing.T) {
 	type Int int
 
-	index := &Index[Int]{
-		Name:      "integer",
-		indexTree: btree.New(4),
-		compare:   func(a, b Int) bool { return a < b },
-	}
-
+	index := NewIndex("id", func(a, b Int) bool { return a < b })
 	newVals := common.ParallelAppend(make([]Int, 10), 4, func(i int) Int { return Int(i) })
 
 	t0 := time.Now()
@@ -88,6 +83,17 @@ func TestInteger(t *testing.T) {
 		t.Error("mismatch!!", res)
 	}
 
+	index.Remove(res)
+
+	res = index.Between(5, 7)
+	if !reflect.DeepEqual(res, []Int{}) {
+		t.Error("mismatch!!", res)
+	}
+
+	res = index.Export()
+	if !reflect.DeepEqual(res, []Int{0, 1, 2, 3, 4, 8, 9}) {
+		t.Error("mismatch!!", res)
+	}
 }
 
 func TestIndex(t *testing.T) {
@@ -96,26 +102,25 @@ func TestIndex(t *testing.T) {
 		height uint64
 	}
 
-	index := &Index[*Tx]{
-		Name:      "id",
-		indexTree: btree.New(4),
-		compare:   func(a, b *Tx) bool { return a.height < b.height },
-	}
-	v := common.ParallelAppend(make([]*Tx, 10), 4, func(i int) *Tx { return &Tx{id: fmt.Sprint(i), height: uint64(i)} })
+	index := NewIndex("id", func(a, b *Tx) bool { return a.id < b.id })
+	txs := common.ParallelAppend(make([]*Tx, 10), 4, func(i int) *Tx { return &Tx{id: fmt.Sprint(i), height: uint64(i)} })
+	index.Add(txs)
 
-	index.Add(v)
-	fmt.Print(index)
+	res := index.GreaterThan(&Tx{id: "1"})
+	if len(res) != 8 {
+		t.Error("mismatch!!", res)
+	}
+
+	res = index.GreaterThan(&Tx{id: "2"})
+	if len(res) != 7 {
+		t.Error("mismatch!!", res)
+	}
 }
 
 func BenchmarkInteger(t *testing.B) {
 	type Int int
 
-	index := &Index[Int]{
-		Name:      "integer",
-		indexTree: btree.New(4),
-		compare:   func(a, b Int) bool { return a < b },
-	}
-
+	index := NewIndex("id", func(a, b Int) bool { return a < b })
 	newVals := common.ParallelAppend(make([]Int, 1000000), 4, func(i int) Int { return Int(i) })
 
 	t0 := time.Now()

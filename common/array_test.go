@@ -653,13 +653,24 @@ func TestAnyIs(t *testing.T) {
 func TestAppend(t *testing.T) {
 	src := []int{4, 2, 6, 3, 1}
 
-	target := Append(src, func(v int) int { return v + 1 })
+	target := Append(src, func(_ int, v int) int { return v + 1 })
 	if !reflect.DeepEqual(target, []int{5, 3, 7, 4, 2}) {
 		t.Error("Expected: ", target)
 	}
 
 	target = ParallelAppend(target, 4, func(i int) int { return target[i] + 1 })
 	if !reflect.DeepEqual(target, []int{6, 4, 8, 5, 3}) {
+		t.Error("Expected: ", target)
+	}
+}
+
+func TestReferenceAndDereference(t *testing.T) {
+	src := []int{4, 2, 6, 3, 1}
+
+	refs := Reference(src)
+	target := Dereference(refs)
+
+	if !reflect.DeepEqual(target, src) {
 		t.Error("Expected: ", target)
 	}
 }

@@ -15,7 +15,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package querycache
+package memdb
 
 import (
 	"errors"
@@ -28,11 +28,11 @@ type Reader interface {
 	Get(string) (interface{}, error) // dbReader is used to query the database.
 }
 
-// QueryableCache is an in-memory database that supports querying.
+// QueryableMemoryDB is an in-memory database that supports querying.
 // It can be used to cache the data of the database to improve the performance of the database by
 // reducing the number of queries to the database.
-type QueryableCache struct {
-	cache       *hashicorpmemdb.MemoryDB
+type QueryableMemoryDB struct {
+	cache       *hashicorpmemdb.MemDB
 	size        int               // The number of batch to be cached.
 	primaryKeys map[string]string // The primary keys of the tables.
 	dbReader    interface {
@@ -82,7 +82,7 @@ func NewTable(name string, indexers ...*hashicorpmemdb.IndexSchema) *hashicorpme
 	return table
 }
 
-func NewQueryableCache(dbReader interface{}, tables ...*hashicorpmemdb.TableSchema) (*QueryableCache, error) {
+func NewQueryableCache(dbReader interface{}, tables ...*hashicorpmemdb.TableSchema) (*QueryableMemoryDB, error) {
 	schema := &memdb.DBSchema{Tables: map[string]*memdb.TableSchema{}}
 	for _, table := range tables {
 		schema.Tables[table.Name] = table
@@ -98,13 +98,13 @@ func NewQueryableCache(dbReader interface{}, tables ...*hashicorpmemdb.TableSche
 		reader = dbReader.(Reader)
 	}
 
-	return &QueryableCache{
+	return &QueryableMemoryDB{
 		cache:    cache,
 		dbReader: reader,
 	}, nil
 }
 
-func (this *QueryableCache) InsertTable(name string, indexers ...*hashicorpmemdb.IndexSchema) error {
+func (this *QueryableMemoryDB) InsertTable(name string, indexers ...*hashicorpmemdb.IndexSchema) error {
 	if this.cache.DBSchema().Tables[name] != nil {
 		return errors.New("Table already exists")
 	}
@@ -122,7 +122,7 @@ func (this *QueryableCache) InsertTable(name string, indexers ...*hashicorpmemdb
 }
 
 // Inserts multiple objects into the database. The size of the cache will be increase by 1.
-func (this *QueryableCache) Add(table string, args ...interface{}) error {
+func (this *QueryableMemoryDB) Add(table string, args ...interface{}) error {
 	txn := this.cache.Txn(true)
 	for _, arg := range args {
 		if err := txn.Insert(table, arg); err != nil {
@@ -133,7 +133,7 @@ func (this *QueryableCache) Add(table string, args ...interface{}) error {
 	return nil
 }
 
-func (this *QueryableCache) Remove(table string, args ...interface{}) error {
+func (this *QueryableMemoryDB) Remove(table string, args ...interface{}) error {
 	tx := this.cache.Txn(true)
 	for _, arg := range args {
 		if err := tx.Delete(table, arg); err != nil {
@@ -144,7 +144,7 @@ func (this *QueryableCache) Remove(table string, args ...interface{}) error {
 	return nil
 }
 
-func (this *QueryableCache) Search(table, column string, arg interface{},
+func (this *QueryableMemoryDB) Search(table, column string, arg interface{},
 	traverse func(table, index string, args ...interface{}) (hashicorpmemdb.ResultIterator, error)) ([]interface{}, error) {
 	buffer := make([]interface{}, 0)
 	if ok, err := this.IsAcceptableNumeric(arg); !ok {
@@ -163,7 +163,7 @@ func (this *QueryableCache) Search(table, column string, arg interface{},
 }
 
 // Check if the arg is an acceptable numeric type.
-func (this *QueryableCache) IsAcceptableNumeric(arg interface{}) (bool, error) {
+func (this *QueryableMemoryDB) IsAcceptableNumeric(arg interface{}) (bool, error) {
 	_, _0 := arg.(uint64)
 	_, _1 := arg.(int)
 	if !_0 && !_1 {
@@ -172,11 +172,11 @@ func (this *QueryableCache) IsAcceptableNumeric(arg interface{}) (bool, error) {
 	return true, nil
 }
 
-func (this *QueryableCache) FindFirst(table, column string, arg interface{}) (interface{}, error) {
+func (this *QueryableMemoryDB) FindFirst(table, column string, arg interface{}) (interface{}, error) {
 	return this.cache.Txn(false).First(table, column, arg)
 }
 
-func (this *QueryableCache) FindAll(table, column string, arg interface{}) ([]interface{}, error) {
+func (this *QueryableMemoryDB) FindAll(table, column string, arg interface{}) ([]interface{}, error) {
 	iter, err := this.cache.Txn(false).Get(table, column, arg)
 	if err != nil {
 		return nil, err
@@ -189,10 +189,10 @@ func (this *QueryableCache) FindAll(table, column string, arg interface{}) ([]in
 	return buffer, nil
 }
 
-func (this *QueryableCache) FindGreaterThan(table, column string, arg interface{}) ([]interface{}, error) {
+func (this *QueryableMemoryDB) FindGreaterThan(table, column string, arg interface{}) ([]interface{}, error) {
 	return this.Search(table, column, arg, this.cache.Txn(false).LowerBound)
 }
 
-func (this *QueryableCache) FindLessThan(table, column string, arg interface{}) ([]interface{}, error) {
+func (this *QueryableMemoryDB) FindLessThan(table, column string, arg interface{}) ([]interface{}, error) {
 	return this.Search(table, column, arg, this.cache.Txn(false).ReverseLowerBound)
 }
