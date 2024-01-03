@@ -163,11 +163,11 @@ func Append[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
 }
 
 // ParallelAppend applies a function to each index in a slice in parallel using multiple threads and returns a new slice with the results.
-func ParallelAppend[T any, T1 any](values []T, numThd int, do func(i int) T1) []T1 {
+func ParallelAppend[T any, T1 any](values []T, numThd int, do func(i int, v T) T1) []T1 {
 	appended := make([]T1, len(values))
 	encoder := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
-			appended[i] = do(i)
+			appended[i] = do(i, values[i])
 		}
 	}
 	ParallelWorker(len(values), numThd, encoder)

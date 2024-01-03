@@ -658,7 +658,7 @@ func TestAppend(t *testing.T) {
 		t.Error("Expected: ", target)
 	}
 
-	target = ParallelAppend(target, 4, func(i int) int { return target[i] + 1 })
+	target = ParallelAppend(target, 4, func(i int, v int) int { return target[i] + 1 })
 	if !reflect.DeepEqual(target, []int{6, 4, 8, 5, 3}) {
 		t.Error("Expected: ", target)
 	}

@@ -19,18 +19,19 @@ package indexer
 
 import "github.com/arcology-network/common-lib/common"
 
-// Table is a collection of indexes that need to be updated together,
+// Indexer is a collection of indexes that need to be updated together,
 // it is memory only, and is used to speed up the query process.
-
-// It is supposed to be used with a database, which is used to store the actual data.
-type Table[T any] struct {
+//
+// It is either used with a database, which is used to store the actual data,
+// or used alone as a memory database that supports indexing.
+type Indexer[T any] struct {
 	dict    map[string]int
 	indexes []*Index[T]
 }
 
 // NewTable creates a new table with the given indexes.
-func NewTable[T any](indice ...*Index[T]) *Table[T] {
-	table := &Table[T]{
+func NewIndexer[T any](indice ...*Index[T]) *Indexer[T] {
+	table := &Indexer[T]{
 		dict: map[string]int{},
 	}
 	for _, index := range indice {
@@ -43,13 +44,20 @@ func NewTable[T any](indice ...*Index[T]) *Table[T] {
 }
 
 // updateIndex updates all indexes in the table, everytime new records are added.
-func (this *Table[T]) Update(v []T) {
+func (this *Indexer[T]) Update(v []T) {
 	common.ParallelForeach(this.indexes, 4, func(index **Index[T], i int) {
 		(**index).Add(v)
 	})
 }
 
-func (this *Table[T]) Column(name string) *Index[T] {
+// removeIndex removes all indexes in the table.
+func (this *Indexer[T]) Remove(v []T) {
+	common.ParallelForeach(this.indexes, 4, func(index **Index[T], i int) {
+		(**index).Remove(v)
+	})
+}
+
+func (this *Indexer[T]) Column(name string) *Index[T] {
 	if loc, ok := this.dict[name]; ok {
 		return this.indexes[loc]
 	}

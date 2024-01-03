@@ -30,7 +30,7 @@ import (
 	"github.com/arcology-network/common-lib/storage/memdb"
 )
 
-func TestTableAlone(t *testing.T) {
+func TestIndexerAlone(t *testing.T) {
 	// Tx mocks a real transaction.
 	type Tx struct {
 		hash    string
@@ -45,7 +45,7 @@ func TestTableAlone(t *testing.T) {
 	}
 
 	// Create a table with two indexes.
-	table := NewTable[*Tx](
+	table := NewIndexer[*Tx](
 		NewIndex("time", func(a, b *Tx) bool { return a.time < b.time }),       // Index by time.
 		NewIndex("height", func(a, b *Tx) bool { return a.height < b.height }), // Index by height.
 	)
@@ -79,7 +79,7 @@ func TestTableAlone(t *testing.T) {
 }
 
 // The function tests the table with a database.
-func TestTableWithDB(t *testing.T) {
+func TestIndexerWithDB(t *testing.T) {
 	// Tx mocks a real transaction.
 	type Tx struct {
 		Hash    string    `json:"hash"`
@@ -155,7 +155,7 @@ func TestTableWithDB(t *testing.T) {
 	})
 
 	// Create a table with two indexes.
-	table := NewTable[*txIndex](
+	table := NewIndexer[*txIndex](
 		NewIndex("time", func(a, b *txIndex) bool { return a.time.Nanosecond() < b.time.Nanosecond() }), // Index by time.
 		NewIndex("height", func(a, b *txIndex) bool { return a.height < b.height }),                     // Index by height.
 	)
@@ -185,5 +185,20 @@ func TestTableWithDB(t *testing.T) {
 
 	if queryTxs[0].Hash != (*txs[6]).Hash || queryTxs[1].Hash != (*txs[7]).Hash {
 		t.Error("should be equal")
+	}
+
+	// Delete the transaction indices from the table.
+	table.Remove(res)
+
+	// Query the table with the time index again, should be empty.
+	res = table.Column("time").GreaterThan(&txIndex{time: txs[5].Time})
+	if len(res) != 0 {
+		t.Error("should be 0")
+	}
+
+	// Count the number of indices left in the table.
+	res = table.Column("time").LessEqualThan(&txIndex{time: txs[5].Time})
+	if len(res) != 6 {
+		t.Error("should be 6")
 	}
 }
