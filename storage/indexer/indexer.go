@@ -43,20 +43,21 @@ func NewIndexer[T any](indice ...*Index[T]) *Indexer[T] {
 	return table
 }
 
-// updateIndex updates all indexes in the table, everytime new records are added.
+// Update updates all indexes in the table, everytime new records are added.
 func (this *Indexer[T]) Update(v []T) {
 	common.ParallelForeach(this.indexes, 4, func(index **Index[T], i int) {
 		(**index).Add(v)
 	})
 }
 
-// removeIndex removes all indexes in the table.
+// removeIndex removes all the indices in the table specified by the input values.
 func (this *Indexer[T]) Remove(v []T) {
 	common.ParallelForeach(this.indexes, 4, func(index **Index[T], i int) {
 		(**index).Remove(v)
 	})
 }
 
+// Column returns the index specified by the column name.
 func (this *Indexer[T]) Column(name string) *Index[T] {
 	if loc, ok := this.dict[name]; ok {
 		return this.indexes[loc]
