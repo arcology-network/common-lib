@@ -647,3 +647,29 @@ func Reference[T any](array []T) []*T {
 func Dereference[T any](array []*T) []T {
 	return Append(array, func(i int, v *T) T { return *v })
 }
+
+// MinElement returns the minimum element in a slice, if there are multiple minimum elements, it returns the first one.
+func MinElement[T0 any](array []T0, less func(T0, T0) bool) (int, T0) {
+	idx := 0
+	minv := array[idx]
+	for i := idx; i < len(array); i++ {
+		if less(array[i], minv) {
+			idx = i
+			minv = array[i]
+		}
+	}
+	return idx, minv
+}
+
+// MaxElement returns the index and the maximum element in a slice. If there are multiple maximum elements, it returns the first one.
+func MaxElement[T0 any](array []T0, greater func(T0, T0) bool) (int, T0) {
+	idx := 0
+	maxv := array[idx]
+	for i := idx; i < len(array); i++ {
+		if greater(array[i], maxv) {
+			idx = i
+			maxv = array[i]
+		}
+	}
+	return idx, maxv
+}

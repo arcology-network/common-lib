@@ -17,6 +17,12 @@
 
 package common
 
+func MapForeach[M ~map[K]V, K comparable, V any](source M, do func(k K, v *V)) {
+	for k, v := range source {
+		do(k, &v)
+	}
+}
+
 // MapRemoveIf removes key-value pairs from a map based on a condition.
 func MapRemoveIf[M ~map[K]V, K comparable, V any](source M, condition func(k K, v V) bool) {
 	for k, v := range source {
