@@ -34,11 +34,6 @@ const (
 	TX_SOURCE_DEFERRED
 )
 
-const (
-	Signer_London = iota
-	Signer_Cancun
-)
-
 type StandardTransaction struct {
 	TxHash            ethCommon.Hash
 	NativeMessage     *core.Message

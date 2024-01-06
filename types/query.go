@@ -35,6 +35,8 @@ const (
 	QueryType_TxByHashAndIdx   = "txByHashAndIdx"
 	QueryType_TxByNumberAndIdx = "txByNumberAndIdx"
 
+	QueryType_Proof = "proof"
+
 	ConcurrentLibStyle_Array = "array"
 	ConcurrentLibStyle_Map   = "map"
 	ConcurrentLibStyle_Queue = "queue"
@@ -90,6 +92,12 @@ type RequestBlock struct {
 type RequestReceipt struct {
 	Hashes             []string
 	ExecutingDebugLogs bool
+}
+
+type RequestProof struct {
+	Address        ethCommon.Address `json:"address"`
+	Keys           []ethCommon.Hash  `json:"storageKeys"`
+	BlockParameter string            `json:"blockParameter"`
 }
 
 type Block struct {
