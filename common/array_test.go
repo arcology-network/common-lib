@@ -490,7 +490,7 @@ func TestForeach(t *testing.T) {
 
 func TestParallelForeach(t *testing.T) {
 	nums := []int{3, 5, 5, 6, 6}
-	ParallelForeach(nums, 120, func(lhv *int, _ int) { (*lhv) = (*lhv) + 1 })
+	ParallelForeach(nums, 120, func(_ int, lhv *int) { (*lhv) = (*lhv) + 1 })
 
 	if nums[0] != 4 || nums[1] != 6 || nums[2] != 6 || nums[3] != 7 || nums[4] != 7 {
 		t.Error("Error: Failed to remove nil values !")
@@ -502,7 +502,7 @@ func TestParallelForeach(t *testing.T) {
 	}
 
 	t0 := time.Now()
-	ParallelForeach(nums, 32, func(v *int, i int) {
+	ParallelForeach(nums, 32, func(i int, v *int) {
 		sha256.Sum256([]byte(strconv.Itoa(*v)))
 	})
 	fmt.Println("Time: ", time.Since(t0))
@@ -672,5 +672,18 @@ func TestReferenceAndDereference(t *testing.T) {
 
 	if !reflect.DeepEqual(target, src) {
 		t.Error("Expected: ", target)
+	}
+}
+
+func TestMinMaxElem(t *testing.T) {
+	src := []int{4, 2, 86, 3, 1}
+	minidx, min := MinElement(src, func(a, b int) bool { return a < b })
+	if min != 1 || minidx != 4 {
+		t.Error("Expected: ", min, minidx)
+	}
+
+	maxIdx, max := MaxElement(src, func(a, b int) bool { return a > b })
+	if max != 86 || maxIdx != 2 {
+		t.Error("Expected: ", min, minidx)
 	}
 }

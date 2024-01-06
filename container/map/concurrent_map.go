@@ -367,7 +367,7 @@ func (this *ConcurrentMap) ForeachDo(do func(interface{}, interface{})) {
 // ParallelForeachDo applies the specified do function to each key-value pair in the ConcurrentMap in parallel.
 // The do function takes a key and a value as arguments and performs some action.
 func (this *ConcurrentMap) ParallelForeachDo(do func(interface{}, interface{})) {
-	common.ParallelForeach(this.sharded, len(this.sharded), func(shard *map[string]interface{}, idx int) {
+	common.ParallelForeach(this.sharded, len(this.sharded), func(_ int, shard *map[string]interface{}) {
 		for k, v := range *shard {
 			do(k, v)
 		}

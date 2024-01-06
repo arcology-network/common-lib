@@ -136,10 +136,10 @@ func Foreach[T any](values []T, do func(v *T, idx int)) []T {
 }
 
 // ParallelForeach applies a function to each element in a slice in parallel using multiple threads.
-func ParallelForeach[T any](values []T, nThds int, do func(*T, int)) {
+func ParallelForeach[T any](values []T, nThds int, do func(int, *T)) {
 	processor := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
-			do(&values[i], i)
+			do(i, &values[i])
 		}
 	}
 	ParallelWorker(len(values), nThds, processor)
