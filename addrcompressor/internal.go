@@ -15,26 +15,27 @@ func (this *CompressionLut) singleThreadedUncompressor(compressed []string) {
 }
 
 func (this *CompressionLut) multiThreadedUncompressor(compressed []string) {
-	worker := func(start, end, idx int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			compressed[i] = this.TryUncompress(compressed[i])
-		}
-	}
-	common.ParallelWorker(len(compressed), 4, worker)
+	// worker := func(start, end, idx int, args ...interface{}) {
+	// 	for i := start; i < end; i++ {
+	// 		compressed[i] = this.TryUncompress(compressed[i])
+	// 	}
+	// }
+	// common.ParallelWorker(len(compressed), 4, worker)
+	common.ParallelForeach(compressed, 6, func(i int, _ *string) {
+		compressed[i] = this.TryUncompress(compressed[i])
+	})
 }
 
 func (this *CompressionLut) findPositions(originals []string, depths [][2]int) [][][2]int {
 	positions := make([][][2]int, len(originals))
-	worker := func(start, end, idx int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			positions[i] = make([][2]int, len(depths))
-			for j := 0; j < len(depths); j++ {
-				positions[i][j][0] = IndexN(originals[i], "/", depths[j][0])
-				positions[i][j][1] = IndexN(originals[i], "/", depths[j][1])
-			}
+
+	common.ParallelForeach(originals, 6, func(i int, _ *string) {
+		positions[i] = make([][2]int, len(depths))
+		for j := 0; j < len(depths); j++ {
+			positions[i][j][0] = IndexN(originals[i], "/", depths[j][0])
+			positions[i][j][1] = IndexN(originals[i], "/", depths[j][1])
 		}
-	}
-	common.ParallelWorker(len(originals), 4, worker)
+	})
 	return positions
 }
 

@@ -91,26 +91,20 @@ func (this *TxAccessRecordSet) Encode() []byte {
 		offsets[i+1] = offsets[i] + (*this)[i].Size()
 	}
 
-	worker := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			(*this)[i].EncodeToBuffer(buffer[headerLen+offsets[i]:])
-		}
-	}
-	common.ParallelWorker(len(*this), 4, worker)
+	common.ParallelForeach(*this, 4, func(i int, _ **TxAccessRecords) {
+		(*this)[i].EncodeToBuffer(buffer[headerLen+offsets[i]:])
+	})
 	return buffer
 }
 
 func (this *TxAccessRecordSet) Decode(data []byte) interface{} {
 	bytesset := codec.Byteset{}.Decode(data).(codec.Byteset)
-	records := make([]*TxAccessRecords, len(bytesset))
-	worker := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			this := &TxAccessRecords{}
-			this.Decode(bytesset[i])
-			records[i] = this
-		}
-	}
-	common.ParallelWorker(len(bytesset), 6, worker)
+	records := common.ParallelAppend(bytesset, 6, func(i int, _ []byte) *TxAccessRecords {
+		this := &TxAccessRecords{}
+		this.Decode(bytesset[i])
+		return this
+	})
+
 	v := (TxAccessRecordSet)(records)
 	return &(v)
 }

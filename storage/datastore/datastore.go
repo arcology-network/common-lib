@@ -337,12 +337,17 @@ func (this *DataStore) Precommit(keys []string, values interface{}) [32]byte {
 
 func (this *DataStore) GetParitions(keys []string) []uint8 {
 	partitionIDs := make([]uint8, len(keys))
-	worker := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			partitionIDs[i] = this.localCache.Hash8(keys[i]) //Must use the compressed ky to compute the shard
-		}
-	}
-	common.ParallelWorker(len(keys), 4, worker)
+	// worker := func(start, end, index int, args ...interface{}) {
+	// 	for i := start; i < end; i++ {
+	// 		partitionIDs[i] = this.localCache.Hash8(keys[i]) //Must use the compressed ky to compute the shard
+	// 	}
+	// }
+	// common.ParallelWorker(len(keys), 4, worker)
+
+	common.ParallelForeach(keys, 4, func(i int, _ *string) {
+		partitionIDs[i] = this.localCache.Hash8(keys[i]) //Must use the compressed ky to compute the shard
+	})
+
 	return partitionIDs
 }
 

@@ -97,12 +97,9 @@ func (this *ConcurrentMap) BatchGet(keys []string, args ...interface{}) []interf
 // It returns a slice of values in the same order as the keys.
 func (this *ConcurrentMap) DirectBatchGet(shardIDs []uint8, keys []string, args ...interface{}) []interface{} {
 	values := make([]interface{}, len(keys))
-	setter := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			values[i] = this.sharded[shardIDs[i]][keys[i]]
-		}
-	}
-	common.ParallelWorker(len(values), 4, setter)
+	common.ParallelForeach(values, 5, func(i int, _ *interface{}) {
+		values[i] = this.sharded[shardIDs[i]][keys[i]]
+	})
 	return values
 }
 
@@ -243,6 +240,11 @@ func (this *ConcurrentMap) DirectBatchSet(shardIDs []uint8, keys []string, value
 
 // Keys returns a slice containing all the keys in the ConcurrentMap.
 func (this *ConcurrentMap) Keys() []string {
+	for i := 0; i < int(this.numShards); i++ {
+		this.shardLocks[i].Lock()
+		defer this.shardLocks[i].Unlock()
+	}
+
 	total := uint32(0)
 	offsets := make([]uint32, this.numShards+1)
 	for i := 0; i < int(this.numShards); i++ {
@@ -251,19 +253,25 @@ func (this *ConcurrentMap) Keys() []string {
 	}
 
 	keys := make([]string, total)
-	worker := func(start, end, index int, args ...interface{}) {
-		this.shardLocks[start].Lock()
-		defer this.shardLocks[start].Unlock()
+	// worker := func(start, end, index int, args ...interface{}) {
+	// 	for i := start; i < end; i++ {
+	// 		counter := offsets[i]
+	// 		for k := range this.sharded[i] {
+	// 			keys[counter] = k
+	// 			counter++
+	// 		}
+	// 	}
+	// }
+	// common.ParallelWorker(len(this.sharded), len(this.sharded), worker)
 
-		for i := start; i < end; i++ {
-			counter := offsets[i]
-			for k := range this.sharded[i] {
-				keys[counter] = k
-				counter++
-			}
+	common.ParallelForeach(this.sharded, len(this.sharded), func(i int, _ *map[string]interface{}) {
+		counter := offsets[i]
+		for k := range this.sharded[i] {
+			keys[counter] = k
+			counter++
 		}
-	}
-	common.ParallelWorker(len(this.sharded), len(this.sharded), worker)
+	})
+
 	return keys
 }
 
@@ -284,16 +292,10 @@ func (this *ConcurrentMap) Hash8(key string) uint8 {
 // It returns a slice of shard IDs in the same order as the keys.
 func (this *ConcurrentMap) Hash8s(keys []string) []uint8 {
 	shardIds := make([]uint8, len(keys))
-	worker := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			// if len(keys[i]) > 0 {
-			shardIds[i] = this.Hash8(keys[i])
-			// } else {
-			// 	shardIds[i] = math.MaxUint8
-			// }
-		}
-	}
-	common.ParallelWorker(len(keys), 8, worker)
+	common.ParallelForeach(keys, 8, func(i int, _ *string) {
+		shardIds[i] = this.Hash8(keys[i])
+	})
+
 	return shardIds
 }
 
@@ -306,20 +308,35 @@ func (this *ConcurrentMap) Shards() *[]map[string]interface{} {
 // The comparison function takes two values as arguments and returns true if the first value is considered "less" than the second value.
 // It returns the value that satisfies the comparison function, or nil if no such value is found.
 func (this *ConcurrentMap) Find(Compare func(interface{}, interface{}) bool) interface{} {
-	values := make([]interface{}, len(this.sharded))
-	worker := func(start, end, index int, args ...interface{}) {
-		this.shardLocks[start].RLock()
-		defer this.shardLocks[start].RUnlock()
+	for i := 0; i < int(this.numShards); i++ {
+		this.shardLocks[i].Lock()
+		defer this.shardLocks[i].Unlock()
+	}
+	// this.shardLocks[start].RLock()
+	// defer this.shardLocks[start].RUnlock()
 
-		for i := start; i < end; i++ {
-			for _, v := range this.sharded[i] {
-				if values[i] == nil || Compare(v, values[i]) {
-					values[i] = v
-				}
+	values := make([]interface{}, len(this.sharded))
+	// worker := func(start, end, index int, args ...interface{}) {
+	// 	this.shardLocks[start].RLock()
+	// 	defer this.shardLocks[start].RUnlock()
+
+	// 	for i := start; i < end; i++ {
+	// 		for _, v := range this.sharded[i] {
+	// 			if values[i] == nil || Compare(v, values[i]) {
+	// 				values[i] = v
+	// 			}
+	// 		}
+	// 	}
+	// }
+	// common.ParallelWorker(len(this.sharded), len(this.sharded), worker)
+
+	common.ParallelForeach(this.sharded, len(this.sharded), func(i int, _ *map[string]interface{}) {
+		for _, v := range this.sharded[i] {
+			if values[i] == nil || Compare(v, values[i]) {
+				values[i] = v
 			}
 		}
-	}
-	common.ParallelWorker(len(this.sharded), len(this.sharded), worker)
+	})
 
 	val := values[0]
 	for i := 1; i < len(values); i++ {
@@ -335,21 +352,36 @@ func (this *ConcurrentMap) Find(Compare func(interface{}, interface{}) bool) int
 // If the new value is nil, the key-value pair is deleted from the map.
 // Otherwise, the new value replaces the original value in the map.
 func (this *ConcurrentMap) Foreach(predicate func(interface{}) interface{}) {
-	worker := func(start, end, index int, args ...interface{}) {
-		this.shardLocks[start].RLock()
-		defer this.shardLocks[start].RUnlock()
+	for i := 0; i < int(this.numShards); i++ {
+		this.shardLocks[i].Lock()
+		defer this.shardLocks[i].Unlock()
+	}
 
-		for i := start; i < end; i++ {
-			for k, v := range this.sharded[i] {
-				if v = predicate(v); v == nil {
-					delete(this.sharded[i], k)
-				} else {
-					this.sharded[i][k] = v
-				}
+	common.ParallelForeach(this.sharded, len(this.sharded), func(i int, _ *map[string]interface{}) {
+		for k, v := range this.sharded[i] {
+			if v = predicate(v); v == nil {
+				delete(this.sharded[i], k)
+			} else {
+				this.sharded[i][k] = v
 			}
 		}
-	}
-	common.ParallelWorker(len(this.sharded), len(this.sharded), worker)
+	})
+
+	// worker := func(start, end, index int, args ...interface{}) {
+	// 	this.shardLocks[start].RLock()
+	// 	defer this.shardLocks[start].RUnlock()
+
+	// 	for i := start; i < end; i++ {
+	// 		for k, v := range this.sharded[i] {
+	// 			if v = predicate(v); v == nil {
+	// 				delete(this.sharded[i], k)
+	// 			} else {
+	// 				this.sharded[i][k] = v
+	// 			}
+	// 		}
+	// 	}
+	// }
+	// common.ParallelWorker(len(this.sharded), len(this.sharded), worker)
 }
 
 // ForeachDo applies the specified do function to each key-value pair in the ConcurrentMap.
@@ -381,14 +413,19 @@ func (this *ConcurrentMap) KVs() ([]string, []interface{}) {
 }
 
 // Clear removes all key-value pairs from the ConcurrentMap.
-func (this *ConcurrentMap) Clear() {
-	cleaner := func(start, end, index int, args ...interface{}) {
-		this.shardLocks[start].RLock()
-		defer this.shardLocks[start].RUnlock()
-		this.sharded[start] = make(map[string]interface{}, 64)
-	}
-	common.ParallelWorker(len(this.sharded), len(this.sharded), cleaner)
-}
+// func (this *ConcurrentMap) Clear() {
+// 	cleaner := func(start, end, index int, args ...interface{}) {
+// 		this.shardLocks[start].RLock()
+// 		defer this.shardLocks[start].RUnlock()
+// 		this.sharded[start] = make(map[string]interface{}, 64)
+// 	}
+// 	common.ParallelWorker(len(this.sharded), len(this.sharded), cleaner)
+
+// 	common.ParallelForeach(buffers, 6, func(i int, _ *[]byte) {
+// 		v := (&Univalue{}).Decode(buffers[i])
+// 		univalues[i] = v.(*Univalue)
+// 	})
+// }
 
 /* -----------------------------------Debug Functions---------------------------------------------------------*/
 type Encodable interface {

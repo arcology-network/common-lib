@@ -41,28 +41,17 @@ func (tx TxElement) Size() uint32 {
 type TxElements []*TxElement
 
 func (elems TxElements) Encode() []byte {
-	byteset := make([][]byte, len(elems))
-	worker := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			byteset[i] = elems[i].Encode()
-		}
-	}
-	common.ParallelWorker(len(elems), 4, worker)
+	byteset := common.ParallelAppend(elems, 4, func(i int, _ *TxElement) []byte { return elems[i].Encode() })
 	return codec.Byteset(byteset).Encode()
 }
 
 func (TxElements) Decode(bytes []byte) TxElements {
 	bytesset := codec.Byteset{}.Decode(bytes).(codec.Byteset)
-	elements := make([]*TxElement, len(bytesset))
-	worker := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			ele := &TxElement{}
-			ele.Decode(bytesset[i])
-			elements[i] = ele
-		}
-	}
-	common.ParallelWorker(len(bytesset), 4, worker)
-	return elements
+	return common.ParallelAppend(bytesset, 4, func(i int, _ []byte) *TxElement {
+		ele := &TxElement{}
+		ele.Decode(bytesset[i])
+		return ele
+	})
 }
 
 func (request *ArbitratorRequest) GobEncode() ([]byte, error) {
@@ -88,14 +77,9 @@ func (request *ArbitratorRequest) Encode() []byte {
 
 func (ArbitratorRequest) Decode(bytes []byte) *ArbitratorRequest {
 	byteset := codec.Byteset{}.Decode(bytes).(codec.Byteset)
-	elems := make([][]*TxElement, len(byteset))
-
-	worker := func(start int, end int, idx int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			elems[i] = TxElements{}.Decode(byteset[i])
-		}
-	}
-	common.ParallelWorker(len(elems), 2, worker)
+	elems := common.ParallelAppend(byteset, 2, func(i int, _ []byte) []*TxElement {
+		return TxElements{}.Decode(byteset[i])
+	})
 	return &ArbitratorRequest{elems}
 }
 

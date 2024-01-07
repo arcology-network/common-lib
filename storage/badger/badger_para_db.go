@@ -88,13 +88,11 @@ func (this *ParaBadgerDB) BatchSet(keys []string, values [][]byte) error {
 		categorizedVals[idx] = append(categorizedVals[idx], values[i])
 	}
 
-	errors := make([]error, len(categorizedKeys))
-	finder := func(start, end, index int, args ...interface{}) {
-		this.shardLocks[start].Lock()
-		defer this.shardLocks[start].Unlock() // Using start is correct, as start + 1 == end
-		errors[start] = this.impls[start].BatchSet(categorizedKeys[start], categorizedVals[start])
-	}
-	common.ParallelWorker(len(categorizedKeys), len(categorizedKeys), finder)
+	errors := common.ParallelAppend(categorizedKeys, len(categorizedKeys), func(i int, _ []string) error {
+		this.shardLocks[i].Lock()
+		defer this.shardLocks[i].Unlock() // Using start is correct, as start + 1 == end
+		return this.impls[i].BatchSet(categorizedKeys[i], categorizedVals[i])
+	})
 	return errors[0]
 }
 

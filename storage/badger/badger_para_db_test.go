@@ -17,7 +17,7 @@ func TestParaBadgerDBFunctions(t *testing.T) {
 		"a02",
 		"a03",
 		"b01",
-		"c01",
+		"c03",
 		"d01",
 	}, [][]byte{
 		{1, 2, 3},
@@ -31,7 +31,7 @@ func TestParaBadgerDBFunctions(t *testing.T) {
 	values, _ := db.BatchGet([]string{
 		"a01",
 		"b01",
-		"c01",
+		"c03",
 	})
 	if len(values) != 3 ||
 		!bytes.Equal(values[0], []byte{1, 2, 3}) ||

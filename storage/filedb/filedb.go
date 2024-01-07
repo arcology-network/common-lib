@@ -239,13 +239,9 @@ func (this *FileDB) Get(key string) ([]byte, error) {
 }
 
 func (this *FileDB) BatchGet(nkeys []string) ([][]byte, error) {
-	files := make([]string, len(nkeys))
-	finder := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			files[i] = this.locateFile(nkeys[i])
-		}
-	}
-	common.ParallelWorker(len(nkeys), 8, finder)
+	files := common.ParallelAppend(nkeys, 8, func(i int, _ string) string {
+		return this.locateFile(nkeys[i]) //Must use the compressed ky to compute the shard
+	})
 
 	// Read files
 	errs := make([]error, len(nkeys))
