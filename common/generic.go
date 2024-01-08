@@ -179,14 +179,6 @@ func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, i
 	return initialV
 }
 
-func Append[T any, T1 any](values []T, do func(v T) T1) []T1 {
-	vec := make([]T1, len(values))
-	for i := 0; i < len(values); i++ {
-		vec[i] = do(values[i])
-	}
-	return vec
-}
-
 func ParallelAppend[T any, T1 any](values []T, numThd int, do func(i int) T1) []T1 {
 	appended := make([]T1, len(values))
 	encoder := func(start, end, index int, args ...interface{}) {

@@ -95,9 +95,9 @@ type RequestReceipt struct {
 }
 
 type RequestProof struct {
-	Address        ethCommon.Address `json:"address"`
-	Keys           []ethCommon.Hash  `json:"storageKeys"`
-	BlockParameter string            `json:"blockParameter"`
+	Address  ethCommon.Address `json:"address"`
+	Keys     []ethCommon.Hash  `json:"storageKeys"`
+	BlockTag ethCommon.Hash    `json:"blockParameter"`
 }
 
 type Block struct {
