@@ -7,6 +7,7 @@ package common
 import (
 	"sort"
 
+	"github.com/arcology-network/common-lib/common"
 	"golang.org/x/exp/constraints"
 )
 
@@ -36,7 +37,7 @@ func ParallelNew[T any](length int, numThd int, init func(i int) T) []T {
 			values[i] = init(i)
 		}
 	}
-	ParallelWorker(len(values), numThd, encoder)
+	common.ParallelWorker(len(values), numThd, encoder)
 	return values
 }
 
@@ -162,7 +163,7 @@ func ParallelForeach[T any](values []T, nThds int, do func(int, *T)) {
 			do(i, &values[i])
 		}
 	}
-	ParallelWorker(len(values), nThds, processor)
+	common.ParallelWorker(len(values), nThds, processor)
 }
 
 // Accumulate applies a function to each element in a slice and returns the accumulated result.
@@ -190,7 +191,7 @@ func ParallelAppend[T any, T1 any](values []T, numThd int, do func(i int, v T) T
 			appended[i] = do(i, values[i])
 		}
 	}
-	ParallelWorker(len(values), numThd, encoder)
+	common.ParallelWorker(len(values), numThd, encoder)
 	return appended
 }
 
@@ -345,10 +346,10 @@ func FindLast[T comparable](values *[]T, v T) (int, *T) {
 }
 
 // FindLastIf finds the last element in a slice that satisfies a given condition and returns its index and a pointer to the element.
-func FindLastIf[T any](values *[]T, condition func(v T) bool) (int, *T) {
-	for i := len(*values) - 1; i >= 0; i-- {
-		if condition((*values)[i]) {
-			return i, &(*values)[i]
+func FindLastIf[T any](values []T, condition func(v T) bool) (int, *T) {
+	for i := len(values) - 1; i >= 0; i-- {
+		if condition((values)[i]) {
+			return i, &(values)[i]
 		}
 	}
 	return -1, nil
@@ -476,7 +477,7 @@ func SortBy1st[T0 any, T1 any](first []T0, second []T1, compare func(T0, T0) boo
 // Exclude removes elements from a slice that are present in another slice.
 // It modifies the original slice and returns the modified slice.
 func Exclude[T comparable](source []T, toRemove []T) []T {
-	dict := MapFromArray(toRemove, true)
+	dict := common.MapFromArray(toRemove, true)
 	return RemoveIf(&source, func(v T) bool {
 		_, ok := (*dict)[v]
 		return ok
@@ -515,9 +516,9 @@ func CountIf[T comparable](values []T, condition func(*T) bool) uint64 {
 	return total
 }
 
-// EqualArray checks if two slices are equal.
+// Equal checks if two slices are equal.
 // It returns true if the slices are equal; otherwise, it returns false.
-func EqualArray[T comparable](lhv []T, rhv []T) bool {
+func Equal[T comparable](lhv []T, rhv []T) bool {
 	if len(lhv) != len(rhv) {
 		return false
 	}
@@ -646,7 +647,7 @@ func GroupBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) ([]T1, [][]
 			dict[*key] = append(vec, v)
 		}
 	}
-	return MapKVs(dict)
+	return common.MapKVs(dict)
 }
 
 // GroupIndicesBy groups the elements of an array based on a key getter function and returns the group indices.

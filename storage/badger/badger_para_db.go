@@ -10,6 +10,7 @@ import (
 
 	"github.com/arcology-network/common-lib/codec"
 	common "github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/exp/array"
 )
 
 type ParaBadgerDB struct {
@@ -88,7 +89,7 @@ func (this *ParaBadgerDB) BatchSet(keys []string, values [][]byte) error {
 		categorizedVals[idx] = append(categorizedVals[idx], values[i])
 	}
 
-	errors := common.ParallelAppend(categorizedKeys, len(categorizedKeys), func(i int, _ []string) error {
+	errors := array.ParallelAppend(categorizedKeys, len(categorizedKeys), func(i int, _ []string) error {
 		this.shardLocks[i].Lock()
 		defer this.shardLocks[i].Unlock() // Using start is correct, as start + 1 == end
 		return this.impls[i].BatchSet(categorizedKeys[i], categorizedVals[i])

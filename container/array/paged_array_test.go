@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/exp/array"
 )
 
 func TestPagedArray(t *testing.T) {
@@ -130,7 +130,7 @@ func TestPagedArray(t *testing.T) {
 		*v = 111
 	})
 
-	idx, _ := common.FindFirstIf(paged.ToArray(0, paged.Size()), func(v int) bool {
+	idx, _ := array.FindFirstIf(paged.ToArray(0, paged.Size()), func(v int) bool {
 		return v != 111
 	})
 
@@ -177,7 +177,7 @@ func TestCustomType(t *testing.T) {
 
 	t0 = time.Now()
 	slice := make([]CustomType, paged.Cap())
-	common.ParallelAppend(slice, 4, func(i int, _ CustomType) CustomType {
+	array.ParallelAppend(slice, 4, func(i int, _ CustomType) CustomType {
 		return CustomType{
 			a: 1,
 			b: [20]byte{1, 2, 3},
@@ -205,7 +205,7 @@ func TestCustomType(t *testing.T) {
 	})
 
 	vec := paged.ToArray(0, paged.Size())
-	idx, _ := common.FindFirstIf(vec, func(v CustomType) bool {
+	idx, _ := array.FindFirstIf(vec, func(v CustomType) bool {
 		return (v).a != 999 || v.b != [20]byte{3, 2, 1} || v.e != "hi hello"
 	})
 

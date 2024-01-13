@@ -13,6 +13,7 @@ import (
 	codec "github.com/arcology-network/common-lib/codec"
 	common "github.com/arcology-network/common-lib/common"
 	ccmap "github.com/arcology-network/common-lib/container/map"
+	"github.com/arcology-network/common-lib/exp/array"
 )
 
 type CompressionLut struct {
@@ -75,7 +76,7 @@ func (this *CompressionLut) CompressOnTemp(originals []string) []string {
 	fmt.Println("findPositions", time.Since(t0))
 
 	t0 = time.Now()
-	nKeys := common.Flatten(this.parseKeys(originals, positions))
+	nKeys := array.Flatten(this.parseKeys(originals, positions))
 	fmt.Println("Flatten", time.Since(t0))
 
 	t0 = time.Now()

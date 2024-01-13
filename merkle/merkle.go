@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 
 	"github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/exp/array"
 	"github.com/arcology-network/common-lib/mempool"
 )
 
@@ -52,7 +53,7 @@ func (this *Merkle) Reset() *Merkle {
 }
 
 func (this *Merkle) BuildParent(id uint32, children []*Node, index int, mempool *mempool.Mempool[*Node]) *Node {
-	this.buffers[index] = common.Concate(children, func(node *Node) []byte { return node.hash })
+	this.buffers[index] = array.Concate(children, func(node *Node) []byte { return node.hash })
 
 	// parent := mempool.Get().(*Node)
 	parent := new(Node)
@@ -165,7 +166,7 @@ func (this *Merkle) GetProofNodes(key []byte) []*Node {
 
 func (this *Merkle) Verify(proofs [][][]byte, root []byte, seed []byte) bool {
 	for i := 0; i < len(proofs); i++ {
-		if !common.Contains(proofs[i], seed, bytes.Equal) {
+		if !array.Contains(proofs[i], seed, bytes.Equal) {
 			return false
 		}
 		seed = this.hasher.Hash(this.encoder.Encode(proofs[i]))
@@ -177,7 +178,7 @@ func (this *Merkle) NodesToHashes(path []*Node) ([][]byte, [][][]byte) {
 	hashes := [][][]byte{}
 	subroots := make([][]byte, len(path))
 	for i, v := range path {
-		if childHashes := common.Append(this.GetChildrenOf(v), func(_ int, v *Node) []byte { return (*v).hash }); len(childHashes) > 0 {
+		if childHashes := array.Append(this.GetChildrenOf(v), func(_ int, v *Node) []byte { return (*v).hash }); len(childHashes) > 0 {
 			subroots[i] = this.hasher.Hash(this.encoder.Encode(childHashes))
 			hashes = append(hashes, childHashes)
 		}

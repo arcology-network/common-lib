@@ -3,6 +3,7 @@ package types
 import (
 	codec "github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/exp/array"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
@@ -41,13 +42,13 @@ func (tx TxElement) Size() uint32 {
 type TxElements []*TxElement
 
 func (elems TxElements) Encode() []byte {
-	byteset := common.ParallelAppend(elems, 4, func(i int, _ *TxElement) []byte { return elems[i].Encode() })
+	byteset := array.ParallelAppend(elems, 4, func(i int, _ *TxElement) []byte { return elems[i].Encode() })
 	return codec.Byteset(byteset).Encode()
 }
 
 func (TxElements) Decode(bytes []byte) TxElements {
 	bytesset := codec.Byteset{}.Decode(bytes).(codec.Byteset)
-	return common.ParallelAppend(bytesset, 4, func(i int, _ []byte) *TxElement {
+	return array.ParallelAppend(bytesset, 4, func(i int, _ []byte) *TxElement {
 		ele := &TxElement{}
 		ele.Decode(bytesset[i])
 		return ele
@@ -77,7 +78,7 @@ func (request *ArbitratorRequest) Encode() []byte {
 
 func (ArbitratorRequest) Decode(bytes []byte) *ArbitratorRequest {
 	byteset := codec.Byteset{}.Decode(bytes).(codec.Byteset)
-	elems := common.ParallelAppend(byteset, 2, func(i int, _ []byte) []*TxElement {
+	elems := array.ParallelAppend(byteset, 2, func(i int, _ []byte) []*TxElement {
 		return TxElements{}.Decode(byteset[i])
 	})
 	return &ArbitratorRequest{elems}

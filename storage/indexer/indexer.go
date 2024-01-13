@@ -17,7 +17,7 @@
 
 package indexer
 
-import "github.com/arcology-network/common-lib/common"
+import "github.com/arcology-network/common-lib/exp/array"
 
 // Indexer is a collection of indexes that need to be updated together,
 // it is memory only, and is used to speed up the query process.
@@ -45,14 +45,14 @@ func NewIndexer[T any](indice ...*Index[T]) *Indexer[T] {
 
 // Update updates all indexes in the table, everytime new records are added.
 func (this *Indexer[T]) Update(v []T) {
-	common.ParallelForeach(this.indexes, 4, func(i int, index **Index[T]) {
+	array.ParallelForeach(this.indexes, 4, func(i int, index **Index[T]) {
 		(**index).Add(v)
 	})
 }
 
 // removeIndex removes all the indices in the table specified by the input values.
 func (this *Indexer[T]) Remove(v []T) {
-	common.ParallelForeach(this.indexes, 4, func(i int, index **Index[T]) {
+	array.ParallelForeach(this.indexes, 4, func(i int, index **Index[T]) {
 		(**index).Remove(v)
 	})
 }

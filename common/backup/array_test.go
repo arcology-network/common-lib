@@ -9,6 +9,9 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/exp/array"
 	// "github.com/HPISTechnologies/common-lib/common"
 )
 
@@ -137,13 +140,13 @@ func TestMapMoveIf(t *testing.T) {
 		"4": false,
 	}
 
-	MapRemoveIf(m, func(k string, _ bool) bool { return k == "1" })
+	common.MapRemoveIf(m, func(k string, _ bool) bool { return k == "1" })
 	if len(m) != 3 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	target := map[string]bool{}
-	MapMoveIf(m, target, func(k string, _ bool) bool { return k == "2" })
+	common.MapMoveIf(m, target, func(k string, _ bool) bool { return k == "2" })
 	if len(m) != 2 || len(target) != 1 {
 		t.Error("Error: Failed to remove nil values !")
 	}
@@ -459,7 +462,7 @@ func TestUniqueInts(t *testing.T) {
 	for i := 0; i < len(nums); i++ {
 		m[nums[i]] = true
 	}
-	MapKeys(m)
+	common.MapKeys(m)
 	fmt.Println("UniqueMap: ", len(nums), "leafs in ", time.Now().Sub(t0))
 }
 
@@ -511,7 +514,7 @@ func TestParallelForeach(t *testing.T) {
 func TestFindLastIf(t *testing.T) {
 	nums := []int{4, '/', 5, '/', 6}
 
-	idx, _ := FindLastIf(&nums, func(v int) bool { return v == '/' })
+	idx, _ := FindLastIf(nums, func(v int) bool { return v == '/' })
 	if idx != 3 {
 		t.Error("Error: Failed to remove nil values !")
 	}
@@ -534,7 +537,7 @@ func TestFindLastIf(t *testing.T) {
 	str := "4/5/6"
 	charArr := []byte(str)
 
-	idx, _ = FindLastIf(&charArr, func(v byte) bool { return v == '/' })
+	idx, _ = FindLastIf(charArr, func(v byte) bool { return v == '/' })
 	if idx != 3 {
 		t.Error("Error: FindLastIf() Failed")
 	}
@@ -545,7 +548,7 @@ func TestMapKeys(t *testing.T) {
 	_map[11] = 99
 	_map[21] = 25
 
-	keys := MapKeys(_map)
+	keys := common.MapKeys(_map)
 	if len(keys) != 2 || (keys[0] != 11 && keys[0] != 21) {
 		t.Error("Error: Not equal")
 	}
@@ -556,43 +559,43 @@ func TestValues(t *testing.T) {
 	_map[11] = 99
 	_map[21] = 25
 
-	keys := MapValues(_map)
+	keys := common.MapValues(_map)
 	if keys[0] != 99 || keys[1] != 25 {
 		t.Error("Error: Not equal")
 	}
 }
 
-func TestEqualArray(t *testing.T) {
+func TestArrayEqual(t *testing.T) {
 	array0 := []int{1, 2, 3}
 	array1 := []int{1, 2, 3}
 
-	if !EqualArray(array0, array1) {
+	if !array.Equal(array0, array1) {
 		t.Error("Error: Not equal")
 	}
 
 	array0 = []int{}
 	array1 = []int{}
-	if !EqualArray(array0, array1) {
+	if !array.Equal(array0, array1) {
 		t.Error("Error: Not equal")
 	}
 
 	array0 = []int{1, 1, 2, 3}
 	array1 = []int{1, 2, 3}
-	if EqualArray(array0, array1) {
+	if Equal(array0, array1) {
 		t.Error("Error: Not equal")
 	}
 
 	array0 = []int{1, 1, 3}
 	array1 = []int{1, 2, 3}
-	if EqualArray(array0, array1) {
+	if Equal(array0, array1) {
 		t.Error("Error: Not equal")
 	}
 
-	if EqualArray(array0, nil) {
+	if Equal(array0, nil) {
 		t.Error("Error: Not equal")
 	}
 
-	if EqualArray(nil, array0) {
+	if Equal(nil, array0) {
 		t.Error("Error: Not equal")
 	}
 }
@@ -604,30 +607,30 @@ func TestEqualArray(t *testing.T) {
 func TestEqual(t *testing.T) {
 	v0 := uint64(1)
 	v1 := uint64(1)
-	if !Equal(&v0, &v1, func(v *uint64) bool { return *v == 1 }) {
+	if !common.Equal(&v0, &v1, func(v *uint64) bool { return *v == 1 }) {
 		t.Error("Error: Not equal")
 	}
 
-	if !Equal(&v0, &v1, func(v *uint64) bool { return *v == 10 }) {
+	if !common.Equal(&v0, &v1, func(v *uint64) bool { return *v == 10 }) {
 		t.Error("Error: Not equal")
 	}
 
 	v0 = uint64(1)
 	v1 = uint64(2)
 
-	if Equal(&v0, &v1, func(v *uint64) bool { return *v == 1 }) {
+	if common.Equal(&v0, &v1, func(v *uint64) bool { return *v == 1 }) {
 		t.Error("Error: Should not be equal")
 	}
 
-	if !Equal(&v0, nil, func(v *uint64) bool { return *v == 1 }) {
+	if !common.Equal(&v0, nil, func(v *uint64) bool { return *v == 1 }) {
 		t.Error("Error: Should not be equal")
 	}
 
-	if !Equal(nil, &v1, func(v *uint64) bool { return *v == 2 }) {
+	if !common.Equal(nil, &v1, func(v *uint64) bool { return *v == 2 }) {
 		t.Error("Error: Should not be equal")
 	}
 
-	if !Equal(nil, nil, func(v *uint64) bool { return *v == 2 }) {
+	if !common.Equal(nil, nil, func(v *uint64) bool { return *v == 2 }) {
 		t.Error("Error: Should not be equal")
 	}
 }

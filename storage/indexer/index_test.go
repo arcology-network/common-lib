@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/exp/array"
 	btree "github.com/google/btree"
 )
 
@@ -48,7 +48,7 @@ func TestInteger(t *testing.T) {
 	type Int int
 
 	index := NewIndex("id", func(a, b Int) bool { return a < b })
-	newVals := common.ParallelAppend(make([]Int, 10), 4, func(i int, _ Int) Int { return Int(i) })
+	newVals := array.ParallelAppend(make([]Int, 10), 4, func(i int, _ Int) Int { return Int(i) })
 
 	t0 := time.Now()
 	index.Add(newVals)
@@ -103,7 +103,7 @@ func TestIndex(t *testing.T) {
 	}
 
 	index := NewIndex("id", func(a, b *Tx) bool { return a.id < b.id })
-	txs := common.ParallelAppend(make([]*Tx, 10), 4, func(i int, _ *Tx) *Tx { return &Tx{id: fmt.Sprint(i), height: uint64(i)} })
+	txs := array.ParallelAppend(make([]*Tx, 10), 4, func(i int, _ *Tx) *Tx { return &Tx{id: fmt.Sprint(i), height: uint64(i)} })
 	index.Add(txs)
 
 	res := index.GreaterThan(&Tx{id: "1"})
@@ -121,7 +121,7 @@ func BenchmarkInteger(t *testing.B) {
 	type Int int
 
 	index := NewIndex("id", func(a, b Int) bool { return a < b })
-	newVals := common.ParallelAppend(make([]Int, 1000000), 4, func(i int, _ Int) Int { return Int(i) })
+	newVals := array.ParallelAppend(make([]Int, 1000000), 4, func(i int, _ Int) Int { return Int(i) })
 
 	t0 := time.Now()
 	index.Add(newVals)

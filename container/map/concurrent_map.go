@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/arcology-network/common-lib/codec"
-	"github.com/arcology-network/common-lib/common"
+	array "github.com/arcology-network/common-lib/exp/array"
 )
 
 // ConcurrentMap represents a concurrent map data structure.
@@ -97,7 +97,7 @@ func (this *ConcurrentMap) BatchGet(keys []string, args ...interface{}) []interf
 // It returns a slice of values in the same order as the keys.
 func (this *ConcurrentMap) DirectBatchGet(shardIDs []uint8, keys []string, args ...interface{}) []interface{} {
 	values := make([]interface{}, len(keys))
-	common.ParallelForeach(values, 5, func(i int, _ *interface{}) {
+	array.ParallelForeach(values, 5, func(i int, _ *interface{}) {
 		values[i] = this.sharded[shardIDs[i]][keys[i]]
 	})
 	return values
@@ -264,7 +264,7 @@ func (this *ConcurrentMap) Keys() []string {
 	// }
 	// common.ParallelWorker(len(this.sharded), len(this.sharded), worker)
 
-	common.ParallelForeach(this.sharded, len(this.sharded), func(i int, _ *map[string]interface{}) {
+	array.ParallelForeach(this.sharded, len(this.sharded), func(i int, _ *map[string]interface{}) {
 		counter := offsets[i]
 		for k := range this.sharded[i] {
 			keys[counter] = k
@@ -292,7 +292,7 @@ func (this *ConcurrentMap) Hash8(key string) uint8 {
 // It returns a slice of shard IDs in the same order as the keys.
 func (this *ConcurrentMap) Hash8s(keys []string) []uint8 {
 	shardIds := make([]uint8, len(keys))
-	common.ParallelForeach(keys, 8, func(i int, _ *string) {
+	array.ParallelForeach(keys, 8, func(i int, _ *string) {
 		shardIds[i] = this.Hash8(keys[i])
 	})
 
@@ -330,7 +330,7 @@ func (this *ConcurrentMap) Find(Compare func(interface{}, interface{}) bool) int
 	// }
 	// common.ParallelWorker(len(this.sharded), len(this.sharded), worker)
 
-	common.ParallelForeach(this.sharded, len(this.sharded), func(i int, _ *map[string]interface{}) {
+	array.ParallelForeach(this.sharded, len(this.sharded), func(i int, _ *map[string]interface{}) {
 		for _, v := range this.sharded[i] {
 			if values[i] == nil || Compare(v, values[i]) {
 				values[i] = v
@@ -357,7 +357,7 @@ func (this *ConcurrentMap) Foreach(predicate func(interface{}) interface{}) {
 		defer this.shardLocks[i].Unlock()
 	}
 
-	common.ParallelForeach(this.sharded, len(this.sharded), func(i int, _ *map[string]interface{}) {
+	array.ParallelForeach(this.sharded, len(this.sharded), func(i int, _ *map[string]interface{}) {
 		for k, v := range this.sharded[i] {
 			if v = predicate(v); v == nil {
 				delete(this.sharded[i], k)
@@ -399,7 +399,7 @@ func (this *ConcurrentMap) ForeachDo(do func(interface{}, interface{})) {
 // ParallelForeachDo applies the specified do function to each key-value pair in the ConcurrentMap in parallel.
 // The do function takes a key and a value as arguments and performs some action.
 func (this *ConcurrentMap) ParallelForeachDo(do func(interface{}, interface{})) {
-	common.ParallelForeach(this.sharded, len(this.sharded), func(_ int, shard *map[string]interface{}) {
+	array.ParallelForeach(this.sharded, len(this.sharded), func(_ int, shard *map[string]interface{}) {
 		for k, v := range *shard {
 			do(k, v)
 		}
@@ -421,7 +421,7 @@ func (this *ConcurrentMap) KVs() ([]string, []interface{}) {
 // 	}
 // 	common.ParallelWorker(len(this.sharded), len(this.sharded), cleaner)
 
-// 	common.ParallelForeach(buffers, 6, func(i int, _ *[]byte) {
+// 	array.ParallelForeach(buffers, 6, func(i int, _ *[]byte) {
 // 		v := (&Univalue{}).Decode(buffers[i])
 // 		univalues[i] = v.(*Univalue)
 // 	})

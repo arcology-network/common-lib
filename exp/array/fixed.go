@@ -15,7 +15,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package codec
+package array
 
 type ipArray interface {
 	[8]byte | [16]byte | [20]byte | [32]byte | [64]byte
@@ -33,20 +33,20 @@ func Sum[T ipArray](bytes T, offset int) uint64 {
 	return total
 }
 
-func Clone[T ipArray](bytes T) T {
-	target := *new(T)
-	target = bytes
-	return target
-}
+// func Clone[T ipArray](bytes T) T {
+// 	target := *new(T)
+// 	target = bytes
+// 	return target
+// }
 
-func Hex[T ipArray](bytes T) string {
-	// var accHex [2 * len(bytes)]byte
-	// accHex := make([]byte, 2*len(bytes))
-	// hex.Encode(accHex[:], bytes[:])
-	return string(bytes[:])
-}
+// func Hex[T ipArray](bytes T) string {
+// 	// var accHex [2 * len(bytes)]byte
+// 	// accHex := make([]byte, 2*len(bytes))
+// 	// hex.Encode(accHex[:], bytes[:])
+// 	return string(bytes[:])
+// }
 
-// type Bytesn[T] [HASH32_LEN]byte
+// // type Bytesn[T] [HASH32_LEN]byte
 
 // func (this *Bytesn[T]) Get() interface{} {
 // 	return *this
