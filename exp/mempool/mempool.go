@@ -16,13 +16,18 @@ type Mempool[T any] struct {
 
 // NewMempool creates a new Mempool instance with the given ID and object creation function.
 func NewMempool[T any](perPage, pages int, new func() T) *Mempool[T] {
-	return &Mempool[T]{
+	mempool := &Mempool[T]{
 		new:      new,
 		parent:   nil,
 		children: []interface{}{},
 		objects:  array.NewPagedArray[T](perPage, pages, perPage*pages),
 		counter:  0,
 	}
+
+	mempool.objects.Foreach(func(i int, v *T) {
+		mempool.objects.Set(i, new())
+	})
+	return mempool
 }
 
 // Get returns an object from the Mempool.

@@ -99,6 +99,21 @@ func TestPagedArrayCustomTypes(t *testing.T) {
 	if pool.Get().a != 99 {
 		t.Error("Error: Wrong value")
 	}
+
+	v := pool.Get()
+	v.a = 10
+
+	v = pool.Get()
+	v.a = 11
+
+	v = pool.Get()
+	v.a = 12
+
+	v = pool.Get()
+	v.a = 13
+
+	v = pool.Get()
+	v.a = 14
 }
 
 func BenchmarkTestPagedArrayCustomTypes(t *testing.B) {

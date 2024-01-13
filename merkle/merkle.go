@@ -19,7 +19,7 @@ type Merkle struct {
 	buffers [concurrency][]byte
 	hasher  interface{ Hash([]byte) []byte }
 	encoder interface{ Encode([][]byte) []byte }
-	mempool *mempool.Mempool
+	mempool *mempool.Mempool[*Node]
 }
 
 func NewMerkle(numBranches int, encoder interface{ Encode([][]byte) []byte }, hasher interface{ Hash([]byte) []byte }) *Merkle {
@@ -51,7 +51,7 @@ func (this *Merkle) Reset() *Merkle {
 	return this
 }
 
-func (this *Merkle) BuildParent(id uint32, children []*Node, index int, mempool *mempool.Mempool) *Node {
+func (this *Merkle) BuildParent(id uint32, children []*Node, index int, mempool *mempool.Mempool[*Node]) *Node {
 	this.buffers[index] = common.Concate(children, func(node *Node) []byte { return node.hash })
 
 	// parent := mempool.Get().(*Node)
