@@ -70,7 +70,7 @@ func (this *ConcurrentMap[K, V]) Get(key K, args ...interface{}) (V, bool) {
 // It returns a slice of values in the same order as the keys.
 func (this *ConcurrentMap[K, V]) BatchGet(keys []K, args ...interface{}) []V {
 	shardIds := common.NewArrayIf(len(keys), func(i int) uint8 {
-		return this.hasher(keys[i]) % uint8(len(this.shards))
+		return this.Hash(keys[i])
 	})
 
 	values := make([]V, len(keys))
@@ -103,7 +103,7 @@ func (this *ConcurrentMap[K, V]) delete(shardID uint8, key K) {
 // If the value is nil, the key-value pair is deleted from the map.
 // It returns an error if the shard ID is out of range.
 func (this *ConcurrentMap[K, V]) Set(key K, v V, args ...interface{}) error {
-	shardID := this.hasher(key) % uint8(len(this.shards))
+	shardID := this.Hash(key)
 	if shardID >= uint8(uint8(len(this.shards))) {
 		return nil
 	}
@@ -183,8 +183,12 @@ func (this *ConcurrentMap[K, V]) Keys() []K {
 // It returns a slice of shard IDs in the same order as the keys.
 func (this *ConcurrentMap[K, V]) Hash8s(keys []K) []uint8 {
 	return common.ParallelNew(len(keys), 8, func(i int) uint8 {
-		return this.hasher(keys[i]) % uint8(len(this.shards))
+		return this.Hash(keys[i])
 	})
+}
+
+func (this *ConcurrentMap[K, V]) Hash(key K) uint8 {
+	return this.hasher(key) % uint8(len(this.shards))
 }
 
 // Shards returns a pointer to the slice of maps representing the shards in the ConcurrentMap.
@@ -274,3 +278,19 @@ func (this *ConcurrentMap[K, V]) KVs() ([]K, []V) {
 	keys := this.Keys()
 	return keys, this.BatchGet(keys)
 }
+
+func (this *ConcurrentMap[K, V]) Checksum() [32]byte {
+	// k, values := this.KVs()
+	// vBytes := []byte{}
+	// for _, v := range values {
+	// 	vBytes = append(vBytes, v.(Encodable).Encode()...)
+	// }
+
+	// kSum := sha256.Sum256(codec.Strings(k).Flatten())
+	// vSum := sha256.Sum256(vBytes)
+
+	// return sha256.Sum256(append(kSum[:], vSum[:]...))
+	return [32]byte{}
+}
+
+func (this *ConcurrentMap[K, V]) Print() {}

@@ -20,7 +20,10 @@ package concurrentmap
 import (
 	"fmt"
 	"math"
+	"math/rand"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/arcology-network/common-lib/common"
 )
@@ -64,23 +67,26 @@ func BenchmarkMinMax(b *testing.B) {
 	}
 }
 
-// func BenchmarkForeach(b *testing.B) {
-// 	ccmap := NewConcurrentMap()
-// 	keys := make([]string, 1000000)
-// 	values := make([]interface{}, len(keys))
-// 	for i := 0; i < len(keys); i++ {
-// 		keys[i] = fmt.Sprint(i)
-// 		values[i] = i
-// 	}
-// 	ccmap.BatchSet(keys, values)
+func BenchmarkForeach(b *testing.B) {
+	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return false }, func(k string) uint8 {
+		return uint8(common.Sum[byte, int]([]byte(k)))
+	})
 
-// 	t0 := time.Now()
-// 	adder := func(v interface{}) interface{} {
-// 		return v + 10
-// 	}
-// 	ccmap.Foreach(adder)
-// 	fmt.Println("Foreach + 10 ", time.Since(t0))
-// }
+	keys := make([]string, 1000000)
+	values := make([]int, len(keys))
+	for i := 0; i < len(keys); i++ {
+		keys[i] = fmt.Sprint(i)
+		values[i] = i
+	}
+	ccmap.BatchSet(keys, values)
+
+	t0 := time.Now()
+	adder := func(v int) int {
+		return v + 10
+	}
+	ccmap.Foreach(adder)
+	fmt.Println("Foreach + 10 ", time.Since(t0))
+}
 
 // func TestChecksum(t *testing.T) {
 // 	ccmap := NewConcurrentMap()
@@ -94,52 +100,55 @@ func BenchmarkMinMax(b *testing.B) {
 // 	}
 // }
 
-// func BenchmarkCcmapBatchSet(b *testing.B) {
-// 	genString := func() string {
-// 		var letters = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
-// 		rand.Seed(time.Now().UnixNano())
-// 		b := make([]rune, 40)
-// 		for i := range b {
-// 			b[i] = letters[rand.Intn(len(letters))]
-// 		}
-// 		return string(b)
-// 	}
+func BenchmarkCcmapBatchSet(b *testing.B) {
+	genString := func() string {
+		var letters = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
+		rand.Seed(time.Now().UnixNano())
+		b := make([]rune, 40)
+		for i := range b {
+			b[i] = letters[rand.Intn(len(letters))]
+		}
+		return string(b)
+	}
 
-// 	values := make([]interface{}, 0, 100000)
-// 	paths := make([]string, 0, 100000)
-// 	for i := 0; i < 100000; i++ {
-// 		acct := genString()
-// 		paths = append(paths, []string{
-// 			"blcc://eth1.0/account/" + acct + "/",
-// 			"blcc://eth1.0/account/" + acct + "/code",
-// 			"blcc://eth1.0/account/" + acct + "/nonce",
-// 			"blcc://eth1.0/account/" + acct + "/balance",
-// 			"blcc://eth1.0/account/" + acct + "/defer/",
-// 			"blcc://eth1.0/account/" + acct + "/storage/",
-// 			"blcc://eth1.0/account/" + acct + "/storage/containers/",
-// 			"blcc://eth1.0/account/" + acct + "/storage/native/",
-// 			"blcc://eth1.0/account/" + acct + "/storage/containers/!/",
-// 			"blcc://eth1.0/account/" + acct + "/storage/containers/KittyIndexToOwner/$ad90f8111111111111111111111111111111111111",
-// 			"blcc://eth1.0/account/" + acct + "/storage/containers/KittyIndexToOwner/$ad90f8211111111111111111111111111111111111",
-// 			"blcc://eth1.0/account/" + acct + "/storage/containers/KittyIndexToOwner/$ad90f8311111111111111111111111111111111111",
-// 			"blcc://eth1.0/account/" + acct + "/storage/containers/KittyIndexToOwner/$ad90f8411111111111111111111111111111111111",
-// 		}...)
-// 	}
+	values := make([]string, 0, 100000)
+	paths := make([]string, 0, 100000)
+	for i := 0; i < 100000; i++ {
+		acct := genString()
+		paths = append(paths, []string{
+			"blcc://eth1.0/account/" + acct + "/",
+			"blcc://eth1.0/account/" + acct + "/code",
+			"blcc://eth1.0/account/" + acct + "/nonce",
+			"blcc://eth1.0/account/" + acct + "/balance",
+			"blcc://eth1.0/account/" + acct + "/defer/",
+			"blcc://eth1.0/account/" + acct + "/storage/",
+			"blcc://eth1.0/account/" + acct + "/storage/containers/",
+			"blcc://eth1.0/account/" + acct + "/storage/native/",
+			"blcc://eth1.0/account/" + acct + "/storage/containers/!/",
+			"blcc://eth1.0/account/" + acct + "/storage/containers/KittyIndexToOwner/$ad90f8111111111111111111111111111111111111",
+			"blcc://eth1.0/account/" + acct + "/storage/containers/KittyIndexToOwner/$ad90f8211111111111111111111111111111111111",
+			"blcc://eth1.0/account/" + acct + "/storage/containers/KittyIndexToOwner/$ad90f8311111111111111111111111111111111111",
+			"blcc://eth1.0/account/" + acct + "/storage/containers/KittyIndexToOwner/$ad90f8411111111111111111111111111111111111",
+		}...)
+	}
 
-// 	for i := 0; i < len(paths); i++ {
-// 		values = append(values, paths[i])
-// 	}
+	for i := 0; i < len(paths); i++ {
+		values = append(values, paths[i])
+	}
 
-// 	t0 := time.Now()
-// 	var masterLock sync.RWMutex
-// 	for i := 0; i < 1000000; i++ {
-// 		masterLock.Lock()
-// 		masterLock.Unlock()
-// 	}
-// 	fmt.Println("Lock() 1000000 "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
+	t0 := time.Now()
+	var masterLock sync.RWMutex
+	for i := 0; i < 1000000; i++ {
+		masterLock.Lock()
+		masterLock.Unlock()
+	}
+	fmt.Println("Lock() 1000000 "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
 
-// 	t0 = time.Now()
-// 	ccmap := NewConcurrentMap()
-// 	ccmap.BatchSet(paths, values)
-// 	fmt.Println("BatchSet "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
-// }
+	t0 = time.Now()
+	ccmap := NewConcurrentMap[string, string](8, func(v string) bool { return len(v) == 0 }, func(k string) uint8 {
+		return uint8(common.Sum[byte, int]([]byte(k)))
+	})
+
+	ccmap.BatchSet(paths, values)
+	fmt.Println("BatchSet "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
+}

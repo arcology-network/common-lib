@@ -6,7 +6,8 @@ import (
 	"math/rand"
 	"sync"
 
-	ccmap "github.com/arcology-network/common-lib/container/map"
+	common "github.com/arcology-network/common-lib/common"
+	ccmap "github.com/arcology-network/common-lib/exp/map"
 	intf "github.com/arcology-network/common-lib/storage/interface"
 	memdb "github.com/arcology-network/common-lib/storage/memdb"
 )
@@ -24,7 +25,7 @@ type CachePolicy struct {
 	totalAllocated    uint64
 	quota             uint64
 	threshold         float64
-	scoreboard        *ccmap.ConcurrentMap
+	scoreboard        *ccmap.ConcurrentMap[string, any]
 	scoreDistribution *Distribution
 
 	keys   []string
@@ -35,11 +36,15 @@ type CachePolicy struct {
 
 // Memory hard Quota
 func NewCachePolicy(hardQuota uint64, threshold float64) *CachePolicy {
+	m := ccmap.NewConcurrentMap[string, any](8, func(v any) bool { return v == nil }, func(k string) uint8 {
+		return common.Sum[byte, uint8]([]byte(k))
+	})
+
 	policy := &CachePolicy{
 		totalAllocated:    0,
 		quota:             hardQuota,
 		threshold:         threshold,
-		scoreboard:        ccmap.NewConcurrentMap(),
+		scoreboard:        m,
 		scoreDistribution: NewDistribution(),
 
 		keys:   make([]string, 0, 65536),
@@ -125,28 +130,28 @@ func (this *CachePolicy) AddToStats(keys []string, vals []intf.Accessible) {
 	//there are some dupilicate keys
 }
 
-func (this *CachePolicy) freeEntries(threshold uint32, probability float64, localCache *ccmap.ConcurrentMap) (uint64, uint64) {
+func (this *CachePolicy) freeEntries(threshold uint32, probability float64, localCache *ccmap.ConcurrentMap[string, any]) (uint64, uint64) {
 	if this.isFixed() {
 		return 0, 0
 	}
 
 	scoreShards := this.scoreboard.Shards()
 	cacheShards := localCache.Shards()
-	freedMem := make([]uint64, len(*scoreShards))
-	freedEntries := make([]uint64, len(*scoreShards))
+	freedMem := make([]uint64, len(scoreShards))
+	freedEntries := make([]uint64, len(scoreShards))
 
-	for i := 0; i < len(*scoreShards); i++ {
-		for k := range (*scoreShards)[i] {
-			score := (*scoreShards)[i][k].(uint32)
+	for i := 0; i < len(scoreShards); i++ {
+		for k := range (scoreShards)[i] {
+			score := (scoreShards)[i][k].(uint32)
 			if score >= threshold {
 				continue
 			}
 
 			if (math.Abs(probability-1) < 0.05) || (rand.Float64() < probability) {
-				v := (*cacheShards)[i][k]
+				v := (cacheShards)[i][k]
 				freedMem[i] += uint64(v.(intf.Accessible).Size())
-				delete((*scoreShards)[i], k)
-				delete((*cacheShards)[i], k)
+				delete((scoreShards)[i], k)
+				delete((cacheShards)[i], k)
 				freedEntries[i]++
 			}
 		}
@@ -161,7 +166,7 @@ func (this *CachePolicy) freeEntries(threshold uint32, probability float64, loca
 	return entries, memory
 }
 
-func (this *CachePolicy) Refresh(cache *ccmap.ConcurrentMap) (uint64, uint64) {
+func (this *CachePolicy) Refresh(cache *ccmap.ConcurrentMap[string, any]) (uint64, uint64) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -192,7 +197,7 @@ func (this *CachePolicy) Refresh(cache *ccmap.ConcurrentMap) (uint64, uint64) {
 	return this.freeMemory(cache)
 }
 
-func (this *CachePolicy) freeMemory(localChache *ccmap.ConcurrentMap) (uint64, uint64) {
+func (this *CachePolicy) freeMemory(localChache *ccmap.ConcurrentMap[string, any]) (uint64, uint64) {
 	if this.isFixed() {
 		return 0, 0
 	}

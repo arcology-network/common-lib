@@ -8,7 +8,9 @@ import (
 	addrcompressor "github.com/arcology-network/common-lib/addrcompressor"
 	codec "github.com/arcology-network/common-lib/codec"
 	common "github.com/arcology-network/common-lib/common"
-	ccmap "github.com/arcology-network/common-lib/container/map"
+
+	// expmap "github.com/arcology-network/common-lib/container/map"
+	expmap "github.com/arcology-network/common-lib/exp/map"
 	intf "github.com/arcology-network/common-lib/storage/interface"
 )
 
@@ -18,7 +20,7 @@ type DataStore struct {
 
 	cachePolicy      *CachePolicy
 	compressionLut   *addrcompressor.CompressionLut
-	localCache       *ccmap.ConcurrentMap
+	localCache       *expmap.ConcurrentMap[string, any]
 	maxCacheCapacity int
 
 	encoder func(string, interface{}) []byte
@@ -41,12 +43,14 @@ func NewDataStore(
 	compressionLut *addrcompressor.CompressionLut,
 	cachePolicy *CachePolicy,
 	db intf.PersistentStorage,
-	encoder func(string, interface{}) []byte,
+	encoder func(string, any) []byte,
 	decoder func([]byte, any) interface{},
 ) *DataStore {
 	dataStore := &DataStore{
-		partitionIDs:   make([]uint8, 0, 65536),
-		localCache:     ccmap.NewConcurrentMap(),
+		partitionIDs: make([]uint8, 0, 65536),
+		localCache: expmap.NewConcurrentMap(8, func(v any) bool { return v == nil }, func(k string) uint8 {
+			return common.Sum[byte, uint8]([]byte(k))
+		}),
 		globalCache:    make(map[string]interface{}),
 		compressionLut: compressionLut,
 		cachePolicy:    cachePolicy,
@@ -71,7 +75,7 @@ func (this *DataStore) Size() uint32 {
 	return this.localCache.Size()
 }
 
-func (this *DataStore) Cache() *ccmap.ConcurrentMap {
+func (this *DataStore) Cache() *expmap.ConcurrentMap[string, any] {
 	return this.localCache
 }
 
@@ -212,12 +216,12 @@ func (this *DataStore) batchAddToCache(ids []uint8, keys []string, values []inte
 	}
 
 	if this.cachePolicy.InfinitCache() {
-		this.localCache.DirectBatchSet(ids, keys, values, common.NewArray(len(keys), true))
+		this.localCache.DirectBatchSet(ids, keys, values)
 		return
 	}
 
-	if flags, count, all := this.cachePolicy.BatchCheckCapacity(keys, values); all || count > 0 { // need to check the cache status first
-		this.localCache.DirectBatchSet(ids, keys, values, flags)
+	if _, count, all := this.cachePolicy.BatchCheckCapacity(keys, values); all || count > 0 { // need to check the cache status first
+		this.localCache.DirectBatchSet(ids, keys, values)
 	}
 }
 
@@ -345,7 +349,7 @@ func (this *DataStore) GetParitions(keys []string) []uint8 {
 	// common.ParallelWorker(len(keys), 4, worker)
 
 	common.ParallelForeach(keys, 4, func(i int, _ *string) {
-		partitionIDs[i] = this.localCache.Hash8(keys[i]) //Must use the compressed ky to compute the shard
+		partitionIDs[i] = this.localCache.Hash(keys[i]) //Must use the compressed ky to compute the shard
 	})
 
 	return partitionIDs
@@ -394,7 +398,7 @@ func (this *DataStore) Print() {
 }
 
 func (this *DataStore) CheckSum() [32]byte {
-	k, vs := this.Dump()
+	k, vs := this.KVs()
 	kData := codec.Strings(k).Flatten()
 	vData := make([][]byte, len(vs))
 	for i, v := range vs {
@@ -402,10 +406,6 @@ func (this *DataStore) CheckSum() [32]byte {
 	}
 	vData = append(vData, kData)
 	return sha256.Sum256(codec.Byteset(vData).Flatten())
-}
-
-func (this *DataStore) Dump() ([]string, []interface{}) {
-	return this.localCache.Dump()
 }
 
 func (this *DataStore) KVs() ([]string, []interface{}) {
