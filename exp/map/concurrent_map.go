@@ -40,7 +40,7 @@ func NewConcurrentMap[K comparable, V any](numShards int, isNilVal func(V) bool,
 	return &ConcurrentMap[K, V]{
 		isNilVal:   isNilVal,
 		hasher:     hasher,
-		shards:     common.NewArrayIf(numShards, func(i int) map[K]V { return make(map[K]V, 64) }),
+		shards:     common.NewArrayWith(numShards, func(i int) map[K]V { return make(map[K]V, 64) }),
 		shardLocks: make([]sync.RWMutex, numShards),
 	}
 }
@@ -69,7 +69,7 @@ func (this *ConcurrentMap[K, V]) Get(key K, args ...interface{}) (V, bool) {
 // BatchGet retrieves the values associated with the specified keys from the ConcurrentMap.
 // It returns a slice of values in the same order as the keys.
 func (this *ConcurrentMap[K, V]) BatchGet(keys []K, args ...interface{}) []V {
-	shardIds := common.NewArrayIf(len(keys), func(i int) uint8 {
+	shardIds := common.NewArrayWith(len(keys), func(i int) uint8 {
 		return this.Hash(keys[i])
 	})
 
@@ -204,31 +204,6 @@ func (this *ConcurrentMap[K, V]) Traverse(processor func(K, *V)) {
 		})
 	})
 }
-
-// // Find searches for the value in the ConcurrentMap that satisfies the specified comparison function.
-// func (this *ConcurrentMap[K, V]) Find(condition func(V) bool) interface{} {
-// 	for i := 0; i < int(uint8(len(this.shards))); i++ {
-// 		this.shardLocks[i].Lock()
-// 		defer this.shardLocks[i].Unlock()
-// 	}
-
-// 	values := make([]V, uint8(len(this.shards)))
-// 	common.ParallelForeach(this.shards, len(this.shards), func(i int, _ *map[K]V) {
-// 		for _, v := range this.shards[i] {
-// 			if values[i] == nil || condition(v) {
-// 				values[i] = v
-// 			}
-// 		}
-// 	})
-
-// 	val := values[0]
-// 	// for i := 1; i < len(values); i++ {
-// 	// 	if values[i] != nil && (val == nil || Compare(values[i], val)) {
-// 	// 		val = values[i]
-// 	// 	}
-// 	// }
-// 	return val
-// }
 
 // Foreach applies the specified predicate function to each value in the ConcurrentMap.
 // The predicate function takes a value as an argument and returns a new value.

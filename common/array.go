@@ -20,7 +20,7 @@ func NewArray[T any](length int, v T) []T {
 }
 
 // ParallelAppend applies a function to each index in a slice in parallel using multiple threads and returns a new slice with the results.
-func NewArrayIf[T any](length int, init func(i int) T) []T {
+func NewArrayWith[T any](length int, init func(i int) T) []T {
 	values := make([]T, length)
 	for i := 0; i < length; i++ {
 		values[i] = init(i)

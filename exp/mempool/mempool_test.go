@@ -31,7 +31,7 @@ func TestPagedIntArray(t *testing.T) {
 	}
 
 	i := 0
-	pool := NewMempool[int](123, func() *int {
+	pool := NewMempool[*int](1, 2, func() *int {
 		i++
 		return &i
 	})
@@ -49,57 +49,57 @@ func TestPagedIntArray(t *testing.T) {
 	}
 }
 
-// func TestPagedArrayCustomTypes(t *testing.T) {
-// 	type CustomType struct {
-// 		a int
-// 		b [20]byte
-// 		e string
-// 	}
+func TestPagedArrayCustomTypes(t *testing.T) {
+	type CustomType struct {
+		a int
+		b [20]byte
+		e string
+	}
 
-// 	i := 0
-// 	pool := NewMemoryPool[*CustomType](func() *CustomType {
-// 		i++
-// 		return CustomType{
-// 			a: i,
-// 			b: [20]byte{},
-// 			e: "hello" + fmt.Sprint(i),
-// 		}
-// 	})
+	i := 0
+	pool := NewMempool[*CustomType](1, 2, func() *CustomType {
+		i++
+		return &CustomType{
+			a: i,
+			b: [20]byte{},
+			e: "hello" + fmt.Sprint(i),
+		}
+	})
 
-// 	if pool.New().a != 1 {
-// 		t.Error("Error: Wrong value")
-// 	}
+	if pool.Get().a != 1 {
+		t.Error("Error: Wrong value")
+	}
 
-// 	if pool.New().a != 2 {
-// 		t.Error("Error: Wrong value")
-// 	}
+	if pool.Get().a != 2 {
+		t.Error("Error: Wrong value")
+	}
 
-// 	if pool.New().a != 3 {
-// 		t.Error("Error: Wrong value")
-// 	}
-// 	pool.Reclaim()
+	if pool.Get().a != 3 {
+		t.Error("Error: Wrong value")
+	}
+	pool.Reclaim()
 
-// 	// Reset the init function
-// 	i = 99
-// 	pool.new = func() CustomType {
-// 		return CustomType{
-// 			a: i,
-// 			b: [20]byte{},
-// 			e: "hello" + fmt.Sprint(i),
-// 		}
-// 	}
-// 	if v := pool.New().a; v != 1 {
-// 		t.Error("Error: Wrong value", v)
-// 	}
+	// Reset the init function
+	i = 99
+	pool.new = func() *CustomType {
+		return &CustomType{
+			a: i,
+			b: [20]byte{},
+			e: "hello" + fmt.Sprint(i),
+		}
+	}
+	if v := pool.Get().a; v != 1 {
+		t.Error("Error: Wrong value", v)
+	}
 
-// 	if pool.New().a != 2 {
-// 		t.Error("Error: Wrong value")
-// 	}
+	if pool.Get().a != 2 {
+		t.Error("Error: Wrong value")
+	}
 
-// 	if pool.New().a != 99 {
-// 		t.Error("Error: Wrong value")
-// 	}
-// }
+	if pool.Get().a != 99 {
+		t.Error("Error: Wrong value")
+	}
+}
 
 func BenchmarkTestPagedArrayCustomTypes(t *testing.B) {
 	type CustomType struct {
@@ -109,7 +109,8 @@ func BenchmarkTestPagedArrayCustomTypes(t *testing.B) {
 	}
 
 	i := 0
-	pool := NewMempool[CustomType](123, func() *CustomType {
+	pool := NewMempool[*CustomType](4096, 256, func() *CustomType {
+		i++
 		return &CustomType{
 			a: i,
 			b: [20]byte{},
