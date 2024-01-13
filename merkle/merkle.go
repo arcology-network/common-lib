@@ -54,7 +54,8 @@ func (this *Merkle) Reset() *Merkle {
 func (this *Merkle) BuildParent(id uint32, children []*Node, index int, mempool *mempool.Mempool) *Node {
 	this.buffers[index] = common.Concate(children, func(node *Node) []byte { return node.hash })
 
-	parent := mempool.Get().(*Node)
+	// parent := mempool.Get().(*Node)
+	parent := new(Node)
 	parent.Init(id, children[0].level+1, this.hasher.Hash(this.buffers[index]))
 	for i, v := range children {
 		parent.children = append(parent.children, v.id)
@@ -66,9 +67,9 @@ func (this *Merkle) BuildParent(id uint32, children []*Node, index int, mempool 
 func (this *Merkle) Build(id uint32, children []*Node) []*Node {
 	nodes := make([]*Node, len(children)/int(this.branch))
 	worker := func(start, end, index int, args ...interface{}) {
-		mempool := this.mempool.GetTlsMempool(index)
+		// mempool := this.mempool.GetPool(index)
 		for i := start; i < end; i++ {
-			nodes[i] = this.BuildParent(id+uint32(i), children[(i)*int(this.branch):(i+1)*int(this.branch)], index, mempool)
+			nodes[i] = this.BuildParent(id+uint32(i), children[(i)*int(this.branch):(i+1)*int(this.branch)], index, nil)
 		}
 	}
 	common.ParallelWorker(len(nodes), common.IfThen(len(children) < 64, 1, concurrency), worker)
@@ -85,9 +86,10 @@ func (*Merkle) Pad(original []*Node, n int) []*Node {
 func (this *Merkle) newLeafNodes(data [][]byte) []*Node {
 	leafNodes := make([]*Node, len(data))
 	worker := func(start, end, index int, args ...interface{}) {
-		mempool := this.mempool.GetTlsMempool(index)
+		// mempool := this.mempool.GetPool(index)
 		for i := start; i < end; i++ {
-			leafNodes[i] = mempool.Get().(*Node)
+			// leafNodes[i] = mempool.Get().(*Node)
+			leafNodes[i] = new(Node)
 			leafNodes[i].Init(uint32(i), 0, this.hasher.Hash(data[i]))
 		}
 	}
@@ -95,14 +97,15 @@ func (this *Merkle) newLeafNodes(data [][]byte) []*Node {
 	return leafNodes
 }
 
-func (this *Merkle) Init(data [][]byte, mempool *mempool.Mempool) {
+func (this *Merkle) Init(data [][]byte, mempool interface{}) {
 	if len(data) == 0 {
 		return
 	}
 
-	this.mempool = mempool
+	// this.mempool = mempool
 	if len(data) == 1 {
-		node := this.mempool.Get().(*Node)
+		// node := this.mempool.Get().(*Node)
+		node := new(Node)
 		node.Init(uint32(0), 0, this.hasher.Hash(data[0]))
 		this.nodes = [][]*Node{{node}}
 		return

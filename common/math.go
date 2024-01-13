@@ -36,10 +36,10 @@ func Remainder(numShards int, key string) int {
 }
 
 // Sum calculates the sum of all values in the given slice.
-func Sum[T0 constraints.Integer | float32 | float64 | byte](values []T0) T0 {
-	var sum T0 = 0
+func Sum[T0 constraints.Integer | constraints.Float | byte, T1 constraints.Float | constraints.Integer](values []T0) T1 {
+	var sum T1 = 0
 	for j := 0; j < len(values); j++ {
-		sum += (values[j])
+		sum += T1(values[j])
 	}
 	return sum
 }

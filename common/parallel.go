@@ -4,12 +4,15 @@ package common
 
 import (
 	"math"
+	"runtime"
 	"sync"
 )
 
 // GenerateRanges generates a slice of ranges based on the length and number of threads.
 // Each range represents a portion of the total length that can be processed by a single thread.
 func GenerateRanges(length int, numThreads int) []int {
+	numThreads = Min(Min(numThreads, length), runtime.NumCPU()) // limit the number of threads to the number of CPUs
+
 	ranges := make([]int, 0, numThreads+1)
 	step := int(math.Ceil(float64(length) / float64(numThreads)))
 	for i := 0; i <= numThreads; i++ {

@@ -481,7 +481,7 @@ func TestUnique(t *testing.T) {
 
 func TestForeach(t *testing.T) {
 	nums := [][]int{{4}, {5}, {5}, {6}}
-	Foreach(nums, func(lhv *[]int, _ int) { (*lhv)[0] += 1 })
+	Foreach(nums, func(_ int, lhv *[]int) { (*lhv)[0] += 1 })
 
 	if nums[0][0] != 5 || nums[1][0] != 6 || nums[2][0] != 6 {
 		t.Error("Error: Failed to remove nil values !")

@@ -19,6 +19,27 @@ func NewArray[T any](length int, v T) []T {
 	return array
 }
 
+// ParallelAppend applies a function to each index in a slice in parallel using multiple threads and returns a new slice with the results.
+func NewArrayIf[T any](length int, init func(i int) T) []T {
+	values := make([]T, length)
+	for i := 0; i < length; i++ {
+		values[i] = init(i)
+	}
+	return values
+}
+
+// ParallelAppend applies a function to each index in a slice in parallel using multiple threads and returns a new slice with the results.
+func ParallelNew[T any](length int, numThd int, init func(i int) T) []T {
+	values := make([]T, length)
+	encoder := func(start, end, index int, args ...interface{}) {
+		for i := start; i < end; i++ {
+			values[i] = init(i)
+		}
+	}
+	ParallelWorker(len(values), numThd, encoder)
+	return values
+}
+
 // It modifies the original slice and returns the reversed slice.
 func Reverse[T any](values *[]T) []T {
 	for i, j := 0, len(*values)-1; i < j; i, j = i+1, j-1 {
@@ -128,28 +149,26 @@ func MoveIf[T any](values *[]T, condition func(T) bool) []T {
 
 // Foreach applies a function to each element in a slice.
 // It modifies the original slice and returns the modified slice.
-func Foreach[T any](values []T, do func(v *T, idx int)) []T {
+func Foreach[T any](values []T, do func(idx int, v *T)) {
 	for i := 0; i < len(values); i++ {
-		do(&values[i], i)
+		do(i, &values[i])
 	}
-	return values
 }
 
 // ParallelForeach applies a function to each element in a slice in parallel using multiple threads.
-func ParallelForeach[T any](values []T, nThds int, do func(int, *T)) []T {
+func ParallelForeach[T any](values []T, nThds int, do func(int, *T)) {
 	processor := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
 			do(i, &values[i])
 		}
 	}
 	ParallelWorker(len(values), nThds, processor)
-	return values
 }
 
 // Accumulate applies a function to each element in a slice and returns the accumulated result.
-func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, initialV T1, do func(v T) T1) T1 {
+func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, initialV T1, do func(i int, v T) T1) T1 {
 	for i := 0; i < len(values); i++ {
-		initialV += do((values)[i])
+		initialV += do(i, (values)[i])
 	}
 	return initialV
 }
@@ -479,6 +498,17 @@ func Count[T comparable](values []T, target T) uint64 {
 	total := uint64(0)
 	for i := 0; i < len(values); i++ {
 		if target == values[i] {
+			total++
+		}
+	}
+	return total
+}
+
+// Count counts the number of occurrences of a value in a slice.
+func CountIf[T comparable](values []T, condition func(*T) bool) uint64 {
+	total := uint64(0)
+	for i := 0; i < len(values); i++ {
+		if condition(&values[i]) {
 			total++
 		}
 	}

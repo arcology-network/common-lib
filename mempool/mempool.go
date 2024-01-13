@@ -8,44 +8,44 @@ import (
 
 // Mempool represents a pool of objects of the same type.
 type Mempool struct {
-	nf      func() interface{}
-	id      string
-	tls     map[string]*Mempool
-	objects []interface{}
-	next    int
-	parent  *Mempool
-	guard   sync.Mutex
+	initializer func() interface{}
+	id          string
+	pools       map[string]*Mempool
+	objects     []interface{}
+	next        int
+	parent      *Mempool
+	lock        sync.Mutex
 }
 
 // NewMempool creates a new Mempool instance with the given ID and object creation function.
-func NewMempool(id interface{}, nf func() interface{}) *Mempool {
+func NewMempool(id interface{}, initializer func() interface{}) *Mempool {
 	return &Mempool{
-		id:      fmt.Sprintf("%v", id),
-		nf:      nf,
-		tls:     make(map[string]*Mempool),
-		objects: nil,
-		next:    0,
-		parent:  nil,
+		id:          fmt.Sprintf("%v", id),
+		initializer: initializer,
+		pools:       make(map[string]*Mempool),
+		objects:     nil,
+		next:        0,
+		parent:      nil,
 	}
 }
 
-// GetTlsMempool returns the thread-local Mempool associated with the given ID.
+// GetPool returns the thread-local Mempool associated with the given ID.
 // If the thread-local Mempool does not exist, it creates a new one.
-func (m *Mempool) GetTlsMempool(id interface{}) *Mempool {
-	m.guard.Lock()
-	defer m.guard.Unlock()
+func (m *Mempool) GetPool(id interface{}) *Mempool {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 
 	newId := fmt.Sprintf("%v%v", m.id, id)
 	if m.parent != nil {
-		return m.parent.GetTlsMempool(newId)
+		return m.parent.GetPool(newId)
 	}
 
-	if m.tls[newId] == nil {
-		newMempool := NewMempool(newId, m.nf)
+	if m.pools[newId] == nil {
+		newMempool := NewMempool(newId, m.initializer)
 		newMempool.parent = m
-		m.tls[newId] = newMempool
+		m.pools[newId] = newMempool
 	}
-	return m.tls[newId]
+	return m.pools[newId]
 }
 
 // Get returns an object from the Mempool.
@@ -55,12 +55,12 @@ func (m *Mempool) Get() interface{} {
 	// }
 
 	// if m.objects[m.next] == nil {
-	// 	m.objects[m.next] = m.nf()
+	// 	m.objects[m.next] = m.initializer()
 	// }
 	// m.next++
 	// return m.objects[m.next-1]
 
-	return m.nf()
+	return m.initializer()
 }
 
 // Reclaim resets the Mempool, allowing the objects to be reused.
@@ -70,7 +70,7 @@ func (m *Mempool) Reclaim() {
 
 // ReclaimRecursive resets the Mempool and all its thread-local Mempools recursively.
 func (m *Mempool) ReclaimRecursive() {
-	for _, v := range m.tls {
+	for _, v := range m.pools {
 		v.ReclaimRecursive()
 	}
 	m.Reclaim()
@@ -78,7 +78,7 @@ func (m *Mempool) ReclaimRecursive() {
 
 // ForEachAllocated iterates over all allocated objects in the Mempool and executes the given function on each object.
 func (m *Mempool) ForEachAllocated(f func(obj interface{})) {
-	for _, v := range m.tls {
+	for _, v := range m.pools {
 		v.ForEachAllocated(f)
 	}
 

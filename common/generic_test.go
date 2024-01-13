@@ -17,4 +17,19 @@
 
 package common
 
+import (
+	"testing"
+)
+
 // "github.com/HPISTechnologies/common-lib/common"
+
+func TestParallelFor(t *testing.T) {
+	vals := []int{1, 2, 3, 4}
+	ParallelFor(0, len(vals), 1000, func(i int) {
+		vals[i] = vals[i] * 2
+	})
+
+	if vals[0] != 2 || vals[1] != 4 || vals[2] != 6 || vals[3] != 8 {
+		t.Error("ParallelFor Failed")
+	}
+}

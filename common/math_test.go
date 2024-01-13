@@ -16,12 +16,12 @@ func TestMinMax(t *testing.T) {
 
 func TestSum(t *testing.T) {
 	v := []uint{1, 2, 3, 4}
-	if Sum(v) != 10 {
+	if Sum[uint, uint](v) != 10 {
 		t.Error("Error: Should be 10")
 	}
 
 	bytes := []byte{1, 2, 3, 4}
-	if Sum(bytes) != 10 {
+	if Sum[byte, uint](bytes) != 10 {
 		t.Error("Error: Should be 10")
 	}
 
