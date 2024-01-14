@@ -36,15 +36,15 @@ func TestPagedIntArray(t *testing.T) {
 		return &i
 	})
 
-	if *pool.Get() != 1 {
+	if *pool.New() != 1 {
 		t.Error("Error: Wrong value")
 	}
 
-	if *pool.Get() != 2 {
+	if *pool.New() != 2 {
 		t.Error("Error: Wrong value")
 	}
 
-	if *pool.Get() != 3 {
+	if *pool.New() != 3 {
 		t.Error("Error: Wrong value")
 	}
 }
@@ -66,15 +66,15 @@ func TestPagedArrayCustomTypes(t *testing.T) {
 		}
 	})
 
-	if pool.Get().a != 1 {
+	if pool.New().a != 1 {
 		t.Error("Error: Wrong value")
 	}
 
-	if pool.Get().a != 2 {
+	if pool.New().a != 2 {
 		t.Error("Error: Wrong value")
 	}
 
-	if pool.Get().a != 3 {
+	if pool.New().a != 3 {
 		t.Error("Error: Wrong value")
 	}
 	pool.Reclaim()
@@ -88,31 +88,31 @@ func TestPagedArrayCustomTypes(t *testing.T) {
 			e: "hello" + fmt.Sprint(i),
 		}
 	}
-	if v := pool.Get().a; v != 1 {
+	if v := pool.New().a; v != 1 {
 		t.Error("Error: Wrong value", v)
 	}
 
-	if pool.Get().a != 2 {
+	if pool.New().a != 2 {
 		t.Error("Error: Wrong value")
 	}
 
-	if pool.Get().a != 99 {
+	if pool.New().a != 99 {
 		t.Error("Error: Wrong value")
 	}
 
-	v := pool.Get()
+	v := pool.New()
 	v.a = 10
 
-	v = pool.Get()
+	v = pool.New()
 	v.a = 11
 
-	v = pool.Get()
+	v = pool.New()
 	v.a = 12
 
-	v = pool.Get()
+	v = pool.New()
 	v.a = 13
 
-	v = pool.Get()
+	v = pool.New()
 	v.a = 14
 }
 
@@ -124,7 +124,7 @@ func BenchmarkTestPagedArrayCustomTypes(t *testing.B) {
 	}
 
 	i := 0
-	pool := NewMempool[*CustomType](4096, 256, func() *CustomType {
+	pool := NewMempool[*CustomType](4096, 156, func() *CustomType {
 		i++
 		return &CustomType{
 			a: i,
@@ -133,9 +133,28 @@ func BenchmarkTestPagedArrayCustomTypes(t *testing.B) {
 		}
 	})
 
+	vs := make([]*CustomType, 1000000)
 	t0 := time.Now()
 	for i := 0; i < 1000000; i++ {
-		pool.Get()
+		vs[i] = &CustomType{
+			a: i,
+			b: [20]byte{},
+			e: "hello" + fmt.Sprint(i),
+		}
 	}
-	fmt.Println("pool.New() ", "1000000", time.Since(t0))
+	fmt.Println("New 1 ", "1000000", time.Since(t0))
+
+	t0 = time.Now()
+	for i := 0; i < 1000000; i++ {
+		pool.New()
+	}
+	pool.Reclaim()
+	fmt.Println("pool.New() 1 ", "1000000", time.Since(t0))
+
+	t0 = time.Now()
+	for i := 0; i < 1000000; i++ {
+		pool.New()
+	}
+	pool.Reclaim()
+	fmt.Println("pool.New() 2 ", "1000000", time.Since(t0))
 }

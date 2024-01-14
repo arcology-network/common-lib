@@ -2,6 +2,8 @@
 package mempool
 
 import (
+	"sync"
+
 	"github.com/arcology-network/common-lib/container/array"
 )
 
@@ -12,6 +14,7 @@ type Mempool[T any] struct {
 	children []interface{} // Child Mempools
 	objects  *array.PagedArray[T]
 	counter  int
+	lock     sync.Mutex
 }
 
 // NewMempool creates a new Mempool instance with the given ID and object creation function.
@@ -30,8 +33,11 @@ func NewMempool[T any](perPage, pages int, new func() T) *Mempool[T] {
 	return mempool
 }
 
-// Get returns an object from the Mempool.
-func (this *Mempool[T]) Get() T {
+// New returns an object from the Mempool.
+func (this *Mempool[T]) New() T {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
 	var v T
 	if this.counter >= this.objects.Size() {
 		v = this.new()
@@ -70,6 +76,6 @@ func (m *Mempool[T]) ReclaimRecursive() {
 // }
 
 func (this *Mempool[T]) AddToChild(child interface{}) { this.children = append(this.children, child) }
-func (this *Mempool[T]) GetChildren() []interface{}   { return this.children }
+func (this *Mempool[T]) NewChildren() []interface{}   { return this.children }
 func (this *Mempool[T]) SetParent(parent interface{}) { this.parent = parent }
-func (this *Mempool[T]) GetParent() interface{}       { return this.parent }
+func (this *Mempool[T]) NewParent() interface{}       { return this.parent }
