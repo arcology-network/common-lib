@@ -148,6 +148,14 @@ func MoveIf[T any](values *[]T, condition func(T) bool) []T {
 	return moved
 }
 
+// Accumulate applies a function to each element in a slice and returns the accumulated result.
+func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, initialV T1, do func(i int, v T) T1) T1 {
+	for i := 0; i < len(values); i++ {
+		initialV += do(i, (values)[i])
+	}
+	return initialV
+}
+
 // Foreach applies a function to each element in a slice.
 // It modifies the original slice and returns the modified slice.
 func Foreach[T any](values []T, do func(idx int, v *T)) {
@@ -166,14 +174,6 @@ func ParallelForeach[T any](values []T, nThds int, do func(int, *T)) {
 	common.ParallelWorker(len(values), nThds, processor)
 }
 
-// Accumulate applies a function to each element in a slice and returns the accumulated result.
-func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, initialV T1, do func(i int, v T) T1) T1 {
-	for i := 0; i < len(values); i++ {
-		initialV += do(i, (values)[i])
-	}
-	return initialV
-}
-
 // Append applies a function to each element in a slice and returns a new slice with the results.
 func Append[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
 	vec := make([]T1, len(values))
@@ -183,7 +183,8 @@ func Append[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
 	return vec
 }
 
-// ParallelAppend applies a function to each index in a slice in parallel using multiple threads and returns a new slice with the results.
+// ParallelAppend applies a function to each index in a slice in parallel using multiple threads
+// and returns a new slice with the results.
 func ParallelAppend[T any, T1 any](values []T, numThd int, do func(i int, v T) T1) []T1 {
 	appended := make([]T1, len(values))
 	encoder := func(start, end, index int, args ...interface{}) {
