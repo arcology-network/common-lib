@@ -2,8 +2,6 @@ package common
 
 import (
 	"math"
-
-	"golang.org/x/exp/constraints"
 )
 
 // Min returns the minimum value between two values of type T.
@@ -33,15 +31,6 @@ func Remainder(numShards int, key string) int {
 		total += int(key[j])
 	}
 	return total % numShards
-}
-
-// Sum calculates the sum of all values in the given slice.
-func Sum[T0 constraints.Integer | constraints.Float | byte, T1 constraints.Float | constraints.Integer](values []T0) T1 {
-	var sum T1 = 0
-	for j := 0; j < len(values); j++ {
-		sum += T1(values[j])
-	}
-	return sum
 }
 
 // IsHex checks if the given byte slice represents a valid hexadecimal string.

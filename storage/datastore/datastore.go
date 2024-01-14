@@ -50,7 +50,7 @@ func NewDataStore(
 	dataStore := &DataStore{
 		partitionIDs: make([]uint8, 0, 65536),
 		localCache: expmap.NewConcurrentMap(8, func(v any) bool { return v == nil }, func(k string) uint8 {
-			return common.Sum[byte, uint8]([]byte(k))
+			return array.Sum[byte, uint8]([]byte(k))
 		}),
 		globalCache:    make(map[string]interface{}),
 		compressionLut: compressionLut,

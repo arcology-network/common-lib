@@ -483,6 +483,15 @@ func To[T0, T1 any](src []T0) []T1 {
 	return target
 }
 
+// Sum calculates the sum of all values in the given slice.
+func Sum[T0 constraints.Integer | constraints.Float | byte, T1 constraints.Float | constraints.Integer](values []T0) T1 {
+	var sum T1 = 0
+	for j := 0; j < len(values); j++ {
+		sum += T1(values[j])
+	}
+	return sum
+}
+
 // Count counts the number of occurrences of a value in a slice.
 func Count[T comparable](values []T, target T) uint64 {
 	total := uint64(0)

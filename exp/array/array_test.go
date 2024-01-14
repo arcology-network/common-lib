@@ -690,3 +690,15 @@ func TestMinMaxElem(t *testing.T) {
 		t.Error("Expected: ", min, minidx)
 	}
 }
+
+func TestSum(t *testing.T) {
+	v := []uint{1, 2, 3, 4}
+	if Sum[uint, uint](v) != 10 {
+		t.Error("Error: Should be 10")
+	}
+
+	bytes := []byte{1, 2, 3, 4}
+	if Sum[byte, uint](bytes) != 10 {
+		t.Error("Error: Should be 10")
+	}
+}
