@@ -64,17 +64,6 @@ func (m *Mempool[T]) ReclaimRecursive() {
 	m.Reclaim()
 }
 
-// ForEachAllocated iterates over all allocated objects in the Mempool and executes the given function on each object.
-// func (m *Mempool[T]) ForEachAllocated(f func(obj T)) {
-// 	for _, v := range m.children {
-// 		v.(interface{ ReclaimRecursive() })..(interface{ ReclaimRecursive() })(f)
-// 	}
-
-// 	for i := 0; i < m.children; i++ {
-// 		f(m.objects[i])
-// 	}
-// }
-
 func (this *Mempool[T]) AddToChild(child interface{}) { this.children = append(this.children, child) }
 func (this *Mempool[T]) NewChildren() []interface{}   { return this.children }
 func (this *Mempool[T]) SetParent(parent interface{}) { this.parent = parent }
