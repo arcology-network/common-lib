@@ -18,7 +18,7 @@
 // The ConcurrentMap class is a concurrent map implementation allowing
 // multiple goroutines to access and modify the map concurrently.
 
-package concurrentmap
+package mapi
 
 import (
 	"sync"

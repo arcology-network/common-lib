@@ -15,7 +15,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package concurrentmap
+package mapi
 
 import (
 	"bytes"
@@ -24,12 +24,12 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/exp/array"
 )
 
 func TestCcmapBasic(t *testing.T) {
 	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return v == -1 }, func(k string) uint8 {
-		return uint8(common.Sum[byte, int]([]byte(k)))
+		return uint8(array.Sum[byte, int]([]byte(k)))
 	})
 
 	ccmap.Set("1", 1)
@@ -99,7 +99,7 @@ func TestCcmapBasic(t *testing.T) {
 
 func TestCcmapEmptyKeys(t *testing.T) {
 	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return v == -1 }, func(k string) uint8 {
-		return uint8(common.Sum[byte, int]([]byte(k)))
+		return uint8(array.Sum[byte, int]([]byte(k)))
 	})
 
 	ccmap.Set("1", 1)
@@ -126,7 +126,7 @@ func TestCcmapEmptyKeys(t *testing.T) {
 
 func TestCcmapBatchModeAllEntries(t *testing.T) {
 	ccmap := NewConcurrentMap[string, interface{}](8, func(v interface{}) bool { return v == nil }, func(k string) uint8 {
-		return uint8(common.Sum[byte, int]([]byte(k)))
+		return uint8(array.Sum[byte, int]([]byte(k)))
 	})
 
 	keys := []string{"1", "2", "3", "4"}
@@ -145,7 +145,7 @@ func TestCcmapBatchModeAllEntries(t *testing.T) {
 
 func TestCCmapDump(t *testing.T) {
 	ccmap := NewConcurrentMap[string, interface{}](8, func(v interface{}) bool { return v == nil }, func(k string) uint8 {
-		return uint8(common.Sum[byte, int]([]byte(k)))
+		return uint8(array.Sum[byte, int]([]byte(k)))
 	})
 
 	keys := []string{"1", "2", "3", "4"}
@@ -164,7 +164,7 @@ func TestCCmapDump(t *testing.T) {
 
 func TestMinMax(t *testing.T) {
 	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return false }, func(k string) uint8 {
-		return uint8(common.Sum[byte, int]([]byte(k)))
+		return uint8(array.Sum[byte, int]([]byte(k)))
 	})
 
 	keys := []string{"1", "2", "3", "4"}
@@ -198,7 +198,7 @@ func TestMinMax(t *testing.T) {
 
 func TestForeach(t *testing.T) {
 	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return v < 0 }, func(k string) uint8 {
-		return uint8(common.Sum[byte, int]([]byte(k)))
+		return uint8(array.Sum[byte, int]([]byte(k)))
 	})
 
 	keys := []string{"1", "2", "3", "4"}
@@ -217,7 +217,7 @@ func TestForeach(t *testing.T) {
 
 func TestForeachDo(t *testing.T) {
 	ccmap := NewConcurrentMap[string, *int](8, func(v *int) bool { return v == nil }, func(k string) uint8 {
-		return uint8(common.Sum[byte, int]([]byte(k)))
+		return uint8(array.Sum[byte, int]([]byte(k)))
 	})
 
 	str0 := 0

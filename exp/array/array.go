@@ -376,11 +376,11 @@ func CloneIf[T any](src []T, condition func(v T) bool) []T {
 // Concate concatenates multiple slices into a single slice.
 // It applies a getter function to each element in the input slice and concatenates the results.
 func Concate[T0, T1 any](array []T0, getter func(T0) []T1) []T1 {
-	buffer := make([][]T1, len(array))
-	for i := 0; i < len(array); i++ {
-		buffer[i] = getter(array[i])
-	}
-
+	// buffer := make([][]T1, len(array))
+	// for i := 0; i < len(array); i++ {
+	// 	buffer[i] = getter(array[i])
+	// }
+	buffer := Append(array, func(_ int, v T0) []T1 { return getter(v) })
 	return Flatten(buffer)
 }
 
@@ -466,9 +466,13 @@ func SortBy1st[T0 any, T1 any](first []T0, second []T1, compare func(T0, T0) boo
 // Exclude removes elements from a slice that are present in another slice.
 // It modifies the original slice and returns the modified slice.
 func Exclude[T comparable](source []T, toRemove []T) []T {
-	dict := common.MapFromArray(toRemove, true)
+	dict := make(map[T]bool)
+	for _, k := range source {
+		dict[k] = true
+	}
+
 	return RemoveIf(&source, func(v T) bool {
-		_, ok := (*dict)[v]
+		_, ok := (dict)[v]
 		return ok
 	})
 }
@@ -645,7 +649,16 @@ func GroupBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) ([]T1, [][]
 			dict[*key] = append(vec, v)
 		}
 	}
-	return common.MapKVs(dict)
+
+	keys := make([]T1, len(dict))
+	values := make([][]T0, len(dict))
+	i := 0
+	for k, v := range dict {
+		keys[i] = k
+		values[i] = v
+		i++
+	}
+	return keys, values
 }
 
 // GroupIndicesBy groups the elements of an array based on a key getter function and returns the group indices.
