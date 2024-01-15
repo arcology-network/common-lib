@@ -36,16 +36,16 @@ func TestReceiptHash(t *testing.T) {
 		GasUsedList:     gasUsedList,
 	}
 
-	datas, err := rcptList.GobEncode()
+	data, err := rcptList.GobEncode()
 	if err != nil {
 		fmt.Printf(" rcptList.GobEncode err=%v\n", err)
 		return
 
 	}
-	fmt.Printf(" rcptList.GobEncode result=%x\n", datas)
+	fmt.Printf(" rcptList.GobEncode result=%x\n", data)
 
 	rcptListResult := ReceiptHashList{}
-	err = rcptListResult.GobDecode(datas)
+	err = rcptListResult.GobDecode(data)
 	if err != nil {
 		fmt.Printf(" rcptList.GobDecode err=%v\n", err)
 		return

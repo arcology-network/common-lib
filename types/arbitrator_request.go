@@ -1,9 +1,9 @@
 package types
 
 import (
-	"github.com/arcology-network/common-lib/codec"
+	codec "github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
-	encoding "github.com/arcology-network/common-lib/encoding"
+	"github.com/arcology-network/common-lib/exp/array"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
@@ -20,50 +20,39 @@ type TxElement struct {
 func (this TxElement) Encode() []byte {
 	tmpData := [][]byte{
 		this.TxHash[:],
-		encoding.Uint64(this.Batchid).Encode(),
-		encoding.Uint32(this.Txid).Encode(),
+		codec.Uint64(this.Batchid).Encode(),
+		codec.Uint32(this.Txid).Encode(),
 	}
-	return encoding.Byteset(tmpData).Encode()
+	return codec.Byteset(tmpData).Encode()
 }
 
 func (this *TxElement) Decode(data []byte) *TxElement {
-	fields := encoding.Byteset{}.Decode(data)
+	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
 	hash := ethCommon.BytesToHash(fields[0])
 	this.TxHash = &hash
-	this.Batchid = encoding.Uint64(0).Decode(fields[1])
-	this.Txid = encoding.Uint32(0).Decode(fields[2])
+	this.Batchid = uint64(new(codec.Uint64).Decode(fields[1]).(codec.Uint64))
+	this.Txid = uint32(new(codec.Uint32).Decode(fields[2]).(codec.Uint32))
 	return this
 }
 
 func (tx TxElement) Size() uint32 {
-	return Size(ethCommon.Hash{}) + encoding.Uint64(0).Size() + uint32(encoding.Uint32(0).Size())
+	return Size(ethCommon.Hash{}) + codec.Uint64(0).Size() + uint32(codec.Uint32(0).Size())
 }
 
 type TxElements []*TxElement
 
 func (elems TxElements) Encode() []byte {
-	byteset := make([][]byte, len(elems))
-	worker := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			byteset[i] = elems[i].Encode()
-		}
-	}
-	common.ParallelWorker(len(elems), 4, worker)
+	byteset := array.ParallelAppend(elems, 4, func(i int, _ *TxElement) []byte { return elems[i].Encode() })
 	return codec.Byteset(byteset).Encode()
 }
 
 func (TxElements) Decode(bytes []byte) TxElements {
 	bytesset := codec.Byteset{}.Decode(bytes).(codec.Byteset)
-	elements := make([]*TxElement, len(bytesset))
-	worker := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			ele := &TxElement{}
-			ele.Decode(bytesset[i])
-			elements[i] = ele
-		}
-	}
-	common.ParallelWorker(len(bytesset), 4, worker)
-	return elements
+	return array.ParallelAppend(bytesset, 4, func(i int, _ []byte) *TxElement {
+		ele := &TxElement{}
+		ele.Decode(bytesset[i])
+		return ele
+	})
 }
 
 func (request *ArbitratorRequest) GobEncode() ([]byte, error) {
@@ -84,19 +73,14 @@ func (request *ArbitratorRequest) Encode() []byte {
 		}
 	}
 	common.ParallelWorker(len(bytes), 2, worker)
-	return encoding.Byteset(bytes).Encode()
+	return codec.Byteset(bytes).Encode()
 }
 
 func (ArbitratorRequest) Decode(bytes []byte) *ArbitratorRequest {
-	byteset := encoding.Byteset{}.Decode(bytes)
-	elems := make([][]*TxElement, len(byteset))
-
-	worker := func(start int, end int, idx int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			elems[i] = TxElements{}.Decode(byteset[i])
-		}
-	}
-	common.ParallelWorker(len(elems), 2, worker)
+	byteset := codec.Byteset{}.Decode(bytes).(codec.Byteset)
+	elems := array.ParallelAppend(byteset, 2, func(i int, _ []byte) []*TxElement {
+		return TxElements{}.Decode(byteset[i])
+	})
 	return &ArbitratorRequest{elems}
 }
 

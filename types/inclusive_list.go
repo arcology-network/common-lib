@@ -1,7 +1,7 @@
 package types
 
 import (
-	encoding "github.com/arcology-network/common-lib/encoding"
+	codec "github.com/arcology-network/common-lib/codec"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
@@ -58,14 +58,14 @@ func (il *InclusiveList) GobEncode() ([]byte, error) {
 	hashArray := Ptr2Arr(il.HashList)
 	data := [][]byte{
 		Hashes(hashArray).Encode(),
-		encoding.Bools(il.Successful).Encode(),
+		codec.Bools(il.Successful).Encode(),
 	}
-	return encoding.Byteset(data).Encode(), nil
+	return codec.Byteset(data).Encode(), nil
 }
 func (il *InclusiveList) GobDecode(data []byte) error {
-	fields := encoding.Byteset{}.Decode(data)
+	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
 	arrs := Hashes([]ethCommon.Hash{}).Decode(fields[0])
-	il.Successful = encoding.Bools(il.Successful).Decode(fields[1])
+	il.Successful = codec.Bools(il.Successful).Decode(fields[1]).(codec.Bools)
 	il.HashList = Arr2Ptr(arrs)
 	return nil
 }

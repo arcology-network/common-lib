@@ -75,7 +75,7 @@ func PrepareNewArbitrator() *ArbitratorRequest {
 
 func TestRequestEncodeDecode(t *testing.T) {
 	req := PrepareNewArbitrator()
-	datas, err := req.GobEncode()
+	data, err := req.GobEncode()
 
 	if err != nil {
 		fmt.Printf(" Arbitrate.GobEncode err=%v\n", err)
@@ -83,11 +83,11 @@ func TestRequestEncodeDecode(t *testing.T) {
 
 	}
 
-	fmt.Printf(" Arbitrate.GobEncode result=%x\n", datas)
+	fmt.Printf(" Arbitrate.GobEncode result=%x\n", data)
 
 	request := ArbitratorRequest{}
 
-	err = request.GobDecode(datas)
+	err = request.GobDecode(data)
 	if err != nil {
 		fmt.Printf(" Arbitrate.GobDecode err=%v\n", err)
 		return

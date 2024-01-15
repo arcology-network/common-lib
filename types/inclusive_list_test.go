@@ -42,16 +42,16 @@ func TestInclusive(t *testing.T) {
 		Successful: succeful,
 	}
 
-	datas, err := inclusive.GobEncode()
+	data, err := inclusive.GobEncode()
 	if err != nil {
 		fmt.Printf(" inclusive.GobEncode err=%v\n", err)
 		return
 
 	}
-	fmt.Printf(" inclusive.GobEncode result=%x\n", datas)
+	fmt.Printf(" inclusive.GobEncode result=%x\n", data)
 
 	inclusiveResult := InclusiveList{}
-	err = inclusiveResult.GobDecode(datas)
+	err = inclusiveResult.GobDecode(data)
 	if err != nil {
 		fmt.Printf(" inclusive.GobDecode err=%v\n", err)
 		return

@@ -23,16 +23,16 @@ func TestReapinglist(t *testing.T) {
 		Timestamp: big.NewInt(12),
 	}
 
-	datas, err := reapinglist.GobEncode()
+	data, err := reapinglist.GobEncode()
 	if err != nil {
 		fmt.Printf(" reapinglist.GobEncode err=%v\n", err)
 		return
 
 	}
-	fmt.Printf(" reapinglist.GobEncode result=%x\n", datas)
+	fmt.Printf(" reapinglist.GobEncode result=%x\n", data)
 
 	reapinglistResult := ReapingList{}
-	err = reapinglistResult.GobDecode(datas)
+	err = reapinglistResult.GobDecode(data)
 	if err != nil {
 		fmt.Printf(" reapinglist.GobDecode err=%v\n", err)
 		return

@@ -3,7 +3,7 @@ package types
 import (
 	"math/big"
 
-	encoding "github.com/arcology-network/common-lib/encoding"
+	codec "github.com/arcology-network/common-lib/codec"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
@@ -29,10 +29,10 @@ func (rl *ReapingList) GobEncode() ([]byte, error) {
 		Hashes(hashArray).Encode(),
 		timeStampData,
 	}
-	return encoding.Byteset(data).Encode(), nil
+	return codec.Byteset(data).Encode(), nil
 }
 func (rl *ReapingList) GobDecode(data []byte) error {
-	fields := encoding.Byteset{}.Decode(data)
+	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
 	arrs := []ethCommon.Hash{}
 	arrs = Hashes(arrs).Decode(fields[0])
 	rl.List = Arr2Ptr(arrs)

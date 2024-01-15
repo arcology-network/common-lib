@@ -1,7 +1,7 @@
 package types
 
 import (
-	encoding "github.com/arcology-network/common-lib/encoding"
+	codec "github.com/arcology-network/common-lib/codec"
 )
 
 type Txs struct {
@@ -9,9 +9,9 @@ type Txs struct {
 }
 
 func (txs Txs) GobEncode() ([]byte, error) {
-	return encoding.Byteset(txs.Data).Encode(), nil
+	return codec.Byteset(txs.Data).Encode(), nil
 }
 func (txs *Txs) GobDecode(data []byte) error {
-	txs.Data = encoding.Byteset{}.Decode(data)
+	txs.Data = codec.Byteset{}.Decode(data).(codec.Byteset)
 	return nil
 }

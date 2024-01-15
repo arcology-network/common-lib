@@ -19,8 +19,6 @@ func init() {
 	gob.Register(&PartialHeader{})
 	gob.Register(&ReapingList{})
 	gob.Register(&ReceiptHashList{})
-	gob.Register(&[]*EuResult{})
-	//gob.Register(&Reads{})
 	gob.Register(&ArbitratorRequest{})
 	gob.Register(&ArbitratorResponse{})
 	gob.Register(&ExecutorRequest{})
@@ -49,9 +47,6 @@ func init() {
 	// gob.Register([]*SpawnedRelation{})
 	gob.Register(map[ethCommon.Hash]ethCommon.Hash{})
 
-	gob.Register(&[]*TxAccessRecords{})
-	gob.Register(&TxAccessRecordSet{})
-	gob.Register(&Euresults{})
 	// gob.Register(&DeferredCall{})
 	gob.Register(&RequestParameters{})
 	gob.Register(&RequestBlockEth{})

@@ -3,13 +3,13 @@ package merkle
 import (
 	"crypto/sha256"
 
-	"github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/exp/array"
 	"golang.org/x/crypto/sha3"
 )
 
 type Concatenator struct{}
 
-func (Concatenator) Encode(bytes [][]byte) []byte { return common.Flatten(bytes) }
+func (Concatenator) Encode(bytes [][]byte) []byte { return array.Flatten(bytes) }
 
 type Sha256 struct{}
 

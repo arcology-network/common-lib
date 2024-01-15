@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"sort"
 
+	codec "github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
-	"github.com/arcology-network/common-lib/encoding"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	evmTypes "github.com/ethereum/go-ethereum/core/types"
@@ -58,10 +58,11 @@ func (stdp *StdTransactionPack) GobEncode() ([]byte, error) {
 		txsData,
 		[]byte(stdp.Src),
 	}
-	return encoding.Byteset(data).Encode(), nil
+	return codec.Byteset(data).Encode(), nil
 }
+
 func (stdp *StdTransactionPack) GobDecode(data []byte) error {
-	fields := encoding.Byteset{}.Decode(data)
+	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
 	stds := StandardTransactions{}
 	stds, err := stds.Decode(fields[0])
 	if err != nil {
@@ -71,25 +72,6 @@ func (stdp *StdTransactionPack) GobDecode(data []byte) error {
 	stdp.Src = TxSource(fields[1])
 	return nil
 }
-
-// func MakeMessageWithDefCall(def *DeferredCall, hash ethCommon.Hash, nonce uint64) *StandardMessage {
-// 	signature := def.Signature
-// 	contractAddress := def.ContractAddress
-// 	data := crypto.Keccak256([]byte(signature))[:4]
-// 	data = append(data, common.AlignToEvmForInt(common.EvmWordSize)...)
-// 	idLen := common.AlignToEvmForInt(len(def.DeferID))
-// 	id := common.AlignToEvmForString(def.DeferID)
-// 	data = append(data, idLen...)
-// 	data = append(data, id...)
-// 	contractAddr := ethCommon.BytesToAddress([]byte(contractAddress))
-// 	//nonce := uint64(time.Now().UnixNano())
-// 	message := core.NewMessage(contractAddr, &contractAddr, nonce, new(big.Int).SetInt64(0), 1e9, new(big.Int).SetInt64(0), data, nil, false)
-// 	standardMessager := StandardMessage{
-// 		Native: &message,
-// 		TxHash: hash,
-// 	}
-// 	return &standardMessager
-// }
 
 func (this *StandardTransaction) Hash() ethCommon.Hash {
 	return this.TxHash
@@ -103,6 +85,7 @@ func (this *StandardTransaction) UnSign(signer evmTypes.Signer) error {
 	}
 	// msg.SkipAccountChecks = true
 	this.NativeMessage = msg
+
 	return nil
 }
 
@@ -168,51 +151,6 @@ func (this byHash) Less(i, j int) bool {
 	return this[i].CompareHash(this[j])
 }
 
-// type SendingStandardMessages struct {
-// 	Data [][]byte
-// }
-
-// func (this SendingStandardMessages) Encode() ([]byte, error) {
-// 	return encoding.Byteset(this.Data).Encode(), nil
-// }
-// func (this *SendingStandardMessages) Decode(data []byte) error {
-// 	this.Data = encoding.Byteset{}.Decode(data)
-// 	return nil
-// }
-
-// func (this *SendingStandardMessages) ToMessages() []*StandardMessage {
-// 	fields := this.Data
-// 	msgs := make([]*StandardMessage, len(fields))
-
-// 	worker := func(start, end, idx int, args ...interface{}) {
-// 		data := args[0].([]interface{})[0].([][]byte)
-// 		messages := args[0].([]interface{})[1].([]*StandardMessage)
-
-// 		for i := start; i < end; i++ {
-// 			standredMessage := new(StandardMessage)
-
-// 			fields := encoding.Byteset{}.Decode(data[i])
-// 			standredMessage.TxHash = ethCommon.BytesToHash(fields[0])
-// 			standredMessage.Source = uint8(fields[1][0])
-
-// 			// msg := new(core.Message)
-// 			// err := msg.GobDecode(fields[2])
-// 			msg, err := MsgDecode(fields[2])
-// 			if err != nil {
-// 				fmt.Printf("SendingStandardMessages decode err:%v", err)
-// 				return
-// 			}
-// 			standredMessage.NativeMessage = msg
-// 			standredMessage.TxRawData = fields[3]
-
-// 			messages[i] = standredMessage
-// 		}
-// 	}
-// 	common.ParallelWorker(len(fields), concurrency, worker, fields, msgs)
-
-// 	return msgs
-// }
-
 type StandardTransactions []*StandardTransaction
 
 func (this StandardTransactions) Hashes() []ethCommon.Hash {
@@ -250,7 +188,8 @@ func (this StandardTransactions) QuickSort(less func(this *StandardTransaction, 
 		return
 	}
 	left, right := 0, len(this)-1
-	pivotIndex := rand.Int() % len(this)
+
+	pivotIndex := rand.Intn(len(this)) //rnd.Int() % len(this)
 
 	this[pivotIndex], this[right] = this[right], this[pivotIndex]
 	for i := range this {
@@ -264,32 +203,6 @@ func (this StandardTransactions) QuickSort(less func(this *StandardTransaction, 
 	StandardTransactions(this[:left]).QuickSort(less)
 	StandardTransactions(this[left+1:]).QuickSort(less)
 }
-
-// func (this StandardMessages) EncodeToBytes() [][]byte {
-// 	if this == nil {
-// 		return [][]byte{}
-// 	}
-// 	data := make([][]byte, len(this))
-// 	worker := func(start, end, idx int, args ...interface{}) {
-// 		this := args[0].([]interface{})[0].(StandardMessages)
-// 		data := args[0].([]interface{})[1].([][]byte)
-
-// 		for i := start; i < end; i++ {
-// 			if encoded, err := MsgEncode(this[i].NativeMessage); err == nil {
-// 				tmpData := [][]byte{
-// 					this[i].TxHash.Bytes(),
-// 					[]byte{this[i].Source},
-// 					encoded,
-// 					//this[i].TxRawData
-// 					[]byte{}, //remove TxRawData
-// 				}
-// 				data[i] = encoding.Byteset(tmpData).Encode()
-// 			}
-// 		}
-// 	}
-// 	common.ParallelWorker(len(this), concurrency, worker, this, data)
-// 	return data
-// }
 
 func (this StandardTransactions) Encode() ([]byte, error) {
 	if this == nil {
@@ -317,16 +230,16 @@ func (this StandardTransactions) Encode() ([]byte, error) {
 				this[i].TxRawData,
 				[]byte{this[i].Signer},
 			}
-			data[i] = encoding.Byteset(tmpData).Encode()
+			data[i] = codec.Byteset(tmpData).Encode()
 
 		}
 	}
 	common.ParallelWorker(len(this), concurrency, worker, this, data)
-	return encoding.Byteset(data).Encode(), nil
+	return codec.Byteset(data).Encode(), nil
 }
 
 func (this *StandardTransactions) Decode(data []byte) ([]*StandardTransaction, error) {
-	fields := encoding.Byteset{}.Decode(data)
+	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
 	msgs := make([]*StandardTransaction, len(fields))
 
 	worker := func(start, end, idx int, args ...interface{}) {
@@ -336,7 +249,7 @@ func (this *StandardTransactions) Decode(data []byte) ([]*StandardTransaction, e
 		for i := start; i < end; i++ {
 			standredMessage := new(StandardTransaction)
 
-			fields := encoding.Byteset{}.Decode(data[i])
+			fields := codec.Byteset{}.Decode(data[i]).(codec.Byteset)
 			standredMessage.TxHash = ethCommon.BytesToHash(fields[0])
 			standredMessage.Source = uint8(fields[1][0])
 			if len(fields[2]) > 0 {

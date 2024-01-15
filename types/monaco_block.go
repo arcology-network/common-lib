@@ -1,8 +1,8 @@
 package types
 
-import (
-	"github.com/arcology-network/common-lib/encoding"
-)
+import codec "github.com/arcology-network/common-lib/codec"
+
+// "github.com/arcology-network/common-lib/common"
 
 const (
 	AppType_Eth  = 0
@@ -18,27 +18,27 @@ type MonacoBlock struct {
 }
 
 func (mb MonacoBlock) Hash() []byte {
-	// bys := [][]byte{encoding.Byteset(mb.Headers).Flatten(), encoding.Byteset(mb.Txs).Flatten(), common.Uint64ToBytes(mb.Height)}
-	// sum := sha256.Sum256(encoding.Byteset(bys).Flatten())
+	// bys := [][]byte{codec.Byteset(mb.Headers).Flatten(), codec.Byteset(mb.Txs).Flatten(), common.Uint64ToBytes(mb.Height)}
+	// sum := sha256.Sum256(codec.Byteset(bys).Flatten())
 	// return sum[:]
 	return mb.Blockhash
 }
 
 func (mb MonacoBlock) GobEncode() ([]byte, error) {
 	data := [][]byte{
-		encoding.Uint64(mb.Height).Encode(),
-		encoding.Byteset(mb.Headers).Encode(),
-		encoding.Byteset(mb.Txs).Encode(),
+		codec.Uint64(mb.Height).Encode(),
+		codec.Byteset(mb.Headers).Encode(),
+		codec.Byteset(mb.Txs).Encode(),
 		mb.Blockhash,
 		[]byte{mb.Signer},
 	}
-	return encoding.Byteset(data).Encode(), nil
+	return codec.Byteset(data).Encode(), nil
 }
 func (mb *MonacoBlock) GobDecode(data []byte) error {
-	fields := encoding.Byteset{}.Decode(data)
-	mb.Height = encoding.Uint64(0).Decode(fields[0]) //common.BytesToUint64(fields[0])
-	mb.Headers = encoding.Byteset{}.Decode(fields[1])
-	mb.Txs = encoding.Byteset{}.Decode(fields[2])
+	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
+	mb.Height = codec.Uint64(0).Decode(fields[0]).(uint64)
+	mb.Headers = codec.Byteset{}.Decode(fields[1]).(codec.Byteset)
+	mb.Txs = codec.Byteset{}.Decode(fields[2]).(codec.Byteset)
 	mb.Blockhash = fields[3]
 	mb.Signer = uint8(fields[4][0])
 	return nil

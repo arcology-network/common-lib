@@ -52,10 +52,11 @@ func (this Bytes32) Decode(buffer []byte) interface{} {
 	return Bytes32(this)
 }
 
+// Convert to hex string with 0x prefix.
 func (this Bytes32) Hex() string {
 	var accHex [2 * len(this)]byte
 	hex.Encode(accHex[:], this[:])
-	return string(accHex[:])
+	return "0x" + string(accHex[:])
 }
 
 func (this Bytes32) UUID(seed uint64) Bytes32 {
