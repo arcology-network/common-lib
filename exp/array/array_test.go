@@ -17,7 +17,7 @@ import (
 
 func TestRemoveNils(t *testing.T) {
 	encoded := [][]byte{{1}, {1}, {3}, {2}, nil}
-	RemoveIf(&encoded, func(v []byte) bool { return v == nil })
+	RemoveIf(&encoded, func(_ int, v []byte) bool { return v == nil })
 	if len(encoded) != 4 {
 		t.Error("Error: Failed to remove nil values !")
 	}
@@ -26,56 +26,56 @@ func TestRemoveNils(t *testing.T) {
 	encoded[0] = []byte{1}
 	encoded[1] = []byte{2}
 
-	RemoveIf(&encoded, func(v []byte) bool { return v == nil })
+	RemoveIf(&encoded, func(_ int, v []byte) bool { return v == nil })
 	if len(encoded) != 2 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs := []interface{}{"1", 2, "3", "4"}
-	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
+	RemoveIf(&strs, func(_ int, v interface{}) bool { return v == nil })
 
 	if len(strs) != 4 && strs[0] != "1" && strs[1] != 2 && strs[2] != "3" && strs[3] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{"1"}
-	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
+	RemoveIf(&strs, func(_ int, v interface{}) bool { return v == nil })
 	if len(strs) != 1 && strs[0] != "1" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{"1", nil, "3", "4"}
-	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
+	RemoveIf(&strs, func(_ int, v interface{}) bool { return v == nil })
 	if len(strs) != 3 && strs[0] != "1" && strs[1] != 3 && strs[2] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{nil, nil, "3", "4"}
-	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
+	RemoveIf(&strs, func(_ int, v interface{}) bool { return v == nil })
 	if len(strs) != 2 && strs[0] != "3" && strs[1] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{nil, nil, nil, "4"}
-	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
+	RemoveIf(&strs, func(_ int, v interface{}) bool { return v == nil })
 	if len(strs) != 1 && strs[0] != "4" {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{nil, nil, nil, nil}
-	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
+	RemoveIf(&strs, func(_ int, v interface{}) bool { return v == nil })
 	if len(strs) != 0 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{1, nil, nil, nil}
-	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
+	RemoveIf(&strs, func(_ int, v interface{}) bool { return v == nil })
 	if len(strs) != 1 && strs[0] != 1 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	strs = []interface{}{1, nil, nil, 2}
-	RemoveIf(&strs, func(v interface{}) bool { return v == nil })
+	RemoveIf(&strs, func(_ int, v interface{}) bool { return v == nil })
 	if len(strs) != 2 && strs[0] != 1 && strs[1] != 2 {
 		t.Error("Error: Failed to remove nil values !")
 	}
@@ -83,7 +83,7 @@ func TestRemoveNils(t *testing.T) {
 
 func TestRemoveIf(t *testing.T) {
 	strs := []interface{}{"1", 2, "3", "4"}
-	filter := func(v interface{}) bool { return v == nil }
+	filter := func(_ int, v interface{}) bool { return v == nil }
 	RemoveIf(&strs, filter)
 	if len(strs) != 4 && strs[0] != "1" && strs[1] != 2 && strs[2] != "3" && strs[3] != "4" {
 		t.Error("Error: Failed to remove nil values !")
@@ -597,7 +597,7 @@ func TestSum(t *testing.T) {
 
 func TestMoveIf(t *testing.T) {
 	strs := []interface{}{"1", 2, "3", "4"}
-	filter := func(v interface{}) bool { return v == 2 }
+	filter := func(_ int, v interface{}) bool { return v == 2 }
 	moved := MoveIf(&strs, filter)
 
 	if len(moved) != 1 {
@@ -614,7 +614,7 @@ func TestMoveIf(t *testing.T) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
-	filter = func(v interface{}) bool { return v == nil }
+	filter = func(_ int, v interface{}) bool { return v == nil }
 	strs = []interface{}{"1", nil, "3", "4"}
 	MoveIf(&strs, filter)
 	if len(strs) != 3 || strs[0] != "1" || strs[1] != "3" || strs[2] != "4" {

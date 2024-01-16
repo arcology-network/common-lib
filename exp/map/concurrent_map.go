@@ -152,6 +152,18 @@ func (this *ConcurrentMap[K, V]) BatchSet(keys []K, values []V) {
 	this.DirectBatchSet(shardIDs, keys, values)
 }
 
+func (this *ConcurrentMap[K, V]) BatchSetIf(keys []K, setter func(K) (V, bool)) {
+	values, flags := make([]V, len(keys)), make([]bool, len(keys))
+	for i := 0; i < len(keys); i++ {
+		values[i], flags[i] = setter(keys[i])
+	}
+
+	array.RemoveIf(&keys, func(i int, k K) bool { return flags[i] })
+	array.RemoveIf(&values, func(i int, v V) bool { return flags[i] })
+
+	this.DirectBatchSet(this.Hash8s(keys), keys, values)
+}
+
 // DirectBatchSet associates the specified values with the specified shard IDs and keys in the ConcurrentMap.
 func (this *ConcurrentMap[K, V]) DirectBatchSet(ids []uint8, keys []K, values []V) {
 	array.ParallelForeach(this.shards, 8, func(shardNum int, shard *map[K]V) {

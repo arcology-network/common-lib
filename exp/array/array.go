@@ -120,25 +120,60 @@ func SetByIndices[T0 any, T1 constraints.Integer](source []T0, indices []T1, set
 
 // RemoveIf removes all elements from a slice that satisfy a given condition.
 // It modifies the original slice and returns the modified slice.
-func RemoveIf[T any](values *[]T, condition func(T) bool) []T {
+func RemoveIf[T any](values *[]T, condition func(int, T) bool) []T {
 	MoveIf(values, condition)
 	return *values
 }
 
+// RemoveIf removes all elements from a slice that satisfy a given condition.
+// It modifies the original slice and returns the modified slice.
+func RemoveBothIf[T0, T1 any](values *[]T0, others *[]T1, condition func(int, T0, T1) bool) ([]T0, []T1) {
+	MoveBothIf(values, others, condition)
+	return *values, *others
+}
+
 // MoveIf moves all elements from a slice that satisfy a given condition to a new slice.
 // It modifies the original slice and returns the moved elements in a new slice.
-func MoveIf[T any](values *[]T, condition func(T) bool) []T {
+func MoveBothIf[T0, T1 any](values *[]T0, others *[]T1, condition func(int, T0, T1) bool) ([]T0, []T1) {
 	pos := 0
 	// for _, condition := range conditions {
 	for i := 0; i < len(*values); i++ {
-		if condition((*values)[i]) {
+		if condition(i, (*values)[i], (*others)[i]) {
 			pos = i
 			break
 		}
 	}
 
 	for i := pos; i < len(*values); i++ {
-		if !condition((*values)[i]) {
+		if !condition(i, (*values)[i], (*others)[i]) {
+			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
+			pos++
+		}
+	}
+
+	moved := (*values)[pos:]
+	(*values) = (*values)[:pos]
+
+	otherMoved := (*others)[pos:]
+	(*others) = (*others)[:pos]
+
+	return moved, otherMoved
+}
+
+// MoveIf moves all elements from a slice that satisfy a given condition to a new slice.
+// It modifies the original slice and returns the moved elements in a new slice.
+func MoveIf[T any](values *[]T, condition func(int, T) bool) []T {
+	pos := 0
+	// for _, condition := range conditions {
+	for i := 0; i < len(*values); i++ {
+		if condition(i, (*values)[i]) {
+			pos = i
+			break
+		}
+	}
+
+	for i := pos; i < len(*values); i++ {
+		if !condition(i, (*values)[i]) {
 			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
 			pos++
 		}
@@ -468,11 +503,12 @@ func SortBy1st[T0 any, T1 any](first []T0, second []T1, compare func(T0, T0) boo
 // It modifies the original slice and returns the modified slice.
 func Exclude[T comparable](source []T, toRemove []T) []T {
 	dict := make(map[T]bool)
-	for _, k := range source {
+	for _, k := range toRemove {
 		dict[k] = true
 	}
 
-	return RemoveIf(&source, func(v T) bool {
+	// This is low efficient, because it will scan the whole array for each element to be removed.
+	return RemoveIf(&source, func(_ int, v T) bool {
 		_, ok := (dict)[v]
 		return ok
 	})
