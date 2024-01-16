@@ -120,25 +120,60 @@ func SetByIndices[T0 any, T1 constraints.Integer](source []T0, indices []T1, set
 
 // RemoveIf removes all elements from a slice that satisfy a given condition.
 // It modifies the original slice and returns the modified slice.
-func RemoveIf[T any](values *[]T, condition func(T) bool) []T {
+func RemoveIf[T any](values *[]T, condition func(int, T) bool) []T {
 	MoveIf(values, condition)
 	return *values
 }
 
+// RemoveIf removes all elements from a slice that satisfy a given condition.
+// It modifies the original slice and returns the modified slice.
+func RemoveBothIf[T0, T1 any](values *[]T0, others *[]T1, condition func(int, T0, T1) bool) ([]T0, []T1) {
+	MoveBothIf(values, others, condition)
+	return *values, *others
+}
+
 // MoveIf moves all elements from a slice that satisfy a given condition to a new slice.
 // It modifies the original slice and returns the moved elements in a new slice.
-func MoveIf[T any](values *[]T, condition func(T) bool) []T {
+func MoveBothIf[T0, T1 any](values *[]T0, others *[]T1, condition func(int, T0, T1) bool) ([]T0, []T1) {
 	pos := 0
 	// for _, condition := range conditions {
 	for i := 0; i < len(*values); i++ {
-		if condition((*values)[i]) {
+		if condition(i, (*values)[i], (*others)[i]) {
 			pos = i
 			break
 		}
 	}
 
 	for i := pos; i < len(*values); i++ {
-		if !condition((*values)[i]) {
+		if !condition(i, (*values)[i], (*others)[i]) {
+			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
+			pos++
+		}
+	}
+
+	moved := (*values)[pos:]
+	(*values) = (*values)[:pos]
+
+	otherMoved := (*others)[pos:]
+	(*others) = (*others)[:pos]
+
+	return moved, otherMoved
+}
+
+// MoveIf moves all elements from a slice that satisfy a given condition to a new slice.
+// It modifies the original slice and returns the moved elements in a new slice.
+func MoveIf[T any](values *[]T, condition func(int, T) bool) []T {
+	pos := 0
+	// for _, condition := range conditions {
+	for i := 0; i < len(*values); i++ {
+		if condition(i, (*values)[i]) {
+			pos = i
+			break
+		}
+	}
+
+	for i := pos; i < len(*values); i++ {
+		if !condition(i, (*values)[i]) {
 			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
 			pos++
 		}
@@ -146,6 +181,14 @@ func MoveIf[T any](values *[]T, condition func(T) bool) []T {
 	moved := (*values)[pos:]
 	(*values) = (*values)[:pos]
 	return moved
+}
+
+// Accumulate applies a function to each element in a slice and returns the accumulated result.
+func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, initialV T1, do func(i int, v T) T1) T1 {
+	for i := 0; i < len(values); i++ {
+		initialV += do(i, (values)[i])
+	}
+	return initialV
 }
 
 // Foreach applies a function to each element in a slice.
@@ -166,14 +209,6 @@ func ParallelForeach[T any](values []T, nThds int, do func(int, *T)) {
 	common.ParallelWorker(len(values), nThds, processor)
 }
 
-// Accumulate applies a function to each element in a slice and returns the accumulated result.
-func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, initialV T1, do func(i int, v T) T1) T1 {
-	for i := 0; i < len(values); i++ {
-		initialV += do(i, (values)[i])
-	}
-	return initialV
-}
-
 // Append applies a function to each element in a slice and returns a new slice with the results.
 func Append[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
 	vec := make([]T1, len(values))
@@ -183,7 +218,8 @@ func Append[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
 	return vec
 }
 
-// ParallelAppend applies a function to each index in a slice in parallel using multiple threads and returns a new slice with the results.
+// ParallelAppend applies a function to each index in a slice in parallel using multiple threads
+// and returns a new slice with the results.
 func ParallelAppend[T any, T1 any](values []T, numThd int, do func(i int, v T) T1) []T1 {
 	appended := make([]T1, len(values))
 	encoder := func(start, end, index int, args ...interface{}) {
@@ -376,11 +412,11 @@ func CloneIf[T any](src []T, condition func(v T) bool) []T {
 // Concate concatenates multiple slices into a single slice.
 // It applies a getter function to each element in the input slice and concatenates the results.
 func Concate[T0, T1 any](array []T0, getter func(T0) []T1) []T1 {
-	buffer := make([][]T1, len(array))
-	for i := 0; i < len(array); i++ {
-		buffer[i] = getter(array[i])
-	}
-
+	// buffer := make([][]T1, len(array))
+	// for i := 0; i < len(array); i++ {
+	// 	buffer[i] = getter(array[i])
+	// }
+	buffer := Append(array, func(_ int, v T0) []T1 { return getter(v) })
 	return Flatten(buffer)
 }
 
@@ -466,9 +502,14 @@ func SortBy1st[T0 any, T1 any](first []T0, second []T1, compare func(T0, T0) boo
 // Exclude removes elements from a slice that are present in another slice.
 // It modifies the original slice and returns the modified slice.
 func Exclude[T comparable](source []T, toRemove []T) []T {
-	dict := common.MapFromArray(toRemove, true)
-	return RemoveIf(&source, func(v T) bool {
-		_, ok := (*dict)[v]
+	dict := make(map[T]bool)
+	for _, k := range toRemove {
+		dict[k] = true
+	}
+
+	// This is low efficient, because it will scan the whole array for each element to be removed.
+	return RemoveIf(&source, func(_ int, v T) bool {
+		_, ok := (dict)[v]
 		return ok
 	})
 }
@@ -481,6 +522,15 @@ func To[T0, T1 any](src []T0) []T1 {
 		target[i] = (interface{}((src[i]))).(T1)
 	}
 	return target
+}
+
+// Sum calculates the sum of all values in the given slice.
+func Sum[T0 constraints.Integer | constraints.Float | byte, T1 constraints.Float | constraints.Integer](values []T0) T1 {
+	var sum T1 = 0
+	for j := 0; j < len(values); j++ {
+		sum += T1(values[j])
+	}
+	return sum
 }
 
 // Count counts the number of occurrences of a value in a slice.
@@ -636,7 +686,16 @@ func GroupBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) ([]T1, [][]
 			dict[*key] = append(vec, v)
 		}
 	}
-	return common.MapKVs(dict)
+
+	keys := make([]T1, len(dict))
+	values := make([][]T0, len(dict))
+	i := 0
+	for k, v := range dict {
+		keys[i] = k
+		values[i] = v
+		i++
+	}
+	return keys, values
 }
 
 // GroupIndicesBy groups the elements of an array based on a key getter function and returns the group indices.

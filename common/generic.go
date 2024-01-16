@@ -115,13 +115,3 @@ func Equal[T comparable](lhv, rhv *T, wildcard func(*T) bool) bool {
 func EqualIf[T any](lhv, rhv *T, equal func(*T, *T) bool, wildcard func(*T) bool) bool {
 	return (lhv == rhv) || ((lhv != nil) && (rhv != nil) && equal(lhv, rhv)) || ((lhv == nil && wildcard(rhv)) || (rhv == nil && wildcard(lhv)))
 }
-
-// ParallelForeach applies a function to each element in a slice in parallel using multiple threads.
-func ParallelFor(v0, v1, nThds int, do func(int)) {
-	processor := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			do(i + v0)
-		}
-	}
-	ParallelWorker(v1-v0, nThds, processor)
-}

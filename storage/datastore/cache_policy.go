@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"sync"
 
-	common "github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/exp/array"
 	ccmap "github.com/arcology-network/common-lib/exp/map"
 	intf "github.com/arcology-network/common-lib/storage/interface"
 	memdb "github.com/arcology-network/common-lib/storage/memdb"
@@ -37,7 +37,7 @@ type CachePolicy struct {
 // Memory hard Quota
 func NewCachePolicy(hardQuota uint64, threshold float64) *CachePolicy {
 	m := ccmap.NewConcurrentMap[string, any](8, func(v any) bool { return v == nil }, func(k string) uint8 {
-		return common.Sum[byte, uint8]([]byte(k))
+		return array.Sum[byte, uint8]([]byte(k))
 	})
 
 	policy := &CachePolicy{

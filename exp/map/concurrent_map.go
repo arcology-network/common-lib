@@ -18,7 +18,7 @@
 // The ConcurrentMap class is a concurrent map implementation allowing
 // multiple goroutines to access and modify the map concurrently.
 
-package concurrentmap
+package mapi
 
 import (
 	"sync"
@@ -150,6 +150,18 @@ func (this *ConcurrentMap[K, V]) BatchUpdate(keys []K, values []V, updater func(
 func (this *ConcurrentMap[K, V]) BatchSet(keys []K, values []V) {
 	shardIDs := this.Hash8s(keys)
 	this.DirectBatchSet(shardIDs, keys, values)
+}
+
+func (this *ConcurrentMap[K, V]) BatchSetIf(keys []K, setter func(K) (V, bool)) {
+	values, flags := make([]V, len(keys)), make([]bool, len(keys))
+	for i := 0; i < len(keys); i++ {
+		values[i], flags[i] = setter(keys[i])
+	}
+
+	array.RemoveIf(&keys, func(i int, k K) bool { return flags[i] })
+	array.RemoveIf(&values, func(i int, v V) bool { return flags[i] })
+
+	this.DirectBatchSet(this.Hash8s(keys), keys, values)
 }
 
 // DirectBatchSet associates the specified values with the specified shard IDs and keys in the ConcurrentMap.

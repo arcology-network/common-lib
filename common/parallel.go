@@ -52,3 +52,13 @@ func ParallelWorker(total, nThds int, worker func(start, end, idx int, args ...i
 	}
 	wg.Wait()
 }
+
+// ParallelForeach applies a function to each element in a slice in parallel using multiple threads.
+func ParallelFor(v0, v1, nThds int, do func(int)) {
+	processor := func(start, end, index int, args ...interface{}) {
+		for i := start; i < end; i++ {
+			do(i + v0)
+		}
+	}
+	ParallelWorker(v1-v0, nThds, processor)
+}

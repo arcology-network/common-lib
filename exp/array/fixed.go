@@ -25,14 +25,6 @@ type Bytesn[T ipArray] struct{}
 
 // type Hashn8 Bytesn[[8]byte]
 
-func Sum[T ipArray](bytes T, offset int) uint64 {
-	total := uint64(0)
-	for j := offset; j < len(bytes); j++ {
-		total += uint64((bytes)[j])
-	}
-	return total
-}
-
 // func Clone[T ipArray](bytes T) T {
 // 	target := *new(T)
 // 	target = bytes
