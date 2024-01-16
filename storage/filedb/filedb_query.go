@@ -25,7 +25,7 @@ func (this *FileDB) Query(pattern string, condition func(string, string) bool) (
 			}
 
 			array.Remove(&keys, "")
-			array.RemoveIf(&valBytes, func(v []byte) bool { return len(v) == 0 })
+			array.RemoveIf(&valBytes, func(_ int, v []byte) bool { return len(v) == 0 })
 
 			keyset[i] = keys
 			valSet[i] = valBytes
