@@ -25,7 +25,9 @@ func TestDatastoreBasic(t *testing.T) {
 
 	//policy := NewCachePolicy(1234, 1.0)
 	encoder := func(_ string, v interface{}) []byte { return codec.Bytes(v.([]byte)).Encode() }
-	decoder := func(data []byte, _ any) interface{} { return []byte(codec.Bytes("").Decode(data).(codec.Bytes)) }
+	decoder := func(_ string, data []byte, _ any) interface{} {
+		return []byte(codec.Bytes("").Decode(data).(codec.Bytes))
+	}
 
 	// fileDB.BatchSet(keys, values)
 	policy := NewCachePolicy(0, 0)
@@ -66,7 +68,7 @@ func TestDatastorePersistentStorage(t *testing.T) {
 
 	//policy := NewCachePolicy(1234, 1.0)
 	encoder := func(_ string, v interface{}) []byte { return codec.Bytes(v.([]byte)).Encode() }
-	decoder := func(data []byte, _ any) interface{} { return codec.Bytes("").Decode(data) }
+	decoder := func(_ string, data []byte, _ any) interface{} { return codec.Bytes("").Decode(data) }
 
 	// fileDB.BatchSet(keys, values)
 	policy := NewCachePolicy(math.MaxUint64, 1)
@@ -115,7 +117,7 @@ func TestDatastorePrefetch(t *testing.T) {
 
 	//policy := NewCachePolicy(1234, 1.0)
 	encoder := func(_ string, v interface{}) []byte { return codec.Bytes(v.([]byte)).Encode() }
-	decoder := func(data []byte, _ any) interface{} { return codec.Bytes("").Decode(data) }
+	decoder := func(_ string, data []byte, _ any) interface{} { return codec.Bytes("").Decode(data) }
 
 	// if err := fileDB.BatchSet(keys, values); err != nil {
 	// 	t.Error(err)

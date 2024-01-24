@@ -25,7 +25,7 @@ type DataStore struct {
 	maxCacheCapacity int
 
 	encoder func(string, interface{}) []byte
-	decoder func([]byte, any) interface{}
+	decoder func(string, []byte, any) interface{}
 
 	partitionIDs []uint8
 
@@ -45,7 +45,7 @@ func NewDataStore(
 	cachePolicy *CachePolicy,
 	db intf.PersistentStorage,
 	encoder func(string, any) []byte,
-	decoder func([]byte, any) interface{},
+	decoder func(string, []byte, any) interface{},
 ) *DataStore {
 	dataStore := &DataStore{
 		partitionIDs: make([]uint8, 0, 65536),
@@ -68,7 +68,7 @@ func (this *DataStore) Encoder() func(string, interface{}) []byte {
 	return this.encoder
 }
 
-func (this *DataStore) Decoder() func([]byte, any) interface{} {
+func (this *DataStore) Decoder() func(string, []byte, any) interface{} {
 	return this.decoder
 }
 
@@ -171,7 +171,7 @@ func (this *DataStore) fetchPersistentStorage(key string, T any) (interface{}, e
 		if T == nil {
 			return bytes, nil
 		}
-		return this.decoder(bytes, T), nil
+		return this.decoder(key, bytes, T), nil
 	}
 	return nil, err
 }
@@ -282,9 +282,9 @@ func (this *DataStore) BatchRetrive(keys []string, T []any) []interface{} {
 		for i, idx := range queryIdxes {
 			if data[i] != nil {
 				if len(T) > 0 {
-					values[idx] = this.decoder(data[i], T[i])
+					values[idx] = this.decoder(queryKeys[i], data[i], T[i])
 				} else {
-					values[idx] = this.decoder(data[i], nil)
+					values[idx] = this.decoder(queryKeys[i], data[i], nil)
 				}
 			}
 		}
