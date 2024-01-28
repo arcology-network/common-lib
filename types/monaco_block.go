@@ -36,7 +36,7 @@ func (mb MonacoBlock) GobEncode() ([]byte, error) {
 }
 func (mb *MonacoBlock) GobDecode(data []byte) error {
 	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
-	mb.Height = codec.Uint64(0).Decode(fields[0]).(uint64)
+	mb.Height = uint64(codec.Uint64(0).Decode(fields[0]).(codec.Uint64))
 	mb.Headers = codec.Byteset{}.Decode(fields[1]).(codec.Byteset)
 	mb.Txs = codec.Byteset{}.Decode(fields[2]).(codec.Byteset)
 	mb.Blockhash = fields[3]
