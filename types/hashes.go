@@ -1,36 +1,15 @@
 package types
 
 import (
+	"encoding/binary"
 	"sync"
 
 	ethCommon "github.com/ethereum/go-ethereum/common"
 
 	"bytes"
 	"crypto/sha256"
-	"encoding/binary"
 	"math"
-
-	"github.com/ethereum/go-ethereum/rlp"
-	"golang.org/x/crypto/sha3"
 )
-
-func Size(hash ethCommon.Hash) uint32 {
-	return uint32(ethCommon.HashLength)
-}
-
-func Encode(hash ethCommon.Hash) []byte {
-	return hash[:]
-}
-
-func Decode(data []byte) ethCommon.Hash {
-	hash := ethCommon.Hash{}
-	copy(hash[:], data)
-	return hash
-}
-
-func Checksum(hash ethCommon.Hash) []byte {
-	return Encode(hash)
-}
 
 func ToUint32(hash ethCommon.Hash) uint32 {
 	return binary.BigEndian.Uint32(hash[0:4])
@@ -95,36 +74,6 @@ func (hashes Hashes) ToUint32s() []uint32 {
 	return keys
 }
 
-type Hashset [][]ethCommon.Hash
-
-func (hashes Hashset) Flatten() []ethCommon.Hash {
-	buffer := make([]ethCommon.Hash, len(hashes))
-	for i := 0; i < len(hashes); i++ {
-		buffer = append(buffer, hashes[i]...)
-	}
-	return buffer
-}
-
-type Hashgroup [][][]ethCommon.Hash
-
-func (hashgroup Hashgroup) Flatten() [][]ethCommon.Hash {
-	buffer := make([][]ethCommon.Hash, len(hashgroup))
-	for i := 0; i < len(hashgroup); i++ {
-		buffer = append(buffer, hashgroup[i]...)
-	}
-	return buffer
-}
-
-func RlpHash(x interface{}) (h ethCommon.Hash) {
-	hw := sha3.NewLegacyKeccak256()
-	rlp.Encode(hw, x)
-	hw.Sum(h[:0])
-	return h
-}
-
-func TxHash(data []byte) (h ethCommon.Hash) {
-	return RlpHash(data[1:])
-}
 func ParallelWorker(total, nThds int, worker func(start, end int, args ...interface{}), args ...interface{}) {
 	idxRanges := GenerateRanges(total, nThds)
 	var wg sync.WaitGroup
@@ -139,6 +88,7 @@ func ParallelWorker(total, nThds int, worker func(start, end int, args ...interf
 	}
 	wg.Wait()
 }
+
 func GenerateRanges(length int, numThreads int) []int {
 	ranges := make([]int, 0, numThreads+1)
 	step := int(math.Ceil(float64(length) / float64(numThreads)))

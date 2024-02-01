@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	concurrency = 4
+	Concurrency = 4
 )
 
 const (
@@ -234,7 +234,7 @@ func (this StandardTransactions) Encode() ([]byte, error) {
 
 		}
 	}
-	common.ParallelWorker(len(this), concurrency, worker, this, data)
+	common.ParallelWorker(len(this), Concurrency, worker, this, data)
 	return codec.Byteset(data).Encode(), nil
 }
 
@@ -271,7 +271,7 @@ func (this *StandardTransactions) Decode(data []byte) ([]*StandardTransaction, e
 			messages[i] = standredMessage
 		}
 	}
-	common.ParallelWorker(len(fields), concurrency, worker, fields, msgs)
+	common.ParallelWorker(len(fields), Concurrency, worker, fields, msgs)
 
 	return msgs, nil
 }
