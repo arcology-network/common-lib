@@ -20,6 +20,8 @@ package matrix
 import (
 	"bytes"
 	"os"
+
+	"github.com/arcology-network/common-lib/codec"
 )
 
 type BitMatrix struct {
@@ -60,6 +62,14 @@ func (this *BitMatrix) Set(x, y int, value bool) {
 	}
 }
 
+func (this *BitMatrix) Foreach(fun func(x, y int, v bool) bool) {
+	for i := 0; i < this.width; i++ {
+		for j := 0; j < this.height; j++ {
+			this.Set(i, j, fun(i, j, this.Get(i, j)))
+		}
+	}
+}
+
 func (this *BitMatrix) Fill(value bool) *BitMatrix {
 	v := byte(0)
 	if value == true {
@@ -72,26 +82,31 @@ func (this *BitMatrix) Fill(value bool) *BitMatrix {
 	return this
 }
 
-func (this *BitMatrix) Raw() []byte {
-	return this.data
-}
+func (this *BitMatrix) Width() int  { return this.width }
+func (this *BitMatrix) Height() int { return this.height }
+func (this *BitMatrix) Raw() []byte { return this.data }
 
 func (this *BitMatrix) Equal(other *BitMatrix) bool {
 	return this.width == other.width && this.height == other.height && bytes.Equal(this.data, other.data)
 }
 
-func (this *BitMatrix) Encode(filepath string) error {
+func (this *BitMatrix) WriteToFile(filepath string) error {
 	file, err := os.Create(filepath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	_, err = file.Write(this.data)
+	buffer := codec.Byteset([][]byte{
+		codec.Uint32(this.width).Encode(),
+		codec.Uint32(this.height).Encode(),
+		this.data,
+	}).Encode()
+	_, err = file.Write(buffer)
 	return err
 }
 
-func (this *BitMatrix) Decode(filepath string) error {
+func (this *BitMatrix) ReadFromFile(filepath string) error {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return err
@@ -103,8 +118,12 @@ func (this *BitMatrix) Decode(filepath string) error {
 		return err
 	}
 
-	size := stat.Size()
-	this.data = make([]byte, size)
-	_, err = file.Read(this.data)
-	return err
+	buffer := make([]byte, stat.Size())
+	_, err = file.Read(buffer)
+
+	buffers := [][]byte(new(codec.Byteset).Decode(buffer).(codec.Byteset))
+	this.width = int(new(codec.Uint32).Decode(buffers[0]).(codec.Uint32))
+	this.height = int(new(codec.Uint32).Decode(buffers[1]).(codec.Uint32))
+	this.data = buffers[2]
+	return nil
 }

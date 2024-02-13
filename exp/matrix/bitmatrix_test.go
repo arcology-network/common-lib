@@ -18,6 +18,7 @@
 package matrix
 
 import (
+	"os"
 	"testing"
 )
 
@@ -39,8 +40,8 @@ func TestBitm(t *testing.T) {
 	}
 	bm.Fill(true)
 
-	for i := 0; i < 11; i++ {
-		for j := 0; j < 11; j++ {
+	for i := 0; i < bm.Width(); i++ {
+		for j := 0; j < bm.Height(); j++ {
 			if !bm.Get(i, j) {
 				t.Error("Should be true")
 			}
@@ -56,17 +57,45 @@ func TestBitm(t *testing.T) {
 		}
 	}
 
+	bm.Foreach(func(x, y int, v bool) bool { return true })
+
 	for i := 0; i < 11; i++ {
 		for j := 0; j < 11; j++ {
-			bm.Set(i, j, true)
+			if !bm.Get(i, j) {
+				t.Error("Should be false")
+			}
+		}
+	}
+
+	file := "./data.bin"
+	os.Remove(file)
+
+	bm.Fill(false)
+	bm.WriteToFile(file)
+
+	newBm := &BitMatrix{}
+	newBm.ReadFromFile(file)
+
+	for i := 0; i < 11; i++ {
+		for j := 0; j < 11; j++ {
+			if newBm.Get(i, j) {
+				t.Error("Should be false")
+			}
 		}
 	}
 
 	for i := 0; i < 11; i++ {
 		for j := 0; j < 11; j++ {
-			if !bm.Get(i, j) {
-				t.Error("Should be true")
+			newBm.Set(i, j, false)
+		}
+	}
+
+	for i := 0; i < 11; i++ {
+		for j := 0; j < 11; j++ {
+			if newBm.Get(i, j) {
+				t.Error("Should be false")
 			}
 		}
 	}
+	os.Remove(file)
 }
