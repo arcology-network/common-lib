@@ -1,0 +1,110 @@
+/*
+ *   Copyright (c) 2024 Arcology Network
+
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package matrix
+
+import (
+	"bytes"
+	"os"
+)
+
+type BitMatrix struct {
+	width  int
+	height int
+	data   []byte
+}
+
+func NewBitMatrix(width, height int, initv bool) *BitMatrix {
+	size := (width * height) / 8
+	if (width*height)%8 != 0 {
+		size++
+	}
+
+	matrix := &BitMatrix{
+		width:  width,
+		height: height,
+		data:   make([]byte, size),
+	}
+
+	matrix.Fill(initv)
+	return matrix
+}
+
+func (this *BitMatrix) Get(x, y int) bool {
+	index := (y*this.width + x) / 8
+	offset := uint((y*this.width + x) % 8)
+	return (this.data[index] & (1 << offset)) != 0
+}
+
+func (this *BitMatrix) Set(x, y int, value bool) {
+	index := (y*this.width + x) / 8
+	offset := uint((y*this.width + x) % 8)
+	if value {
+		this.data[index] |= (1 << offset)
+	} else {
+		this.data[index] &= ^(1 << offset)
+	}
+}
+
+func (this *BitMatrix) Fill(value bool) *BitMatrix {
+	v := byte(0)
+	if value == true {
+		v = 0xff
+	}
+
+	for i := 0; i < len(this.data); i++ {
+		this.data[i] = v
+	}
+	return this
+}
+
+func (this *BitMatrix) Raw() []byte {
+	return this.data
+}
+
+func (this *BitMatrix) Equal(other *BitMatrix) bool {
+	return this.width == other.width && this.height == other.height && bytes.Equal(this.data, other.data)
+}
+
+func (this *BitMatrix) Encode(filepath string) error {
+	file, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write(this.data)
+	return err
+}
+
+func (this *BitMatrix) Decode(filepath string) error {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+	size := stat.Size()
+	this.data = make([]byte, size)
+	_, err = file.Read(this.data)
+	return err
+}

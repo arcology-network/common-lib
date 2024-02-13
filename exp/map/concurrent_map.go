@@ -124,24 +124,13 @@ func (this *ConcurrentMap[K, V]) Set(key K, v V, args ...interface{}) error {
 // The updater function takes the original value, the index of the key in the keys slice, the key, and the new value as arguments.
 func (this *ConcurrentMap[K, V]) BatchUpdate(keys []K, values []V, updater func(origin V, index int, key K, value V) V) {
 	shards := this.Hash8s(keys)
-	var wg sync.WaitGroup
-	for shard := uint8(0); shard < uint8(len(this.shards)); shard++ {
-		wg.Add(1)
-		go func(shard uint8) {
-			this.shardLocks[shard].Lock()
-			defer this.shardLocks[shard].Unlock()
-			defer wg.Done()
-
-			for i := 0; i < len(keys); i++ {
-				if shards[i] != shard {
-					continue
-				}
-
-				this.shards[shard][keys[i]] = updater(this.shards[shard][keys[i]], i, keys[i], values[i])
+	array.ParallelForeach(this.shards, len(this.shards), func(shardNum int, shard *map[K]V) {
+		for i := 0; i < len(keys); i++ {
+			if shards[i] == uint8(shardNum) {
+				(*shard)[keys[i]] = updater((*shard)[keys[i]], i, keys[i], values[i])
 			}
-		}(shard)
-	}
-	wg.Wait()
+		}
+	})
 }
 
 // BatchSet associates the specified values with the specified keys in the ConcurrentMap.
