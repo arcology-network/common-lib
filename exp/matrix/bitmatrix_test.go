@@ -18,8 +18,10 @@
 package matrix
 
 import (
+	"fmt"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestBitm(t *testing.T) {
@@ -97,5 +99,15 @@ func TestBitm(t *testing.T) {
 			}
 		}
 	}
+
+	newBm.Print()
 	os.Remove(file)
+}
+
+func TestBitmLarge(t *testing.T) {
+	bm := NewBitMatrix(10000, 10000, false)
+
+	t0 := time.Now()
+	bm.Foreach(func(x, y int, v bool) bool { return true })
+	fmt.Println("Foreach", time.Since(t0))
 }

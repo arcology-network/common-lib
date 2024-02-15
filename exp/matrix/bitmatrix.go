@@ -19,6 +19,7 @@ package matrix
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 
 	"github.com/arcology-network/common-lib/codec"
@@ -82,12 +83,45 @@ func (this *BitMatrix) Fill(value bool) *BitMatrix {
 	return this
 }
 
+func (this *BitMatrix) CountInCol(col int, v bool) int {
+	total := 0
+	for i := 0; i < this.height; i++ {
+		if this.Get(col, i) == v {
+			total++
+		}
+	}
+	return total
+}
+
+func (this *BitMatrix) CountInRow(row int, v bool) int {
+	total := 0
+	for i := 0; i < this.width; i++ {
+		if this.Get(i, row) == v {
+			total++
+		}
+	}
+	return total
+}
+
 func (this *BitMatrix) Width() int  { return this.width }
 func (this *BitMatrix) Height() int { return this.height }
 func (this *BitMatrix) Raw() []byte { return this.data }
 
 func (this *BitMatrix) Equal(other *BitMatrix) bool {
 	return this.width == other.width && this.height == other.height && bytes.Equal(this.data, other.data)
+}
+
+func (this *BitMatrix) Print() {
+	for i := 0; i < this.height; i++ {
+		for j := 0; j < this.width; j++ {
+			if this.Get(j, i) {
+				fmt.Print("1 ")
+			} else {
+				fmt.Print("0 ")
+			}
+		}
+		fmt.Println()
+	}
 }
 
 func (this *BitMatrix) WriteToFile(filepath string) error {
