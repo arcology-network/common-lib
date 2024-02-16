@@ -100,6 +100,17 @@ func TestBitm(t *testing.T) {
 		}
 	}
 
+	newBm.FillCol(3, true)
+	newBm.FillRow(3, true)
+
+	if newBm.CountInCol(3, true) != 11 {
+		t.Error("Should be 11")
+	}
+
+	if newBm.CountInRow(3, true) != 11 {
+		t.Error("Should be 11")
+	}
+
 	newBm.Print()
 	os.Remove(file)
 }

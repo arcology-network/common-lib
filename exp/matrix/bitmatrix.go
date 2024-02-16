@@ -103,6 +103,18 @@ func (this *BitMatrix) CountInRow(row int, v bool) int {
 	return total
 }
 
+func (this *BitMatrix) FillCol(col int, v bool) {
+	for i := 0; i < this.height; i++ {
+		this.Set(col, i, v)
+	}
+}
+
+func (this *BitMatrix) FillRow(row int, v bool) {
+	for i := 0; i < this.width; i++ {
+		this.Set(i, row, v)
+	}
+}
+
 func (this *BitMatrix) Width() int  { return this.width }
 func (this *BitMatrix) Height() int { return this.height }
 func (this *BitMatrix) Raw() []byte { return this.data }

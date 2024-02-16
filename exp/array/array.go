@@ -593,19 +593,13 @@ func Equal[T comparable](lhv []T, rhv []T) bool {
 // ToPairs converts two arrays into an array of pairs.
 // It takes two arrays, arr0 and arr1, and returns an array of structs,
 // where each struct contains the corresponding elements from arr0 and arr1.
-func ToPairs[T0, T1 any](arr0 []T0, arr1 []T1) []struct {
-	First  T0
-	Second T1
-} {
-	pairs := make([]struct {
-		First  T0
-		Second T1
-	}, len(arr0))
+func ToPairs[T0, T1 any](arr0 []T0, arr1 []T1) []*common.Pair[T0, T1] {
+	pairs := make([]*common.Pair[T0, T1], len(arr0))
 	for i := range arr0 {
-		pairs[i] = struct {
-			First  T0
-			Second T1
-		}{arr0[i], arr1[i]}
+		pairs[i] = &common.Pair[T0, T1]{
+			First:  arr0[i],
+			Second: arr1[i],
+		}
 	}
 	return pairs
 }
@@ -613,16 +607,31 @@ func ToPairs[T0, T1 any](arr0 []T0, arr1 []T1) []struct {
 // FromPairs converts an array of pairs into two separate arrays.
 // It takes an array of structs, where each struct contains two elements,
 // and returns two arrays, one containing the first elements and the other containing the second elements.
-func FromPairs[T0, T1 any](pairs []struct {
-	First  T0
-	Second T1
-}) ([]T0, []T1) {
+func FromPairs[T0, T1 any](pairs []*common.Pair[T0, T1]) ([]T0, []T1) {
 	arr0, arr1 := make([]T0, len(pairs)), make([]T1, len(pairs))
 	for i, pair := range pairs {
 		arr0[i] = pair.First
 		arr1[i] = pair.Second
 	}
 	return arr0, arr1
+}
+
+// FirstsFromPairs extracts the first elements from an array of pairs and returns a new array.
+func PairFirsts[T0, T1 any](pairs []*common.Pair[T0, T1]) []T0 {
+	arr := make([]T0, len(pairs))
+	for i, pair := range pairs {
+		arr[i] = pair.First
+	}
+	return arr
+}
+
+// SecondsFromPairs extracts the second elements from an array of pairs and returns a new array.
+func PairSeconds[T0, T1 any](pairs []*common.Pair[T0, T1]) []T1 {
+	arr := make([]T1, len(pairs))
+	for i, pair := range pairs {
+		arr[i] = pair.Second
+	}
+	return arr
 }
 
 // ToTuples converts three arrays into an array of tuples.
