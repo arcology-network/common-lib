@@ -559,6 +559,30 @@ func TestAppend(t *testing.T) {
 	}
 }
 
+func TestInsert(t *testing.T) {
+	src := []int{4, 2, 6, 3, 1}
+
+	Insert(&src, 1, int(10))
+	if !Equal(src, []int{4, 10, 2, 6, 3, 1}) {
+		t.Error("Expected: ", "{4, 10, 2, 6, 3, 1}", "actual: ", src)
+	}
+
+	Insert(&src, 0, int(10))
+	if !Equal(src, []int{10, 4, 10, 2, 6, 3, 1}) {
+		t.Error("Expected: ", "{10, 4, 10, 2, 6, 3, 1}", "actual: ", src)
+	}
+
+	Insert(&src, 7, int(11))
+	if !Equal(src, []int{10, 4, 10, 2, 6, 3, 1, 11}) {
+		t.Error("Expected: ", "{10, 4, 10, 2, 6, 3, 1, 11}", "actual: ", src)
+	}
+
+	Insert(&src, 9, int(11))
+	if !Equal(src, []int{10, 4, 10, 2, 6, 3, 1, 11}) {
+		t.Error("Expected: ", "{10, 4, 10, 2, 6, 3, 1, 11}", "actual: ", src)
+	}
+}
+
 func TestReferenceAndDereference(t *testing.T) {
 	src := []int{4, 2, 6, 3, 1}
 

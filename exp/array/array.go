@@ -231,6 +231,16 @@ func ParallelAppend[T any, T1 any](values []T, numThd int, do func(i int, v T) T
 	return appended
 }
 
+// Insert inserts a value at a specific position in a slice.
+func Insert[T any](values *[]T, pos int, v T) []T {
+	if pos <= len(*values) { // if pos is the last element
+		*values = append(*values, v)
+		copy((*values)[pos+1:], (*values)[pos:])
+		(*values)[pos] = v
+	}
+	return *values
+}
+
 // Resize resizes a slice to a new length.
 // If the new length is greater than the current length, it appends the required number of elements to the slice.
 // If the new length is less than or equal to the current length, it truncates the slice.
@@ -728,11 +738,12 @@ func GroupIndicesBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) ([]i
 	return indices, len(dict)
 }
 
-// GroupIndicesBy groups the elements of an array based on a key getter function and returns the group indices.
+// Reference returns a new slice containing pointers to the elements in the original slice.
 func Reference[T any](array []T) []*T {
 	return Append(array, func(i int, v T) *T { return &v })
 }
 
+// Dereference returns a new slice containing the values that the pointers in the original slice point to.
 func Dereference[T any](array []*T) []T {
 	return Append(array, func(i int, v *T) T { return *v })
 }
