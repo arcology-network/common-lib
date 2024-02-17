@@ -15,7 +15,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package array
+package product
 
 type ipArray interface {
 	[8]byte | [16]byte | [20]byte | [32]byte | [64]byte

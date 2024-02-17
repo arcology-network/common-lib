@@ -709,15 +709,6 @@ func TestConcate(t *testing.T) {
 	}
 }
 
-func TestPairs(t *testing.T) {
-	pairs := ToPairs[string, int]([]string{"1", "2", "3", "4"}, []int{1, 2, 3, 4})
-	strs, ints := FromPairs(pairs)
-
-	if !Equal(strs, []string{"1", "2", "3", "4"}) || !Equal(ints, []int{1, 2, 3, 4}) {
-		t.Error("Error: Failed to remove nil values !")
-	}
-}
-
 func TestJoin(t *testing.T) {
 	target := Join([]string{}, []string{"1", "2"}, []string{"3", "4"}, []string{})
 	if !reflect.DeepEqual(target, []string{"1", "2", "3", "4"}) {

@@ -15,17 +15,17 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package common
+package product
 
-type Truple[T0, T1, T2, T3 any] struct {
-	First  T0
-	Second T1
-	Third  T2
-}
+import (
+	"testing"
 
-type Quad[T0, T1, T2, T3 any] struct {
-	First  T0
-	Second T1
-	Third  T2
-	Forth  T3
+	"github.com/arcology-network/common-lib/exp/array"
+)
+
+func TestPairs(t *testing.T) {
+	pairs := new(Pairs[string, int]).From([]string{"1", "2", "3", "4"}, []int{1, 2, 3, 4})
+	if !array.Equal(pairs.Firsts(), []string{"1", "2", "3", "4"}) || !array.Equal(pairs.Seconds(), []int{1, 2, 3, 4}) {
+		t.Error("Error: Failed to remove nil values !")
+	}
 }
