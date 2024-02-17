@@ -63,11 +63,16 @@ func FromArray[K comparable, V any](keys []K, setter func(K) V) map[K]V {
 // and all values set to a specified initial value.
 func FromArrayBy[K comparable, T, V any](source []T, getter func(i int, t T) (K, V)) map[K]V {
 	M := make(map[K]V)
+	return Insert(M, source, getter)
+}
+
+// Insert inserts key-value pairs from an array into a map.
+func Insert[K comparable, T, V any](mp map[K]V, source []T, getter func(i int, t T) (K, V)) map[K]V {
 	for i, src := range source {
 		k, v := getter(i, src)
-		M[k] = v
+		mp[k] = v
 	}
-	return M
+	return mp
 }
 
 // Keys returns a slice containing all the keys of a map.
@@ -103,4 +108,14 @@ func KVs[M ~map[K]V, K comparable, V any](m M) ([]K, []V) {
 		i++
 	}
 	return keys, values
+}
+
+// Keys returns a slice containing all the keys of a map.
+func ContainsAny[M ~map[K]V, K comparable, V any](m M, keys []K) bool {
+	for _, k := range keys {
+		if _, ok := m[k]; ok {
+			return true
+		}
+	}
+	return false
 }
