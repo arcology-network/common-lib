@@ -723,4 +723,9 @@ func TestJoin(t *testing.T) {
 	if !reflect.DeepEqual(target, []string{"1", "2", "3", "4"}) {
 		t.Error("Error: should be equal", target)
 	}
+
+	buffer := Join([][]byte{}, [][]byte{{1}, {2}}, [][]byte{{3}, {4}}, [][]byte{})
+	if !reflect.DeepEqual(buffer, [][]byte{{1}, {2}, {3}, {4}}) {
+		t.Error("Error: should be equal", buffer)
+	}
 }
