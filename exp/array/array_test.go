@@ -717,3 +717,10 @@ func TestPairs(t *testing.T) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 }
+
+func TestJoin(t *testing.T) {
+	target := Join([]string{}, []string{"1", "2"}, []string{"3", "4"}, []string{})
+	if !reflect.DeepEqual(target, []string{"1", "2", "3", "4"}) {
+		t.Error("Error: should be equal", target)
+	}
+}

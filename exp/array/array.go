@@ -462,6 +462,22 @@ func Flatten[T any](src [][]T) []T {
 	for _, data := range src {
 		totalSize = totalSize + len(data)
 	}
+
+	buffer := make([]T, totalSize)
+	positions := 0
+	for i := range src {
+		positions += copy(buffer[positions:], src[i])
+	}
+	return buffer
+}
+
+// Flatten flattens a slice of slices into a single slice.
+func Join[T any](src ...[]T) []T {
+	totalSize := 0
+	for _, data := range src {
+		totalSize = totalSize + len(data)
+	}
+
 	buffer := make([]T, totalSize)
 	positions := 0
 	for i := range src {
