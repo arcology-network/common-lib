@@ -62,6 +62,14 @@ func (this *Pairs[T0, T1]) Seconds() []T1 {
 	})
 }
 
+func (this *Pairs[T0, T1]) FirstsAndSeconds() ([]T0, []T1) {
+	seconds := make([]T1, len(*this))
+	return array.ParallelAppend(*this, 4, func(i int, pair *Pair[T0, T1]) T0 {
+		seconds[i] = pair.Second
+		return pair.First
+	}), seconds
+}
+
 // From converts two arrays into an array of pairs.
 // It takes two arrays, arr0 and arr1, and returns an array of structs,
 // where each struct contains the corresponding elements from arr0 and arr1.
