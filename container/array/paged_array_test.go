@@ -12,7 +12,7 @@ import (
 func TestPagedArray(t *testing.T) {
 	paged := NewPagedArray[int](2, 64, 0) // 2 elements per block, 64 blocks
 	paged.Concate([]int{1, 2, 5, 5, 5})
-	buf := paged.ToArray(0, paged.Size())
+	buf := paged.ToSlice(0, paged.Size())
 	if !reflect.DeepEqual(buf, []int{1, 2, 5, 5, 5}) {
 		t.Error("Error: Wrong value")
 	}
@@ -30,13 +30,13 @@ func TestPagedArray(t *testing.T) {
 	}
 
 	paged.Concate([]int{7, 8})
-	values := paged.ToArray(0, paged.Size())
+	values := paged.ToSlice(0, paged.Size())
 	if !reflect.DeepEqual(values, []int{1, 2, 3, 4, 5, 6, 7, 8}) {
 		t.Error("Error: Wrong value")
 	}
 
 	paged.Concate([]int{9, 10})
-	values = paged.ToArray(0, paged.Size())
+	values = paged.ToSlice(0, paged.Size())
 	if !reflect.DeepEqual(values, []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}) {
 		t.Error("Error: Wrong value")
 	}
@@ -86,7 +86,7 @@ func TestPagedArray(t *testing.T) {
 		(*v) = 5
 	})
 
-	values = paged.ToArray(0, paged.Size())
+	values = paged.ToSlice(0, paged.Size())
 	if !reflect.DeepEqual(values, []int{1, 2, 5, 5, 5}) {
 		t.Error("Error: Wrong value")
 	}
@@ -104,7 +104,7 @@ func TestPagedArray(t *testing.T) {
 		t.Error("Error: Wrong value")
 	}
 
-	buffer = paged.ToArray(0, paged.Size())
+	buffer = paged.ToSlice(0, paged.Size())
 	if !reflect.DeepEqual(buffer, []int{1, 2, 3}) {
 		t.Error("Error: Wrong value")
 	}
@@ -130,7 +130,7 @@ func TestPagedArray(t *testing.T) {
 		*v = 111
 	})
 
-	idx, _ := array.FindFirstIf(paged.ToArray(0, paged.Size()), func(v int) bool {
+	idx, _ := array.FindFirstIf(paged.ToSlice(0, paged.Size()), func(v int) bool {
 		return v != 111
 	})
 
@@ -142,7 +142,7 @@ func TestPagedArray(t *testing.T) {
 func TestPagedArrayPreAlloc(t *testing.T) {
 	paged := NewPagedArray[int](2, 64, 2) // 2 elements per block, 64 blocks
 	paged.Concate([]int{1, 2, 5, 5, 5})
-	buf := paged.ToArray(0, paged.Size())
+	buf := paged.ToSlice(0, paged.Size())
 
 	if !reflect.DeepEqual(buf, []int{0, 0, 1, 2, 5, 5, 5}) {
 		t.Error("Error: Wrong value")
@@ -150,7 +150,7 @@ func TestPagedArrayPreAlloc(t *testing.T) {
 
 	// paged = NewPagedArray[int](2, 100, 0)
 	paged.PushBack(1)
-	buf = paged.ToArray(0, paged.Size())
+	buf = paged.ToSlice(0, paged.Size())
 	if !reflect.DeepEqual(buf, []int{0, 0, 1, 2, 5, 5, 5, 1}) {
 		t.Error("Error: Wrong value")
 	}
@@ -204,7 +204,7 @@ func TestCustomType(t *testing.T) {
 		v.e = "hi hello"
 	})
 
-	vec := paged.ToArray(0, paged.Size())
+	vec := paged.ToSlice(0, paged.Size())
 	idx, _ := array.FindFirstIf(vec, func(v CustomType) bool {
 		return (v).a != 999 || v.b != [20]byte{3, 2, 1} || v.e != "hi hello"
 	})

@@ -114,7 +114,7 @@ func (this *Triplets[T0, T1, T2]) Split() ([]T0, []T1, []T2) {
 // From converts two arrays into an array of pairs.
 // It takes two arrays, arr0 and arr1, and returns an array of structs,
 // where each struct contains the corresponding elements from arr0 and arr1.
-// func (this *Triplets[T0, T1, T2]) FromArray(arr0 []T0, arr1 []T1) *Triplets[T0, T1, T2] {
+// func (this *Triplets[T0, T1, T2]) FromSlice(arr0 []T0, arr1 []T1) *Triplets[T0, T1, T2] {
 // 	(*this) = make([]*Triplet[T0, T1, T2], len(arr0))
 
 // 	if len(arr0) > 8192 {

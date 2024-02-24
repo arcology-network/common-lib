@@ -110,7 +110,7 @@ func (this *PagedArray[T]) Back() T {
 
 // ToArry copies the elements from the PagedArray to a new slice starting from the specified start index (inclusive)
 // and ending at the specified end index (exclusive).
-func (this *PagedArray[T]) ToArray(start int, end int) []T {
+func (this *PagedArray[T]) ToSlice(start int, end int) []T {
 	buffer := make([]T, this.length)
 	this.ToBuffer(start, end, buffer)
 	return buffer

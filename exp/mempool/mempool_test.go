@@ -127,11 +127,13 @@ func BenchmarkTestPagedArrayCustomTypes(t *testing.B) {
 	pool := NewMempool[*CustomType](4096, 156, func() *CustomType {
 		i++
 		return &CustomType{
-			a: i,
-			b: [20]byte{},
-			e: "hello" + fmt.Sprint(i),
-		}
-	})
+				a: i,
+				b: [20]byte{},
+				e: "hello" + fmt.Sprint(i),
+			},
+			
+	},func(_ *CustomType) {}})
+
 
 	vs := make([]*CustomType, 1000000)
 	t0 := time.Now()
@@ -148,13 +150,13 @@ func BenchmarkTestPagedArrayCustomTypes(t *testing.B) {
 	for i := 0; i < 1000000; i++ {
 		pool.New()
 	}
-	pool.Reclaim()
+	pool.Reset()
 	fmt.Println("pool.New() 1 ", "1000000", time.Since(t0))
 
 	t0 = time.Now()
 	for i := 0; i < 1000000; i++ {
 		pool.New()
 	}
-	pool.Reclaim()
+	pool.Reset()
 	fmt.Println("pool.New() 2 ", "1000000", time.Since(t0))
 }

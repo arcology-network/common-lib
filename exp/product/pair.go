@@ -98,7 +98,7 @@ func (this *Pairs[T0, T1]) From(arr0 []T0, arr1 []T1, getter func(int, *T0) T0) 
 // From converts two arrays into an array of pairs.
 // It takes two arrays, arr0 and arr1, and returns an array of structs,
 // where each struct contains the corresponding elements from arr0 and arr1.
-func (this *Pairs[T0, T1]) FromArray(arr0 []T0, arr1 []T1) *Pairs[T0, T1] {
+func (this *Pairs[T0, T1]) FromSlice(arr0 []T0, arr1 []T1) *Pairs[T0, T1] {
 	// (*this) = make([]*Pair[T0, T1], len(arr0))
 
 	if len(arr0) > 8192 {
