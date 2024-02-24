@@ -23,14 +23,12 @@ import (
 	"github.com/arcology-network/common-lib/exp/array"
 )
 
-func TestPairs(t *testing.T) {
-	pairs := new(Pairs[string, int]).From([]string{"1", "2", "3", "4"}, []int{1, 2, 3, 4}, func(i int, str *string) string { return *str })
-	if !array.Equal(pairs.Firsts(), []string{"1", "2", "3", "4"}) || !array.Equal(pairs.Seconds(), []int{1, 2, 3, 4}) {
-		t.Error("Error: Values are not equal !")
-	}
+func TestTriplets(t *testing.T) {
+	triplets := NewTriplets([]string{"1", "2", "3", "4"}, []int{1, 2, 3, 4}, []int{14, 25, 13, 14}, func(i int, str *string) string { return *str })
 
-	_0, _1 := pairs.Split()
-	if !array.Equal(_0, pairs.Firsts()) || !array.Equal(_1, pairs.Seconds()) {
+	_0, _1, _2 := triplets.Split()
+	thirds := triplets.Thirds()
+	if !array.Equal(_0, triplets.Firsts()) || !array.Equal(_1, triplets.Seconds()) || !array.Equal(_2, thirds) {
 		t.Error("Error: Values are not equal !")
 	}
 }

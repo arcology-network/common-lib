@@ -17,9 +17,54 @@
 
 package mapi
 
+import "github.com/arcology-network/common-lib/exp/array"
+
 func Foreach[M ~map[K]V, K comparable, V any](source M, do func(k K, v *V)) {
 	for k, v := range source {
 		do(k, &v)
+	}
+}
+
+func IfFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, new func(k K, v *V) V) {
+	for _, k := range keys {
+		if v, ok := source[k]; ok {
+			source[k] = new(k, &v)
+		}
+	}
+}
+
+func ParalleIfFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, threads int, new func(k K) V) {
+	found := array.ParallelAppend(keys, threads, func(_ int, k K) bool {
+		_, ok := source[k]
+		return ok
+	})
+
+	for i := range found {
+		if found[i] {
+			source[keys[i]] = new(keys[i])
+		}
+	}
+}
+
+func IfNotFoundDo[M ~map[K]V, K comparable, V any, T any](source M, keys []T, getter func(T) K, do func(K) V) {
+	for _, k := range keys {
+		realK := getter(k)
+		if _, ok := source[realK]; !ok {
+			source[realK] = do(realK)
+		}
+	}
+}
+
+func ParallelIfNotFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, threads int, do func(k K) V) {
+	found := array.ParallelAppend(keys, threads, func(_ int, k K) bool {
+		_, ok := source[k]
+		return ok
+	})
+
+	for i := range found {
+		if !found[i] {
+			source[keys[i]] = do(keys[i])
+		}
 	}
 }
 
@@ -87,6 +132,16 @@ func Keys[M ~map[K]V, K comparable, V any](m M) []K {
 }
 
 // Values returns a slice containing all the values of a map.
+func KeysToBuffer[M ~map[K]V, K comparable, V any](m M, buffer *[]K) []K {
+	i := 0
+	for k, _ := range m {
+		(*buffer)[i] = k
+		i++
+	}
+	return (*buffer)
+}
+
+// Values returns a slice containing all the values of a map.
 func Values[M ~map[K]V, K comparable, V any](m M) []V {
 	values := make([]V, len(m))
 	i := 0
@@ -95,6 +150,16 @@ func Values[M ~map[K]V, K comparable, V any](m M) []V {
 		i++
 	}
 	return values
+}
+
+// Values returns a slice containing all the values of a map.
+func ValuesToBuffer[M ~map[K]V, K comparable, V any](m M, buffer *[]V) []V {
+	i := 0
+	for _, v := range m {
+		(*buffer)[i] = v
+		i++
+	}
+	return (*buffer)
 }
 
 // KVs takes a map as input and returns two slices, one containing the keys and the other containing the values of the map.
@@ -108,6 +173,14 @@ func KVs[M ~map[K]V, K comparable, V any](m M) ([]K, []V) {
 		i++
 	}
 	return keys, values
+}
+
+func KVsToBuffer[M ~map[K]V, K comparable, V any](m M, keys *[]K, values *[]V) ([]K, []V) {
+	for k, v := range m {
+		*keys = append(*keys, k)
+		*values = append(*values, v)
+	}
+	return *keys, *values
 }
 
 // Keys returns a slice containing all the keys of a map.

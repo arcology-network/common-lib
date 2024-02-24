@@ -14,6 +14,11 @@ const (
 
 type Bytes []byte
 
+func (*Bytes) LessAsUint64(first, second []byte) bool {
+	return *(*uint64)(unsafe.Pointer((*[8]byte)(unsafe.Pointer(&first)))) <
+		*(*uint64)(unsafe.Pointer((*[8]byte)(unsafe.Pointer(&second))))
+}
+
 func (this *Bytes) Get() interface{} {
 	return *this
 }

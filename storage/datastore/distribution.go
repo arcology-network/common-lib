@@ -3,6 +3,7 @@ package datastore
 import (
 	"math"
 
+	common "github.com/arcology-network/common-lib/common"
 	ccmap "github.com/arcology-network/common-lib/exp/map"
 	intf "github.com/arcology-network/common-lib/storage/interface"
 )
@@ -40,7 +41,7 @@ func NewDistribution() *Distribution {
 
 func (this *Distribution) updateDistribution(keys []string, nSizes []uint32, newScores []interface{}, cache *ccmap.ConcurrentMap[string, any], scoreBoard *ccmap.ConcurrentMap[string, any]) {
 	curtSizes := this.getCurrentSizes(keys, cache)
-	curtScores := scoreBoard.BatchGet(keys) // Get the scores of the existing values.
+	curtScores := common.FilterFirst(scoreBoard.BatchGet(keys)) // Get the scores of the existing values.
 
 	for i := 0; i < len(keys); i++ {
 		curtCat := curtScores[i].(uint32) % this.numCat // curt category ID
@@ -55,7 +56,7 @@ func (this *Distribution) updateDistribution(keys []string, nSizes []uint32, new
 
 func (this *Distribution) getCurrentSizes(keys []string, cache *ccmap.ConcurrentMap[string, any]) []uint32 {
 	curtSizes := make([]uint32, len(keys))
-	curtValues := cache.BatchGet(keys)
+	curtValues := common.FilterFirst(cache.BatchGet(keys))
 	for i := 0; i < len(keys); i++ {
 		if curtValues[i] == nil {
 			curtSizes[i] = 0

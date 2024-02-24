@@ -32,12 +32,9 @@ func NewWith[T any](length int, init func(i int) T) []T {
 // ParallelAppend applies a function to each index in a slice in parallel using multiple threads and returns a new slice with the results.
 func ParallelNew[T any](length int, numThd int, init func(i int) T) []T {
 	values := make([]T, length)
-	encoder := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			values[i] = init(i)
-		}
-	}
-	common.ParallelWorker(len(values), numThd, encoder)
+	ParallelForeach(values, numThd, func(i int, _ *T) {
+		values[i] = init(i)
+	})
 	return values
 }
 
@@ -134,30 +131,30 @@ func RemoveBothIf[T0, T1 any](values *[]T0, others *[]T1, condition func(int, T0
 
 // MoveIf moves all elements from a slice that satisfy a given condition to a new slice.
 // It modifies the original slice and returns the moved elements in a new slice.
-func MoveBothIf[T0, T1 any](values *[]T0, others *[]T1, condition func(int, T0, T1) bool) ([]T0, []T1) {
+func MoveBothIf[T0, T1 any](first *[]T0, second *[]T1, condition func(int, T0, T1) bool) ([]T0, []T1) {
 	pos := 0
-	// for _, condition := range conditions {
-	for i := 0; i < len(*values); i++ {
-		if condition(i, (*values)[i], (*others)[i]) {
-			pos = i
+	for i := 0; i < len(*first); i++ {
+		if condition(i, (*first)[i], (*second)[i]) {
+			pos = i // Get the first position that satisfies the condition
 			break
 		}
 	}
 
-	for i := pos; i < len(*values); i++ {
-		if !condition(i, (*values)[i], (*others)[i]) {
-			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
+	for i := pos; i < len(*first); i++ {
+		if !condition(i, (*first)[i], (*second)[i]) {
+			(*first)[pos], (*first)[i] = (*first)[i], (*first)[pos] // Shift the elements to the front
+			(*second)[pos], (*second)[i] = (*second)[i], (*second)[pos]
 			pos++
 		}
 	}
 
-	moved := (*values)[pos:]
-	(*values) = (*values)[:pos]
+	moved := (*first)[pos:]
+	(*first) = (*first)[:pos]
 
-	otherMoved := (*others)[pos:]
-	(*others) = (*others)[:pos]
+	secondMoved := (*second)[pos:]
+	(*second) = (*second)[:pos]
 
-	return moved, otherMoved
+	return moved, secondMoved
 }
 
 // MoveIf moves all elements from a slice that satisfy a given condition to a new slice.
@@ -222,14 +219,26 @@ func Append[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
 // and returns a new slice with the results.
 func ParallelAppend[T any, T1 any](values []T, numThd int, do func(i int, v T) T1) []T1 {
 	appended := make([]T1, len(values))
-	encoder := func(start, end, index int, args ...interface{}) {
+	worker := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
 			appended[i] = do(i, values[i])
 		}
 	}
-	common.ParallelWorker(len(values), numThd, encoder)
+	common.ParallelWorker(len(values), numThd, worker)
 	return appended
 }
+
+// func ParallelTransform[T0 any, T1 any](values []T0, numThd int, do func(i int, v T0) (T1, bool)) []T1 {
+// 	flags := make([]bool, len(values))
+// 	appended := ParallelAppend(values, numThd, func(i int, v T0) T1 {
+// 		converted, ok := do(i, v)
+// 		flags[i] = ok
+// 		return converted
+// 	})
+// 	RemoveBothIf()
+
+// 	return appended
+// }
 
 // Insert inserts a value at a specific position in a slice.
 func Insert[T any](values *[]T, pos int, v T) []T {
@@ -244,11 +253,13 @@ func Insert[T any](values *[]T, pos int, v T) []T {
 // Resize resizes a slice to a new length.
 // If the new length is greater than the current length, it appends the required number of elements to the slice.
 // If the new length is less than or equal to the current length, it truncates the slice.
-func Resize[T any](values []T, newSize int) []T {
-	if len(values) >= newSize {
-		return values[:newSize]
+func Resize[T any](values *[]T, newSize int) []T {
+	if len(*values) >= newSize {
+		*values = (*values)[:newSize]
+	} else {
+		*values = append(*values, make([]T, newSize-len(*values))...)
 	}
-	return append(values, make([]T, newSize-len(values))...)
+	return *values
 }
 
 // CopyIf copies elements from a slice to a new slice based on a given condition.
@@ -279,10 +290,13 @@ func UniqueInts[T constraints.Integer](nums []T) []T {
 	if len(nums) <= 1 {
 		return nums
 	}
-
-	sort.Slice(nums, func(i, j int) bool {
-		return (nums[i] < nums[j])
-	})
+	if common.IsType[[]int](nums) {
+		sort.Ints(To[T, int](nums))
+	} else {
+		sort.Slice(nums, func(i, j int) bool {
+			return (nums[i] < nums[j])
+		})
+	}
 
 	current := 0
 	for i := 0; i < len(nums); i++ {
@@ -620,53 +634,61 @@ func Equal[T comparable](lhv []T, rhv []T) bool {
 // It takes an array and a getter function that returns a pointer to the key for each element.
 // It returns two slices, one containing the unique keys and the other containing the groups of elements
 // that have the same key.
-func GroupBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) ([]T1, [][]T0) {
+func GroupBy[T0 any, T1 comparable](array []T0, getter func(int, T0) *T1, reserved ...int) ([]T1, [][]T0) {
 	if len(array) == 1 {
-		return []T1{*getter(array[0])}, [][]T0{array}
+		return []T1{*getter(0, array[0])}, [][]T0{array}
 	}
 
-	dict := make(map[T1][]T0)
-	for _, v := range array {
-		if key := getter(v); key != nil {
+	length := len(reserved)
+	if len(reserved) > 0 {
+		length = reserved[0]
+	}
+	inkeys := ParallelAppend(array, 4, func(i int, v T0) *T1 { return getter(i, v) })
+
+	dict := make(map[T1]*[]T0)
+	for i, v := range array {
+		if key := inkeys[i]; key != nil {
 			vec := dict[*key]
 			if vec == nil {
-				vec = []T0{}
+				vec = common.New(make([]T0, 0, length))
+				dict[*key] = vec
 			}
-			dict[*key] = append(vec, v)
+			*vec = append(*vec, v)
 		}
 	}
-
+	// fmt.Println("range array:", len(array), "in ", time.Since(t0))
 	keys := make([]T1, len(dict))
 	values := make([][]T0, len(dict))
 	i := 0
 	for k, v := range dict {
 		keys[i] = k
-		values[i] = v
+		values[i] = *v
 		i++
 	}
+	// fmt.Println("k, v := range dict :", len(array), "in ", time.Since(t0))
 	return keys, values
 }
 
 // GroupIndicesBy groups the elements of an array based on a key getter function and returns the group indices.
-func GroupIndicesBy[T0 any, T1 comparable](array []T0, getter func(T0) *T1) ([]int, int) {
-	if len(array) == 1 {
-		return []int{0}, 1
-	}
+// func GroupIndicesBy[T0 any, T1 comparable](array []T0, getter func(int, T0) *T1) ([]int, int) {
+// 	if len(array) == 1 {
+// 		return []int{0}, 1
+// 	}
 
-	indices := make([]int, len(array))
-	dict := make(map[T1]int)
-	for i, v := range array {
-		if key := getter(v); key != nil {
-			if v, ok := dict[*key]; ok {
-				indices[i] = v
-				continue
-			}
-			indices[i] = len(dict)
-			dict[*key] = len(dict)
-		}
-	}
-	return indices, len(dict)
-}
+// 	indices := make([]int, len(array))
+// 	dict := make(map[T1]int)
+// 	for i, v := range array {
+// 		if key := getter(i, v); key != nil {
+// 			if v, ok := dict[*key]; ok {
+// 				indices[i] = v
+// 				continue
+// 			}
+// 			indices[i] = len(dict)
+// 			dict[*key] = len(dict)
+// 		}
+// 	}
+// 	return indices, len(dict)
+// }
 
 // Reference returns a new slice containing pointers to the elements in the original slice.
 func Reference[T any](array []T) []*T {

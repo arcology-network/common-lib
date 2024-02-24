@@ -34,7 +34,10 @@ func NewPagedArray[T any](pageSize, minPages, preAlloc int) *PagedArray[T] {
 	return array
 }
 
-func (this *PagedArray[T]) MinSize() int { return this.minPages * this.pageSize }
+func (this *PagedArray[T]) NumPages() int { return len(this.pages) }
+func (this *PagedArray[T]) PageSize() int { return this.pageSize }
+func (this *PagedArray[T]) MinSize() int  { return this.minPages * this.pageSize }
+func (this *PagedArray[T]) Size() int     { return this.length }
 
 // Compact reduces the number of pages in the PagedArray by removing unused pages.
 func (this *PagedArray[T]) Compact() {
@@ -126,11 +129,6 @@ func (this *PagedArray[T]) ToBuffer(start int, end int, buffer []T) {
 	for i := start; i < end; i++ {
 		buffer[i-start] = this.Get(i)
 	}
-}
-
-// Size returns the number of elements in the PagedArray.
-func (this *PagedArray[T]) Size() int {
-	return this.length
 }
 
 // Cap returns the total capacity of the PagedArray.

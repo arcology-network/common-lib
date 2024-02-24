@@ -17,6 +17,9 @@
 
 package common
 
+func Reference[T any](v T) *T   { return &v }
+func Dereference[T any](v *T) T { return *v }
+
 // New creates a new instance of a given type and returns a pointer to it.
 func New[T any](v T) *T {
 	v0 := T(v)

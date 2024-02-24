@@ -8,6 +8,7 @@ import (
 	addrcompressor "github.com/arcology-network/common-lib/addrcompressor"
 	codec "github.com/arcology-network/common-lib/codec"
 	common "github.com/arcology-network/common-lib/common"
+	"github.com/cespare/xxhash/v2"
 
 	// expmap "github.com/arcology-network/common-lib/container/map"
 	"github.com/arcology-network/common-lib/exp/array"
@@ -27,7 +28,7 @@ type DataStore struct {
 	encoder func(string, interface{}) []byte
 	decoder func(string, []byte, any) interface{}
 
-	partitionIDs []uint8
+	partitionIDs []uint64
 
 	keyBuffer     []string
 	valueBuffer   []interface{} //this should be binary
@@ -48,9 +49,9 @@ func NewDataStore(
 	decoder func(string, []byte, any) interface{},
 ) *DataStore {
 	dataStore := &DataStore{
-		partitionIDs: make([]uint8, 0, 65536),
-		localCache: expmap.NewConcurrentMap(8, func(v any) bool { return v == nil }, func(k string) uint8 {
-			return array.Sum[byte, uint8]([]byte(k))
+		partitionIDs: make([]uint64, 0, 65536),
+		localCache: expmap.NewConcurrentMap(8, func(v any) bool { return v == nil }, func(k string) uint64 {
+			return xxhash.Sum64([]byte(k))
 		}),
 		globalCache:    make(map[string]interface{}),
 		compressionLut: compressionLut,
@@ -211,7 +212,7 @@ func (this *DataStore) addToCache(key string, value interface{}) {
 	}
 }
 
-func (this *DataStore) batchAddToCache(ids []uint8, keys []string, values []interface{}) {
+func (this *DataStore) batchAddToCache(ids []uint64, keys []string, values []interface{}) {
 	if this.cachePolicy == nil {
 		return
 	}
@@ -264,8 +265,8 @@ func (this *DataStore) BatchRetrive(keys []string, T []any) []interface{} {
 		keys = this.compressionLut.TryBatchCompress(keys)
 	}
 
-	values := this.localCache.BatchGet(keys) // From the local cache first
-	if array.Count(values, nil) == 0 {       // All found
+	values := common.FilterFirst(this.localCache.BatchGet(keys)) // From the local cache first
+	if array.Count(values, nil) == 0 {                           // All found
 		return values
 	}
 
@@ -340,8 +341,8 @@ func (this *DataStore) Precommit(keys []string, values interface{}) [32]byte {
 	return [32]byte{}
 }
 
-func (this *DataStore) GetParitions(keys []string) []uint8 {
-	partitionIDs := make([]uint8, len(keys))
+func (this *DataStore) GetParitions(keys []string) []uint64 {
+	partitionIDs := make([]uint64, len(keys))
 	// worker := func(start, end, index int, args ...interface{}) {
 	// 	for i := start; i < end; i++ {
 	// 		partitionIDs[i] = this.localCache.Hash8(keys[i]) //Must use the compressed ky to compute the shard

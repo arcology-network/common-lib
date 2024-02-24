@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/rand"
 	"reflect"
+	"sort"
 	"strconv"
 	"testing"
 	"time"
@@ -324,6 +325,18 @@ func TestUniqueSorted(t *testing.T) {
 	t0 := time.Now()
 	Unique(nums, func(lhv, rhv int) bool { return lhv < rhv })
 	fmt.Println("Unique: ", 1000000, " entries in:", time.Now().Sub(t0))
+
+	for i := 0; i < len(nums); i++ {
+		nums[i] = rand.Intn(100)
+	}
+
+	t0 = time.Now()
+	UniqueInts(nums)
+	fmt.Println("Unique: ", 1000000, " entries in:", time.Now().Sub(t0))
+
+	for i := 0; i < len(nums); i++ {
+		nums[i] = rand.Intn(100)
+	}
 }
 
 func TestUniqueInts(t *testing.T) {
@@ -365,7 +378,7 @@ func TestUniqueInts(t *testing.T) {
 
 	t0 := time.Now()
 	UniqueInts(nums)
-	fmt.Println("UniqueInts: ", len(nums), "leafs in ", time.Now().Sub(t0))
+	fmt.Println("UniqueInts: ", len(nums), "in ", time.Now().Sub(t0))
 
 	for i := 0; i < 1000000; i++ {
 		nums[i] = rand.Intn(5000000)
@@ -377,7 +390,7 @@ func TestUniqueInts(t *testing.T) {
 		m[nums[i]] = true
 	}
 	common.MapKeys(m)
-	fmt.Println("UniqueMap: ", len(nums), "leafs in ", time.Now().Sub(t0))
+	fmt.Println("UniqueMap: ", len(nums), "in ", time.Now().Sub(t0))
 }
 
 func TestUnique(t *testing.T) {
@@ -687,7 +700,7 @@ func TestMoveIf(t *testing.T) {
 func TestGroupBy(t *testing.T) {
 	strs := []string{"1-1", "2-2", "13", "2-4"}
 
-	keys, v := GroupBy(strs, func(v string) *string {
+	keys, v := GroupBy(strs, func(_ int, v string) *string {
 		str := (v[0:1])
 		return &str
 	})
@@ -696,6 +709,19 @@ func TestGroupBy(t *testing.T) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 }
+
+// func TestGroupIndicesBy(t *testing.T) {
+// 	keys := []string{"1", "2", "1", "2"}
+// 	vals := []string{"1-1", "2-2", "13", "2-4"}
+// 	indices, v := GroupIndicesBy(keys, func(i int, v string) *string {
+// 		str := vals[i]
+// 		return &str
+// 	})
+
+// 	if keys[indices[0]] != "1-1" || keys[indices[1]] != "13" || len(indices) != 2 || v != 2 {
+// 		t.Error("Error: Failed to remove nil values !")
+// 	}
+// }
 
 func TestConcate(t *testing.T) {
 	strs := []string{"1-1", "2-2", "1-3", "2-4"}
@@ -720,3 +746,72 @@ func TestJoin(t *testing.T) {
 		t.Error("Error: should be equal", buffer)
 	}
 }
+
+func TestRemoveBothIf(t *testing.T) {
+	first := []string{"1", "2", "3", "4"}
+	second := []int{1, 2, 3, 4}
+
+	RemoveBothIf(&first, &second, func(_ int, v string, _ int) bool { return v == "1" })
+	if len(first) != 3 || len(second) != 3 || first[0] != "2" || second[0] != 2 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+}
+
+func TestResize(t *testing.T) {
+	first := []string{"1", "2", "3", "4"}
+	Resize(&first, 2)
+
+	if len(first) != 2 || first[0] != "1" || first[1] != "2" {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	Resize(&first, 4)
+	if len(first) != 4 || first[0] != "1" || first[1] != "2" || first[2] != "" || first[3] != "" {
+		t.Error("Error: Failed to remove nil values !")
+	}
+}
+
+func BenchmarkTestUniqueInts(t *testing.B) {
+	t0 := time.Now()
+	arr := NewWith(1000000, func(i int) int { return rand.Int() })
+	UniqueInts(arr)
+	fmt.Println("UniqueInts: ", 1000000, " entries in:", time.Now().Sub(t0))
+
+	t0 = time.Now()
+	arr = NewWith(1000000, func(i int) int { return rand.Int() })
+	m := map[int]bool{}
+	for i := 0; i < len(arr); i++ {
+		m[arr[i]] = true
+	}
+	fmt.Println("Map unique: ", 1000000, " entries in:", time.Now().Sub(t0))
+}
+
+func BenchmarkGroupBy(t *testing.B) {
+	randKeys := make([]string, 1000000)
+	values := make([]int, len(randKeys))
+	for i := 0; i < len(randKeys); i++ {
+		randKeys[i] = strconv.Itoa(rand.Intn(len(randKeys) / 4))
+		values[i] = rand.Intn(1000000)
+	}
+	t0 := time.Now()
+	k, v := GroupBy(randKeys, func(i int, v string) *string { return &randKeys[i] }, 4)
+	fmt.Println("GroupBy: ", len(randKeys), " entries in :", len(k), len(v), time.Now().Sub(t0))
+
+	t0 = time.Now()
+	sort.Slice(randKeys, func(i, j int) bool {
+		return randKeys[i] < randKeys[j]
+	})
+	fmt.Println("Unique: ", len(randKeys), " entries in:", time.Now().Sub(t0))
+}
+
+// func BenchmarkGroupINdicesBy(t *testing.B) {
+// 	randKeys := make([]string, 1000000)
+// 	values := make([]int, 1000000)
+// 	for i := 0; i < 1000000; i++ {
+// 		randKeys[i] = strconv.Itoa(rand.Intn(1000 / 4))
+// 		values[i] = rand.Intn(1000000)
+// 	}
+// 	t0 := time.Now()
+// 	GroupIndicesBy(randKeys, func(i int, v string) *int { return &values[i] })
+// 	fmt.Println("GroupBy: ", len(randKeys), " entries in:", time.Now().Sub(t0))
+// }

@@ -64,3 +64,32 @@ func TestMapMoveIf(t *testing.T) {
 	}
 
 }
+
+func TestMapGenerics(t *testing.T) {
+	m := map[string]bool{
+		"1": true,
+		"2": false,
+		"3": true,
+		"4": false,
+	}
+
+	IfNotFoundDo(m, []string{"5"}, func(k string) string { return k }, func(k string) bool { return true })
+	if len(m) != 5 {
+		t.Error("Error: Failed to set nil values !")
+	}
+
+	IfFoundDo(m, []string{"1", "5"}, func(k string, _ *bool) bool { return false })
+	if m["1"] || m["5"] {
+		t.Error("Error: Failed to set nil values !")
+	}
+
+	ParallelIfNotFoundDo(m, []string{"6"}, 2, func(k string) bool { return true })
+	if len(m) != 6 {
+		t.Error("Error: Failed to set nil values !")
+	}
+
+	ParalleIfFoundDo(m, []string{"6"}, 2, func(k string) bool { return false })
+	if m["6"] {
+		t.Error("Error: Failed to set nil values !")
+	}
+}

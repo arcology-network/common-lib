@@ -6,10 +6,11 @@ import (
 	"math/rand"
 	"sync"
 
-	"github.com/arcology-network/common-lib/exp/array"
+	common "github.com/arcology-network/common-lib/common"
 	ccmap "github.com/arcology-network/common-lib/exp/map"
 	intf "github.com/arcology-network/common-lib/storage/interface"
 	memdb "github.com/arcology-network/common-lib/storage/memdb"
+	"github.com/cespare/xxhash/v2"
 )
 
 const (
@@ -36,8 +37,8 @@ type CachePolicy struct {
 
 // Memory hard Quota
 func NewCachePolicy(hardQuota uint64, threshold float64) *CachePolicy {
-	m := ccmap.NewConcurrentMap[string, any](8, func(v any) bool { return v == nil }, func(k string) uint8 {
-		return array.Sum[byte, uint8]([]byte(k))
+	m := ccmap.NewConcurrentMap[string, any](8, func(v any) bool { return v == nil }, func(k string) uint64 {
+		return xxhash.Sum64([]byte(k))
 	})
 
 	policy := &CachePolicy{
@@ -174,7 +175,7 @@ func (this *CachePolicy) Refresh(cache *ccmap.ConcurrentMap[string, any]) (uint6
 		return 0, 0
 	}
 
-	currentScores := this.scoreboard.BatchGet(this.keys)
+	currentScores := common.FilterFirst(this.scoreboard.BatchGet(this.keys))
 	for i := 0; i < len(this.sizes); i++ {
 		if currentScores[i] == nil {
 			currentScores[i] = uint32(0)

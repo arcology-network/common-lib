@@ -29,8 +29,8 @@ import (
 )
 
 func BenchmarkMinMax(b *testing.B) {
-	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return false }, func(k string) uint8 {
-		return uint8(array.Sum[byte, int]([]byte(k)))
+	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return false }, func(k string) uint64 {
+		return uint64(array.Sum[byte, int]([]byte(k)))
 	})
 
 	keys := make([]string, 1000000)
@@ -68,8 +68,8 @@ func BenchmarkMinMax(b *testing.B) {
 }
 
 func BenchmarkForeach(b *testing.B) {
-	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return false }, func(k string) uint8 {
-		return uint8(array.Sum[byte, int]([]byte(k)))
+	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return false }, func(k string) uint64 {
+		return uint64(array.Sum[byte, int]([]byte(k)))
 	})
 
 	keys := make([]string, 1000000)
@@ -145,8 +145,8 @@ func BenchmarkCcmapBatchSet(b *testing.B) {
 	fmt.Println("Lock() 1000000 "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
 
 	t0 = time.Now()
-	ccmap := NewConcurrentMap[string, string](8, func(v string) bool { return len(v) == 0 }, func(k string) uint8 {
-		return uint8(array.Sum[byte, int]([]byte(k)))
+	ccmap := NewConcurrentMap[string, string](8, func(v string) bool { return len(v) == 0 }, func(k string) uint64 {
+		return uint64(array.Sum[byte, int]([]byte(k)))
 	})
 
 	ccmap.BatchSet(paths, values)

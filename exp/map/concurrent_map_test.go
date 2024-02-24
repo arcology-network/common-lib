@@ -19,17 +19,19 @@ package mapi
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 	"reflect"
 	"sort"
 	"testing"
 
+	"github.com/arcology-network/common-lib/common"
 	"github.com/arcology-network/common-lib/exp/array"
 )
 
 func TestCcmapBasic(t *testing.T) {
-	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return v == -1 }, func(k string) uint8 {
-		return uint8(array.Sum[byte, int]([]byte(k)))
+	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return v == -1 }, func(k string) uint64 {
+		return uint64(array.Sum[byte, int]([]byte(k)))
 	})
 
 	ccmap.Set("1", 1)
@@ -98,8 +100,8 @@ func TestCcmapBasic(t *testing.T) {
 }
 
 func TestCcmapEmptyKeys(t *testing.T) {
-	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return v == -1 }, func(k string) uint8 {
-		return uint8(array.Sum[byte, int]([]byte(k)))
+	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return v == -1 }, func(k string) uint64 {
+		return uint64(array.Sum[byte, int]([]byte(k)))
 	})
 
 	ccmap.Set("1", 1)
@@ -122,11 +124,16 @@ func TestCcmapEmptyKeys(t *testing.T) {
 	if v, _ := ccmap.Get(""); v != 4 {
 		t.Error("Error: Failed to get")
 	}
+
+	v, found := ccmap.BatchGet([]string{"1", "2", "3", ""})
+	if !found[0] || !reflect.DeepEqual(v, []int{1, 2, 3, 4}) {
+		t.Error("Error: Entries don't match")
+	}
 }
 
 func TestCcmapBatchModeAllEntries(t *testing.T) {
-	ccmap := NewConcurrentMap[string, interface{}](8, func(v interface{}) bool { return v == nil }, func(k string) uint8 {
-		return uint8(array.Sum[byte, int]([]byte(k)))
+	ccmap := NewConcurrentMap[string, interface{}](8, func(v interface{}) bool { return v == nil }, func(k string) uint64 {
+		return uint64(array.Sum[byte, int]([]byte(k)))
 	})
 
 	keys := []string{"1", "2", "3", "4"}
@@ -136,7 +143,7 @@ func TestCcmapBatchModeAllEntries(t *testing.T) {
 	}
 
 	ccmap.BatchSet(keys, values)
-	outValues := ccmap.BatchGet(keys)
+	outValues := common.FilterFirst(ccmap.BatchGet(keys))
 
 	if !reflect.DeepEqual(outValues, values) {
 		t.Error("Error: Entries don't match")
@@ -144,8 +151,12 @@ func TestCcmapBatchModeAllEntries(t *testing.T) {
 }
 
 func TestCCmapDump(t *testing.T) {
-	ccmap := NewConcurrentMap[string, interface{}](8, func(v interface{}) bool { return v == nil }, func(k string) uint8 {
-		return uint8(array.Sum[byte, int]([]byte(k)))
+	m := map[int]int{}
+	ky := m[1]
+	fmt.Println(ky)
+
+	ccmap := NewConcurrentMap[string, interface{}](8, func(v interface{}) bool { return v == nil }, func(k string) uint64 {
+		return uint64(array.Sum[byte, int]([]byte(k)))
 	})
 
 	keys := []string{"1", "2", "3", "4"}
@@ -163,8 +174,8 @@ func TestCCmapDump(t *testing.T) {
 }
 
 func TestMinMax(t *testing.T) {
-	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return false }, func(k string) uint8 {
-		return uint8(array.Sum[byte, int]([]byte(k)))
+	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return false }, func(k string) uint64 {
+		return uint64(array.Sum[byte, int]([]byte(k)))
 	})
 
 	keys := []string{"1", "2", "3", "4"}
@@ -197,8 +208,8 @@ func TestMinMax(t *testing.T) {
 }
 
 func TestForeach(t *testing.T) {
-	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return v < 0 }, func(k string) uint8 {
-		return uint8(array.Sum[byte, int]([]byte(k)))
+	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return v < 0 }, func(k string) uint64 {
+		return uint64(array.Sum[byte, int]([]byte(k)))
 	})
 
 	keys := []string{"1", "2", "3", "4"}
@@ -216,8 +227,8 @@ func TestForeach(t *testing.T) {
 }
 
 func TestForeachDo(t *testing.T) {
-	ccmap := NewConcurrentMap[string, *int](8, func(v *int) bool { return v == nil }, func(k string) uint8 {
-		return uint8(array.Sum[byte, int]([]byte(k)))
+	ccmap := NewConcurrentMap[string, *int](8, func(v *int) bool { return v == nil }, func(k string) uint64 {
+		return uint64(array.Sum[byte, int]([]byte(k)))
 	})
 
 	str0 := 0
@@ -244,5 +255,54 @@ func TestForeachDo(t *testing.T) {
 
 	if *vs[0] != 2 || *vs[1] != 3 || *vs[2] != 4 || *vs[3] != 5 {
 		t.Error("Error: Checksums don't match")
+	}
+}
+
+func TestParallelDo(t *testing.T) {
+	ccmap := NewConcurrentMap[string, interface{}](8, func(v interface{}) bool { return v == nil }, func(k string) uint64 {
+		return uint64(array.Sum[byte, int]([]byte(k)))
+	})
+
+	keys := []string{"1", "2", "3", "4"}
+	values := []interface{}{"1", "2", 3, "4"}
+	ccmap.BatchSet(keys, values)
+
+	v, found := ccmap.BatchGet([]string{"1", "2", "3", "4"})
+	if !found[0] || !reflect.DeepEqual(v, values) {
+		t.Error("Error: Entries don't match")
+	}
+
+	ccmap.ParallelDo([]string{"1", "2", "3", "5"}, func(i int, k string, v interface{}, found bool) (interface{}, bool) {
+		if k == "5" {
+			return "5", true
+		}
+		return nil, false
+	})
+
+	if v, ok := ccmap.Get("5"); !ok || v != "5" {
+		t.Error("Error: Failed to get")
+	}
+
+	ccmap.ParallelDo([]string{"1", "2", "3", "5"}, func(i int, k string, v interface{}, found bool) (interface{}, bool) {
+		if k == "5" {
+			return "5", true
+		}
+		return nil, false
+	})
+
+	if ccmap.Size() != 5 {
+		t.Error("Error: Wrong entry count")
+	}
+
+	keys = append(keys, "5")
+	ccmap.UnsafeParallelFor(0, len(keys), func(i int) string { return keys[i] }, func(i int, k string, v interface{}, b bool) (interface{}, bool) {
+		if k == "5" {
+			return "15", true
+		}
+		return nil, false
+	})
+
+	if v, ok := ccmap.Get("5"); !ok || v != "15" {
+		t.Error("Error: Failed to get")
 	}
 }
