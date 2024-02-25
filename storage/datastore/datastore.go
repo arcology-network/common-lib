@@ -65,6 +65,12 @@ func NewDataStore(
 	return dataStore
 }
 
+// Pleaseholder only
+func (this *DataStore) WriteEthTries(_ interface{}) [32]byte {
+	this.commitLock.Lock()
+	return [32]byte{}
+}
+
 func (this *DataStore) Encoder() func(string, interface{}) []byte {
 	return this.encoder
 }
@@ -322,14 +328,16 @@ func (this *DataStore) Clear() {
 }
 
 // Get the shard ids, values, and preupdate the compression dict
-func (this *DataStore) Precommit(keys []string, values interface{}) [32]byte {
+func (this *DataStore) Precommit(args ...interface{}) [32]byte {
+	keys, values := args[0].([]string), args[1].([]interface{})
+
 	this.commitLock.Lock()
 	this.keyBuffer = common.IfThenDo1st(
 		this.compressionLut != nil,
 		func() []string { return this.compressionLut.CompressOnTemp(codec.Strings(keys).Clone()) },
 		keys)
 
-	this.valueBuffer = values.([]interface{})
+	this.valueBuffer = values
 	this.encodedBuffer = make([][]byte, len(this.valueBuffer))
 	for i := 0; i < len(this.valueBuffer); i++ {
 		if this.valueBuffer[i] != nil {

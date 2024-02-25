@@ -64,4 +64,15 @@ func TestIndexedArray(t *testing.T) {
 	if len(*arr) != 3 {
 		t.Error("Error: Size is not equal !")
 	}
+
+	indexed.Clear()
+	if indexed.Length() != 0 || indexed.UniqueLength() != 0 {
+		t.Error("Error: Size is not equal !")
+	}
+
+	indexed.InsertSlice([]int{1, 2, 5, 5, 5})
+	if indexed.Length() != 5 || indexed.UniqueLength() != 3 {
+		t.Error("Error: Size is not equal !")
+	}
+
 }

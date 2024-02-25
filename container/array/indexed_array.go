@@ -96,8 +96,8 @@ func (this *IndexedArray[T, K, V]) Find(ele T) V {
 
 func (this *IndexedArray[T, K, V]) Clear() {
 	clear(this.index)
-	clear(this.elements)
-	clear(this.keys)
+	this.elements = this.elements[:0]
+	this.keys = this.keys[:0]
 }
 
 // ParallelForeach applies the specified functor to each element in the IndexedArray in parallel.
