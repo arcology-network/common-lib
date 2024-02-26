@@ -66,7 +66,7 @@ func NewDataStore(
 }
 
 // Pleaseholder only
-func (this *DataStore) WriteEthTries(_ interface{}) [32]byte {
+func (this *DataStore) WriteEthTries(...interface{}) [32]byte {
 	this.commitLock.Lock()
 	return [32]byte{}
 }
