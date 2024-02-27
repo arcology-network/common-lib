@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arcology-network/common-lib/exp/array"
+	slice "github.com/arcology-network/common-lib/exp/slice"
 	// queryablecache "github.com/arcology-network/common-lib/storage/cache"
 )
 
@@ -69,7 +69,7 @@ func TestQueryCacheTx(t *testing.T) {
 			},
 		}
 
-		if err := cache.Add("block", array.Append(blocks, func(_ int, v *CachedBlock) interface{} { return v })...); err != nil {
+		if err := cache.Add("block", slice.Append(blocks, func(_ int, v *CachedBlock) interface{} { return v })...); err != nil {
 			panic(err)
 		}
 
@@ -117,7 +117,7 @@ func TestQueryCacheTx(t *testing.T) {
 			},
 		}
 
-		if err := cache.Add("tx", array.Append(txs, func(_ int, v *CachedTx) interface{} { return v })...); err != nil {
+		if err := cache.Add("tx", slice.Append(txs, func(_ int, v *CachedTx) interface{} { return v })...); err != nil {
 			panic(err)
 		}
 
@@ -196,7 +196,7 @@ func TestQueryCacheTxPerformance1M(t *testing.T) {
 			Hash:   "0x" + fmt.Sprint(i),
 		}
 	}
-	txInterfaces := array.Append(txs, func(_ int, v *CachedTx) interface{} { return v })
+	txInterfaces := slice.Append(txs, func(_ int, v *CachedTx) interface{} { return v })
 
 	t0 := time.Now()
 	if err := cache.Add("tx", txInterfaces...); err != nil {

@@ -17,7 +17,7 @@
 
 package product
 
-import "github.com/arcology-network/common-lib/exp/array"
+import slice "github.com/arcology-network/common-lib/exp/slice"
 
 type Triplet[T0, T1, T2 any] struct {
 	First  T0
@@ -42,35 +42,35 @@ func NewTriplets[T0, T1, T2 any](arr0 []T0, arr1 []T1, arr2 []T2, getter func(in
 	return triplets
 }
 
-// Firsts extracts the first elements from an array of pairs and returns a new array.
+// Firsts extracts the first elements from an array of pairs and returns a new slice.
 func (this *Triplets[T0, T1, T2]) Array() *[]*Triplet[T0, T1, T2] {
 	return (*[]*Triplet[T0, T1, T2])(this)
 }
 
-// Firsts extracts the first elements from an array of pairs and returns a new array.
+// Firsts extracts the first elements from an array of pairs and returns a new slice.
 func (this *Triplets[T0, T1, T2]) Firsts() []T0 {
-	return array.ParallelAppend(*this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T0 {
+	return slice.ParallelAppend(*this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T0 {
 		return triplet.First
 	})
 }
 
-// Seconds extracts the second elements from an array of pairs and returns a new array.
+// Seconds extracts the second elements from an array of pairs and returns a new slice.
 func (this *Triplets[T0, T1, T2]) Seconds() []T1 {
-	return array.ParallelAppend(*this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T1 {
+	return slice.ParallelAppend(*this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T1 {
 		return triplet.Second
 	})
 }
 
-// Seconds extracts the second elements from an array of pairs and returns a new array.
+// Seconds extracts the second elements from an array of pairs and returns a new slice.
 func (this *Triplets[T0, T1, T2]) Thirds() []T2 {
-	return array.ParallelAppend(*this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T2 {
+	return slice.ParallelAppend(*this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T2 {
 		return triplet.Third
 	})
 }
 
 func (this *Triplets[T0, T1, T2]) Split() ([]T0, []T1, []T2) {
 	seconds, thirds := make([]T1, len(*this)), make([]T2, len(*this))
-	return array.ParallelAppend(*this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T0 {
+	return slice.ParallelAppend(*this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T0 {
 		seconds[i] = triplet.Second
 		thirds[i] = triplet.Third
 		return triplet.First
@@ -84,7 +84,7 @@ func (this *Triplets[T0, T1, T2]) Split() ([]T0, []T1, []T2) {
 // 	// (*this) = make([]*Triplet[T0, T1, T2], len(arr0))
 
 // 	if len(arr0) > 8192 {
-// 		(*this) = Triplets[T0, T1, T2](array.Append(arr0, func(i int, v T0) *Triplet[T0, T1, T2] {
+// 		(*this) = Triplets[T0, T1, T2](slice.Append(arr0, func(i int, v T0) *Triplet[T0, T1, T2] {
 // 			return &Triplet[T0, T1, T2]{
 // 				First:  getter(i, &v),
 // 				Second: arr1[i],
@@ -93,7 +93,7 @@ func (this *Triplets[T0, T1, T2]) Split() ([]T0, []T1, []T2) {
 // 		return this
 // 	}
 
-// 	(*this) = Triplets[T0, T1, T2](array.ParallelAppend(arr0, 8, func(i int, v T0) *Triplet[T0, T1, T2] {
+// 	(*this) = Triplets[T0, T1, T2](slice.ParallelAppend(arr0, 8, func(i int, v T0) *Triplet[T0, T1, T2] {
 // 		return &Triplet[T0, T1, T2]{
 // 			First:  getter(i, &v),
 // 			Second: arr1[i],
@@ -118,7 +118,7 @@ func (this *Triplets[T0, T1, T2]) Split() ([]T0, []T1, []T2) {
 // 	(*this) = make([]*Triplet[T0, T1, T2], len(arr0))
 
 // 	if len(arr0) > 8192 {
-// 		(*this) = Triplets[T0, T1, T2](array.Append(arr0, func(i int, v T0) *Triplet[T0, T1, T2] {
+// 		(*this) = Triplets[T0, T1, T2](slice.Append(arr0, func(i int, v T0) *Triplet[T0, T1, T2] {
 // 			return &Triplet[T0, T1, T2]{
 // 				First:  arr0[i],
 // 				Second: arr1[i],
@@ -127,7 +127,7 @@ func (this *Triplets[T0, T1, T2]) Split() ([]T0, []T1, []T2) {
 // 		return this
 // 	}
 
-// 	(*this) = Triplets[T0, T1, T2](array.ParallelAppend(arr0, 8, func(i int, v T0) *Triplet[T0, T1, T2] {
+// 	(*this) = Triplets[T0, T1, T2](slice.ParallelAppend(arr0, 8, func(i int, v T0) *Triplet[T0, T1, T2] {
 // 		return &Triplet[T0, T1, T2]{
 // 			First:  arr0[i],
 // 			Second: arr1[i],

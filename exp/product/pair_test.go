@@ -20,17 +20,17 @@ package product
 import (
 	"testing"
 
-	"github.com/arcology-network/common-lib/exp/array"
+	slice "github.com/arcology-network/common-lib/exp/slice"
 )
 
 func TestPairs(t *testing.T) {
 	pairs := new(Pairs[string, int]).From([]string{"1", "2", "3", "4"}, []int{1, 2, 3, 4}, func(i int, str *string) string { return *str })
-	if !array.Equal(pairs.Firsts(), []string{"1", "2", "3", "4"}) || !array.Equal(pairs.Seconds(), []int{1, 2, 3, 4}) {
+	if !slice.Equal(pairs.Firsts(), []string{"1", "2", "3", "4"}) || !slice.Equal(pairs.Seconds(), []int{1, 2, 3, 4}) {
 		t.Error("Error: Values are not equal !")
 	}
 
 	_0, _1 := pairs.Split()
-	if !array.Equal(_0, pairs.Firsts()) || !array.Equal(_1, pairs.Seconds()) {
+	if !slice.Equal(_0, pairs.Firsts()) || !slice.Equal(_1, pairs.Seconds()) {
 		t.Error("Error: Values are not equal !")
 	}
 }

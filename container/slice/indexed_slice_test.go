@@ -14,15 +14,15 @@
 *   You should have received a copy of the GNU General Public License
 *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package array
+package indexedslice
 
 import (
 	"fmt"
 	"testing"
 )
 
-func TestIndexedArray(t *testing.T) {
-	indexed := NewIndexedArray[int, string, *[]int](
+func TestIndexedSlice(t *testing.T) {
+	indexed := NewIndexedSlice[int, string, *[]int](
 		func(i int) string { return fmt.Sprint(i) },
 
 		func(i int, v *[]int) *[]int {

@@ -20,7 +20,7 @@ package product
 import (
 	"testing"
 
-	"github.com/arcology-network/common-lib/exp/array"
+	slice "github.com/arcology-network/common-lib/exp/slice"
 )
 
 func TestTriplets(t *testing.T) {
@@ -28,7 +28,7 @@ func TestTriplets(t *testing.T) {
 
 	_0, _1, _2 := triplets.Split()
 	thirds := triplets.Thirds()
-	if !array.Equal(_0, triplets.Firsts()) || !array.Equal(_1, triplets.Seconds()) || !array.Equal(_2, thirds) {
+	if !slice.Equal(_0, triplets.Firsts()) || !slice.Equal(_1, triplets.Seconds()) || !slice.Equal(_2, thirds) {
 		t.Error("Error: Values are not equal !")
 	}
 }

@@ -4,7 +4,7 @@ package mempool
 import (
 	"sync"
 
-	"github.com/arcology-network/common-lib/container/array"
+	indexedslice "github.com/arcology-network/common-lib/container/slice"
 )
 
 // Mempool represents a pool of objects of the same type.
@@ -13,7 +13,7 @@ type Mempool[T any] struct {
 	resetter func(T)
 	parent   interface{}   // Parent Mempool
 	children []interface{} // Child Mempools
-	objects  *array.PagedArray[T]
+	objects  *indexedslice.PagedSlice[T]
 	counter  int
 	lock     sync.Mutex
 }
@@ -25,7 +25,7 @@ func NewMempool[T any](perPage, numPages int, new func() T, resetter func(T)) *M
 		resetter: resetter,
 		parent:   nil,
 		children: []interface{}{},
-		objects:  array.NewPagedArray[T](perPage, numPages, perPage*numPages),
+		objects:  indexedslice.NewPagedSlice[T](perPage, numPages, perPage*numPages),
 		counter:  0,
 	}
 
@@ -96,7 +96,7 @@ func (this *Mempool[T]) Reset() {
 	// 	this.resetter(*v)
 	// })
 
-	this.objects = array.NewPagedArray[T](this.objects.PageSize(), this.objects.NumPages(), this.objects.PageSize()*this.objects.NumPages())
+	this.objects = indexedslice.NewPagedSlice[T](this.objects.PageSize(), this.objects.NumPages(), this.objects.PageSize()*this.objects.NumPages())
 	this.objects.Foreach(func(i int, v *T) {
 		this.objects.Set(i, this.new())
 	})

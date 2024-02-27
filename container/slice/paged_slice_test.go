@@ -1,4 +1,4 @@
-package array
+package indexedslice
 
 import (
 	"fmt"
@@ -6,18 +6,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arcology-network/common-lib/exp/array"
+	slice "github.com/arcology-network/common-lib/exp/slice"
 )
 
-func TestPagedArray(t *testing.T) {
-	paged := NewPagedArray[int](2, 64, 0) // 2 elements per block, 64 blocks
+func TestPagedSlice(t *testing.T) {
+	paged := NewPagedSlice[int](2, 64, 0) // 2 elements per block, 64 blocks
 	paged.Concate([]int{1, 2, 5, 5, 5})
 	buf := paged.ToSlice(0, paged.Size())
 	if !reflect.DeepEqual(buf, []int{1, 2, 5, 5, 5}) {
 		t.Error("Error: Wrong value")
 	}
 
-	paged = NewPagedArray[int](2, 100, 0)
+	paged = NewPagedSlice[int](2, 100, 0)
 	paged.PushBack(1)
 	paged.PushBack(2)
 	paged.PushBack(3)
@@ -125,12 +125,12 @@ func TestPagedArray(t *testing.T) {
 		t.Error("Error: Wrong length or capacity")
 	}
 
-	paged = NewPagedArray[int](2, 100, 200)
+	paged = NewPagedSlice[int](2, 100, 200)
 	paged.Foreach(func(_ int, v *int) {
 		*v = 111
 	})
 
-	idx, _ := array.FindFirstIf(paged.ToSlice(0, paged.Size()), func(v int) bool {
+	idx, _ := slice.FindFirstIf(paged.ToSlice(0, paged.Size()), func(v int) bool {
 		return v != 111
 	})
 
@@ -139,8 +139,8 @@ func TestPagedArray(t *testing.T) {
 	}
 }
 
-func TestPagedArrayPreAlloc(t *testing.T) {
-	paged := NewPagedArray[int](2, 64, 2) // 2 elements per block, 64 blocks
+func TestPagedSlicePreAlloc(t *testing.T) {
+	paged := NewPagedSlice[int](2, 64, 2) // 2 elements per block, 64 blocks
 	paged.Concate([]int{1, 2, 5, 5, 5})
 	buf := paged.ToSlice(0, paged.Size())
 
@@ -148,7 +148,7 @@ func TestPagedArrayPreAlloc(t *testing.T) {
 		t.Error("Error: Wrong value")
 	}
 
-	// paged = NewPagedArray[int](2, 100, 0)
+	// paged = NewPagedSlice[int](2, 100, 0)
 	paged.PushBack(1)
 	buf = paged.ToSlice(0, paged.Size())
 	if !reflect.DeepEqual(buf, []int{0, 0, 1, 2, 5, 5, 5, 1}) {
@@ -164,7 +164,7 @@ func TestCustomType(t *testing.T) {
 	}
 
 	t0 := time.Now()
-	paged := NewPagedArray[CustomType](4096, 1000, 4096*1000)
+	paged := NewPagedSlice[CustomType](4096, 1000, 4096*1000)
 	paged.ParallelForeach(func(v *CustomType) {
 		*v = CustomType{
 			a: 1,
@@ -176,8 +176,8 @@ func TestCustomType(t *testing.T) {
 	fmt.Println("Paged array Initlaized: ", paged.Size(), paged.Cap(), "objects in ", time.Now().Sub(t0))
 
 	t0 = time.Now()
-	slice := make([]CustomType, paged.Cap())
-	array.ParallelAppend(slice, 4, func(i int, _ CustomType) CustomType {
+	pagedSlice := make([]CustomType, paged.Cap())
+	slice.ParallelAppend(pagedSlice, 4, func(i int, _ CustomType) CustomType {
 		return CustomType{
 			a: 1,
 			b: [20]byte{1, 2, 3},
@@ -205,7 +205,7 @@ func TestCustomType(t *testing.T) {
 	})
 
 	vec := paged.ToSlice(0, paged.Size())
-	idx, _ := array.FindFirstIf(vec, func(v CustomType) bool {
+	idx, _ := slice.FindFirstIf(vec, func(v CustomType) bool {
 		return (v).a != 999 || v.b != [20]byte{3, 2, 1} || v.e != "hi hello"
 	})
 
@@ -227,7 +227,7 @@ func BenchmarkTestIntArray(b *testing.B) {
 	}
 	fmt.Println("slice.append(): ", len(nums), "leafs in ", time.Now().Sub(t0))
 
-	paged := NewPagedArray[int](4096, 100, 0)
+	paged := NewPagedSlice[int](4096, 100, 0)
 	t0 = time.Now()
 	for i := 0; i < len(nums); i++ {
 		paged.PushBack(i)
@@ -246,7 +246,7 @@ func BenchmarkTestIntArray(b *testing.B) {
 	}
 	fmt.Println("paged.PopBack(): ", len(nums), "leafs in ", time.Now().Sub(t0))
 
-	array2 := NewPagedArray[int](4096, 100, 0)
+	array2 := NewPagedSlice[int](4096, 100, 0)
 	t0 = time.Now()
 	array2.Concate(nums)
 	fmt.Println("paged.Concate(): ", len(nums), "leafs in ", time.Now().Sub(t0))

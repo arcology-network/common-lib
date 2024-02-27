@@ -15,9 +15,9 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package array
+package indexedslice
 
-type IndexedArray[T any, K comparable, V any] struct {
+type IndexedSlice[T any, K comparable, V any] struct {
 	elements []V
 	index    map[K]V
 	keys     []K
@@ -27,18 +27,18 @@ type IndexedArray[T any, K comparable, V any] struct {
 	getsize  func(V) int
 }
 
-// NewIndexedArray creates a new instance of IndexedArray with the specified page size, minimum number of pages, and pre-allocation size.
-func NewIndexedArray[T any, K comparable, V any](
+// NewIndexedSlice creates a new instance of IndexedSlice with the specified page size, minimum number of pages, and pre-allocation size.
+func NewIndexedSlice[T any, K comparable, V any](
 	getkey func(T) K,
 	inserter func(T, V) V,
 	getsize func(V) int,
-	preAlloc ...int) *IndexedArray[T, K, V] {
+	preAlloc ...int) *IndexedSlice[T, K, V] {
 	size := 0
 	if len(preAlloc) > 0 {
 		size = preAlloc[0]
 	}
 
-	return &IndexedArray[T, K, V]{
+	return &IndexedSlice[T, K, V]{
 		index:    make(map[K]V),
 		elements: make([]V, 0, size),
 		getkey:   getkey,
@@ -47,15 +47,15 @@ func NewIndexedArray[T any, K comparable, V any](
 	}
 }
 
-// Insert inserts an element into the IndexedArray and updates the index.
-func (this *IndexedArray[T, K, V]) InsertSlice(elements []T) {
+// Insert inserts an element into the IndexedSlice and updates the index.
+func (this *IndexedSlice[T, K, V]) InsertSlice(elements []T) {
 	for _, ele := range elements {
 		this.Insert(ele)
 	}
 }
 
-func (this *IndexedArray[T, K, V]) UniqueLength() int { return len(this.index) }
-func (this *IndexedArray[T, K, V]) Length() int {
+func (this *IndexedSlice[T, K, V]) UniqueLength() int { return len(this.index) }
+func (this *IndexedSlice[T, K, V]) Length() int {
 	total := 0
 	for _, ele := range this.elements {
 		total += this.getsize(ele)
@@ -63,8 +63,8 @@ func (this *IndexedArray[T, K, V]) Length() int {
 	return total
 }
 
-// Insert inserts an element into the IndexedArray and updates the index.
-func (this *IndexedArray[T, K, V]) Insert(ele T) {
+// Insert inserts an element into the IndexedSlice and updates the index.
+func (this *IndexedSlice[T, K, V]) Insert(ele T) {
 	k := this.getkey(ele)
 	values, ok := this.index[k]
 	if !ok {
@@ -78,48 +78,48 @@ func (this *IndexedArray[T, K, V]) Insert(ele T) {
 	this.inserter(ele, values)
 }
 
-// Array returns the underlying slice of elements in the IndexedArray.
-func (this *IndexedArray[T, K, V]) Elements() []V {
+// Array returns the underlying slice of elements in the IndexedSlice.
+func (this *IndexedSlice[T, K, V]) Elements() []V {
 	return this.elements
 }
 
-// Array returns the underlying slice of elements in the IndexedArray.
-func (this *IndexedArray[T, K, V]) Keys() []K {
+// Array returns the underlying slice of elements in the IndexedSlice.
+func (this *IndexedSlice[T, K, V]) Keys() []K {
 	return this.keys
 }
 
-// Find searches for an element in the IndexedArray and returns its index.
+// Find searches for an element in the IndexedSlice and returns its index.
 // Returns -1 if the element is not found.
-func (this *IndexedArray[T, K, V]) Find(ele T) V {
+func (this *IndexedSlice[T, K, V]) Find(ele T) V {
 	return this.index[this.getkey(ele)]
 }
 
-func (this *IndexedArray[T, K, V]) Clear() {
+func (this *IndexedSlice[T, K, V]) Clear() {
 	clear(this.index)
 	this.elements = this.elements[:0]
 	this.keys = this.keys[:0]
 }
 
-// ParallelForeach applies the specified functor to each element in the IndexedArray in parallel.
-// func (this *IndexedArray[T, K, V]) ParallelForeach(nthd int, functor func(int, *T)) *IndexedArray[T, K, V] {
-// 	array.ParallelForeach(this.elements, nthd, func(i int, ele *T) {
+// ParallelForeach applies the specified functor to each element in the IndexedSlice in parallel.
+// func (this *IndexedSlice[T, K, V]) ParallelForeach(nthd int, functor func(int, *T)) *IndexedSlice[T, K, V] {
+// 	slice.ParallelForeach(this.elements, nthd, func(i int, ele *T) {
 // 		functor(i, ele)
 // 	})
 // 	return this
 // }
 
-// // Set updates the value at the specified position in the IndexedArray.
-// func (this *IndexedArray[T, K, V]) Set(i int, v T) {
+// // Set updates the value at the specified position in the IndexedSlice.
+// func (this *IndexedSlice[T, K, V]) Set(i int, v T) {
 // 	this.elements[i] = v
 // }
 
-// Get returns the value at the specified position in the IndexedArray.
-// func (this *IndexedArray[T, K, V]) Get(i int) T {
+// Get returns the value at the specified position in the IndexedSlice.
+// func (this *IndexedSlice[T, K, V]) Get(i int) T {
 // 	return this.elements[i]
 // }
 
-// // Get returns the value at the specified position in the IndexedArray.
-// func (this *IndexedArray[T, K, V]) Remove(ele T) bool {
+// // Get returns the value at the specified position in the IndexedSlice.
+// func (this *IndexedSlice[T, K, V]) Remove(ele T) bool {
 // 	if indices, ok := this.index[this.getkey(ele)]; ok {
 // 		for _, idx := range *indices {
 // 			return this.removeAt(idx)
@@ -128,8 +128,8 @@ func (this *IndexedArray[T, K, V]) Clear() {
 // 	return false
 // }
 
-// // RemoveIf removes all elements that satisfy the specified condition from the IndexedArray.
-// func (this *IndexedArray[T, K, V]) RemoveIf(condition func(T) bool) {
+// // RemoveIf removes all elements that satisfy the specified condition from the IndexedSlice.
+// func (this *IndexedSlice[T, K, V]) RemoveIf(condition func(T) bool) {
 // 	for _, ele := range this.elements {
 // 		if condition(ele) {
 // 			this.Remove(ele)
@@ -137,8 +137,8 @@ func (this *IndexedArray[T, K, V]) Clear() {
 // 	}
 // }
 
-// // RemoveAt removes the element at the specified position from the IndexedArray.
-// func (this *IndexedArray[T, K, V]) removeAt(i int) bool {
+// // RemoveAt removes the element at the specified position from the IndexedSlice.
+// func (this *IndexedSlice[T, K, V]) removeAt(i int) bool {
 // 	indices := *this.index[this.keys[i]]
 // 	indices = append(this.index[this.keys[i]], indices[i+1:]...)
 

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arcology-network/common-lib/exp/array"
+	slice "github.com/arcology-network/common-lib/exp/slice"
 )
 
 func TestIndexedSet(t *testing.T) {
@@ -189,7 +189,7 @@ func TestOrderedSetCodec(t *testing.T) {
 	buffer := set.Encode()
 	out := (&OrderedSet{}).Decode(buffer).(*OrderedSet)
 
-	if !array.Equal(set.Keys(), out.Keys()) {
+	if !slice.Equal(set.Keys(), out.Keys()) {
 		t.Error("Error: Lookup Mismatch")
 	}
 

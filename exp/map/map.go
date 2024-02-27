@@ -17,7 +17,7 @@
 
 package mapi
 
-import "github.com/arcology-network/common-lib/exp/array"
+import slice "github.com/arcology-network/common-lib/exp/slice"
 
 func Foreach[M ~map[K]V, K comparable, V any](source M, do func(k K, v *V)) {
 	for k, v := range source {
@@ -34,7 +34,7 @@ func IfFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, new func(k K
 }
 
 func ParalleIfFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, threads int, new func(k K) V) {
-	found := array.ParallelAppend(keys, threads, func(_ int, k K) bool {
+	found := slice.ParallelAppend(keys, threads, func(_ int, k K) bool {
 		_, ok := source[k]
 		return ok
 	})
@@ -56,7 +56,7 @@ func IfNotFoundDo[M ~map[K]V, K comparable, V any, T any](source M, keys []T, ge
 }
 
 func ParallelIfNotFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, threads int, do func(k K) V) {
-	found := array.ParallelAppend(keys, threads, func(_ int, k K) bool {
+	found := slice.ParallelAppend(keys, threads, func(_ int, k K) bool {
 		_, ok := source[k]
 		return ok
 	})

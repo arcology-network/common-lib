@@ -25,12 +25,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arcology-network/common-lib/exp/array"
+	slice "github.com/arcology-network/common-lib/exp/slice"
 )
 
 func BenchmarkMinMax(b *testing.B) {
 	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return false }, func(k string) uint64 {
-		return uint64(array.Sum[byte, int]([]byte(k)))
+		return uint64(slice.Sum[byte, int]([]byte(k)))
 	})
 
 	keys := make([]string, 1000000)
@@ -69,7 +69,7 @@ func BenchmarkMinMax(b *testing.B) {
 
 func BenchmarkForeach(b *testing.B) {
 	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return false }, func(k string) uint64 {
-		return uint64(array.Sum[byte, int]([]byte(k)))
+		return uint64(slice.Sum[byte, int]([]byte(k)))
 	})
 
 	keys := make([]string, 1000000)
@@ -146,7 +146,7 @@ func BenchmarkCcmapBatchSet(b *testing.B) {
 
 	t0 = time.Now()
 	ccmap := NewConcurrentMap[string, string](8, func(v string) bool { return len(v) == 0 }, func(k string) uint64 {
-		return uint64(array.Sum[byte, int]([]byte(k)))
+		return uint64(slice.Sum[byte, int]([]byte(k)))
 	})
 
 	ccmap.BatchSet(paths, values)

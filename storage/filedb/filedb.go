@@ -15,7 +15,7 @@ import (
 
 	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
-	"github.com/arcology-network/common-lib/exp/array"
+	slice "github.com/arcology-network/common-lib/exp/slice"
 	intf "github.com/arcology-network/common-lib/storage/interface"
 )
 
@@ -240,7 +240,7 @@ func (this *FileDB) Get(key string) ([]byte, error) {
 }
 
 func (this *FileDB) BatchGet(nkeys []string) ([][]byte, error) {
-	files := array.ParallelAppend(nkeys, 8, func(i int, _ string) string {
+	files := slice.ParallelAppend(nkeys, 8, func(i int, _ string) string {
 		return this.locateFile(nkeys[i]) //Must use the compressed ky to compute the shard
 	})
 
@@ -269,7 +269,7 @@ func (this *FileDB) BatchGet(nkeys []string) ([][]byte, error) {
 		}
 	}
 	common.ParallelWorker(len(uniqueFiles), 8, reader)
-	array.RemoveIf(&errs, func(_ int, v error) bool { return v == nil })
+	slice.RemoveIf(&errs, func(_ int, v error) bool { return v == nil })
 
 	if len(errs) > 0 {
 		return data, errs[0]
@@ -304,8 +304,8 @@ func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
 	}
 	common.ParallelWorker(len(uniqueFiles), 4, maker)
 
-	array.Remove(&newFiles, "")
-	array.RemoveIf(&errs, func(_ int, v error) bool { return v == nil })
+	slice.Remove(&newFiles, "")
+	slice.RemoveIf(&errs, func(_ int, v error) bool { return v == nil })
 
 	this.files = append(this.files, newFiles...)
 	if len(errs) > 0 {
@@ -340,7 +340,7 @@ func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
 		}
 	}
 	common.ParallelWorker(len(uniqueFiles), 8, writer)
-	array.RemoveIf(&errs, func(_ int, v error) bool { return v == nil })
+	slice.RemoveIf(&errs, func(_ int, v error) bool { return v == nil })
 
 	if len(errs) > 0 {
 		return errs[0]
@@ -380,7 +380,7 @@ func (this *FileDB) Export(prefixes [][]byte) ([][]byte, error) {
 			}
 		}
 	}
-	paths = array.Unique(paths, func(s0, s1 string) bool { return s0 < s1 })
+	paths = slice.Unique(paths, func(s0, s1 string) bool { return s0 < s1 })
 	return this.readAll(paths)
 }
 
@@ -434,7 +434,7 @@ func (this *FileDB) readAll(paths []string) ([][]byte, error) {
 		}
 	}
 	common.ParallelWorker(len(paths), 8, reader)
-	array.RemoveIf(&errs, func(_ int, v error) bool { return v == nil })
+	slice.RemoveIf(&errs, func(_ int, v error) bool { return v == nil })
 
 	if len(errs) > 0 {
 		return nil, errs[0].(error)

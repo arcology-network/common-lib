@@ -6,7 +6,7 @@ package orderedset
 import (
 	"math"
 
-	"github.com/arcology-network/common-lib/exp/array"
+	slice "github.com/arcology-network/common-lib/exp/slice"
 	"github.com/elliotchance/orderedmap"
 )
 
@@ -38,7 +38,7 @@ func (this *OrderedSet) Equal(other *OrderedSet) bool {
 		return false
 	}
 
-	return array.Equal(this.keys, other.keys) &&
+	return slice.Equal(this.keys, other.keys) &&
 		this.touched == other.touched &&
 		this.isSynced() == other.isSynced()
 }

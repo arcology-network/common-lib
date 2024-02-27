@@ -2,7 +2,7 @@ package filedb
 
 import (
 	"github.com/arcology-network/common-lib/codec"
-	"github.com/arcology-network/common-lib/exp/array"
+	slice "github.com/arcology-network/common-lib/exp/slice"
 )
 
 func (this *FileDB) Query(pattern string, condition func(string, string) bool) ([]string, [][]byte, error) {
@@ -24,8 +24,8 @@ func (this *FileDB) Query(pattern string, condition func(string, string) bool) (
 				}
 			}
 
-			array.Remove(&keys, "")
-			array.RemoveIf(&valBytes, func(_ int, v []byte) bool { return len(v) == 0 })
+			slice.Remove(&keys, "")
+			slice.RemoveIf(&valBytes, func(_ int, v []byte) bool { return len(v) == 0 })
 
 			keyset[i] = keys
 			valSet[i] = valBytes

@@ -7,7 +7,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/arcology-network/common-lib/exp/array"
+	slice "github.com/arcology-network/common-lib/exp/slice"
 )
 
 func TestMapDelete(t *testing.T) {
@@ -36,7 +36,7 @@ func TestFlattenStrings(t *testing.T) {
 	}
 
 	t0 := time.Now()
-	if len(array.Flatten(paths)) != len(paths)*10 {
+	if len(slice.Flatten(paths)) != len(paths)*10 {
 		t.Error("Error")
 	}
 	fmt.Println("Flatten "+fmt.Sprint(100000*10), time.Since(t0))
@@ -61,7 +61,7 @@ func TestCompressString(t *testing.T) {
 
 func TestSingleAccount(t *testing.T) {
 	strs := []string{"2", "1", "1"}
-	newKeys := array.Unique(strs, func(str0, str1 string) bool { return str0 < str1 })
+	newKeys := slice.Unique(strs, func(str0, str1 string) bool { return str0 < str1 })
 
 	if !reflect.DeepEqual(newKeys, []string{"1", "2"}) {
 		t.Error("Expected [1,2] but got ", strs)

@@ -34,7 +34,7 @@ func TestPagedIntArray(t *testing.T) {
 	pool := NewMempool[*int](1, 2, func() *int {
 		i++
 		return &i
-	})
+	}, func(v *int) {})
 
 	if *pool.New() != 1 {
 		t.Error("Error: Wrong value")
@@ -49,7 +49,7 @@ func TestPagedIntArray(t *testing.T) {
 	}
 }
 
-func TestPagedArrayCustomTypes(t *testing.T) {
+func TestPagedSliceCustomTypes(t *testing.T) {
 	type CustomType struct {
 		a int
 		b [20]byte
@@ -64,7 +64,7 @@ func TestPagedArrayCustomTypes(t *testing.T) {
 			b: [20]byte{},
 			e: "hello" + fmt.Sprint(i),
 		}
-	})
+	}, func(v *CustomType) {})
 
 	if pool.New().a != 1 {
 		t.Error("Error: Wrong value")
@@ -77,7 +77,7 @@ func TestPagedArrayCustomTypes(t *testing.T) {
 	if pool.New().a != 3 {
 		t.Error("Error: Wrong value")
 	}
-	pool.Reclaim()
+	pool.Reset()
 
 	// Reset the init function
 	i = 99
@@ -116,7 +116,7 @@ func TestPagedArrayCustomTypes(t *testing.T) {
 	v.a = 14
 }
 
-func BenchmarkTestPagedArrayCustomTypes(t *testing.B) {
+func BenchmarkTestPagedSliceCustomTypes(t *testing.B) {
 	type CustomType struct {
 		a int
 		b [20]byte
@@ -124,16 +124,14 @@ func BenchmarkTestPagedArrayCustomTypes(t *testing.B) {
 	}
 
 	i := 0
-	pool := NewMempool[*CustomType](4096, 156, func() *CustomType {
+	pool := NewMempool[*CustomType](int(4096), int(156), func() *CustomType {
 		i++
 		return &CustomType{
-				a: i,
-				b: [20]byte{},
-				e: "hello" + fmt.Sprint(i),
-			},
-			
-	},func(_ *CustomType) {}})
-
+			a: i,
+			b: [20]byte{},
+			e: "hello" + fmt.Sprint(i),
+		}
+	}, func(v *CustomType) {})
 
 	vs := make([]*CustomType, 1000000)
 	t0 := time.Now()

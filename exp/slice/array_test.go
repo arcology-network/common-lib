@@ -1,4 +1,4 @@
-package array
+package slice
 
 import (
 	"crypto/sha256"

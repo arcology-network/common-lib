@@ -6,7 +6,7 @@ import (
 
 	common "github.com/arcology-network/common-lib/common"
 	ccmap "github.com/arcology-network/common-lib/container/map"
-	"github.com/arcology-network/common-lib/exp/array"
+	slice "github.com/arcology-network/common-lib/exp/slice"
 )
 
 func (this *CompressionLut) singleThreadedUncompressor(compressed []string) {
@@ -22,7 +22,7 @@ func (this *CompressionLut) multiThreadedUncompressor(compressed []string) {
 	// 	}
 	// }
 	// common.ParallelWorker(len(compressed), 4, worker)
-	array.ParallelForeach(compressed, 6, func(i int, _ *string) {
+	slice.ParallelForeach(compressed, 6, func(i int, _ *string) {
 		compressed[i] = this.TryUncompress(compressed[i])
 	})
 }
@@ -30,7 +30,7 @@ func (this *CompressionLut) multiThreadedUncompressor(compressed []string) {
 func (this *CompressionLut) findPositions(originals []string, depths [][2]int) [][][2]int {
 	positions := make([][][2]int, len(originals))
 
-	array.ParallelForeach(originals, 6, func(i int, _ *string) {
+	slice.ParallelForeach(originals, 6, func(i int, _ *string) {
 		positions[i] = make([][2]int, len(depths))
 		for j := 0; j < len(depths); j++ {
 			positions[i][j][0] = IndexN(originals[i], "/", depths[j][0])
@@ -148,7 +148,7 @@ func (this *CompressionLut) insertToDict(newKeys []string, dict *ccmap.Concurren
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	uniqueKeys := array.Unique(newKeys, func(str0, str1 string) bool { return str0 < str1 })
+	uniqueKeys := slice.Unique(newKeys, func(str0, str1 string) bool { return str0 < str1 })
 	newKeys = this.filterExistingKeys(uniqueKeys, dict)
 	if len(newKeys) == 0 {
 		return

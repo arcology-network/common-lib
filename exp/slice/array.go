@@ -2,7 +2,7 @@
 // It appears to contain a collection of generic functions that can be used across
 // different parts of the project.
 
-package array
+package slice
 
 import (
 	"sort"

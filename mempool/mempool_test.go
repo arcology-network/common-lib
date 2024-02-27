@@ -49,7 +49,7 @@ func TestPagedIntArray(t *testing.T) {
 	}
 }
 
-// func TestPagedArrayCustomTypes(t *testing.T) {
+// func TestPagedSliceCustomTypes(t *testing.T) {
 // 	type CustomType struct {
 // 		a int
 // 		b [20]byte
@@ -101,7 +101,7 @@ func TestPagedIntArray(t *testing.T) {
 // 	}
 // }
 
-func BenchmarkTestPagedArrayCustomTypes(t *testing.B) {
+func BenchmarkTestPagedSliceCustomTypes(t *testing.B) {
 	type CustomType struct {
 		a int
 		b [20]byte

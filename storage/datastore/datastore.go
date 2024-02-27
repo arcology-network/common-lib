@@ -11,8 +11,8 @@ import (
 	"github.com/cespare/xxhash/v2"
 
 	// expmap "github.com/arcology-network/common-lib/container/map"
-	"github.com/arcology-network/common-lib/exp/array"
 	expmap "github.com/arcology-network/common-lib/exp/map"
+	slice "github.com/arcology-network/common-lib/exp/slice"
 	intf "github.com/arcology-network/common-lib/storage/interface"
 )
 
@@ -272,7 +272,7 @@ func (this *DataStore) BatchRetrive(keys []string, T []any) []interface{} {
 	}
 
 	values := common.FilterFirst(this.localCache.BatchGet(keys)) // From the local cache first
-	if array.Count(values, nil) == 0 {                           // All found
+	if slice.Count(values, nil) == 0 {                           // All found
 		return values
 	}
 
@@ -358,7 +358,7 @@ func (this *DataStore) GetParitions(keys []string) []uint64 {
 	// }
 	// common.ParallelWorker(len(keys), 4, worker)
 
-	array.ParallelForeach(keys, 4, func(i int, _ *string) {
+	slice.ParallelForeach(keys, 4, func(i int, _ *string) {
 		partitionIDs[i] = this.localCache.Hash(keys[i]) //Must use the compressed ky to compute the shard
 	})
 

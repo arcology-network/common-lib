@@ -4,15 +4,15 @@ import (
 	"strconv"
 
 	common "github.com/arcology-network/common-lib/common"
-	"github.com/arcology-network/common-lib/exp/array"
+	slice "github.com/arcology-network/common-lib/exp/slice"
 )
 
 func (this *CompressionLut) GetNewAccounts(originals []string) []string {
 	acctLen := 40
 	prefixLen := len("blcc://eth1.0/account/")
 
-	keys := array.Append(originals, func(_ int, v string) string { return v[prefixLen : prefixLen+acctLen] })
-	return this.filterExistingKeys(array.Unique(keys, func(str0, str1 string) bool { return str0 < str1 }), this.dict) // Get new keys
+	keys := slice.Append(originals, func(_ int, v string) string { return v[prefixLen : prefixLen+acctLen] })
+	return this.filterExistingKeys(slice.Unique(keys, func(str0, str1 string) bool { return str0 < str1 }), this.dict) // Get new keys
 }
 
 func (this *CompressionLut) CompressStaticKey(original string) string {
