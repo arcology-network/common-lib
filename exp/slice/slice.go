@@ -228,6 +228,28 @@ func ParallelAppend[T any, T1 any](values []T, numThd int, do func(i int, v T) T
 	return appended
 }
 
+// Transform applies a function to each element in a slice and returns a new slice with the results.
+func Transform[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
+	vec := make([]T1, len(values))
+	for i := 0; i < len(values); i++ {
+		vec[i] = do(i, values[i])
+	}
+	return vec
+}
+
+// ParallelTransform applies a function to each index in a slice in parallel using multiple threads
+// and returns a new slice with the results.
+func ParallelTransform[T any, T1 any](values []T, numThd int, do func(i int, v T) T1) []T1 {
+	appended := make([]T1, len(values))
+	worker := func(start, end, index int, args ...interface{}) {
+		for i := start; i < end; i++ {
+			appended[i] = do(i, values[i])
+		}
+	}
+	common.ParallelWorker(len(values), numThd, worker)
+	return appended
+}
+
 // func ParallelTransform[T0 any, T1 any](values []T0, numThd int, do func(i int, v T0) (T1, bool)) []T1 {
 // 	flags := make([]bool, len(values))
 // 	appended := ParallelAppend(values, numThd, func(i int, v T0) T1 {

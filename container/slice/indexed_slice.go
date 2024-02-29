@@ -17,6 +17,8 @@
 
 package indexedslice
 
+// IndexedSlice represents a slice with an index. It is a hybrid combining a slice and a map support fast lookups and iteration.
+// Entries with the same key are stored in a slice in the order they were inserted.
 type IndexedSlice[T any, K comparable, V any] struct {
 	elements []V
 	index    map[K]V
