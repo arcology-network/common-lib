@@ -18,11 +18,18 @@ type OrderedSet struct {
 }
 
 // NewOrderedSet creates a new instance of OrderedSet with the given initial keys.
+// Duplicate keys are not allowed and will be ignored.
 func NewOrderedSet(keys []string) *OrderedSet {
 	this := &OrderedSet{
 		dict:    orderedmap.NewOrderedMap(),
-		keys:    keys,
-		touched: false,
+		touched: true,
+		keys:    []string{},
+	}
+
+	for i := 0; i < len(keys); i++ {
+		if this.Insert(keys[i]) {
+			keys = append(keys, keys[i])
+		}
 	}
 	return this
 }
@@ -57,6 +64,7 @@ func (this *OrderedSet) isSynced() bool {
 // If the ordered map is not in sync with the keys, it will be synced before returning.
 func (this *OrderedSet) Dict() *orderedmap.OrderedMap {
 	if !this.isSynced() {
+		panic("OrderedSet is not in sync with the underlying ordered map. This should never happen.")
 		if this.dict.Len() > 0 {
 			this.dict = orderedmap.NewOrderedMap() // This should never happen
 		}
@@ -120,14 +128,15 @@ func (this *OrderedSet) KeyAt(idx uint64) string {
 
 // Insert adds a new key to the OrderedSet.
 // If the key already exists, it is not added again.
-func (this *OrderedSet) Insert(key string) {
+func (this *OrderedSet) Insert(key string) bool {
 	if _, ok := this.Dict().Get(key); ok {
-		return // Already exists
+		return false // Already exists
 	}
 
 	if this.touched = this.Dict().Set(key, uint64(this.Dict().Len())); this.touched { // A new key will be added
 		this.keys = append(this.keys, key)
 	}
+	return true
 }
 
 // DeleteByKey removes a key from the OrderedSet.

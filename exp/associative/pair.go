@@ -32,7 +32,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package product
+package associative
 
 import slice "github.com/arcology-network/common-lib/exp/slice"
 

@@ -736,13 +736,18 @@ func TestConcate(t *testing.T) {
 }
 
 func TestJoin(t *testing.T) {
-	target := Join([]string{}, []string{"1", "2"}, []string{"3", "4"}, []string{})
+	target := Join([]string{}, []string{"1", "2"}, []string{}, []string{"3", "4"}, []string{})
 	if !reflect.DeepEqual(target, []string{"1", "2", "3", "4"}) {
 		t.Error("Error: should be equal", target)
 	}
 
 	buffer := Join([][]byte{}, [][]byte{{1}, {2}}, [][]byte{{3}, {4}}, [][]byte{})
 	if !reflect.DeepEqual(buffer, [][]byte{{1}, {2}, {3}, {4}}) {
+		t.Error("Error: should be equal", buffer)
+	}
+
+	buffer = Join([][]byte{}, [][]byte{})
+	if !reflect.DeepEqual(buffer, [][]byte{}) {
 		t.Error("Error: should be equal", buffer)
 	}
 }

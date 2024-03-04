@@ -6,6 +6,7 @@ import (
 	"time"
 
 	slice "github.com/arcology-network/common-lib/exp/slice"
+	"golang.org/x/crypto/sha3"
 )
 
 func TestIndexedSet(t *testing.T) {
@@ -157,8 +158,19 @@ func TestIndexedSet(t *testing.T) {
 		t.Error("Error: Wrong entry count")
 	}
 
-	var emptySet *OrderedSet
-	emptySet.Clone()
+	// var emptySet *OrderedSet
+	// emptySet.Clone()
+
+	// if !set.Equal(emptySet) {
+	// 	t.Error("Error: Wrong entry count")
+	// }
+}
+
+func TestDuplicateKeys(t *testing.T) {
+	set := NewOrderedSet([]string{"1", "1", "2"})
+	if set.Length() != 2 {
+		t.Error("Error: Wrong entry count")
+	}
 }
 
 func TestSetOperations(t *testing.T) {
@@ -196,6 +208,7 @@ func TestOrderedSetCodec(t *testing.T) {
 	// if !common.EqualMap(set.dict, out.dict) {
 	// 	t.Error("Error: Dic Mismatch")
 	// }
+
 }
 
 func BenchmarkSetInsertion(b *testing.B) {
@@ -217,22 +230,36 @@ func BenchmarkSetInsertion(b *testing.B) {
 func BenchmarkSetPopFront(b *testing.B) {
 	set := NewOrderedSet([]string{})
 
-	for i := 0; i < 10000; i++ {
-		set.Insert(fmt.Sprint(i))
+	keys := make([]string, 5000)
+	for i := 0; i < len(keys); i++ {
+		k := sha3.Sum256([]byte(fmt.Sprint(i)))
+		keys[i] = string(k[:]) + string(k[:]) + string(k[:])
 	}
 
 	t0 := time.Now()
-	for i := 0; i < 10000; i++ {
-		set.DeleteByIdx(0)
+	for i := 0; i < len(keys); i++ {
+		set.Insert(keys[i])
 	}
-	fmt.Println("set.Insert "+fmt.Sprint(1000), " in ", time.Since(t0))
+	fmt.Println("set.Insert "+fmt.Sprint(len(keys)), " in ", time.Since(t0))
 
 	t0 = time.Now()
-	m := make(map[string]int)
-	for i := 0; i < 1000000; i++ {
-		m[fmt.Sprint(i)] = i
+	for i := len(keys) - 1; i > 0; i-- {
+		set.dict.Get(keys[i])
 	}
-	fmt.Println("golang native map deletion "+fmt.Sprint(1000000), " in ", time.Since(t0))
+	fmt.Println("set.Get "+fmt.Sprint(len(keys)), " in ", time.Since(t0))
+
+	// t0 = time.Now()
+	// for i := 0; i < 1000000; i++ {
+	// 	// set.Set(fmt.Sprint(i))
+	// }
+	// fmt.Println("set.DeleteByIdx "+fmt.Sprint(1000000), " in ", time.Since(t0))
+
+	// t0 = time.Now()
+	// m := make(map[string]int)
+	// for i := 0; i < 1000000; i++ {
+	// 	m[keys[i]] = i
+	// }
+	// fmt.Println("golang native map deletion "+fmt.Sprint(1000000), " in ", time.Since(t0))
 
 }
 
