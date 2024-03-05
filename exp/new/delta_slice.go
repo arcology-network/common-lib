@@ -30,13 +30,13 @@ type DeltaSlice[K comparable, T any] struct {
 	readonlyValues []T                                 // The values are applied to the values only when commit is called.
 	modified       *indexedslice.IndexedSlice[K, T, T] // A hybrid structure to record the modified elements.
 	appended       []T
-	deleter        func(*T)
+	deleter        func(*T) T
 	isDeleted      func(T) bool
 }
 
 // NewIndexedSlice creates a new instance of DeltaSlice with the specified page size, minimum number of pages, and pre-allocation size.
 func NewDeltaSlice[K comparable, T any](modified *indexedslice.IndexedSlice[K, T, T],
-	deleter func(*T),
+	deleter func(*T) T,
 	isDeleted func(T) bool,
 ) *DeltaSlice[K, T] {
 	return &DeltaSlice[K, T]{
@@ -66,15 +66,12 @@ func (this *DeltaSlice[K, T]) Updated() []T                                  { r
 func (this *DeltaSlice[K, T]) Appended() []T                                 { return this.appended } // Returns the appended readonlyValues, some may be removed later.
 func (this *DeltaSlice[K, T]) Modified() *indexedslice.IndexedSlice[K, T, T] { return this.modified }
 
-func (this *DeltaSlice[K, T]) TotalRemoved() int {
+func (this *DeltaSlice[K, T]) Length() int {
 	elems := this.modified.Elements()
-	return slice.CountIf[associative.Pair[*K, T], int](elems, func(_ int, v *associative.Pair[*K, T]) bool {
+	numRemoved := slice.CountIf[associative.Pair[*K, T], int](elems, func(_ int, v *associative.Pair[*K, T]) bool {
 		return v == nil
 	})
-}
-
-func (this *DeltaSlice[K, T]) Length() int {
-	return len(this.readonlyValues) + len(this.appended) - this.TotalRemoved()
+	return len(this.readonlyValues) + len(this.appended) - numRemoved
 }
 
 // Insert inserts an element into the DeltaSlice and updates the index.
@@ -89,25 +86,20 @@ func (this *DeltaSlice[K, T]) ToSlice() []T {
 }
 
 // Insert inserts an element into the DeltaSlice and updates the index.
-func (this *DeltaSlice[K, T]) Clone() *DeltaSlice[K, T] {
-	return this
-}
-
-// Insert inserts an element into the DeltaSlice and updates the index.
 func (this *DeltaSlice[K, T]) Delete(indices ...int) {
 	for _, idx := range indices {
-		this.Set(idx, this.deleter)
+		// deleter :=
+		this.Set(idx, func(v T) T { return this.deleter(&v) })
 	}
 }
 
-func (this *DeltaSlice[K, T]) Set(idx int, setter func(*T)) (*T, bool) {
+func (this *DeltaSlice[K, T]) Set(idx int, setter func(T) T) (*T, bool) {
 	arr, mapped := this.mapTo(idx)
 	if mapped < 0 {
 		return nil, false
 	}
-	v := (*arr)[mapped]
-	setter(&v)
-	this.modified.SetByKey(common.ToType[int, K](idx), v)
+
+	this.modified.SetByKey(common.ToType[int, K](idx), setter((*arr)[mapped]))
 	return nil, false
 }
 
@@ -122,11 +114,21 @@ func (this *DeltaSlice[K, T]) Get(idx int) (T, bool) {
 	return *new(T), false
 }
 
+// DoAt calls the specified function with the element at the specified index.
+// The operation is an in-place operation, so it can modify the element in the DeltaSlice, even
+// if the element is in the readonlyValues.
+func (this *DeltaSlice[K, T]) DoAt(idx int, doer func(*T)) {
+	arr, mapped := this.mapTo(idx)
+	if mapped < 0 {
+		return
+	}
+	doer(&(*arr)[mapped])
+}
+
 func (this *DeltaSlice[K, T]) Commit() *DeltaSlice[K, T] {
 	this.readonlyValues = append(this.readonlyValues, this.appended...)
 	this.appended = this.appended[:0]
 
-	// dict := this.modified.Index()
 	elements := this.modified.Elements()
 	for i := 0; i < len(elements); i++ {
 		idx := common.ToType[K, int](*elements[i].First)

@@ -32,7 +32,7 @@ func TestDeltaSliceBasic(t *testing.T) {
 		func(old int) bool { return old == math.MaxInt },
 	)
 	deltaSlice := NewDeltaSlice(buffer,
-		func(v *int) { *v = math.MaxInt },
+		func(v *int) int { return math.MaxInt },
 		func(v int) bool { return v == math.MaxInt })
 
 	if deltaSlice.Append(11, 12, 13); !slice.Equal(deltaSlice.Appended(), []int{11, 12, 13}) || !slice.Equal(deltaSlice.ToSlice(), []int{11, 12, 13}) {
@@ -43,12 +43,12 @@ func TestDeltaSliceBasic(t *testing.T) {
 		t.Error("failed to commit")
 	}
 
-	deltaSlice.Set(0, func(v *int) { *v = math.MaxInt })
+	deltaSlice.Set(0, func(v int) int { return math.MaxInt })
 	if len(deltaSlice.readonlyValues) != 3 || len(deltaSlice.appended) != 0 || len(deltaSlice.modified.Index()) != 1 {
 		t.Error("failed to delete")
 	}
 
-	deltaSlice.Set(1, func(v *int) { *v = math.MaxInt })
+	deltaSlice.Set(1, func(v int) int { return math.MaxInt })
 	if len(deltaSlice.readonlyValues) != 3 || len(deltaSlice.appended) != 0 || len(deltaSlice.modified.Index()) != 2 {
 		t.Error("failed to delete")
 	}
@@ -91,7 +91,7 @@ func TestDeltaSliceBasic(t *testing.T) {
 		t.Error("failed to get", v)
 	}
 
-	deltaSlice.Set(5, func(v *int) { *v = 77 })
+	deltaSlice.Set(5, func(v int) int { return 77 })
 	if v, _ := deltaSlice.Get(5); v != 77 || !slice.Equal(deltaSlice.readonlyValues, []int{13, 14, 15, 16, 17}) { // Take effect but the original values would be altered
 		t.Error("failed to get", v)
 	}
@@ -109,7 +109,7 @@ func TestDeltaSliceDuplicateDelete(t *testing.T) {
 		func(_ int, newV int, old *int) { *old = newV },
 		func(old int) bool { return old == math.MaxInt },
 	)
-	deltaSlice := NewDeltaSlice(buffer, func(v *int) { *v = math.MaxInt }, func(v int) bool { return v == math.MaxInt })
+	deltaSlice := NewDeltaSlice(buffer, func(v *int) int { return math.MaxInt }, func(v int) bool { return v == math.MaxInt })
 
 	deltaSlice.Append(11, 12, 13)
 	if deltaSlice.Delete(0); !slice.Equal(deltaSlice.ToSlice(), []int{11, 12, 13}) {
@@ -124,10 +124,10 @@ func TestDeltaSliceDuplicateDelete(t *testing.T) {
 		t.Error("failed to append", deltaSlice.ToSlice())
 	}
 
-	deltaSlice.Set(0, func(v *int) { *v = 21 })
-	deltaSlice.Set(1, func(v *int) { *v = 31 })
-	deltaSlice.Set(2, func(v *int) { *v = 41 })
-	deltaSlice.Set(3, func(v *int) { *v = 51 }) // this should take no effect
+	deltaSlice.Set(0, func(v int) int { return 21 })
+	deltaSlice.Set(1, func(v int) int { return 31 })
+	deltaSlice.Set(2, func(v int) int { return 41 })
+	deltaSlice.Set(3, func(v int) int { return 51 }) // this should take no effect
 
 	// Modify the newly appended elements.
 	if !slice.Equal(deltaSlice.Values(), []int{}) ||
@@ -142,9 +142,9 @@ func TestDeltaSliceDuplicateDelete(t *testing.T) {
 		t.Error("failed to append", deltaSlice.ToSlice())
 	}
 
-	deltaSlice.Append(51, 61)                            // {21, 31, 41, 51, 61}
-	deltaSlice.Set(0, func(v *int) { *v = math.MaxInt }) // {MaxInt, 31, 41, 51, 61}
-	deltaSlice.Set(4, func(v *int) { *v = math.MaxInt }) // {MaxInt, 31, 41, 51, MaxInt}
+	deltaSlice.Append(51, 61)                                 // {21, 31, 41, 51, 61}
+	deltaSlice.Set(0, func(v int) int { return math.MaxInt }) // {MaxInt, 31, 41, 51, 61}
+	deltaSlice.Set(4, func(v int) int { return math.MaxInt }) // {MaxInt, 31, 41, 51, MaxInt}
 
 	if !slice.Equal(deltaSlice.ToSlice(), []int{21, 31, 41, 51, 61}) ||
 		len(deltaSlice.Modified().Elements()) != 2 {
@@ -156,3 +156,37 @@ func TestDeltaSliceDuplicateDelete(t *testing.T) {
 		t.Error("failed to append", deltaSlice.ToSlice())
 	}
 }
+
+// func TestDeltaSliceString(t *testing.T) {
+// 	buffer := indexedslice.NewIndexedSlice[string, string, string](
+// 		func(k string) string { return k },
+// 		func(_ string, newV string) string { return newV },
+// 		func(_ string, newV string, old *string) { *old = newV },
+// 		func(old string) bool { return old == "" },
+// 	)
+
+// 	deltaSlice := NewDeltaSlice(buffer,
+// 		func(v *string) string { return "" },
+// 		func(v string) bool { return v == "" })
+
+// 	if deltaSlice.Append("11", "12", "13"); !slice.Equal(deltaSlice.Appended(), []string{"11", "12", "13"}) ||
+// 		!slice.Equal(deltaSlice.ToSlice(), []string{"11", "12", "13"}) {
+// 		t.Error("failed to append")
+// 	}
+
+// 	deltaSlice.Set(0, func(v string) string { return "" })
+// 	if len(deltaSlice.readonlyValues) != 3 || len(deltaSlice.appended) != 0 || len(deltaSlice.modified.Index()) != 1 {
+// 		t.Error("failed to delete")
+// 	}
+
+// 	deltaSlice.Set(1, func(v string) string { return "" })
+// 	if len(deltaSlice.readonlyValues) != 3 || len(deltaSlice.appended) != 0 || len(deltaSlice.modified.Index()) != 2 {
+// 		t.Error("failed to delete")
+// 	}
+
+// 	deltaSlice.Append("14", "15", "16", "17")
+// 	if len(deltaSlice.readonlyValues) != 3 || len(deltaSlice.appended) != 4 {
+// 		t.Error("failed to commit")
+// 	}
+// 	deltaSlice.Commit()
+// }

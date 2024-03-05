@@ -55,6 +55,10 @@ func NewIndexedSlice[K comparable, T0 any, T1 any](
 	}
 }
 
+func (this *IndexedSlice[K, T0, T1]) New() *IndexedSlice[K, T0, T1] {
+	return NewIndexedSlice(this.getkey, this.initializer, this.updater, this.IsEmpty, len(this.elements))
+}
+
 func (this *IndexedSlice[K, T0, T1]) Index() map[K]int                     { return this.index }
 func (this *IndexedSlice[K, T0, T1]) Elements() []associative.Pair[*K, T1] { return this.elements }
 func (this *IndexedSlice[K, T0, T1]) Length(getsize func(T1) int) int {
@@ -105,6 +109,14 @@ func (this *IndexedSlice[K, T0, T1]) GetByKey(t T0) (T1, bool) {
 	}
 	return *new(T1), false
 }
+
+// func (this *IndexedSlice[K, T0, T1]) GetByIndex(idx int) (T1, bool) {
+// 	k := this.getkey(t)
+// 	if idx, ok := this.index[k]; ok {
+// 		return this.elements[idx].Second, true
+// 	}
+// 	return *new(T1), false
+// }
 
 // CountIf returns the number of elements in the IndexedSlice that satisfy the specified condition.
 func (this *IndexedSlice[K, T0, T1]) CountIf(condition func(k *K, v T1) bool) int {
