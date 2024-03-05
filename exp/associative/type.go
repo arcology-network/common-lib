@@ -15,13 +15,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package common
-
-type Truple[T0, T1, T2, T3 any] struct {
-	First  T0
-	Second T1
-	Third  T2
-}
+package associative
 
 type Quad[T0, T1, T2, T3 any] struct {
 	First  T0

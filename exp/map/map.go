@@ -95,6 +95,28 @@ func Merge[M ~map[K]V, K comparable, V any](from, to M) M {
 	return from
 }
 
+// Sub substracts the key-value pairs from one map into another map.
+func Sub[M ~map[K]V, K comparable, V any](from, to M) M {
+	for k := range to {
+		delete(from, k)
+	}
+	return from
+}
+
+// Sub substracts the key-value pairs from one map into another map.
+func EqualIf[M ~map[K]V, K comparable, V any](m0, m1 M, equal func(v0 V, v1 V) bool) bool {
+	if len(m0) != len(m1) {
+		return false
+	}
+
+	for k, v0 := range m1 {
+		if v1, ok := m0[k]; !ok || !equal(v0, v1) {
+			return false
+		}
+	}
+	return true
+}
+
 // FromSlice creates a map from an array of keys, with all values set to a specified value.
 func FromSlice[K comparable, V any](keys []K, setter func(K) V) map[K]V {
 	M := make(map[K]V)

@@ -607,10 +607,10 @@ func Count[T comparable](values []T, target T) uint64 {
 }
 
 // Count counts the number of occurrences of a value in a slice.
-func CountIf[T comparable](values []T, condition func(*T) bool) uint64 {
-	total := uint64(0)
+func CountIf[T0 any, T1 constraints.Integer](values []T0, condition func(int, *T0) bool) T1 {
+	total := T1(0)
 	for i := 0; i < len(values); i++ {
-		if condition(&values[i]) {
+		if condition(i, &values[i]) {
 			total++
 		}
 	}
@@ -641,6 +641,39 @@ func Equal[T comparable](lhv []T, rhv []T) bool {
 		flag := false
 		for _, v1 := range lhv {
 			if v0 == v1 {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			return false
+		}
+	}
+	return true
+}
+
+func EqualIf[T comparable](lhv []T, rhv []T, equal func(T, T) bool) bool {
+	if len(lhv) != len(rhv) {
+		return false
+	}
+
+	for _, v0 := range lhv {
+		flag := false
+		for _, v1 := range rhv {
+			if equal(v0, v1) {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			return false
+		}
+	}
+
+	for _, v0 := range rhv {
+		flag := false
+		for _, v1 := range lhv {
+			if equal(v0, v1) {
 				flag = true
 				break
 			}

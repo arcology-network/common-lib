@@ -1,4 +1,4 @@
-/*
+/*ast
  *   Copyright (c) 2023 Arcology Network
  *   All rights reserved.
 
@@ -103,6 +103,10 @@ func FilterSecond[T0, T1 any](v0 T0, v1 T1) T1 { return v1 }
 func IsType[T any](v interface{}) bool {
 	_, ok := v.(T)
 	return ok
+}
+
+func ToType[T0, T1 any](v T0) T1 {
+	return interface{}(v).(T1)
 }
 
 // Equal checks if two values are equal.

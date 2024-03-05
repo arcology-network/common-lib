@@ -62,7 +62,6 @@ func TestMapMoveIf(t *testing.T) {
 	if len(m) != 2 || len(target) != 1 {
 		t.Error("Error: Failed to remove nil values !")
 	}
-
 }
 
 func TestMapGenerics(t *testing.T) {
@@ -91,5 +90,45 @@ func TestMapGenerics(t *testing.T) {
 	ParalleIfFoundDo(m, []string{"6"}, 2, func(k string) bool { return false })
 	if m["6"] {
 		t.Error("Error: Failed to set nil values !")
+	}
+
+	m1 := map[string]bool{
+		"1": true,
+		"2": false,
+		"3": true,
+		"4": false,
+	}
+
+	m2 := map[string]bool{
+		"3": true,
+		"4": false,
+		"1": true,
+		"2": false,
+	}
+
+	if !EqualIf(m1, m2, func(v0 bool, v1 bool) bool { return v0 == v1 }) {
+		t.Error("Error: Failed to compare maps !")
+	}
+
+	m1 = map[string]bool{
+		"1": true,
+		"2": false,
+	}
+
+	m2 = map[string]bool{
+		"3": true,
+		"4": false,
+		"1": true,
+		"2": false,
+	}
+
+	target := map[string]bool{
+		"3": true,
+		"4": false,
+	}
+
+	Sub(m2, m1)
+	if !EqualIf(m2, target, func(v0 bool, v1 bool) bool { return v0 == v1 }) {
+		t.Error("Error: Failed to compare maps !")
 	}
 }

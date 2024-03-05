@@ -24,12 +24,14 @@ import (
 
 func TestDeltaSlice(t *testing.T) {
 	deltaSlice := NewDeltaSlice[string](10)
-	deltaSlice.elements = []string{"aa", "bb", "cc", "dd", "ee", "ff"}
-	deltaSlice.appended = []string{"gg", "hh", "ii", "jj", "kk"}
+	deltaSlice.elements = slice.Reference([]string{"aa", "bb", "cc", "dd", "ee", "ff"})
+	deltaSlice.appended = slice.Reference([]string{"gg", "hh", "ii", "jj", "kk"})
 	deltaSlice.removed = []int{2, 3, 4, 5}
 
+	slice.Reference([]string{"aa", "bb", "cc", "dd", "ee", "ff"})
+
 	finalized := deltaSlice.ToSlice()
-	if !slice.Equal(finalized, []string{"aa", "bb", "gg", "hh", "ii", "jj", "kk"}) {
+	if !slice.EqualIf(finalized, slice.Reference([]string{"aa", "bb", "gg", "hh", "ii", "jj", "kk"}), func(l, r *string) bool { return *l == *r }) {
 		t.Error("Error: ToSlice() is not equal !", finalized)
 	}
 
@@ -68,12 +70,12 @@ func TestDeltaSlice(t *testing.T) {
 
 func TestDeltaSlice2(t *testing.T) {
 	deltaSlice := NewDeltaSlice[string](10)
-	deltaSlice.elements = []string{"aa", "bb", "cc", "dd", "ee", "ff"}
-	deltaSlice.appended = []string{"gg", "hh", "ii", "jj", "kk"}
+	deltaSlice.elements = slice.Reference([]string{"aa", "bb", "cc", "dd", "ee", "ff"})
+	deltaSlice.appended = slice.Reference([]string{"gg", "hh", "ii", "jj", "kk"})
 	deltaSlice.removed = []int{1, 3, 5}
 
 	finalized := deltaSlice.ToSlice()
-	if !slice.Equal(finalized, []string{"aa", "cc", "ee", "gg", "hh", "ii", "jj", "kk"}) {
+	if !slice.EqualIf(finalized, slice.Reference([]string{"aa", "cc", "ee", "gg", "hh", "ii", "jj", "kk"}), func(l, r *string) bool { return *l == *r }) {
 		t.Error("Error: ToSlice() is not equal !", finalized)
 	}
 
@@ -116,56 +118,56 @@ func TestDeltaSlice2(t *testing.T) {
 
 func TestDeltaSlice3(t *testing.T) {
 	deltaSlice := NewDeltaSlice[string](10)
-	deltaSlice.elements = []string{"aa", "bb", "cc", "dd", "ee", "ff"}
-	deltaSlice.appended = []string{"gg", "hh", "ii", "jj", "kk"}
+	deltaSlice.elements = slice.Reference([]string{"aa", "bb", "cc", "dd", "ee", "ff"})
+	deltaSlice.appended = slice.Reference([]string{"gg", "hh", "ii", "jj", "kk"})
 	deltaSlice.removed = []int{1, 3, 5}
 	deltaSlice.Del(1) // remove "cc" {1, 3, 5, 2}
-	if !slice.Equal(deltaSlice.ToSlice(), []string{"aa", "ee", "gg", "hh", "ii", "jj", "kk"}) {
+	if !slice.EqualIf(deltaSlice.ToSlice(), slice.Reference([]string{"aa", "ee", "gg", "hh", "ii", "jj", "kk"}), func(l, r *string) bool { return *l == *r }) {
 		t.Error("Error: ToSlice() is not equal !")
 	}
 
 	deltaSlice.Del(0) // remove "aa" {1, 3, 5, 2, 0}
-	if !slice.Equal(deltaSlice.ToSlice(), []string{"ee", "gg", "hh", "ii", "jj", "kk"}) {
+	if !slice.EqualIf(deltaSlice.ToSlice(), slice.Reference([]string{"ee", "gg", "hh", "ii", "jj", "kk"}), func(l, r *string) bool { return *l == *r }) {
 		t.Error("Error: ToSlice() is not equal !", deltaSlice.ToSlice())
 	}
 
 	deltaSlice.Del(0)
-	if !slice.Equal(deltaSlice.ToSlice(), []string{"gg", "hh", "ii", "jj", "kk"}) {
+	if !slice.EqualIf(deltaSlice.ToSlice(), slice.Reference([]string{"gg", "hh", "ii", "jj", "kk"}), func(l, r *string) bool { return *l == *r }) {
 		t.Error("Error: ToSlice() is not equal !")
 	}
 
 	deltaSlice.Del(0)
-	if !slice.Equal(deltaSlice.ToSlice(), []string{"hh", "ii", "jj", "kk"}) {
+	if !slice.EqualIf(deltaSlice.ToSlice(), slice.Reference([]string{"hh", "ii", "jj", "kk"}), func(l, r *string) bool { return *l == *r }) {
 		t.Error("Error: ToSlice() is not equal !")
 	}
 
 	deltaSlice.Del(0)
-	if !slice.Equal(deltaSlice.ToSlice(), []string{"ii", "jj", "kk"}) {
+	if !slice.EqualIf(deltaSlice.ToSlice(), slice.Reference([]string{"ii", "jj", "kk"}), func(l, r *string) bool { return *l == *r }) {
 		t.Error("Error: ToSlice() is not equal !")
 	}
 
 	deltaSlice.Del(0)
-	if !slice.Equal(deltaSlice.ToSlice(), []string{"jj", "kk"}) {
+	if !slice.EqualIf(deltaSlice.ToSlice(), slice.Reference([]string{"jj", "kk"}), func(l, r *string) bool { return *l == *r }) {
 		t.Error("Error: ToSlice() is not equal !")
 	}
 
 	deltaSlice.Del(0)
-	if !slice.Equal(deltaSlice.ToSlice(), []string{"kk"}) {
+	if !slice.EqualIf(deltaSlice.ToSlice(), slice.Reference([]string{"kk"}), func(l, r *string) bool { return *l == *r }) {
 		t.Error("Error: ToSlice() is not equal !")
 	}
 
 	deltaSlice.Del(0)
-	if !slice.Equal(deltaSlice.ToSlice(), []string{}) {
+	if !slice.EqualIf(deltaSlice.ToSlice(), slice.Reference([]string{}), func(l, r *string) bool { return *l == *r }) {
 		t.Error("Error: ToSlice() is not equal !")
 	}
 
 	deltaSlice.Del(0)
-	if !slice.Equal(deltaSlice.ToSlice(), []string{}) {
+	if !slice.EqualIf(deltaSlice.ToSlice(), slice.Reference([]string{}), func(l, r *string) bool { return *l == *r }) {
 		t.Error("Error: ToSlice() is not equal !")
 	}
 
 	deltaSlice.Append("new string")
-	if !slice.Equal(deltaSlice.ToSlice(), []string{"new string"}) {
+	if !slice.EqualIf(deltaSlice.ToSlice(), slice.Reference([]string{"new string"}), func(l, r *string) bool { return *l == *r }) {
 		t.Error("Error: ToSlice() is not equal !")
 	}
 
@@ -189,12 +191,21 @@ func TestDeltaSlice3(t *testing.T) {
 
 func TestDeltaSlice4(t *testing.T) {
 	deltaSlice := NewDeltaSlice[string](10)
-	deltaSlice.elements = []string{"aa", "bb", "cc", "dd", "ee", "ff"}
-	deltaSlice.appended = []string{"gg", "hh", "ii", "jj", "kk"}
+	deltaSlice.elements = slice.Reference([]string{"aa", "bb", "cc", "dd", "ee", "ff"})
+	deltaSlice.appended = slice.Reference([]string{"gg", "hh", "ii", "jj", "kk"})
 	deltaSlice.removed = []int{0, 1, 2, 3, 4, 5}
 
 	v, _ := deltaSlice.Get(0)
 	if *v != "gg" {
+		t.Error("Error: ToSlice() is not equal !")
+	}
+
+	deltaSlice.Commit()
+	if !slice.EqualIf(deltaSlice.ToSlice(), slice.Reference([]string{"gg", "hh", "ii", "jj", "kk"}), func(l, r *string) bool { return *l == *r }) {
+		t.Error("Error: ToSlice() is not equal !")
+	}
+
+	if len(deltaSlice.Appended()) != 0 || len(deltaSlice.Removed()) != 0 {
 		t.Error("Error: ToSlice() is not equal !")
 	}
 }
