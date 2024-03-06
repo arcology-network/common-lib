@@ -24,18 +24,18 @@ import (
 
 func TestIndexedSlice(t *testing.T) {
 	indexed := NewIndexedSlice[string, int, *[]int](
-		func(i int) string { return fmt.Sprint(i) },
-		func(_ string, v int) *[]int { return &[]int{v} },
-		func(_ string, v int, numbers **[]int) { // Array
+		func(i int) string { return fmt.Sprint(i) },       // Extract key
+		func(_ string, v int) *[]int { return &[]int{v} }, // Initial value when not exists
+		func(_ string, v int, numbers **[]int) { // Update value when exists
 			**numbers = append(**numbers, v)
 		},
-		func(numbers *[]int) bool { return numbers == nil },
+		func(numbers *[]int) bool { return numbers == nil }, // If empty
 	)
 	getSize := func(v *[]int) int { return len(*v) }
 
 	// 2 elements per block, 64 blocks
 	if indexed.Add(1, 2, 5, 5, 5); indexed.Length(getSize) != 5 {
-		t.Error("Error: Size is not equal !")
+		t.Error("Error: Size is not equal !", indexed.Length(getSize))
 	}
 
 	if indexed.Add(2, 2, 5, 2); indexed.Length(getSize) != 9 {
@@ -66,9 +66,9 @@ func TestIndexedSlice(t *testing.T) {
 	if len(keys) != 4 || keys[3] != "6" {
 		t.Error("Error: Keys are not equal !")
 	}
-
+	//
 	// Get by key
-	if v, ok := indexed.GetByKey(1); !ok || len(*v) != 1 {
+	if v, ok := indexed.GetByKey(fmt.Sprint(1)); !ok || len(*v) != 1 {
 		t.Error("Error: Value is not equal !", (*v))
 	}
 }

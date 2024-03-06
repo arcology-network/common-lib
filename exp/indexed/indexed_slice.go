@@ -19,25 +19,28 @@ package indexedslice
 
 import (
 	"github.com/arcology-network/common-lib/exp/associative"
+	"github.com/arcology-network/common-lib/exp/slice"
 )
 
 // IndexedSlice represents a slice with an index. It is a hybrid combining a slice and a map support fast lookups and iteration.
 // Entries with the same key are stored in a slice in the order they were inserted.
 type IndexedSlice[K comparable, T0 any, T1 any] struct {
-	elements []associative.Pair[*K, T1]
-	index    map[K]int
+	elements []*associative.Triplet[*K, uint64, T1]
+	index    map[K]*associative.Triplet[*K, uint64, T1]
 
-	getkey      func(T0) K
-	initializer func(K, T0) T1
-	updater     func(K, T0, *T1)
-	IsEmpty     func(T1) bool
+	ToKey       func(T0) K       // Key extractor to get the key from the element.
+	initializer func(K, T0) T1   // Initializer when adding a new element.
+	updater     func(K, T0, *T1) // Updater when updating an existing element.
+	deleter     func(*T1)
+	IsEmpty     func(T1) bool // Checker for empty element.
 }
 
 // NewIndexedSlice creates a new instance of IndexedSlice with the specified page size, minimum number of pages, and pre-allocation size.
 func NewIndexedSlice[K comparable, T0 any, T1 any](
-	getkey func(T0) K,
+	ToKey func(T0) K,
 	initializer func(K, T0) T1,
 	updater func(K, T0, *T1),
+	deleter func(*T1),
 	isEmpty func(T1) bool,
 	preAlloc ...int) *IndexedSlice[K, T0, T1] {
 	size := 0
@@ -46,27 +49,46 @@ func NewIndexedSlice[K comparable, T0 any, T1 any](
 	}
 
 	return &IndexedSlice[K, T0, T1]{
-		index:       make(map[K]int),
-		elements:    make([]associative.Pair[*K, T1], 0, size),
-		getkey:      getkey,
+		index:       make(map[K]*associative.Triplet[*K, uint64, T1]),
+		elements:    make([]*associative.Triplet[*K, uint64, T1], 0, size),
+		ToKey:       ToKey,
 		initializer: initializer,
 		updater:     updater,
+		deleter:     deleter,
 		IsEmpty:     isEmpty,
 	}
 }
 
 func (this *IndexedSlice[K, T0, T1]) New() *IndexedSlice[K, T0, T1] {
-	return NewIndexedSlice(this.getkey, this.initializer, this.updater, this.IsEmpty, len(this.elements))
+	return NewIndexedSlice(this.ToKey, this.initializer, this.updater, this.deleter, this.IsEmpty, len(this.elements))
 }
 
-func (this *IndexedSlice[K, T0, T1]) Index() map[K]int                     { return this.index }
-func (this *IndexedSlice[K, T0, T1]) Elements() []associative.Pair[*K, T1] { return this.elements }
+func (this *IndexedSlice[K, T0, T1]) Index() map[K]*associative.Triplet[*K, uint64, T1] {
+	return this.index
+}
+func (this *IndexedSlice[K, T0, T1]) Elements() *[]*associative.Triplet[*K, uint64, T1] {
+	return &this.elements
+}
+
 func (this *IndexedSlice[K, T0, T1]) Length(getsize func(T1) int) int {
 	total := 0
 	for _, ele := range this.elements {
-		total += getsize(ele.Second)
+		total += getsize(ele.Third)
 	}
 	return total
+}
+
+func (this *IndexedSlice[K, T0, T1]) Append(other *associative.Triplet[*K, uint64, T1]) {
+	this.elements = append(this.elements, other)
+	this.index[*other.First] = this.elements[len(this.elements)-1]
+}
+
+func (this *IndexedSlice[K, T0, T1]) Merge(other *IndexedSlice[K, T0, T1]) {
+	for i, ele := range *other.Elements() {
+		ele.Second = uint64(len(this.elements) + i)
+		this.elements = append(this.elements, ele)
+		this.index[*ele.First] = this.elements[len(this.elements)-1]
+	}
 }
 
 // Insert inserts an unique element into the IndexedSlice and updates the index.
@@ -76,15 +98,19 @@ func (this *IndexedSlice[K, T0, T1]) Length(getsize func(T1) int) int {
 // If that is the case, make sure the key extractor can generate unique keys for the elements even if they are identical.
 func (this *IndexedSlice[K, T0, T1]) Add(elems ...T0) {
 	for _, ele := range elems {
-		k := this.getkey(ele)
-		idx, ok := this.index[k]
+		k := this.ToKey(ele)
+		triplet, ok := this.index[k]
 		if ok { // Existing value
-			this.updater(k, ele, &(this.elements[idx].Second)) // The updater modifies the value in place with the new value.
+			this.updater(k, ele, &(triplet.Third)) // The updater modifies the value in place with the new value.
 			continue
 		}
 		// New value
-		this.index[k] = len(this.elements)                                                                           // Added to the lookup index
-		this.elements = append(this.elements, associative.Pair[*K, T1]{First: &k, Second: this.initializer(k, ele)}) // Added to the slice
+		this.index[k] = &associative.Triplet[*K, uint64, T1]{
+			First:  &k,
+			Second: uint64(len(this.elements)),
+			Third:  this.initializer(k, ele)} // Added to the lookup index
+
+		this.elements = append(this.elements, this.index[k]) // Added to the slice
 	}
 }
 
@@ -92,37 +118,81 @@ func (this *IndexedSlice[K, T0, T1]) Add(elems ...T0) {
 // If the element already exists, it is updated. Otherwise, it is added.
 // Returns the index of the element in the slice.
 func (this *IndexedSlice[K, T0, T1]) SetByKey(k K, ele T0) {
-	idx, ok := this.index[k]
+	triplet, ok := this.index[k]
 	if ok { // Existing value
-		this.updater(k, ele, &(this.elements[idx].Second)) // The updater modifies the value in place with the new value.
+		this.updater(k, ele, &(triplet.Third)) // The updater modifies the value in place with the new value.
 		return
 	}
 	// New value
-	this.index[k] = len(this.elements)                                                                           // Added to the lookup index
-	this.elements = append(this.elements, associative.Pair[*K, T1]{First: &k, Second: this.initializer(k, ele)}) // Added to the slice
+	this.index[k] = &associative.Triplet[*K, uint64, T1]{
+		First:  &k,
+		Second: uint64(len(this.elements)),
+		Third:  this.initializer(k, ele)} // Added to the lookup index
+
+	this.elements = append(this.elements, this.index[k]) // Added to the slice
 }
 
-func (this *IndexedSlice[K, T0, T1]) GetByKey(t T0) (T1, bool) {
-	k := this.getkey(t)
-	if idx, ok := this.index[k]; ok {
-		return this.elements[idx].Second, true
+func (this *IndexedSlice[K, T0, T1]) GetByKey(k K) (T1, uint64, bool) {
+	if triplet, ok := this.index[k]; ok {
+		return triplet.Third, triplet.Second, true
 	}
-	return *new(T1), false
+	return *new(T1), 0, false
 }
 
-// func (this *IndexedSlice[K, T0, T1]) GetByIndex(idx int) (T1, bool) {
-// 	k := this.getkey(t)
-// 	if idx, ok := this.index[k]; ok {
-// 		return this.elements[idx].Second, true
-// 	}
-// 	return *new(T1), false
-// }
+func (this *IndexedSlice[K, T0, T1]) KeyToIndex(k K) (uint64, bool) {
+	if triplet, ok := this.index[k]; ok {
+		return triplet.Second, true
+	}
+	return 0, false
+}
+
+func (this *IndexedSlice[K, T0, T1]) IndexToKey(idx uint64) (K, bool) {
+	if idx < 0 || idx >= uint64(len(this.elements)) {
+		return *new(K), false
+	}
+	return *this.elements[idx].First, true
+}
+
+func (this *IndexedSlice[K, T0, T1]) GetByIndex(idx int) (T1, bool) {
+	if idx < 0 || idx >= len(this.elements) {
+		return *new(T1), false
+	}
+	return this.elements[idx].Third, true
+}
+
+func (this *IndexedSlice[K, T0, T1]) SetByIndex(idx int, v T1) bool {
+	if idx < 0 || idx >= len(this.elements) {
+		return false
+	}
+	this.elements[idx].Third = v
+	return true
+}
+
+func (this *IndexedSlice[K, T0, T1]) DeleteByIndex(indices ...int) bool {
+	for _, idx := range indices {
+		this.deleter(&this.elements[idx].Third)
+	}
+
+	slice.RemoveIf(&this.elements, func(i int, v *associative.Triplet[*K, uint64, T1]) bool {
+		return this.IsEmpty(v.Third)
+	})
+
+	return true
+}
+
+func (this *IndexedSlice[K, T0, T1]) Exists(idx int, v T1) bool {
+	if idx < 0 || idx >= len(this.elements) {
+		return false
+	}
+	this.elements[idx].Third = v
+	return true
+}
 
 // CountIf returns the number of elements in the IndexedSlice that satisfy the specified condition.
 func (this *IndexedSlice[K, T0, T1]) CountIf(condition func(k *K, v T1) bool) int {
 	total := 0
 	for i := 0; i < len(this.elements); i++ {
-		if condition(this.elements[i].First, this.elements[i].Second) {
+		if condition(this.elements[i].First, this.elements[i].Third) {
 			total++
 		}
 	}
@@ -133,7 +203,7 @@ func (this *IndexedSlice[K, T0, T1]) CountIf(condition func(k *K, v T1) bool) in
 func (this *IndexedSlice[K, T0, T1]) Values() []T1 {
 	elems := make([]T1, len(this.elements))
 	for i, ele := range this.elements {
-		elems[i] = ele.Second
+		elems[i] = ele.Third
 	}
 	return elems
 }
@@ -151,8 +221,8 @@ func (this *IndexedSlice[K, T0, T1]) Keys() []K {
 // Find searches for an element in the IndexedSlice and returns its index.
 // Returns -1 if the element is not found.
 func (this *IndexedSlice[K, T0, T1]) Find(ele T0) T1 {
-	idx := this.index[this.getkey(ele)]
-	return this.elements[idx].Second
+	triplet := this.index[this.ToKey(ele)]
+	return triplet.Third
 }
 
 func (this *IndexedSlice[K, T0, T1]) Clear() {

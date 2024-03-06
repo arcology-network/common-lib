@@ -30,7 +30,7 @@ type Triplets[T0, T1, T2 any] []*Triplet[T0, T1, T2]
 // ToTuples converts three arrays into an array of tuples.
 // It takes three arrays, arr0, arr1, and arr2, and returns an array of structs,
 // where each struct contains the corresponding elements from arr0, arr1, and arr2.
-func NewTriplets[T0, T1, T2 any](arr0 []T0, arr1 []T1, arr2 []T2, getter func(int, *T0) T0) Triplets[T0, T1, T2] {
+func NewTriplets[T0, T1, T2 any](arr0 []T0, arr1 []T1, arr2 []T2, getter func(int, *T0) T0) *Triplets[T0, T1, T2] {
 	triplets := make([]*Triplet[T0, T1, T2], len(arr0))
 	for i := range arr0 {
 		triplets[i] = &Triplet[T0, T1, T2]{
@@ -39,38 +39,38 @@ func NewTriplets[T0, T1, T2 any](arr0 []T0, arr1 []T1, arr2 []T2, getter func(in
 			Third:  arr2[i],
 		}
 	}
-	return triplets
+	return (*Triplets[T0, T1, T2])(&triplets)
 }
 
 // Firsts extracts the first elements from an array of pairs and returns a new slice.
-func (this *Triplets[T0, T1, T2]) Array() *[]*Triplet[T0, T1, T2] {
-	return (*[]*Triplet[T0, T1, T2])(this)
+func (this Triplets[T0, T1, T2]) Array() *[]*Triplet[T0, T1, T2] {
+	return (*[]*Triplet[T0, T1, T2])(&this)
 }
 
 // Firsts extracts the first elements from an array of pairs and returns a new slice.
-func (this *Triplets[T0, T1, T2]) Firsts() []T0 {
-	return slice.ParallelAppend(*this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T0 {
+func (this Triplets[T0, T1, T2]) Firsts() []T0 {
+	return slice.ParallelAppend(this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T0 {
 		return triplet.First
 	})
 }
 
 // Seconds extracts the second elements from an array of pairs and returns a new slice.
-func (this *Triplets[T0, T1, T2]) Seconds() []T1 {
-	return slice.ParallelAppend(*this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T1 {
+func (this Triplets[T0, T1, T2]) Seconds() []T1 {
+	return slice.ParallelAppend(this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T1 {
 		return triplet.Second
 	})
 }
 
 // Seconds extracts the second elements from an array of pairs and returns a new slice.
-func (this *Triplets[T0, T1, T2]) Thirds() []T2 {
-	return slice.ParallelAppend(*this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T2 {
+func (this Triplets[T0, T1, T2]) Thirds() []T2 {
+	return slice.ParallelAppend(this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T2 {
 		return triplet.Third
 	})
 }
 
-func (this *Triplets[T0, T1, T2]) Split() ([]T0, []T1, []T2) {
-	seconds, thirds := make([]T1, len(*this)), make([]T2, len(*this))
-	return slice.ParallelAppend(*this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T0 {
+func (this Triplets[T0, T1, T2]) Split() ([]T0, []T1, []T2) {
+	seconds, thirds := make([]T1, len(this)), make([]T2, len(this))
+	return slice.ParallelAppend(this, 4, func(i int, triplet *Triplet[T0, T1, T2]) T0 {
 		seconds[i] = triplet.Second
 		thirds[i] = triplet.Third
 		return triplet.First
@@ -80,7 +80,7 @@ func (this *Triplets[T0, T1, T2]) Split() ([]T0, []T1, []T2) {
 // From converts two arrays into an array of pairs.
 // It takes two arrays, arr0 and arr1, and returns an array of structs,
 // where each struct contains the corresponding elements from arr0 and arr1.
-// func (this *Triplets[T0, T1, T2]) From(arr0 []T0, arr1 []T1, arr2 []T2, getter func(int, *T0) T0) *Triplets[T0, T1, T2] {
+// func (this Triplets[T0, T1, T2]) From(arr0 []T0, arr1 []T1, arr2 []T2, getter func(int, *T0) T0) Triplets[T0, T1, T2] {
 // 	// (*this) = make([]*Triplet[T0, T1, T2], len(arr0))
 
 // 	if len(arr0) > 8192 {
@@ -114,7 +114,7 @@ func (this *Triplets[T0, T1, T2]) Split() ([]T0, []T1, []T2) {
 // From converts two arrays into an array of pairs.
 // It takes two arrays, arr0 and arr1, and returns an array of structs,
 // where each struct contains the corresponding elements from arr0 and arr1.
-// func (this *Triplets[T0, T1, T2]) FromSlice(arr0 []T0, arr1 []T1) *Triplets[T0, T1, T2] {
+// func (this Triplets[T0, T1, T2]) FromSlice(arr0 []T0, arr1 []T1) Triplets[T0, T1, T2] {
 // 	(*this) = make([]*Triplet[T0, T1, T2], len(arr0))
 
 // 	if len(arr0) > 8192 {
@@ -139,11 +139,12 @@ func (this *Triplets[T0, T1, T2]) Split() ([]T0, []T1, []T2) {
 // To converts an array of pairs into two separate arrays.
 // It takes an array of structs, where each struct contains two elements,
 // and returns two arrays, one containing the first elements and the other containing the second elements.
-func (this *Triplets[T0, T1, T2]) To() ([]T0, []T1) {
-	arr0, arr1 := make([]T0, len(*this)), make([]T1, len(*this))
-	for i, triplet := range *this {
-		arr0[i] = triplet.First
-		arr1[i] = triplet.Second
+func (this Triplets[T0, T1, T2]) To() ([]T0, []T1, []T2) {
+	firsts, seconds, thirds := make([]T0, len(this)), make([]T1, len(this)), make([]T2, len(this))
+	for i, triplet := range this {
+		firsts[i] = triplet.First
+		seconds[i] = triplet.Second
+		thirds[i] = triplet.Third
 	}
-	return arr0, arr1
+	return firsts, seconds, thirds
 }
