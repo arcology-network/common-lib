@@ -25,12 +25,12 @@ import (
 
 func TestPairs(t *testing.T) {
 	pairs := new(Pairs[string, int]).From([]string{"1", "2", "3", "4"}, []int{1, 2, 3, 4}, func(i int, str *string) string { return *str })
-	if !slice.Equal(pairs.Firsts(), []string{"1", "2", "3", "4"}) || !slice.Equal(pairs.Seconds(), []int{1, 2, 3, 4}) {
+	if !slice.EqualSet(pairs.Firsts(), []string{"1", "2", "3", "4"}) || !slice.EqualSet(pairs.Seconds(), []int{1, 2, 3, 4}) {
 		t.Error("Error: Values are not equal !")
 	}
 
 	_0, _1 := pairs.Split()
-	if !slice.Equal(_0, pairs.Firsts()) || !slice.Equal(_1, pairs.Seconds()) {
+	if !slice.EqualSet(_0, pairs.Firsts()) || !slice.EqualSet(_1, pairs.Seconds()) {
 		t.Error("Error: Values are not equal !")
 	}
 }

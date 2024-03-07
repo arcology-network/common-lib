@@ -45,7 +45,7 @@ func (this *OrderedSet) Equal(other *OrderedSet) bool {
 		return false
 	}
 
-	return slice.Equal(this.keys, other.keys) &&
+	return slice.EqualSet(this.keys, other.keys) &&
 		this.touched == other.touched &&
 		this.isSynced() == other.isSynced()
 }

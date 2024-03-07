@@ -201,7 +201,7 @@ func TestOrderedSetCodec(t *testing.T) {
 	buffer := set.Encode()
 	out := (&OrderedSet{}).Decode(buffer).(*OrderedSet)
 
-	if !slice.Equal(set.Keys(), out.Keys()) {
+	if !slice.EqualSet(set.Keys(), out.Keys()) {
 		t.Error("Error: Lookup Mismatch")
 	}
 

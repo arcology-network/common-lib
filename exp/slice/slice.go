@@ -21,7 +21,7 @@ func New[T any](length int, v T) []T {
 }
 
 // ParallelAppend applies a function to each index in a slice in parallel using multiple threads and returns a new slice with the results.
-func NewWith[T any](length int, init func(i int) T) []T {
+func NewDo[T any](length int, init func(i int) T) []T {
 	values := make([]T, length)
 	for i := 0; i < length; i++ {
 		values[i] = init(i)
@@ -596,8 +596,8 @@ func Sum[T0 constraints.Integer | constraints.Float | byte, T1 constraints.Float
 }
 
 // Count counts the number of occurrences of a value in a slice.
-func Count[T comparable](values []T, target T) uint64 {
-	total := uint64(0)
+func Count[T comparable, T1 constraints.Integer](values []T, target T) T1 {
+	total := T1(0)
 	for i := 0; i < len(values); i++ {
 		if target == values[i] {
 			total++
@@ -617,9 +617,18 @@ func CountIf[T0 any, T1 constraints.Integer](values []T0, condition func(int, *T
 	return total
 }
 
-// Equal checks if two slices are equal.
+// Count counts the number of occurrences of a value in a slice.
+func CountDo[T0 any, T1 constraints.Integer](values []T0, getter func(int, *T0) T1) T1 {
+	total := T1(0)
+	for i := 0; i < len(values); i++ {
+		total += getter(i, &values[i]) // Call the
+	}
+	return total
+}
+
+// Equal checks if two slices have the same elements, but the order of the elements doesn't matter.
 // It returns true if the slices are equal; otherwise, it returns false.
-func Equal[T comparable](lhv []T, rhv []T) bool {
+func EqualSet[T comparable](lhv []T, rhv []T) bool {
 	if len(lhv) != len(rhv) {
 		return false
 	}
@@ -652,7 +661,7 @@ func Equal[T comparable](lhv []T, rhv []T) bool {
 	return true
 }
 
-func EqualIf[T comparable](lhv []T, rhv []T, equal func(T, T) bool) bool {
+func EqualSetIf[T comparable](lhv []T, rhv []T, equal func(T, T) bool) bool {
 	if len(lhv) != len(rhv) {
 		return false
 	}

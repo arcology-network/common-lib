@@ -42,7 +42,7 @@ func NewConcurrentMap[K comparable, V any](numShards int, isNilVal func(V) bool,
 	return &ConcurrentMap[K, V]{
 		isNilVal:   isNilVal,
 		hasher:     hasher,
-		shards:     slice.NewWith(numShards, func(i int) map[K]V { return make(map[K]V, 64) }),
+		shards:     slice.NewDo(numShards, func(i int) map[K]V { return make(map[K]V, 64) }),
 		shardLocks: make([]sync.RWMutex, numShards),
 	}
 }
@@ -87,7 +87,7 @@ func (this *ConcurrentMap[K, V]) UnsafeGet(key K, args ...interface{}) (V, bool)
 // BatchGet retrieves the values associated with the specified keys from the ConcurrentMap.
 // It returns a slice of values in the same order as the keys.
 func (this *ConcurrentMap[K, V]) BatchGet(keys []K, args ...interface{}) ([]V, []bool) {
-	shardIds := slice.NewWith(len(keys), func(i int) uint64 {
+	shardIds := slice.NewDo(len(keys), func(i int) uint64 {
 		return this.Hash(keys[i])
 	})
 

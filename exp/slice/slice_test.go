@@ -474,33 +474,33 @@ func TestEqual(t *testing.T) {
 	array0 := []int{1, 2, 3}
 	array1 := []int{1, 2, 3}
 
-	if !Equal(array0, array1) {
+	if !EqualSet(array0, array1) {
 		t.Error("Error: Not equal")
 	}
 
 	array0 = []int{}
 	array1 = []int{}
-	if !Equal(array0, array1) {
+	if !EqualSet(array0, array1) {
 		t.Error("Error: Not equal")
 	}
 
 	array0 = []int{1, 1, 2, 3}
 	array1 = []int{1, 2, 3}
-	if Equal(array0, array1) {
+	if EqualSet(array0, array1) {
 		t.Error("Error: Not equal")
 	}
 
 	array0 = []int{1, 1, 3}
 	array1 = []int{1, 2, 3}
-	if Equal(array0, array1) {
+	if EqualSet(array0, array1) {
 		t.Error("Error: Not equal")
 	}
 
-	if Equal(array0, nil) {
+	if EqualSet(array0, nil) {
 		t.Error("Error: Not equal")
 	}
 
-	if Equal(nil, array0) {
+	if EqualSet(nil, array0) {
 		t.Error("Error: Not equal")
 	}
 }
@@ -576,22 +576,22 @@ func TestInsert(t *testing.T) {
 	src := []int{4, 2, 6, 3, 1}
 
 	Insert(&src, 1, int(10))
-	if !Equal(src, []int{4, 10, 2, 6, 3, 1}) {
+	if !EqualSet(src, []int{4, 10, 2, 6, 3, 1}) {
 		t.Error("Expected: ", "{4, 10, 2, 6, 3, 1}", "actual: ", src)
 	}
 
 	Insert(&src, 0, int(10))
-	if !Equal(src, []int{10, 4, 10, 2, 6, 3, 1}) {
+	if !EqualSet(src, []int{10, 4, 10, 2, 6, 3, 1}) {
 		t.Error("Expected: ", "{10, 4, 10, 2, 6, 3, 1}", "actual: ", src)
 	}
 
 	Insert(&src, 7, int(11))
-	if !Equal(src, []int{10, 4, 10, 2, 6, 3, 1, 11}) {
+	if !EqualSet(src, []int{10, 4, 10, 2, 6, 3, 1, 11}) {
 		t.Error("Expected: ", "{10, 4, 10, 2, 6, 3, 1, 11}", "actual: ", src)
 	}
 
 	Insert(&src, 9, int(11))
-	if !Equal(src, []int{10, 4, 10, 2, 6, 3, 1, 11}) {
+	if !EqualSet(src, []int{10, 4, 10, 2, 6, 3, 1, 11}) {
 		t.Error("Expected: ", "{10, 4, 10, 2, 6, 3, 1, 11}", "actual: ", src)
 	}
 }
@@ -772,6 +772,16 @@ func TestResize(t *testing.T) {
 
 	Resize(&first, 4)
 	if len(first) != 4 || first[0] != "1" || first[1] != "2" || first[2] != "" || first[3] != "" {
+		t.Error("Error: Failed to remove nil values !")
+	}
+}
+
+func TestSortBy1st(t *testing.T) {
+	nums := []int{4, 5, 3, 2}
+	first := []string{"1", "2", "3", "4"}
+
+	SortBy1st(nums, first, func(a, b int) bool { return a < b })
+	if !reflect.DeepEqual(first, []string{"4", "3", "1", "2"}) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 }

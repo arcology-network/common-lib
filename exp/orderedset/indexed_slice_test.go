@@ -18,9 +18,8 @@
 package orderedset
 
 import (
+	"reflect"
 	"testing"
-
-	"github.com/arcology-network/common-lib/exp/slice"
 )
 
 func TestIndexedSlice(t *testing.T) {
@@ -35,52 +34,52 @@ func TestIndexedSlice(t *testing.T) {
 		t.Error("Error: Key is not equal !")
 	}
 
-	if !slice.Equal(set.Elements(), []string{"1", "2", "5", "11"}) {
+	if !reflect.DeepEqual(set.Elements(), []string{"1", "2", "5", "11"}) {
 		t.Error("Error: Key is not equal !")
 	}
 
 	set.DeleteByIndex(0)
-	if !slice.Equal(set.Elements(), []string{"2", "5", "11"}) {
+	if !reflect.DeepEqual(set.Elements(), []string{"2", "5", "11"}) {
 		t.Error("Error: Key is not equal !")
 	}
 
 	set.DeleteByIndex(2)
-	if !slice.Equal(set.Elements(), []string{"2", "5"}) {
+	if !reflect.DeepEqual(set.Elements(), []string{"2", "5"}) {
 		t.Error("Error: Key is not equal !")
 	}
 
-	set.Replace(1, "11")
-	if !slice.Equal(set.Elements(), []string{"2", "11"}) {
+	set.replace(1, "11")
+	if !reflect.DeepEqual(set.Elements(), []string{"2", "11"}) {
 		t.Error("Error: Key is not equal !")
 	}
 
-	set.Replace(0, "111")
-	if !slice.Equal(set.Elements(), []string{"111", "11"}) {
+	set.replace(0, "111")
+	if !reflect.DeepEqual(set.Elements(), []string{"111", "11"}) {
 		t.Error("Error: Key is not equal !")
 	}
 
 	set.Insert("111")
-	if !slice.Equal(set.Elements(), []string{"111", "11"}) {
+	if !reflect.DeepEqual(set.Elements(), []string{"111", "11"}) {
 		t.Error("Error: Key is not equal !")
 	}
 
 	set.Insert("222")
-	if !slice.Equal(set.Elements(), []string{"111", "11", "222"}) {
+	if !reflect.DeepEqual(set.Elements(), []string{"111", "11", "222"}) {
 		t.Error("Error: Key is not equal !")
 	}
 
 	set.Delete("11")
-	if !slice.Equal(set.Elements(), []string{"111", "222"}) {
+	if !reflect.DeepEqual(set.Elements(), []string{"111", "222"}) {
 		t.Error("Error: Key is not equal !")
 	}
 
 	set.Merge(NewOrderedSet[string]("", 10, "1", "2", "5"))
-	if !slice.Equal(set.Elements(), []string{"111", "222", "1", "2", "5"}) {
+	if !reflect.DeepEqual(set.Elements(), []string{"111", "222", "1", "2", "5"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
 
 	set.Merge(NewOrderedSet[string]("", 10, "111", "222", "1", "2", "6"))
-	if !slice.Equal(set.Elements(), []string{"111", "222", "1", "2", "5", "6"}) {
+	if !reflect.DeepEqual(set.Elements(), []string{"111", "222", "1", "2", "5", "6"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
 
@@ -90,7 +89,7 @@ func TestIndexedSlice(t *testing.T) {
 	}
 
 	set.Merge(NewOrderedSet[string]("", 10, "1", "2", "5"))
-	if !slice.Equal(set.Elements(), []string{"1", "2", "5"}) {
+	if !reflect.DeepEqual(set.Elements(), []string{"1", "2", "5"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
 }

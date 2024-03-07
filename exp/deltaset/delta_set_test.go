@@ -19,67 +19,66 @@ package deltaset
 import (
 	"fmt"
 	"math/rand/v2"
+	"reflect"
 	"testing"
 	"time"
-
-	"github.com/arcology-network/common-lib/exp/slice"
 )
 
 func TestDeltaSliceBasic(t *testing.T) {
 	deltaSet := NewDeltaSet[int](-1, 100)
 
-	if deltaSet.Insert(11, 12, 13); !slice.Equal(deltaSet.readonlys.Elements(), []int{}) ||
+	if deltaSet.Insert(11, 12, 13); !reflect.DeepEqual(deltaSet.committed.Elements(), []int{}) ||
 		!deltaSet.updated.IsSynced() ||
-		!slice.Equal(deltaSet.updated.Elements(), []int{11, 12, 13}) {
-		t.Error("failed to append", deltaSet.readonlys.Elements(), deltaSet.updated.Elements())
+		!reflect.DeepEqual(deltaSet.updated.Elements(), []int{11, 12, 13}) {
+		t.Error("failed to append", deltaSet.committed.Elements(), deltaSet.updated.Elements())
 	}
 
-	if deltaSet.Commit(); deltaSet.readonlys.Length() != 3 ||
+	if deltaSet.Commit(); deltaSet.committed.Length() != 3 ||
 		!deltaSet.updated.IsSynced() ||
 		(deltaSet.updated.Length()) != 0 ||
 		(deltaSet.removed.Length()) != 0 {
-		t.Error("failed to commit", deltaSet.readonlys.Elements())
+		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
-	if deltaSet.Delete(12); deltaSet.readonlys.Length() != 3 || !deltaSet.updated.IsSynced() ||
+	if deltaSet.Delete(12); deltaSet.committed.Length() != 3 || !deltaSet.updated.IsSynced() ||
 		(deltaSet.updated.Length()) != 0 || (deltaSet.removed.Length()) != 1 {
-		t.Error("failed to commit", deltaSet.readonlys.Elements())
+		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
-	if deltaSet.Commit(); deltaSet.readonlys.Length() != 2 || (deltaSet.updated.Length()) != 0 || !deltaSet.updated.IsSynced() ||
+	if deltaSet.Commit(); deltaSet.committed.Length() != 2 || (deltaSet.updated.Length()) != 0 || !deltaSet.updated.IsSynced() ||
 		(deltaSet.removed.Length()) != 0 { // {11, 13}
-		t.Error("failed to commit", deltaSet.readonlys.Elements())
+		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 	// {11, 13} + {15, 16, 17}
-	if deltaSet.Insert(15, 16, 17); deltaSet.readonlys.Length() != 2 || (deltaSet.updated.Length()) != 3 || (deltaSet.removed.Length()) != 0 {
-		t.Error("failed to commit", deltaSet.readonlys.Elements())
+	if deltaSet.Insert(15, 16, 17); deltaSet.committed.Length() != 2 || (deltaSet.updated.Length()) != 3 || (deltaSet.removed.Length()) != 0 {
+		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 	// {11, 13} + {15, 16, 17}
-	if deltaSet.Delete(16); deltaSet.readonlys.Length() != 2 ||
+	if deltaSet.Delete(16); deltaSet.committed.Length() != 2 ||
 		(deltaSet.updated.Length()) != 3 ||
 		// !deltaSet.updated.IsSynced() ||
-		!slice.Equal(deltaSet.updated.Elements(), []int{15, 16, 17}) ||
+		!reflect.DeepEqual(deltaSet.updated.Elements(), []int{15, 16, 17}) ||
 		(deltaSet.removed.Length()) != 1 {
-		t.Error("failed to commit", deltaSet.updated.Elements(), deltaSet.readonlys.Elements())
+		t.Error("failed to commit", deltaSet.updated.Elements(), deltaSet.committed.Elements())
 	}
 
-	if deltaSet.Delete(11); deltaSet.readonlys.Length() != 2 ||
+	if deltaSet.Delete(11); deltaSet.committed.Length() != 2 ||
 		(deltaSet.updated.Length()) != 3 ||
-		!slice.Equal(deltaSet.updated.Elements(), []int{15, 16, 17}) ||
+		!reflect.DeepEqual(deltaSet.updated.Elements(), []int{15, 16, 17}) ||
 		(deltaSet.removed.Length()) != 2 {
-		t.Error("failed to commit", deltaSet.readonlys.Elements())
+		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
-	if deltaSet.Delete(16); deltaSet.readonlys.Length() != 2 ||
+	if deltaSet.Delete(16); deltaSet.committed.Length() != 2 ||
 		!deltaSet.updated.IsSynced() ||
 		(deltaSet.updated.Length()) != 3 ||
-		!slice.Equal(deltaSet.updated.Elements(), []int{15, 16, 17}) ||
+		!reflect.DeepEqual(deltaSet.updated.Elements(), []int{15, 16, 17}) ||
 		(deltaSet.removed.Length()) != 2 {
-		t.Error("failed to commit", deltaSet.readonlys.Elements())
+		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
-	if deltaSet.Commit(); !slice.Equal(deltaSet.readonlys.Elements(), []int{13, 15, 17}) || (deltaSet.updated.Length()) != 0 || (deltaSet.removed.Length()) != 0 {
-		t.Error("failed to commit", deltaSet.readonlys.Elements())
+	if deltaSet.Commit(); !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17}) || (deltaSet.updated.Length()) != 0 || (deltaSet.removed.Length()) != 0 {
+		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 	// { 13, 15, 17} + { 18, 19, 20, 21}
 	deltaSet.Insert(18, 19, 20, 21)
@@ -110,8 +109,8 @@ func TestDeltaSliceBasic(t *testing.T) {
 	deltaSet.DeleteByIndex(4) // After { 13, 15, 17} + { 18, 19, 21}
 	deltaSet.DeleteByIndex(5) // will remove { 13, 15, 17} + { 18, 19}
 
-	if !slice.Equal(deltaSet.readonlys.Elements(), []int{13, 15, 17}) || !slice.Equal(deltaSet.updated.Elements(), []int{18, 19, 20, 21}) {
-		t.Error("failed to commit", deltaSet.readonlys.Elements(), deltaSet.updated.Elements())
+	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17}) || !reflect.DeepEqual(deltaSet.updated.Elements(), []int{18, 19, 20, 21}) {
+		t.Error("failed to commit", deltaSet.committed.Elements(), deltaSet.updated.Elements())
 	}
 }
 
@@ -127,19 +126,19 @@ func TestDeltaSliceAddThenDelete(t *testing.T) {
 	deltaSet.DeleteByIndex(5) // will remove { 13, 15, 17} + { 18, 19}
 
 	if deltaSet.removed.Length() != 3 ||
-		!slice.Equal(deltaSet.removed.Elements(), []int{15, 19, 20}) ||
-		!slice.Equal(deltaSet.updated.Elements(), []int{18, 19, 20, 21}) {
+		!reflect.DeepEqual(deltaSet.removed.Elements(), []int{15, 19, 20}) ||
+		!reflect.DeepEqual(deltaSet.updated.Elements(), []int{18, 19, 20, 21}) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
 	deltaSet.Commit()
-	if !slice.Equal(deltaSet.readonlys.Elements(), []int{13, 17, 18, 21}) {
+	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 21}) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
 	deltaSet.Delete(13)
 	deltaSet.Delete(17)
-	if !slice.Equal(deltaSet.readonlys.Elements(), []int{13, 17, 18, 21}) || !slice.Equal(deltaSet.removed.Elements(), []int{13, 17}) {
+	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 21}) || !reflect.DeepEqual(deltaSet.removed.Elements(), []int{13, 17}) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
@@ -152,9 +151,9 @@ func TestDeltaSliceAddThenDelete(t *testing.T) {
 	}
 
 	deltaSet.Insert(13, 17, 22) // Add they deleted entires back to the set
-	if !slice.Equal(deltaSet.readonlys.Elements(), []int{13, 17, 18, 21}) ||
-		!slice.Equal(deltaSet.removed.Elements(), []int{}) ||
-		!slice.Equal(deltaSet.removed.Elements(), []int{}) {
+	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 21}) ||
+		!reflect.DeepEqual(deltaSet.removed.Elements(), []int{}) ||
+		!reflect.DeepEqual(deltaSet.removed.Elements(), []int{}) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
@@ -177,7 +176,20 @@ func TestDeltaSliceAddThenDelete(t *testing.T) {
 	if v, ok := deltaSet.GetByIndex(3); !ok || v != 21 {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
+}
 
+func TestDeltaCommit(t *testing.T) {
+	deltaSet := NewDeltaSet[int](-1, 100)
+	deltaSet.Insert(13, 15, 17)
+
+	deltaSet.Insert(18, 19, 20, 21) // { 13, 15, 17} + { 18, 19, 20, 21}
+	deltaSet.DeleteByIndex(1)       // After { 13, 15, 17} + { 18, 19, 20, 21}
+	deltaSet.DeleteByIndex(4)       // After { 13, 15, 17} + { 18, 19, 20, 21}
+	deltaSet.Commit()
+
+	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 20, 21}) {
+		t.Error("failed to commit", deltaSet.committed.Elements())
+	}
 }
 
 func TestDeltaClone(t *testing.T) {
@@ -200,8 +212,8 @@ func TestDeltaClone(t *testing.T) {
 	// }
 
 	if deltaSet.removed.Length() != 3 ||
-		!slice.Equal(deltaSet.removed.Elements(), []int{15, 19, 20}) ||
-		!slice.Equal(deltaSet.updated.Elements(), []int{18, 19, 20, 21}) {
+		!reflect.DeepEqual(deltaSet.removed.Elements(), []int{15, 19, 20}) ||
+		!reflect.DeepEqual(deltaSet.updated.Elements(), []int{18, 19, 20, 21}) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
@@ -215,7 +227,7 @@ func TestDeltaClone(t *testing.T) {
 	deltaSet.Commit()
 	set2.Commit()
 
-	if !slice.Equal(deltaSet.readonlys.Elements(), []int{13, 17, 18, 21}) {
+	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 21}) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
@@ -239,11 +251,6 @@ func TestDeltaClone(t *testing.T) {
 	if v, _ := deltaSet.GetByIndex(1); v != 17 {
 		t.Error("failed to commit", v)
 	}
-
-	// deltaSet.SetByIndex(1, 88)
-	// if v, _ := deltaSet.GetByIndex(1); v != 88 {
-	// 	t.Error("failed to commit", v)
-	// }
 }
 
 func TestDeltaDeleteThenAddBack(t *testing.T) {
@@ -257,18 +264,45 @@ func TestDeltaDeleteThenAddBack(t *testing.T) {
 	deltaSet.DeleteByIndex(4) //
 	deltaSet.DeleteByIndex(5) // will remove {15, 19, 20}
 	if deltaSet.removed.Length() != 3 ||
-		!slice.Equal(deltaSet.removed.Elements(), []int{15, 19, 20}) ||
-		!slice.Equal(deltaSet.updated.Elements(), []int{18, 19, 20, 21}) {
+		!reflect.DeepEqual(deltaSet.removed.Elements(), []int{15, 19, 20}) ||
+		!reflect.DeepEqual(deltaSet.updated.Elements(), []int{18, 19, 20, 21}) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
-	deltaSet.Insert(15, 19, 20) // Add they deleted entires back to the set
+	deltaSet.Insert(15, 19, 20) // Add the deleted entires back to the set
 
 	if deltaSet.removed.Length() != 0 ||
-		!slice.Equal(deltaSet.readonlys.Elements(), []int{13, 15, 17}) ||
-		!slice.Equal(deltaSet.removed.Elements(), []int{}) ||
-		!slice.Equal(deltaSet.updated.Elements(), []int{15, 18, 19, 20, 21}) {
-		t.Error("failed to commit", deltaSet.removed.Elements())
+		!reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17}) ||
+		!reflect.DeepEqual(deltaSet.removed.Elements(), []int{}) ||
+		!reflect.DeepEqual(deltaSet.updated.Elements(), []int{18, 19, 20, 21, 15}) {
+		t.Error("failed to commit", deltaSet.updated.Elements())
+	}
+
+	deltaSet.Commit()
+	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17, 18, 19, 20, 21}) {
+		t.Error("failed to commit", deltaSet.committed.Elements())
+	}
+}
+
+func TestMultiMerge(t *testing.T) {
+	deltaSet := NewDeltaSet[int](-1, 100)
+	deltaSet.Insert(13, 15, 17)
+	deltaSet.Commit()
+
+	_set0 := NewDeltaSet[int](-1, 100)
+	_set1 := NewDeltaSet[int](-1, 100)
+
+	_set0.Insert(58, 59, 20, 51) // { 13, 15, 17} + { 18, 19, 20, 21}
+	_set1.Insert(78, 59, 70, 71) // { 13, 15, 17} + { 18, 19, 20, 21}
+
+	_set0.Delete(13)
+	_set1.Delete(15, 70)
+
+	// (13, 15, 17) + (58, 59, 20, 51) + (78, 59, 70, 71) - (13, 15, 70) = (17, 58, 59, 20, 51, 78, 59, 71)
+	deltaSet.Commit(_set0, _set1)
+
+	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{17, 58, 59, 20, 51, 78, 71}) {
+		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 }
 
