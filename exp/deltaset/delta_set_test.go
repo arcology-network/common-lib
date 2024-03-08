@@ -22,6 +22,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/arcology-network/common-lib/common"
 )
 
 func TestDeltaSliceBasic(t *testing.T) {
@@ -83,25 +85,25 @@ func TestDeltaSliceBasic(t *testing.T) {
 	// { 13, 15, 17} + { 18, 19, 20, 21}
 	deltaSet.Insert(18, 19, 20, 21)
 
-	if k, _, _, ok := deltaSet.IndexToKey(0); !ok || k != 13 {
+	if k, _, _, ok := deltaSet.Search(0); !ok || k != 13 {
 		t.Error("failed to commit", k)
 	}
 
-	if k, _, _, ok := deltaSet.IndexToKey(1); !ok || k != 15 {
+	if k, _, _, ok := deltaSet.Search(1); !ok || k != 15 {
 		t.Error("failed to commit", k)
 	}
 
-	if k, _, _, ok := deltaSet.IndexToKey(2); !ok || k != 17 {
+	if k, _, _, ok := deltaSet.Search(2); !ok || k != 17 {
 		t.Error("failed to commit", k)
 	}
 
-	if k, _, _, ok := deltaSet.IndexToKey(3); !ok || k != 18 {
+	if k, _, _, ok := deltaSet.Search(3); !ok || k != 18 {
 		t.Error("failed to commit", k)
 	}
-	if k, _, _, ok := deltaSet.IndexToKey(4); !ok || k != 19 {
+	if k, _, _, ok := deltaSet.Search(4); !ok || k != 19 {
 		t.Error("failed to commit", k)
 	}
-	if k, _, _, ok := deltaSet.IndexToKey(5); !ok || k != 20 {
+	if k, _, _, ok := deltaSet.Search(5); !ok || k != 20 {
 		t.Error("failed to commit", k)
 	}
 
@@ -142,11 +144,11 @@ func TestDeltaSliceAddThenDelete(t *testing.T) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
-	if deltaSet.Exists(13) || deltaSet.Exists(17) || deltaSet.Exists(25) {
+	if common.FilterFirst(deltaSet.Exists(13)) || common.FilterFirst(deltaSet.Exists(17)) || common.FilterFirst(deltaSet.Exists(25)) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
-	if !deltaSet.Exists(18) || !deltaSet.Exists(21) {
+	if !common.FilterFirst(deltaSet.Exists(18)) || !common.FilterFirst(deltaSet.Exists(21)) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
@@ -157,23 +159,23 @@ func TestDeltaSliceAddThenDelete(t *testing.T) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
-	if !deltaSet.Exists(13) {
+	if !common.FilterFirst(deltaSet.Exists(13)) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
-	if v, ok := deltaSet.GetByIndex(0); !ok || v != 13 {
+	if v, ok := deltaSet.TryGetKey(0); !ok || v != 13 {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
-	if v, ok := deltaSet.GetByIndex(1); !ok || v != 17 {
+	if v, ok := deltaSet.TryGetKey(1); !ok || v != 17 {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
-	if v, ok := deltaSet.GetByIndex(2); !ok || v != 18 {
+	if v, ok := deltaSet.TryGetKey(2); !ok || v != 18 {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
-	if v, ok := deltaSet.GetByIndex(3); !ok || v != 21 {
+	if v, ok := deltaSet.TryGetKey(3); !ok || v != 21 {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 }
@@ -236,19 +238,19 @@ func TestDeltaClone(t *testing.T) {
 	}
 
 	deltaSet.Delete(13)
-	if deltaSet.Exists(13) {
+	if common.FilterFirst(deltaSet.Exists(13)) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
-	if !set2.Exists(13) {
+	if !common.FilterFirst(set2.Exists(13)) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
-	if v, ok := deltaSet.GetByIndex(0); ok {
+	if v, ok := deltaSet.TryGetKey(0); ok {
 		t.Error("failed to commit", v) // Should not exist
 	}
 
-	if v, _ := deltaSet.GetByIndex(1); v != 17 {
+	if v, _ := deltaSet.TryGetKey(1); v != 17 {
 		t.Error("failed to commit", v)
 	}
 }
@@ -281,6 +283,11 @@ func TestDeltaDeleteThenAddBack(t *testing.T) {
 	deltaSet.Commit()
 	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17, 18, 19, 20, 21}) {
 		t.Error("failed to commit", deltaSet.committed.Elements())
+	}
+
+	v, ok := deltaSet.PopBack()
+	if !ok || v != 21 || deltaSet.Length() != 6 {
+		t.Error("failed to commit", v, deltaSet.Length())
 	}
 }
 

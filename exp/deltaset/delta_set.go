@@ -18,10 +18,11 @@
 package deltaset
 
 import (
+	"math"
+
+	"github.com/arcology-network/common-lib/common"
 	orderedset "github.com/arcology-network/common-lib/exp/orderedset"
 	"github.com/arcology-network/common-lib/exp/slice"
-
-	associative "github.com/arcology-network/common-lib/exp/associative"
 )
 
 // DeltaSet represents a slice with an index. It is a hybrid combining a slice and a map support fast lookups and iteration.
@@ -61,7 +62,7 @@ func (*DeltaSet[K]) New(
 }
 
 func (this *DeltaSet[K]) mapTo(idx int) (*orderedset.OrderedSet[K], int) {
-	if idx >= this.Length() {
+	if idx >= this.committed.Length()+this.updated.Length() {
 		return nil, -1
 	}
 
@@ -73,24 +74,33 @@ func (this *DeltaSet[K]) mapTo(idx int) (*orderedset.OrderedSet[K], int) {
 }
 
 // Array returns the underlying slice of committed in the DeltaSet.
-func (this *DeltaSet[K]) Committed() []K { return this.committed.Elements() }
-func (this *DeltaSet[K]) Modified() []K  { return this.removed.Elements() }
-func (this *DeltaSet[K]) Appended() []K  { return this.updated.Elements() }
+func (this *DeltaSet[K]) Committed() *orderedset.OrderedSet[K] { return this.committed }
+func (this *DeltaSet[K]) Removed() *orderedset.OrderedSet[K]   { return this.removed }
+func (this *DeltaSet[K]) Appended() *orderedset.OrderedSet[K]  { return this.updated }
+
+func (this *DeltaSet[K]) Size(getter func(K) int) int {
+	return common.IfThenDo1st(this.committed != nil, func() int { return this.committed.Size(getter) }, 0) +
+		common.IfThenDo1st(this.updated != nil, func() int { return this.updated.Size(getter) }, 0) +
+		common.IfThenDo1st(this.removed != nil, func() int { return this.removed.Size(getter) }, 0)
+}
+
+// Debugging only
+func (this *DeltaSet[K]) SetCommitted(v []K) { this.committed.Insert(v...) }
+func (this *DeltaSet[K]) SetRemoved(v []K)   { this.removed.Insert(v...) }
+func (this *DeltaSet[K]) SetAppended(v []K)  { this.updated.Insert(v...) }
+func (this *DeltaSet[K]) SetNilVal(v K)      { this.nilVal = v }
 
 func (this *DeltaSet[K]) IsSynced() bool {
 	return this.removed.Length() == 0 && this.updated.Length() == 0
 }
 
-func (this *DeltaSet[K]) Delta() *associative.Pair[*orderedset.OrderedSet[K], *orderedset.OrderedSet[K]] {
-	return &associative.Pair[*orderedset.OrderedSet[K], *orderedset.OrderedSet[K]]{
-		First:  this.updated,
-		Second: this.removed,
-	}
+func (this *DeltaSet[K]) Delta() *DeltaSet[K] {
+	return this.CloneDelta()
 }
 
-func (this *DeltaSet[K]) SetDelta(delta *associative.Pair[*orderedset.OrderedSet[K], *orderedset.OrderedSet[K]]) {
-	this.updated = delta.First
-	this.removed = delta.Second
+func (this *DeltaSet[K]) SetDelta(delta *DeltaSet[K]) {
+	this.updated = delta.updated
+	this.removed = delta.removed
 }
 
 func (this *DeltaSet[K]) ResetDelta() {
@@ -99,27 +109,21 @@ func (this *DeltaSet[K]) ResetDelta() {
 }
 
 func (this *DeltaSet[K]) Length() int {
-	elems := this.removed.Elements()
-	numRemoved := slice.CountIf[K, int](elems, func(_ int, v *K) bool {
-		return *v == this.nilVal
-	})
-	return this.committed.Length() + this.updated.Length() - numRemoved
+	return this.committed.Length() + this.updated.Length() - this.removed.Length()
 }
 
 // Insert inserts an element into the DeltaSet and updates the index.
 func (this *DeltaSet[K]) Insert(elems ...K) {
 	for _, elem := range elems {
-		if this.removed.Exists(elem) { // If the element is in the removed list, remove it from the removed list.
+		if ok, _ := this.removed.Exists(elem); ok { // If the element is in the removed list, move it to the updated list
 			this.removed.Delete(elem)
-			this.removed.Sync()
-
-			this.updated.Insert(elem) // Add it back to the updated list
+			this.updated.Insert(elem)
 			continue
 		}
 
 		// Not in the committed list, add it to the updated list. It is possible
 		// that the element is already in the updated list, just add it anyway.
-		if !this.committed.Exists(elem) {
+		if ok, _ := this.committed.Exists(elem); !ok {
 			this.updated.Insert(elem) // Either in the updated list or not.
 		}
 	}
@@ -128,11 +132,21 @@ func (this *DeltaSet[K]) Insert(elems ...K) {
 // Insert inserts an element into the DeltaSet and updates the index.
 func (this *DeltaSet[K]) Delete(elems ...K) {
 	for _, elem := range elems {
-		if !this.removed.Exists(elem) {
-			this.removed.Insert(elem) // Either in the removed list or not.
+		if ok, _ := this.removed.Exists(elem); !ok {
+			this.removed.Insert(elem) // Impossible to have duplicate entries possible, since the removed list is a set.
 		}
 	}
 }
+
+// func (this *DeltaSet[K]) Delete(elems ...K) {
+// 	for _, elem := range elems {
+// 		if ok, _ := this.updated.Exists(elem); ok {
+// 			this.updated.Delete(elem)
+// 			return
+// 		}
+// 		this.removed.Insert(elem) // Impossible to have duplicate entries possible, since the removed list is a set.
+// 	}
+// }
 
 // Clone returns a new instance of DeltaSet with the same elements.
 func (this *DeltaSet[K]) Clone() *DeltaSet[K] {
@@ -141,8 +155,8 @@ func (this *DeltaSet[K]) Clone() *DeltaSet[K] {
 	return set
 }
 
-// CloneDelta returns a new instance of DeltaSet with the same updated and removed elements only.
-// The committed list is not cloned.
+// CloneDelta returns a new instance of DeltaSet with the
+// same updated and removed elements only.the committed list is not cloned.
 func (this *DeltaSet[K]) CloneDelta() *DeltaSet[K] {
 	set := &DeltaSet[K]{
 		nilVal:  this.nilVal,
@@ -152,68 +166,77 @@ func (this *DeltaSet[K]) CloneDelta() *DeltaSet[K] {
 	return set
 }
 
-// // Set sets the element at the specified index to the new value.
-// func (this *DeltaSet[K]) SetByIndex(idx int, newk K) bool {
-// 	_, set, mapped, ok := this.IndexToKey(idx)
-// 	if !ok {
-// 		return false
-// 	}
-
-// 	// Delete the element if the new value is nil
-// 	if newk == this.nilVal {
-// 		this.Delete(*set.At(mapped))
-// 		return true
-// 	}
-
-// 	// Already in the updated list
-// 	if set == this.updated {
-// 		set.Replace(mapped, newk)
-// 		return true
-// 	}
-
-// 	// In the committed list
-// 	oldk := *set.At(mapped)             // Get the old value from the committed list
-// 	pos, _ := this.updated.Insert(oldk) // Add the old value to the updated list
-
-// 	// Replace the old value with the new value in the updated list. The key and value are no longer the same.
-// 	// at the point. The key represents the old value and the value is the new value. It can be used to update the value.
-// 	*this.updated.At(pos) = newk
-
-// 	// oldk := set.IndexToKey(mapped)
-// 	_, ok = this.updated.Insert(newk)
-// 	return ok
-// }
-
-func (this *DeltaSet[K]) DeleteByIndex(idx int) {
-	if k, _, _, ok := this.IndexToKey(idx); ok {
+func (this *DeltaSet[K]) DeleteByIndex(idx uint64) {
+	if k, _, _, ok := this.Search(idx); ok {
 		this.Delete(k)
 	}
 }
 
-func (this *DeltaSet[K]) IndexToKey(idx int) (K, *orderedset.OrderedSet[K], int, bool) {
-	set, mapped := this.mapTo(idx)
+func (this *DeltaSet[K]) GetByIndex(idx uint64) (K, bool) {
+	if k, _, _, ok := this.Search(idx); ok {
+		return k, true
+	}
+	return *new(K), false
+}
+
+func (this *DeltaSet[K]) PopBack() (K, bool) {
+	if this.Length() == 0 {
+		return *new(K), false
+	}
+
+	k, ok := this.GetByIndex(uint64(this.Length()) - 1)
+	this.Delete(k)
+	return k, ok
+}
+
+// Search returns the element at the specified index and the set it is in.
+func (this *DeltaSet[K]) Search(idx uint64) (K, *orderedset.OrderedSet[K], int, bool) {
+	set, mapped := this.mapTo(int(idx))
 	if mapped < 0 {
 		return this.nilVal, nil, -1, false
 	}
-	return set.IndexToKey(mapped), set, mapped, true
+	return set.KeyToIndex(mapped), set, mapped, true
+}
+
+func (this *DeltaSet[K]) KeyAt(idx uint64) K {
+	k, _, _, _ := this.Search(idx)
+	return k
+}
+
+// Get the index of the element in the DeltaSet by key.
+func (this *DeltaSet[K]) IdxOf(k K) uint64 {
+	if ok, idx := this.Exists(k); ok {
+		return uint64(idx)
+	}
+	return math.MaxUint64
 }
 
 // Get returns the element at the specified index.
-func (this *DeltaSet[K]) GetByIndex(idx int) (K, bool) {
-	k, _, _, ok := this.IndexToKey(idx)
+func (this *DeltaSet[K]) TryGetKey(idx uint64) (K, bool) {
+	k, _, _, ok := this.Search(idx)
 	if ok {
-		if this.removed.Exists(k) { // In the removed set
+		if ok, _ := this.removed.Exists(k); ok { // In the removed set
 			return this.nilVal, false
 		}
+		return k, true
 	}
-	return k, true
+	return k, false
 }
 
-func (this *DeltaSet[K]) Exists(k K) bool {
-	if this.removed.Exists(k) {
-		return false
+func (this *DeltaSet[K]) Exists(k K) (bool, int) {
+	if ok, _ := this.removed.Exists(k); ok {
+		return false, -1 // Has been removed already
 	}
-	return this.committed.Exists(k) || this.updated.Exists(k)
+
+	if ok, v := this.committed.Exists(k); ok {
+		return ok, v
+	}
+
+	if ok, v := this.updated.Exists(k); ok {
+		return ok, v
+	}
+
+	return false, -1
 }
 
 // Commit commits the updated and removed lists to the committed list.

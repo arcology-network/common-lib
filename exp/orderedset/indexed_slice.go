@@ -37,26 +37,28 @@ type OrderedSet[K comparable] struct {
 func NewOrderedSet[K comparable](nilValue K, preAlloc int, vals ...K) *OrderedSet[K] {
 	set := &OrderedSet[K]{
 		dict:     make(map[K]int),
-		elements: make([]K, 0, preAlloc+len(vals)),
+		elements: append(make([]K, 0, preAlloc+len(vals)), vals...),
 		nilValue: nilValue,
 	}
-	set.Append(vals...)
-	return set
+	return set.Init()
 }
 
-func (this *OrderedSet[K]) Index() map[K]int { return this.dict }
-func (this *OrderedSet[K]) Elements() []K    { return this.elements }
-func (this *OrderedSet[K]) Length() int      { return len(this.elements) }
+func (this *OrderedSet[K]) Init() *OrderedSet[K] {
+	for i, idx := range this.elements {
+		this.dict[idx] = i
+	}
+	return this
+}
+
+func (this *OrderedSet[K]) Dict() map[K]int { return this.dict }
+func (this *OrderedSet[K]) Elements() []K   { return this.elements }
+func (this *OrderedSet[K]) Length() int     { return len(this.elements) }
 func (this *OrderedSet[K]) Clone() *OrderedSet[K] {
 	return NewOrderedSet[K](this.nilValue, len(this.elements), this.elements...)
 }
 
-func (this *OrderedSet[K]) Append(other ...K) *OrderedSet[K] {
-	this.elements = append(this.elements, other...)
-	for i := len(this.elements) - len(other); i < len(this.elements); i++ {
-		this.dict[this.elements[i]] = i
-	}
-	return this
+func (this *OrderedSet[K]) Size(getter func(K) int) int { // For encoding
+	return slice.Accumulate(this.elements, 0, func(acc int, k K) int { return acc + getter(k) })
 }
 
 func (this *OrderedSet[K]) Merge(elements []K) {
@@ -74,27 +76,27 @@ func (this *OrderedSet[K]) Sub(elements []K) {
 // Insert inserts an element into the OrderedSet and updates the dict with the specified key.
 // If the element already exists, it is updated. Otherwise, it is added.
 // Returns the dict of the element in the slice.
-func (this *OrderedSet[K]) Insert(k K) (int, bool) {
-	if _, ok := this.dict[k]; !ok { // New entries
-		this.elements = append(this.elements, k)
-		this.dict[k] = len(this.elements) - 1
-		return len(this.elements) - 1, true
+func (this *OrderedSet[K]) Insert(keys ...K) {
+	for _, k := range keys {
+		if _, ok := this.dict[k]; !ok { // New entries
+			this.elements = append(this.elements, k)
+			this.dict[k] = len(this.elements) - 1
+		}
 	}
-	return -1, false
 }
 
 func (this *OrderedSet[K]) At(idx int) *K {
 	return &this.elements[idx]
 }
 
-func (this *OrderedSet[K]) KeyToIndex(k K) int {
+func (this *OrderedSet[K]) IndexToKey(k K) int {
 	if idx, ok := this.dict[k]; ok {
 		return idx
 	}
 	return -1
 }
 
-func (this *OrderedSet[K]) IndexToKey(idx int) K {
+func (this *OrderedSet[K]) KeyToIndex(idx int) K {
 	return this.elements[idx]
 }
 
@@ -129,9 +131,9 @@ func (this *OrderedSet[K]) Sync(offsets ...int) {
 	}
 }
 
-func (this *OrderedSet[K]) Exists(k K) bool {
-	_, ok := this.dict[k]
-	return ok
+func (this *OrderedSet[K]) Exists(k K) (bool, int) {
+	v, ok := this.dict[k]
+	return ok, v
 }
 
 func (this *OrderedSet[K]) Clear() {

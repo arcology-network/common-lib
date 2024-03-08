@@ -272,7 +272,7 @@ func (this *DataStore) BatchRetrive(keys []string, T []any) []interface{} {
 	}
 
 	values := common.FilterFirst(this.localCache.BatchGet(keys)) // From the local cache first
-	if slice.Count(values, nil) == 0 {                           // All found
+	if slice.Count[any, int](values, nil) == 0 {                 // All found
 		return values
 	}
 
