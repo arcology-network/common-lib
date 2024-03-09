@@ -39,9 +39,9 @@ type DeltaSet[K comparable] struct {
 func NewDeltaSet[K comparable](nilVal K, preAlloc int, keys ...K) *DeltaSet[K] {
 	deltaSet := &DeltaSet[K]{
 		nilVal:    nilVal,
-		committed: orderedset.NewOrderedSet[K](nilVal, preAlloc),
-		updated:   orderedset.NewOrderedSet[K](nilVal, preAlloc),
-		removed:   orderedset.NewOrderedSet[K](nilVal, preAlloc),
+		committed: orderedset.NewOrderedSet(nilVal, preAlloc),
+		updated:   orderedset.NewOrderedSet(nilVal, preAlloc),
+		removed:   orderedset.NewOrderedSet(nilVal, preAlloc),
 	}
 	deltaSet.Insert(keys...)
 	return deltaSet
@@ -76,8 +76,21 @@ func (this *DeltaSet[K]) mapTo(idx int) (*orderedset.OrderedSet[K], int) {
 // Array returns the underlying slice of committed in the DeltaSet.
 func (this *DeltaSet[K]) Committed() *orderedset.OrderedSet[K] { return this.committed }
 func (this *DeltaSet[K]) Removed() *orderedset.OrderedSet[K]   { return this.removed }
-func (this *DeltaSet[K]) Appended() *orderedset.OrderedSet[K]  { return this.updated }
+func (this *DeltaSet[K]) Added() *orderedset.OrderedSet[K]     { return this.updated }
 
+// Elements returns the underlying slice of committed in the DeltaSet,
+// Non-nil values are returned in the order they were inserted, equals to committed + updated - removed.
+func (this *DeltaSet[K]) Elements() []K {
+	elements := make([]K, 0, this.NonNilCount())
+	for i := 0; i < this.committed.Length()+this.updated.Length(); i++ {
+		if v, ok := this.GetByIndex(uint64(i)); ok {
+			elements = append(elements, v)
+		}
+	}
+	return elements
+}
+
+// Get Byte size of the DeltaSet
 func (this *DeltaSet[K]) Size(getter func(K) int) int {
 	return common.IfThenDo1st(this.committed != nil, func() int { return this.committed.Size(getter) }, 0) +
 		common.IfThenDo1st(this.updated != nil, func() int { return this.updated.Size(getter) }, 0) +
@@ -108,8 +121,14 @@ func (this *DeltaSet[K]) ResetDelta() {
 	this.removed.Clear()
 }
 
-func (this *DeltaSet[K]) Length() int {
-	return this.committed.Length() + this.updated.Length() - this.removed.Length()
+// Length returns the number of elements in the DeltaSet, including the nil values.
+func (this *DeltaSet[K]) Length() uint64 {
+	return uint64(this.committed.Length() + this.updated.Length())
+}
+
+// NonNilCount returns the number of non-nil elements in the DeltaSet.
+func (this *DeltaSet[K]) NonNilCount() uint64 {
+	return uint64(this.committed.Length() + this.updated.Length() - this.removed.Length())
 }
 
 // Insert inserts an element into the DeltaSet and updates the index.
@@ -138,20 +157,18 @@ func (this *DeltaSet[K]) Delete(elems ...K) {
 	}
 }
 
-// func (this *DeltaSet[K]) Delete(elems ...K) {
-// 	for _, elem := range elems {
-// 		if ok, _ := this.updated.Exists(elem); ok {
-// 			this.updated.Delete(elem)
-// 			return
-// 		}
-// 		this.removed.Insert(elem) // Impossible to have duplicate entries possible, since the removed list is a set.
-// 	}
-// }
-
 // Clone returns a new instance of DeltaSet with the same elements.
-func (this *DeltaSet[K]) Clone() *DeltaSet[K] {
+func (this *DeltaSet[K]) CloneFull() *DeltaSet[K] {
 	set := this.CloneDelta()
 	set.committed = this.committed.Clone()
+	return set
+}
+
+// Clone returns a new instance with the
+// committed list shared original DeltaSet.
+func (this *DeltaSet[K]) Clone() *DeltaSet[K] {
+	set := this.CloneDelta()
+	set.committed = this.committed //.Clone()
 	return set
 }
 
@@ -159,9 +176,10 @@ func (this *DeltaSet[K]) Clone() *DeltaSet[K] {
 // same updated and removed elements only.the committed list is not cloned.
 func (this *DeltaSet[K]) CloneDelta() *DeltaSet[K] {
 	set := &DeltaSet[K]{
-		nilVal:  this.nilVal,
-		updated: this.updated.Clone(),
-		removed: this.removed.Clone(),
+		nilVal:    this.nilVal,
+		committed: orderedset.NewOrderedSet(this.nilVal, 0),
+		updated:   this.updated.Clone(),
+		removed:   this.removed.Clone(),
 	}
 	return set
 }
@@ -174,18 +192,41 @@ func (this *DeltaSet[K]) DeleteByIndex(idx uint64) {
 
 func (this *DeltaSet[K]) GetByIndex(idx uint64) (K, bool) {
 	if k, _, _, ok := this.Search(idx); ok {
-		return k, true
+		if ok, _ := this.removed.Exists(k); !ok {
+			return k, true
+		}
 	}
 	return *new(K), false
 }
 
-func (this *DeltaSet[K]) PopBack() (K, bool) {
-	if this.Length() == 0 {
+// Back get the last non-nil value from the DeltaSet.
+// The last non-nil value isn't necessarily the last value in the DeltaSet, but the last non-nil value.
+func (this *DeltaSet[K]) Last() (K, bool) {
+	if this.NonNilCount() == 0 {
 		return *new(K), false
 	}
 
-	k, ok := this.GetByIndex(uint64(this.Length()) - 1)
-	this.Delete(k)
+	for i := this.Length() - 1; i >= 0; i-- {
+		if k, ok := this.GetByIndex(uint64(i)); ok {
+			return k, true
+		}
+	}
+	return *new(K), false
+}
+
+func (this *DeltaSet[K]) Back() (K, bool) {
+	if this.NonNilCount() == 0 {
+		return *new(K), false
+	}
+	return this.GetByIndex(uint64(this.Length() - 1))
+}
+
+// Return then remove the last non-nil value from the DeltaSet.
+func (this *DeltaSet[K]) PopLast() (K, bool) {
+	k, ok := this.Last() // Get the last non-nil value
+	if ok {
+		this.Delete(k) // Re
+	}
 	return k, ok
 }
 

@@ -79,6 +79,10 @@ func TestDeltaSliceBasic(t *testing.T) {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
+	if !reflect.DeepEqual(deltaSet.Elements(), []int{13, 15, 17}) {
+		t.Error("Failed to get Elements()", deltaSet.Elements())
+	}
+
 	if deltaSet.Commit(); !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17}) || (deltaSet.updated.Length()) != 0 || (deltaSet.removed.Length()) != 0 {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
@@ -114,6 +118,7 @@ func TestDeltaSliceBasic(t *testing.T) {
 	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17}) || !reflect.DeepEqual(deltaSet.updated.Elements(), []int{18, 19, 20, 21}) {
 		t.Error("failed to commit", deltaSet.committed.Elements(), deltaSet.updated.Elements())
 	}
+
 }
 
 func TestDeltaSliceAddThenDelete(t *testing.T) {
@@ -201,16 +206,16 @@ func TestDeltaClone(t *testing.T) {
 
 	deltaSet.Insert(18, 19, 20, 21) // { 13, 15, 17} + { 18, 19, 20, 21}
 
-	// if deltaSet.Length() != 7 {
-	// 	t.Error("failed to commit", deltaSet.Length())
+	// if deltaSet.NonNilCount() != 7 {
+	// 	t.Error("failed to commit", deltaSet.NonNilCount())
 	// }
 
 	deltaSet.DeleteByIndex(1) //
 	deltaSet.DeleteByIndex(4) //
 	deltaSet.DeleteByIndex(5) // will remove {15, 19, 20}
 
-	// if deltaSet.Length() != 4 {
-	// 	t.Error("failed to commit", deltaSet.Length())
+	// if deltaSet.NonNilCount() != 4 {
+	// 	t.Error("failed to commit", deltaSet.NonNilCount())
 	// }
 
 	if deltaSet.removed.Length() != 3 ||
@@ -219,7 +224,7 @@ func TestDeltaClone(t *testing.T) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
-	set2 := deltaSet.Clone()
+	set2 := deltaSet.CloneFull()
 	if !deltaSet.Equal(set2) {
 		deltaSet.Print()
 		set2.Print()
@@ -230,7 +235,7 @@ func TestDeltaClone(t *testing.T) {
 	set2.Commit()
 
 	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 21}) {
-		t.Error("failed to commit", deltaSet.removed.Elements())
+		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
 	if !deltaSet.Equal(set2) {
@@ -285,9 +290,19 @@ func TestDeltaDeleteThenAddBack(t *testing.T) {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
-	v, ok := deltaSet.PopBack()
-	if !ok || v != 21 || deltaSet.Length() != 6 {
-		t.Error("failed to commit", v, deltaSet.Length())
+	v, ok := deltaSet.PopLast()
+	if !ok || v != 21 || deltaSet.NonNilCount() != 6 {
+		t.Error("failed to commit", v, deltaSet.NonNilCount())
+	}
+
+	v, ok = deltaSet.PopLast()
+	if !ok || v != 20 || deltaSet.NonNilCount() != 5 {
+		t.Error("failed to commit", v, deltaSet.NonNilCount())
+	}
+
+	v, ok = deltaSet.GetByIndex(5)
+	if ok || v != 0 || deltaSet.NonNilCount() != 5 {
+		t.Error("Should not exist", v, deltaSet.NonNilCount())
 	}
 }
 
