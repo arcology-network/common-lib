@@ -18,7 +18,6 @@ package deltaset
 
 import (
 	"fmt"
-	"math/rand/v2"
 	"reflect"
 	"testing"
 	"time"
@@ -30,24 +29,24 @@ func TestDeltaSliceBasic(t *testing.T) {
 	deltaSet := NewDeltaSet[int](-1, 100)
 
 	if deltaSet.Insert(11, 12, 13); !reflect.DeepEqual(deltaSet.committed.Elements(), []int{}) ||
-		!deltaSet.updated.IsSynced() ||
+		!deltaSet.updated.IsDirty() ||
 		!reflect.DeepEqual(deltaSet.updated.Elements(), []int{11, 12, 13}) {
 		t.Error("failed to append", deltaSet.committed.Elements(), deltaSet.updated.Elements())
 	}
 
 	if deltaSet.Commit(); deltaSet.committed.Length() != 3 ||
-		!deltaSet.updated.IsSynced() ||
+		!deltaSet.updated.IsDirty() ||
 		(deltaSet.updated.Length()) != 0 ||
 		(deltaSet.removed.Length()) != 0 {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
-	if deltaSet.Delete(12); deltaSet.committed.Length() != 3 || !deltaSet.updated.IsSynced() ||
+	if deltaSet.Delete(12); deltaSet.committed.Length() != 3 || !deltaSet.updated.IsDirty() ||
 		(deltaSet.updated.Length()) != 0 || (deltaSet.removed.Length()) != 1 {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
-	if deltaSet.Commit(); deltaSet.committed.Length() != 2 || (deltaSet.updated.Length()) != 0 || !deltaSet.updated.IsSynced() ||
+	if deltaSet.Commit(); deltaSet.committed.Length() != 2 || (deltaSet.updated.Length()) != 0 || !deltaSet.updated.IsDirty() ||
 		(deltaSet.removed.Length()) != 0 { // {11, 13}
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
@@ -58,7 +57,7 @@ func TestDeltaSliceBasic(t *testing.T) {
 	// {11, 13} + {15, 16, 17}
 	if deltaSet.Delete(16); deltaSet.committed.Length() != 2 ||
 		(deltaSet.updated.Length()) != 3 ||
-		// !deltaSet.updated.IsSynced() ||
+		// !deltaSet.updated.IsDirty() ||
 		!reflect.DeepEqual(deltaSet.updated.Elements(), []int{15, 16, 17}) ||
 		(deltaSet.removed.Length()) != 1 {
 		t.Error("failed to commit", deltaSet.updated.Elements(), deltaSet.committed.Elements())
@@ -72,7 +71,7 @@ func TestDeltaSliceBasic(t *testing.T) {
 	}
 
 	if deltaSet.Delete(16); deltaSet.committed.Length() != 2 ||
-		!deltaSet.updated.IsSynced() ||
+		!deltaSet.updated.IsDirty() ||
 		(deltaSet.updated.Length()) != 3 ||
 		!reflect.DeepEqual(deltaSet.updated.Elements(), []int{15, 16, 17}) ||
 		(deltaSet.removed.Length()) != 2 {
@@ -328,11 +327,66 @@ func TestMultiMerge(t *testing.T) {
 	}
 }
 
+func TestGetNthNonNil(t *testing.T) {
+	deltaSet := NewDeltaSet[int](-1, 100)
+	deltaSet.Insert(13, 15, 17)
+
+	deltaSet.Insert(18, 19, 20, 21) // { 13, 15, 17} + { 18, 19, 20, 21}
+	deltaSet.DeleteByIndex(1)       //  { 13, -15, 17} + { 18, 19, 20, 21}
+	deltaSet.DeleteByIndex(4)       // { 13, -15, 17} + { 18, -19, 20, 21}'
+
+	if k, idx, ok := deltaSet.GetNthNonNil(0); k != 13 || idx != 0 || !ok {
+		t.Error("failed to commit", k)
+	}
+
+	if k, idx, ok := deltaSet.GetNthNonNil(1); k != 17 || idx != 2 || !ok {
+		t.Error("failed to commit", k)
+	}
+
+	if k, idx, ok := deltaSet.GetNthNonNil(2); k != 18 || idx != 3 || !ok {
+		t.Error("failed to commit", k)
+	}
+
+	if k, idx, ok := deltaSet.GetNthNonNil(3); k != 20 || idx != 5 || !ok {
+		t.Error("failed to commit", k)
+	}
+
+	if k, idx, ok := deltaSet.GetNthNonNil(4); k != 21 || idx != 6 || !ok {
+		t.Error("failed to commit", k)
+	}
+
+	deltaSet.Commit()
+	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 20, 21}) {
+		t.Error("failed to commit", deltaSet.committed.Elements())
+	}
+
+	if k, idx, ok := deltaSet.GetNthNonNil(0); k != 13 || idx != 0 || !ok {
+		t.Error("failed to commit", k)
+	}
+
+	if k, idx, ok := deltaSet.GetNthNonNil(1); k != 17 || idx != 1 || !ok {
+		t.Error("failed to commit", k)
+	}
+
+	if k, idx, ok := deltaSet.GetNthNonNil(2); k != 18 || idx != 2 || !ok {
+		t.Error("failed to commit", k)
+	}
+
+	if k, idx, ok := deltaSet.GetNthNonNil(3); k != 20 || idx != 3 || !ok {
+		t.Error("failed to commit", k)
+	}
+
+	if k, idx, ok := deltaSet.GetNthNonNil(4); k != 21 || idx != 4 || !ok {
+		t.Error("failed to commit", k)
+	}
+
+}
+
 func BenchmarkDeltaDeleteThenAddBack(t *testing.B) {
 	deltaSet := NewDeltaSet[int](-1, 1000000)
 	randoms := make([]int, 1000000)
 	for i := 0; i < 1000000; i++ {
-		randoms[i] = rand.Int()
+		randoms[i] = i
 	}
 
 	t0 := time.Now()

@@ -214,3 +214,84 @@ func ContainsAny[M ~map[K]V, K comparable, V any](m M, keys []K) bool {
 	}
 	return false
 }
+
+// Keys returns a slice containing all the keys of a map.
+func MinKey[M ~map[K]V, K comparable, V any](m M, less func(K, K) bool) (K, V) {
+	var mink K
+	var minv V
+	var init bool
+	for k, v := range m {
+		if !init {
+			mink = k
+			minv = v
+			init = true
+			continue
+		}
+
+		if less(k, mink) {
+			mink = k
+			minv = v
+		}
+	}
+	return mink, minv
+}
+
+// Keys returns a slice containing all the keys of a map.
+func MaxKey[M ~map[K]V, K comparable, V any](m M, greater func(K, K) bool) (K, V) {
+	var maxk K
+	var maxv V
+	var init bool
+	for k, v := range m {
+		if !init {
+			maxk = k
+			maxv = v
+			init = true
+			continue
+		}
+
+		if greater(k, maxk) {
+			maxk, maxv = k, v
+		}
+	}
+	return maxk, maxv
+}
+
+// Keys returns a slice containing all the keys of a map.
+func MinValue[M ~map[K]V, K comparable, V any](m M, less func(V, V) bool) (K, V) {
+	var mink K
+	var minv V
+	var init bool
+	for k, v := range m {
+		if !init {
+			mink = k
+			minv = v
+			init = true
+			continue
+		}
+
+		if less(v, minv) {
+			mink, minv = k, v
+		}
+	}
+	return mink, minv
+}
+
+// Keys returns a slice containing all the keys of a map.
+func MaxValue[M ~map[K]V, K comparable, V any](m M, greater func(V, V) bool) (K, V) {
+	var maxk K
+	var maxv V
+	var init bool
+	for k, v := range m {
+		if !init {
+			maxk = k
+			maxv = v
+			init = true
+			continue
+		}
+
+		if greater(v, maxv) {
+			maxk, maxv = k, v
+		}
+	}
+	return maxk, maxv
+}

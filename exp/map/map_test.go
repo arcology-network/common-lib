@@ -131,4 +131,53 @@ func TestMapGenerics(t *testing.T) {
 	if !EqualIf(m2, target, func(v0 bool, v1 bool) bool { return v0 == v1 }) {
 		t.Error("Error: Failed to compare maps !")
 	}
+
+	m3 := map[string]int{
+		"3": 8,
+		"4": 12,
+		"1": 89,
+		"2": 90,
+	}
+
+	if k, v := MaxKey(m3, func(k0, k1 string) bool { return k0 > k1 }); k != "4" || v != 12 {
+		t.Error("Error: Failed to get the max !", k, v)
+	}
+
+	if k, v := MinKey(m3, func(k0, k1 string) bool { return k0 < k1 }); k != "1" || v != 89 {
+		t.Error("Error: Failed to get the max !", k, v)
+	}
+
+	if k, v := MinValue(m3, func(k0, k1 int) bool { return k0 < k1 }); k != "4" || v != 12 {
+		t.Error("Error: Failed to get the max !", k, v)
+	}
+
+	if k, v := MaxValue(m3, func(k0, k1 int) bool { return k0 > k1 }); k != "1" || v != 89 {
+		t.Error("Error: Failed to get the max !", k, v)
+	}
+
+}
+
+func TestMapMaxMinGenerics(t *testing.T) {
+	m3 := map[string]int{
+		"3": 8,
+		"4": 12,
+		"1": 89,
+		"2": 90,
+	}
+
+	if k, v := MinKey(m3, func(k0, k1 string) bool { return k0 < k1 }); k != "1" || v != 89 {
+		t.Error("Error: Failed to get the max !", k, v)
+	}
+
+	if k, v := MaxKey(m3, func(k0, k1 string) bool { return k0 > k1 }); k != "4" || v != 12 {
+		t.Error("Error: Failed to get the max !", k, v)
+	}
+
+	if k, v := MinValue(m3, func(v0, v1 int) bool { return v0 < v1 }); k != "3" || v != 8 {
+		t.Error("Error: Failed to get the max !", k, v)
+	}
+
+	if k, v := MaxValue(m3, func(v0, v1 int) bool { return v0 > v1 }); k != "2" || v != 90 {
+		t.Error("Error: Failed to get the max !", k, v)
+	}
 }

@@ -142,7 +142,7 @@ func (this *OrderedSet[K]) Clear() {
 }
 
 // Debugging function to check if the dict is in sync with the slice.
-func (this *OrderedSet[K]) IsSynced() bool {
+func (this *OrderedSet[K]) IsDirty() bool {
 	if len(this.elements) != len(this.dict) {
 		return false
 	}
