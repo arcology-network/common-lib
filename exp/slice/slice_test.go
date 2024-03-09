@@ -553,7 +553,7 @@ func TestReorderBy(t *testing.T) {
 func TestAnyIs(t *testing.T) {
 	var e []byte
 	v := []interface{}{1, 2, e, nil}
-	if Count(v, nil) != 1 {
+	if Count[interface{}, int](v, nil) != 1 {
 		t.Error("Error: Not equal")
 	}
 }
@@ -788,12 +788,12 @@ func TestSortBy1st(t *testing.T) {
 
 func BenchmarkTestUniqueInts(t *testing.B) {
 	t0 := time.Now()
-	arr := NewWith(1000000, func(i int) int { return rand.Int() })
+	arr := NewDo(1000000, func(i int) int { return rand.Int() })
 	UniqueInts(arr)
 	fmt.Println("UniqueInts: ", 1000000, " entries in:", time.Now().Sub(t0))
 
 	t0 = time.Now()
-	arr = NewWith(1000000, func(i int) int { return rand.Int() })
+	arr = NewDo(1000000, func(i int) int { return rand.Int() })
 	m := map[int]bool{}
 	for i := 0; i < len(arr); i++ {
 		m[arr[i]] = true

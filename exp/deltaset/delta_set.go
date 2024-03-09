@@ -121,12 +121,12 @@ func (this *DeltaSet[K]) ResetDelta() {
 	this.removed.Clear()
 }
 
-// Length returns the number of elements in the DeltaSet, including the nil values.
+// Length returns the number of elements in the DeltaSet, including the NIL values.
 func (this *DeltaSet[K]) Length() uint64 {
 	return uint64(this.committed.Length() + this.updated.Length())
 }
 
-// NonNilCount returns the number of non-nil elements in the DeltaSet.
+// NonNilCount returns the number of NON-NIL elements in the DeltaSet.
 func (this *DeltaSet[K]) NonNilCount() uint64 {
 	return uint64(this.committed.Length() + this.updated.Length() - this.removed.Length())
 }
