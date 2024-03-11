@@ -18,7 +18,6 @@
 package storage
 
 import (
-	"fmt"
 	"runtime"
 
 	"github.com/arcology-network/common-lib/exp/associative"
@@ -88,7 +87,6 @@ func (this *ReadCache[K, T]) PreAlloc(keys []K, isNil func(k K) bool) {
 func (this *ReadCache[K, T]) Update(keys []K, values []T) {
 	slice.ParallelForeach(keys, runtime.NumCPU(), func(i int, k *K) {
 		shardId := this.mapper(*k) % uint64(len(this.cache))
-		fmt.Print(this.cache[shardId][*k].First, this.cache[shardId][*k].First)
 		this.cache[shardId][*k].First = &values[i]
 	})
 }
