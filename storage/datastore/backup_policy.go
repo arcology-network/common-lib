@@ -1,6 +1,9 @@
 package datastore
 
-import "github.com/arcology-network/common-lib/codec"
+import (
+	"github.com/arcology-network/common-lib/codec"
+	expmap "github.com/arcology-network/common-lib/exp/map"
+)
 
 type BackupPolicy struct {
 	datastore *DataStore
@@ -15,7 +18,7 @@ func NewBackupPolicy(datastore *DataStore, interval uint32) *BackupPolicy {
 }
 
 func (this *BackupPolicy) FullBackup() {
-	keys, values := this.datastore.Cache().KVs()
+	keys, values := this.datastore.Cache().(*expmap.ConcurrentMap[string, any]).KVs()
 	codec.Strings(keys).Encode()
 
 	encoder := this.datastore.Encoder()

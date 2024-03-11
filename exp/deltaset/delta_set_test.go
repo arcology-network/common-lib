@@ -184,7 +184,7 @@ func TestDeltaSliceAddThenDelete(t *testing.T) {
 	}
 }
 
-func TestDeltaCommit(t *testing.T) {
+func TestCascadeDeltaCommit(t *testing.T) {
 	deltaSet := NewDeltaSet[int](-1, 100)
 	deltaSet.Insert(13, 15, 17)
 
@@ -198,7 +198,7 @@ func TestDeltaCommit(t *testing.T) {
 	}
 }
 
-func TestDeltaClone(t *testing.T) {
+func TestCascadeDeltaClone(t *testing.T) {
 	deltaSet := NewDeltaSet[int](-1, 100)
 	deltaSet.Insert(13, 15, 17)
 	deltaSet.Commit()
@@ -310,14 +310,8 @@ func TestMultiMerge(t *testing.T) {
 	deltaSet.Insert(13, 15, 17)
 	deltaSet.Commit()
 
-	_set0 := NewDeltaSet[int](-1, 100)
-	_set1 := NewDeltaSet[int](-1, 100)
-
-	_set0.Insert(58, 59, 20, 51) // { 13, 15, 17} + { 18, 19, 20, 21}
-	_set1.Insert(78, 59, 70, 71) // { 13, 15, 17} + { 18, 19, 20, 21}
-
-	_set0.Delete(13)
-	_set1.Delete(15, 70)
+	_set0 := NewDeltaSet[int](-1, 100).Insert(58, 59, 20, 51).Delete(13)
+	_set1 := NewDeltaSet[int](-1, 100).Insert(78, 59, 70, 71).Delete(15, 70)
 
 	// (13, 15, 17) + (58, 59, 20, 51) + (78, 59, 70, 71) - (13, 15, 70) = (17, 58, 59, 20, 51, 78, 59, 71)
 	deltaSet.Commit(_set0, _set1)

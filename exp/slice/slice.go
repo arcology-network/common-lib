@@ -272,6 +272,11 @@ func Insert[T any](values *[]T, pos int, v T) []T {
 	return *values
 }
 
+// Insert inserts a value at a specific position in a slice.
+func PushFront[T any](values *[]T, v T) []T {
+	return Insert(values, 0, v)
+}
+
 // Resize resizes a slice to a new length.
 // If the new length is greater than the current length, it appends the required number of elements to the slice.
 // If the new length is less than or equal to the current length, it truncates the slice.
