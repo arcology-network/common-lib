@@ -165,7 +165,7 @@ func (this *DataStore) BatchInject(keys []string, values []interface{}) error {
 // 	return uint32(len(prefetchedKeys)), count, err
 // }
 
-func (this *DataStore) fetchPersistentStorage(key string, T any) (interface{}, error) {
+func (this *DataStore) RetriveFromStorage(key string, T any) (interface{}, error) {
 	if this.db == nil {
 		return nil, errors.New("Error: DB not found")
 	}
@@ -252,7 +252,7 @@ func (this *DataStore) Retrive(key string, T any) (interface{}, error) {
 	}
 
 	// if v == nil && this.cachePolicy != nil && !this.cachePolicy.InfinitCache() {
-	v, err := this.fetchPersistentStorage(key, T)
+	v, err := this.RetriveFromStorage(key, T)
 	if err == nil {
 		// if this.cachePolicy.CheckCapacity(key, v) { // need to check the cache status first
 		// if err = this.localCache.Set(key, v); err != nil { // Save to the local cache

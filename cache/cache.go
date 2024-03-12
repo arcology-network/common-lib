@@ -101,8 +101,12 @@ func (this *ReadCache[K, T]) Finalize() {
 
 	// Some keys are imported but later removed during conflict resolution.
 	for _, k := range this.dirties {
-		if vals := this.cache[k.First][k.Second]; vals.First == nil && vals.Second == nil {
-			delete(this.cache[k.First], k.Second)
+		//This needs to be check because the transitions imported aren't guaranteed to be conflict free, there may be some duplicate keys.
+		// If the same key has been imported and removed twice, it will cause a panic.
+		if val, ok := this.cache[k.First][k.Second]; ok { //
+			if val.First == nil && val.Second == nil {
+				delete(this.cache[k.First], k.Second)
+			}
 		}
 	}
 	this.Clear()
