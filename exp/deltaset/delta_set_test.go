@@ -18,7 +18,6 @@ package deltaset
 
 import (
 	"fmt"
-	"math/rand/v2"
 	"reflect"
 	"testing"
 	"time"
@@ -332,7 +331,7 @@ func BenchmarkDeltaDeleteThenAddBack(t *testing.B) {
 	deltaSet := NewDeltaSet[int](-1, 1000000)
 	randoms := make([]int, 1000000)
 	for i := 0; i < 1000000; i++ {
-		randoms[i] = rand.Int()
+		randoms[i] = i //rand.Int()
 	}
 
 	t0 := time.Now()

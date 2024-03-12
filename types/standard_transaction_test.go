@@ -9,27 +9,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/arcology-network/common-lib/tools"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/rlp"
-	"golang.org/x/crypto/sha3"
 )
-
-func RlpHash(x interface{}) (h ethCommon.Hash) {
-	hw := sha3.NewLegacyKeccak256()
-	rlp.Encode(hw, x)
-	hw.Sum(h[:0])
-	return h
-}
 
 func TestStandardMessageEncodingAndDeconing(t *testing.T) {
 	to := ethCommon.BytesToAddress(crypto.Keccak256([]byte("1"))[:])
 
 	ethMsg_serial_0 := core.NewMessage(ethCommon.Address{}, &to, 1, big.NewInt(int64(1)), 100, big.NewInt(int64(8)), []byte{1, 2, 3}, nil, false)
 	ethMsg_serial_1 := core.NewMessage(ethCommon.Address{}, &to, 3, big.NewInt(int64(100)), 200, big.NewInt(int64(9)), []byte{4, 5, 6}, nil, false)
-	hash1 := RlpHash(ethMsg_serial_0)
-	hash2 := RlpHash(ethMsg_serial_1)
+	hash1 := tools.RlpHash(ethMsg_serial_0)
+	hash2 := tools.RlpHash(ethMsg_serial_1)
 	stdMsgs := []*StandardTransaction{
 		{Source: 0, NativeMessage: &ethMsg_serial_0, TxHash: hash1},
 		{Source: 1, NativeMessage: &ethMsg_serial_1, TxHash: hash2},
