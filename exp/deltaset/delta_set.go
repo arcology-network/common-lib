@@ -30,18 +30,18 @@ import (
 type DeltaSet[K comparable] struct {
 	nilVal K
 
-	committed *orderedset.OrderedSet[K]
-	updated   *orderedset.OrderedSet[K] // New entires and updated entries
-	removed   *orderedset.OrderedSet[K] // Entries to be removed including the newly
+	committed *orderedset.OrderedSet[K, K]
+	updated   *orderedset.OrderedSet[K, K] // New entires and updated entries
+	removed   *orderedset.OrderedSet[K, K] // Entries to be removed including the newly
 }
 
 // NewIndexedSlice creates a new instance of DeltaSet with the specified page size, minimum number of pages, and pre-allocation size.
 func NewDeltaSet[K comparable](nilVal K, preAlloc int, keys ...K) *DeltaSet[K] {
 	deltaSet := &DeltaSet[K]{
 		nilVal:    nilVal,
-		committed: orderedset.NewOrderedSet(nilVal, preAlloc),
-		updated:   orderedset.NewOrderedSet(nilVal, preAlloc),
-		removed:   orderedset.NewOrderedSet(nilVal, preAlloc),
+		committed: orderedset.NewOrderedSet(nilVal, func(k K) K { return k }, preAlloc),
+		updated:   orderedset.NewOrderedSet(nilVal, func(k K) K { return k }, preAlloc),
+		removed:   orderedset.NewOrderedSet(nilVal, func(k K) K { return k }, preAlloc),
 	}
 	deltaSet.Insert(keys...)
 	return deltaSet
@@ -49,9 +49,9 @@ func NewDeltaSet[K comparable](nilVal K, preAlloc int, keys ...K) *DeltaSet[K] {
 
 func (*DeltaSet[K]) New(
 	nilVal K,
-	committed *orderedset.OrderedSet[K],
-	updated *orderedset.OrderedSet[K],
-	removed *orderedset.OrderedSet[K]) *DeltaSet[K] {
+	committed *orderedset.OrderedSet[K, K],
+	updated *orderedset.OrderedSet[K, K],
+	removed *orderedset.OrderedSet[K, K]) *DeltaSet[K] {
 
 	return &DeltaSet[K]{
 		nilVal:    nilVal,
@@ -61,7 +61,7 @@ func (*DeltaSet[K]) New(
 	}
 }
 
-func (this *DeltaSet[K]) mapTo(idx int) (*orderedset.OrderedSet[K], int) {
+func (this *DeltaSet[K]) mapTo(idx int) (*orderedset.OrderedSet[K, K], int) {
 	if idx >= int(this.Length()) {
 		return nil, -1
 	}
@@ -74,9 +74,9 @@ func (this *DeltaSet[K]) mapTo(idx int) (*orderedset.OrderedSet[K], int) {
 }
 
 // Array returns the underlying slice of committed in the DeltaSet.
-func (this *DeltaSet[K]) Committed() *orderedset.OrderedSet[K] { return this.committed }
-func (this *DeltaSet[K]) Removed() *orderedset.OrderedSet[K]   { return this.removed }
-func (this *DeltaSet[K]) Added() *orderedset.OrderedSet[K]     { return this.updated }
+func (this *DeltaSet[K]) Committed() *orderedset.OrderedSet[K, K] { return this.committed }
+func (this *DeltaSet[K]) Removed() *orderedset.OrderedSet[K, K]   { return this.removed }
+func (this *DeltaSet[K]) Added() *orderedset.OrderedSet[K, K]     { return this.updated }
 
 // Elements returns the underlying slice of committed in the DeltaSet,
 // Non-nil values are returned in the order they were inserted, equals to committed + updated - removed.
@@ -177,7 +177,7 @@ func (this *DeltaSet[K]) CloneFull() *DeltaSet[K] {
 
 // Clone returns a new instance with the
 // committed list shared original DeltaSet.
-func (this *DeltaSet[K]) Clone(v ...*orderedset.OrderedSet[K]) *DeltaSet[K] {
+func (this *DeltaSet[K]) Clone(v ...*orderedset.OrderedSet[K, K]) *DeltaSet[K] {
 	set := this.CloneDelta(v...)
 	set.committed = this.committed //.Clone()
 	return set
@@ -185,7 +185,7 @@ func (this *DeltaSet[K]) Clone(v ...*orderedset.OrderedSet[K]) *DeltaSet[K] {
 
 // CloneDelta returns a new instance of DeltaSet with the
 // same updated and removed elements only.the committed list is not cloned.
-func (this *DeltaSet[K]) CloneDelta(v ...*orderedset.OrderedSet[K]) *DeltaSet[K] {
+func (this *DeltaSet[K]) CloneDelta(v ...*orderedset.OrderedSet[K, K]) *DeltaSet[K] {
 	set := &DeltaSet[K]{
 		nilVal: this.nilVal,
 		// committed: orderedset.NewOrderedSet(this.nilVal, 0),
@@ -196,7 +196,7 @@ func (this *DeltaSet[K]) CloneDelta(v ...*orderedset.OrderedSet[K]) *DeltaSet[K]
 	if len(v) > 0 {
 		set.committed = v[0]
 	} else {
-		set.committed = orderedset.NewOrderedSet(this.nilVal, 0)
+		set.committed = orderedset.NewOrderedSet(this.nilVal, this.committed.Getter(), 0)
 	}
 	return set
 }
@@ -303,7 +303,7 @@ func (this *DeltaSet[K]) PopLast() (K, bool) {
 }
 
 // Search returns the element at the specified index and the set it is in.
-func (this *DeltaSet[K]) Search(idx uint64) (K, *orderedset.OrderedSet[K], int, bool) {
+func (this *DeltaSet[K]) Search(idx uint64) (K, *orderedset.OrderedSet[K, K], int, bool) {
 	set, mapped := this.mapTo(int(idx))
 	if mapped < 0 {
 		return this.nilVal, nil, -1, false

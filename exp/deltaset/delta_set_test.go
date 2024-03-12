@@ -31,7 +31,7 @@ func TestDeltaSliceBasic(t *testing.T) {
 	if deltaSet.Insert(11, 12, 13); !reflect.DeepEqual(deltaSet.committed.Elements(), []int{}) ||
 		!deltaSet.updated.IsDirty() ||
 		!reflect.DeepEqual(deltaSet.updated.Elements(), []int{11, 12, 13}) {
-		t.Error("failed to append", deltaSet.committed.Elements(), deltaSet.updated.Elements())
+		t.Error("failed to append", deltaSet.updated.IsDirty(), deltaSet.committed.Elements(), deltaSet.updated.Elements())
 	}
 
 	if deltaSet.Commit(); deltaSet.committed.Length() != 3 ||

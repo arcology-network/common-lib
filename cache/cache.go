@@ -19,6 +19,7 @@ package storage
 
 import (
 	"runtime"
+	"sync"
 
 	"github.com/arcology-network/common-lib/exp/associative"
 	"github.com/arcology-network/common-lib/exp/slice"
@@ -30,22 +31,23 @@ import (
 // Each entry in the cache holds two values, the first value is the old value, and the second value is the new value.
 // The new value will be set to the old value when the Finalize function is called.
 type ReadCache[K comparable, T any] struct {
-	mapper  func(K) uint64
-	cache   []map[K]*associative.Pair[*T, *T]
-	dirties []*associative.Pair[uint64, K] // The buffer that holds the keys that are updated in the current cycle.
-	// stats     []associative.Pair[K, uint64]
+	mapper     func(K) uint64
+	cache      []map[K]*associative.Pair[*T, *T]
+	dirties    [][]*associative.Pair[*T, *T] // The buffer that holds the keys that are updated in the current cycle.
+	cacheLocks []sync.Mutex
 }
 
-func NewReadCache[K comparable, T any](numShards uint64, mapper func(K) uint64) *ReadCache[K, T] {
+func NewReadCache[K comparable, T any](numShards uint64, mapper func(K) uint64, nilK K) *ReadCache[K, T] {
 	newReadCache := &ReadCache[K, T]{
-		mapper:  mapper,
-		cache:   make([]map[K]*associative.Pair[*T, *T], 2),
-		dirties: make([]*associative.Pair[uint64, K], 0, 1024),
-		// stats:     make([]associative.Pair[K, uint64], 0, 1024),
+		mapper:     mapper,
+		cache:      make([]map[K]*associative.Pair[*T, *T], numShards),
+		dirties:    make([][]*associative.Pair[*T, *T], 0, numShards),
+		cacheLocks: make([]sync.Mutex, numShards),
 	}
 
 	for i := range newReadCache.cache {
 		newReadCache.cache[i] = make(map[K]*associative.Pair[*T, *T])
+		newReadCache.dirties[i] = []*associative.Pair[*T, *T]{}
 	}
 	return newReadCache
 }
@@ -66,51 +68,36 @@ func (this *ReadCache[K, T]) Raw(key K) (*associative.Pair[*T, *T], bool) {
 	return nil, false
 }
 
-// PreAlloc pre-allocates the cache with the given keys. So the values can be updated later using the Update function.
-func (this *ReadCache[K, T]) PreAlloc(keys []K, isNil func(k K) bool) {
-	for _, k := range keys {
-		if isNil(k) {
-			continue
-		}
-
-		shardId := this.mapper(k) % uint64(len(this.cache))
-		if _, ok := this.cache[shardId][k]; !ok {
-			this.cache[shardId][k] = &associative.Pair[*T, *T]{}
-			v := this.cache[shardId][k]
-			this.cache[shardId][k] = v // Create a new pair, waiting for the value to be set later.
-		}
-		this.dirties = append(this.dirties, &associative.Pair[uint64, K]{First: shardId, Second: k}) // Record the new key and its shard id.
-	}
-}
-
 // Update updates the cache with the given keys and values. This function isn't thread safe.
 func (this *ReadCache[K, T]) Update(keys []K, values []T) {
 	slice.ParallelForeach(keys, runtime.NumCPU(), func(i int, k *K) {
 		shardId := this.mapper(*k) % uint64(len(this.cache))
-		this.cache[shardId][*k].First = &values[i]
+		pair, ok := this.cache[shardId][*k]
+		if !ok { // If the key doesn't exist in the cache, create a new pair and add it to the cache.
+			pair = &associative.Pair[*T, *T]{}
+			this.cacheLocks[shardId].Lock()
+			this.cache[shardId][*k] = pair
+			this.dirties[shardId] = append(this.dirties[shardId], pair)
+			this.cacheLocks[shardId].Unlock()
+		}
+		pair.First = &values[i] // Assign the new value to the new value slot.
 	})
 }
 
 // Finalize finalizes the cache by setting the new values to the old values.
 func (this *ReadCache[K, T]) Finalize() {
-	slice.ParallelForeach(this.dirties, runtime.NumCPU(), func(i int, v **associative.Pair[uint64, K]) {
-		val := this.cache[(*v).First][((*v).Second)]
-		val.Second = val.First
-		val.First = nil
-	})
-
-	// Some keys are imported but later removed during conflict resolution.
-	for _, k := range this.dirties {
-		//This needs to be check because the transitions imported aren't guaranteed to be conflict free, there may be some duplicate keys.
-		// If the same key has been imported and removed twice, it will cause a panic.
-		if val, ok := this.cache[k.First][k.Second]; ok { //
-			if val.First == nil && val.Second == nil {
-				delete(this.cache[k.First], k.Second)
-			}
+	slice.ParallelForeach(this.dirties, runtime.NumCPU(), func(i int, vals *[]*associative.Pair[*T, *T]) {
+		for _, val := range *vals {
+			val.Second = val.First // Set the new value to the old value.
+			val.First = nil        // Clear the new value for the next cycle.
 		}
-	}
+	})
 	this.Clear()
 }
 
 // Call this function to clear the cache.
-func (this *ReadCache[K, T]) Clear() { this.dirties = this.dirties[:0] }
+func (this *ReadCache[K, T]) Clear() {
+	slice.Foreach(this.dirties, func(i int, vals *[]*associative.Pair[*T, *T]) {
+		*vals = (*vals)[:0]
+	})
+}
