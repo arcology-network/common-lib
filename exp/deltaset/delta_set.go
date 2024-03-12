@@ -62,12 +62,12 @@ func (*DeltaSet[K]) New(
 }
 
 func (this *DeltaSet[K]) mapTo(idx int) (*orderedset.OrderedSet[K], int) {
-	if idx >= this.committed.Length()+this.updated.Length() {
+	if idx >= int(this.Length()) {
 		return nil, -1
 	}
 
 	// The index is in the updated list
-	if this.committed.Length() <= idx {
+	if idx >= this.committed.Length() {
 		return this.updated, idx - this.committed.Length()
 	}
 	return this.committed, idx
@@ -97,25 +97,34 @@ func (this *DeltaSet[K]) Size(getter func(K) int) int {
 		common.IfThenDo1st(this.removed != nil, func() int { return this.removed.Size(getter) }, 0)
 }
 
+func (this *DeltaSet[K]) Clear() {
+	this.updated.Clear()
+	this.removed.Clear()
+}
+
 // Debugging only
 func (this *DeltaSet[K]) SetCommitted(v []K) { this.committed.Insert(v...) }
 func (this *DeltaSet[K]) SetRemoved(v []K)   { this.removed.Insert(v...) }
 func (this *DeltaSet[K]) SetAppended(v []K)  { this.updated.Insert(v...) }
 func (this *DeltaSet[K]) SetNilVal(v K)      { this.nilVal = v }
 
-func (this *DeltaSet[K]) IsSynced() bool {
+// IsDirty returns true if the DeltaSet is up to date, with no
+func (this *DeltaSet[K]) IsDirty() bool {
 	return this.removed.Length() == 0 && this.updated.Length() == 0
 }
 
+// Delta returns a new instance of DeltaSet with the same updated and removed elements only.
 func (this *DeltaSet[K]) Delta() *DeltaSet[K] {
 	return this.CloneDelta()
 }
 
+// SetDelta sets the updated and removed lists to the specified DeltaSet.
 func (this *DeltaSet[K]) SetDelta(delta *DeltaSet[K]) {
 	this.updated = delta.updated
 	this.removed = delta.removed
 }
 
+// ResetDelta resets the updated and removed lists to empty.
 func (this *DeltaSet[K]) ResetDelta() {
 	this.updated.Clear()
 	this.removed.Clear()
@@ -132,7 +141,7 @@ func (this *DeltaSet[K]) NonNilCount() uint64 {
 }
 
 // Insert inserts an element into the DeltaSet and updates the index.
-func (this *DeltaSet[K]) Insert(elems ...K) {
+func (this *DeltaSet[K]) Insert(elems ...K) *DeltaSet[K] {
 	for _, elem := range elems {
 		if ok, _ := this.removed.Exists(elem); ok { // If the element is in the removed list, move it to the updated list
 			this.removed.Delete(elem)
@@ -146,15 +155,17 @@ func (this *DeltaSet[K]) Insert(elems ...K) {
 			this.updated.Insert(elem) // Either in the updated list or not.
 		}
 	}
+	return this
 }
 
 // Insert inserts an element into the DeltaSet and updates the index.
-func (this *DeltaSet[K]) Delete(elems ...K) {
+func (this *DeltaSet[K]) Delete(elems ...K) *DeltaSet[K] {
 	for _, elem := range elems {
 		if ok, _ := this.removed.Exists(elem); !ok {
 			this.removed.Insert(elem) // Impossible to have duplicate entries possible, since the removed list is a set.
 		}
 	}
+	return this
 }
 
 // Clone returns a new instance of DeltaSet with the same elements.
@@ -166,23 +177,41 @@ func (this *DeltaSet[K]) CloneFull() *DeltaSet[K] {
 
 // Clone returns a new instance with the
 // committed list shared original DeltaSet.
-func (this *DeltaSet[K]) Clone() *DeltaSet[K] {
-	set := this.CloneDelta()
+func (this *DeltaSet[K]) Clone(v ...*orderedset.OrderedSet[K]) *DeltaSet[K] {
+	set := this.CloneDelta(v...)
 	set.committed = this.committed //.Clone()
 	return set
 }
 
 // CloneDelta returns a new instance of DeltaSet with the
 // same updated and removed elements only.the committed list is not cloned.
-func (this *DeltaSet[K]) CloneDelta() *DeltaSet[K] {
+func (this *DeltaSet[K]) CloneDelta(v ...*orderedset.OrderedSet[K]) *DeltaSet[K] {
 	set := &DeltaSet[K]{
-		nilVal:    this.nilVal,
-		committed: orderedset.NewOrderedSet(this.nilVal, 0),
-		updated:   this.updated.Clone(),
-		removed:   this.removed.Clone(),
+		nilVal: this.nilVal,
+		// committed: orderedset.NewOrderedSet(this.nilVal, 0),
+		updated: this.updated.Clone(),
+		removed: this.removed.Clone(),
+	}
+
+	if len(v) > 0 {
+		set.committed = v[0]
+	} else {
+		set.committed = orderedset.NewOrderedSet(this.nilVal, 0)
 	}
 	return set
 }
+
+// CloneDelta returns a new instance of DeltaSet with the
+// same updated and removed elements only.the committed list is not cloned.
+// func (this *DeltaSet[K]) CloneDelta() *DeltaSet[K] {
+// 	set := &DeltaSet[K]{
+// 		nilVal:    this.nilVal,
+// 		committed: orderedset.NewOrderedSet(this.nilVal, 0),
+// 		updated:   this.updated.Clone(),
+// 		removed:   this.removed.Clone(),
+// 	}
+// 	return set
+// }
 
 func (this *DeltaSet[K]) DeleteByIndex(idx uint64) {
 	if k, _, _, ok := this.Search(idx); ok {
@@ -190,6 +219,9 @@ func (this *DeltaSet[K]) DeleteByIndex(idx uint64) {
 	}
 }
 
+// GetByIndex returns the element at the specified index.
+// It does NOT check if the index is corresponding to a non-nil value.
+// If the value at the index is nil, the nil value is returned.
 func (this *DeltaSet[K]) GetByIndex(idx uint64) (K, bool) {
 	if k, _, _, ok := this.Search(idx); ok {
 		if ok, _ := this.removed.Exists(k); !ok {
@@ -197,6 +229,46 @@ func (this *DeltaSet[K]) GetByIndex(idx uint64) (K, bool) {
 		}
 	}
 	return *new(K), false
+}
+
+// NthNonNil returns the nth non-nil value from the DeltaSet.
+// The nth non-nil value isn't necessarily the nth value in the DeltaSet, but the nth non-nil value.
+func (this *DeltaSet[K]) GetNthNonNil(nth uint64) (K, int, bool) {
+	// If the nth value is out of range, no need to search. The nil value is returned.
+	if nth >= this.NonNilCount() {
+		return *new(K), -1, false
+	}
+
+	// This isn't efficient; it is better to search from the beginning or the min and max indices of the removed list to
+	// narrow down the search range. However, that requires some extra code to keep track of the corresponding indices of
+	// the keys in the removed list.
+	cnt := 0
+	for i := 0; i < int(this.Length()); i++ {
+		if K, ok := this.GetByIndex(uint64(i)); ok {
+			if uint64(cnt) == nth {
+				return K, i, true
+			}
+			cnt++
+		}
+	}
+	return *new(K), -1, false
+
+	// dict := this.removed.Dict()
+	// _, minv := mapi.MinValue(dict, func(l int, r int) bool { return l < r })
+	// _, maxv := mapi.MaxValue(dict, func(l int, r int) bool { return l > r })
+
+	// if nth < uint64(minv) {
+	// 	if k, ok := this.GetByIndex(nth); ok {
+	// 		return k, int(nth), true
+	// 	}
+	// }
+
+	// if nth > uint64(maxv) {
+	// 	if k, ok := this.GetByIndex(nth - uint64(this.removed.Length())); ok {
+	// 		return k, int(nth), true
+	// 	}
+	// }
+
 }
 
 // Back get the last non-nil value from the DeltaSet.
@@ -264,6 +336,7 @@ func (this *DeltaSet[K]) TryGetKey(idx uint64) (K, bool) {
 	return k, false
 }
 
+// Get returns the element at the specified index. If the index is out of range, the nil value is returned.
 func (this *DeltaSet[K]) Exists(k K) (bool, int) {
 	if ok, _ := this.removed.Exists(k); ok {
 		return false, -1 // Has been removed already
@@ -282,6 +355,25 @@ func (this *DeltaSet[K]) Exists(k K) (bool, int) {
 
 // Commit commits the updated and removed lists to the committed list.
 // Commit assumes that the updated and removed lists are disjoint.
+// func (this *DeltaSet[K]) Commit(other ...*DeltaSet[K]) *DeltaSet[K] {
+// 	updatedElems := slice.Transform(other, func(_ int, v *DeltaSet[K]) []K {
+// 		return v.updated.Elements()
+// 	})
+// 	slice.PushFront(&updatedElems, this.updated.Elements())
+
+// 	removed := slice.Transform(other, func(_ int, v *DeltaSet[K]) []K {
+// 		return v.removed.Elements()
+// 	})
+// 	slice.PushFront(&removed, this.removed.Elements())
+
+// 	this.committed.Merge(slice.Flatten(updatedElems)) // Merge the updated list to the committed list
+// 	this.committed.Sub(slice.Flatten(removed))        // Remove the removed list from the committed list
+// 	this.ResetDelta()                                 // Reset the updated and removed lists to empty
+// 	fmt.Println(updatedElems)
+// 	fmt.Println(removed)
+// 	return this
+// }
+
 func (this *DeltaSet[K]) Commit(other ...*DeltaSet[K]) *DeltaSet[K] {
 	updateBuffer := make([]K, slice.CountDo(other, func(_ int, v **DeltaSet[K]) int { return (*v).updated.Length() })+this.updated.Length())
 	slice.ConcateToBuffer(other, &updateBuffer, func(v *DeltaSet[K]) []K { return v.updated.Elements() })
@@ -291,9 +383,10 @@ func (this *DeltaSet[K]) Commit(other ...*DeltaSet[K]) *DeltaSet[K] {
 	slice.ConcateToBuffer(other, &removedBuffer, func(v *DeltaSet[K]) []K { return v.removed.Elements() })
 	copy(removedBuffer[len(removedBuffer)-this.removed.Length():], this.removed.Elements())
 
-	this.committed.Merge(updateBuffer)
-	this.committed.Sub(removedBuffer)
-	this.ResetDelta()
+	this.committed.Merge(updateBuffer) // Merge the updated list to the committed list
+	this.committed.Sub(removedBuffer)  // Remove the removed list from the committed list
+	this.ResetDelta()                  // Reset the updated and removed lists to empty	// return this
+
 	return this
 }
 

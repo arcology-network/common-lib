@@ -83,7 +83,7 @@ func (this *DataStore) Size() uint32 {
 	return this.localCache.Size()
 }
 
-func (this *DataStore) Cache() *expmap.ConcurrentMap[string, any] {
+func (this *DataStore) Cache() interface{} { // *expmap.ConcurrentMap[string, any]
 	return this.localCache
 }
 
@@ -165,7 +165,7 @@ func (this *DataStore) BatchInject(keys []string, values []interface{}) error {
 // 	return uint32(len(prefetchedKeys)), count, err
 // }
 
-func (this *DataStore) fetchPersistentStorage(key string, T any) (interface{}, error) {
+func (this *DataStore) RetriveFromStorage(key string, T any) (interface{}, error) {
 	if this.db == nil {
 		return nil, errors.New("Error: DB not found")
 	}
@@ -252,7 +252,7 @@ func (this *DataStore) Retrive(key string, T any) (interface{}, error) {
 	}
 
 	// if v == nil && this.cachePolicy != nil && !this.cachePolicy.InfinitCache() {
-	v, err := this.fetchPersistentStorage(key, T)
+	v, err := this.RetriveFromStorage(key, T)
 	if err == nil {
 		// if this.cachePolicy.CheckCapacity(key, v) { // need to check the cache status first
 		// if err = this.localCache.Set(key, v); err != nil { // Save to the local cache
@@ -400,7 +400,7 @@ func (this *DataStore) UpdateCacheStats(nVals []interface{}) {
 }
 
 func (this *DataStore) RefreshCache() (uint64, uint64) {
-	return this.CachePolicy().Refresh(this.Cache())
+	return this.CachePolicy().Refresh(this.Cache().(*expmap.ConcurrentMap[string, any]))
 }
 
 func (this *DataStore) Print() {

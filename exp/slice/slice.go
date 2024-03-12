@@ -272,6 +272,11 @@ func Insert[T any](values *[]T, pos int, v T) []T {
 	return *values
 }
 
+// Insert inserts a value at a specific position in a slice.
+func PushFront[T any](values *[]T, v T) []T {
+	return Insert(values, 0, v)
+}
+
 // Resize resizes a slice to a new length.
 // If the new length is greater than the current length, it appends the required number of elements to the slice.
 // If the new length is less than or equal to the current length, it truncates the slice.
@@ -791,6 +796,38 @@ func Max[T0 any](array []T0, greater func(T0, T0) bool) (int, T0) {
 	maxv := array[idx]
 	for i := idx; i < len(array); i++ {
 		if greater(array[i], maxv) {
+			idx = i
+			maxv = array[i]
+		}
+	}
+	return idx, maxv
+}
+
+func MinNumeric[T constraints.Float | constraints.Integer](array []T) (int, T) {
+	if len(array) == 0 {
+		return -1, 0
+	}
+
+	idx := 0
+	minv := array[idx]
+	for i := idx; i < len(array); i++ {
+		if array[i] < minv {
+			idx = i
+			minv = array[i]
+		}
+	}
+	return idx, minv
+}
+
+func MaxNumeric[T constraints.Float | constraints.Integer](array []T) (int, T) {
+	if len(array) == 0 {
+		return -1, 0
+	}
+
+	idx := 0
+	maxv := array[idx]
+	for i := idx; i < len(array); i++ {
+		if array[i] > maxv {
 			idx = i
 			maxv = array[i]
 		}

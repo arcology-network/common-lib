@@ -61,16 +61,18 @@ func (this *OrderedSet[K]) Size(getter func(K) int) int { // For encoding
 	return slice.Accumulate(this.elements, 0, func(acc int, k K) int { return acc + getter(k) })
 }
 
-func (this *OrderedSet[K]) Merge(elements []K) {
+func (this *OrderedSet[K]) Merge(elements []K) *OrderedSet[K] {
 	for _, ele := range elements {
 		this.Insert(ele)
 	}
+	return this
 }
 
-func (this *OrderedSet[K]) Sub(elements []K) {
+func (this *OrderedSet[K]) Sub(elements []K) *OrderedSet[K] {
 	for _, ele := range elements {
 		this.Delete(ele)
 	}
+	return this
 }
 
 // Insert inserts an element into the OrderedSet and updates the dict with the specified key.
@@ -142,7 +144,7 @@ func (this *OrderedSet[K]) Clear() {
 }
 
 // Debugging function to check if the dict is in sync with the slice.
-func (this *OrderedSet[K]) IsSynced() bool {
+func (this *OrderedSet[K]) IsDirty() bool {
 	if len(this.elements) != len(this.dict) {
 		return false
 	}
