@@ -666,7 +666,7 @@ func EqualSet[T comparable](lhv []T, rhv []T) bool {
 	return true
 }
 
-func EqualSetIf[T comparable](lhv []T, rhv []T, equal func(T, T) bool) bool {
+func EqualSetIf[T any](lhv []T, rhv []T, equal func(T, T) bool) bool {
 	if len(lhv) != len(rhv) {
 		return false
 	}

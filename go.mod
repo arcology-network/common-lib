@@ -12,7 +12,6 @@ replace github.com/ethereum/go-ethereum v1.13.1 => ../concurrent-evm/
 
 require (
 	github.com/dgraph-io/badger v1.6.2
-	github.com/elliotchance/orderedmap v1.5.1
 	github.com/ethereum/go-ethereum v1.13.1
 	github.com/holiman/uint256 v1.2.4
 	github.com/natefinch/atomic v1.0.1
@@ -21,6 +20,8 @@ require (
 )
 
 require (
+	github.com/cespare/xxhash v1.1.0
+	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/google/btree v1.1.2
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-memdb v1.3.4
@@ -35,7 +36,6 @@ require (
 	github.com/bits-and-blooms/bitset v1.10.0 // indirect
 	github.com/btcsuite/btcd v0.20.1-beta // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cockroachdb/errors v1.11.1 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/pebble v0.0.0-20231208175357-58bdc725addc // indirect
