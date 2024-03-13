@@ -71,20 +71,20 @@ func (this *DataStore) WriteEthTries(...interface{}) [32]byte {
 	return [32]byte{}
 }
 
-func (this *DataStore) Encoder() func(string, interface{}) []byte {
+func (this *DataStore) Cache(any) interface{} { // *expmap.ConcurrentMap[string, any]
+	return this.localCache
+}
+
+func (this *DataStore) Encoder(any) func(string, interface{}) []byte {
 	return this.encoder
 }
 
-func (this *DataStore) Decoder() func(string, []byte, any) interface{} {
+func (this *DataStore) Decoder(any) func(string, []byte, any) interface{} {
 	return this.decoder
 }
 
 func (this *DataStore) Size() uint32 {
 	return this.localCache.Size()
-}
-
-func (this *DataStore) Cache() interface{} { // *expmap.ConcurrentMap[string, any]
-	return this.localCache
 }
 
 func (this *DataStore) GetMaxCacheCapacity() int {
@@ -400,7 +400,7 @@ func (this *DataStore) UpdateCacheStats(nVals []interface{}) {
 }
 
 func (this *DataStore) RefreshCache() (uint64, uint64) {
-	return this.CachePolicy().Refresh(this.Cache().(*expmap.ConcurrentMap[string, any]))
+	return this.CachePolicy().Refresh(this.Cache(nil).(*expmap.ConcurrentMap[string, any]))
 }
 
 func (this *DataStore) Print() {
