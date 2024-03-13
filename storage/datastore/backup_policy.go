@@ -18,10 +18,10 @@ func NewBackupPolicy(datastore *DataStore, interval uint32) *BackupPolicy {
 }
 
 func (this *BackupPolicy) FullBackup() {
-	keys, values := this.datastore.Cache().(*expmap.ConcurrentMap[string, any]).KVs()
+	keys, values := this.datastore.Cache(nil).(*expmap.ConcurrentMap[string, any]).KVs()
 	codec.Strings(keys).Encode()
 
-	encoder := this.datastore.Encoder()
+	encoder := this.datastore.Encoder(nil)
 	byteset := make([][]byte, len(keys))
 	for i := 0; i < len(keys); i++ {
 		byteset[i] = encoder(keys[i], values[i])
