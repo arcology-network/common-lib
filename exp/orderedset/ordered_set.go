@@ -91,14 +91,14 @@ func (this *OrderedSet[K]) At(idx int) *K {
 	return &this.elements[idx]
 }
 
-func (this *OrderedSet[K]) IndexToKey(k K) int {
+func (this *OrderedSet[K]) KeyToIndex(k K) int {
 	if idx, ok := this.dict[k]; ok {
 		return idx
 	}
 	return -1
 }
 
-func (this *OrderedSet[K]) KeyToIndex(idx int) K {
+func (this *OrderedSet[K]) IndexToKey(idx int) K {
 	return this.elements[idx]
 }
 
@@ -144,19 +144,7 @@ func (this *OrderedSet[K]) Clear() {
 }
 
 // Debugging function to check if the dict is in sync with the slice.
-func (this *OrderedSet[K]) IsDirty() bool {
-	if len(this.elements) != len(this.dict) {
-		return false
-	}
-
-	for i, v := range this.elements {
-		if this.dict[v] != i {
-			fmt.Printf("Index out of sync: %v, %v, %v\n", i, v, this.dict[v])
-			return false
-		}
-	}
-	return true
-}
+func (this *OrderedSet[K]) IsDirty() bool { return len(this.elements) != len(this.dict) }
 
 func (this *OrderedSet[K]) Equal(other *OrderedSet[K]) bool {
 	return slice.EqualSet(this.elements, other.elements) && mapi.EqualIf(this.dict, other.dict, func(v0 int, v1 int) bool { return v0 == v1 })

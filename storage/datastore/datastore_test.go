@@ -8,6 +8,7 @@ import (
 
 	"github.com/arcology-network/common-lib/codec"
 	filedb "github.com/arcology-network/common-lib/storage/filedb"
+	policy "github.com/arcology-network/common-lib/storage/policy"
 )
 
 var (
@@ -23,14 +24,14 @@ func TestDatastoreBasic(t *testing.T) {
 	keys := []string{"123", "456", "789"}
 	values := [][]byte{{1, 2, 3}, {4, 5, 6}, {5, 5, 5}}
 
-	//policy := NewCachePolicy(1234, 1.0)
+	//policy := policy.NewCachePolicy(1234, 1.0)
 	encoder := func(_ string, v interface{}) []byte { return codec.Bytes(v.([]byte)).Encode() }
 	decoder := func(_ string, data []byte, _ any) interface{} {
 		return []byte(codec.Bytes("").Decode(data).(codec.Bytes))
 	}
 
 	// fileDB.BatchSet(keys, values)
-	policy := NewCachePolicy(0, 0)
+	policy := policy.NewCachePolicy(0, 0)
 	store := NewDataStore(nil, policy, fileDB, encoder, decoder)
 
 	vs := make([]interface{}, len(values))
@@ -66,12 +67,12 @@ func TestDatastorePersistentStorage(t *testing.T) {
 	keys := []string{"123", "456"}
 	values := [][]byte{{1, 2, 3}, {4, 5, 6}}
 
-	//policy := NewCachePolicy(1234, 1.0)
+	//policy := policy.NewCachePolicy(1234, 1.0)
 	encoder := func(_ string, v interface{}) []byte { return codec.Bytes(v.([]byte)).Encode() }
 	decoder := func(_ string, data []byte, _ any) interface{} { return codec.Bytes("").Decode(data) }
 
 	// fileDB.BatchSet(keys, values)
-	policy := NewCachePolicy(math.MaxUint64, 1)
+	policy := policy.NewCachePolicy(math.MaxUint64, 1)
 	store := NewDataStore(nil, policy, fileDB, encoder, decoder)
 
 	vs := make([]interface{}, len(values))
@@ -115,7 +116,7 @@ func TestDatastorePrefetch(t *testing.T) {
 	values[2] = []byte{6, 7, 8}
 	values[3] = []byte{8, 9, 0}
 
-	//policy := NewCachePolicy(1234, 1.0)
+	//policy := policy.NewCachePolicy(1234, 1.0)
 	encoder := func(_ string, v interface{}) []byte { return codec.Bytes(v.([]byte)).Encode() }
 	decoder := func(_ string, data []byte, _ any) interface{} { return codec.Bytes("").Decode(data) }
 
@@ -123,7 +124,7 @@ func TestDatastorePrefetch(t *testing.T) {
 	// 	t.Error(err)
 	// }
 
-	policy := NewCachePolicy(math.MaxUint64, 1)
+	policy := policy.NewCachePolicy(math.MaxUint64, 1)
 	store := NewDataStore(nil, policy, fileDB, encoder, decoder)
 
 	vs := make([]interface{}, len(values))

@@ -118,6 +118,15 @@ func SetByIndices[T0 any, T1 constraints.Integer](source []T0, indices []T1, set
 // RemoveIf removes all elements from a slice that satisfy a given condition.
 // It modifies the original slice and returns the modified slice.
 func RemoveIf[T any](values *[]T, condition func(int, T) bool) []T {
+	if len(*values) == 0 {
+		return *values
+	}
+
+	if len(*values) == 1 && condition(0, (*values)[0]) {
+		(*values) = (*values)[:0]
+		return *values
+	}
+
 	MoveIf(values, condition)
 	return *values
 }
@@ -249,18 +258,6 @@ func ParallelTransform[T any, T1 any](values []T, numThd int, do func(i int, v T
 	common.ParallelWorker(len(values), numThd, worker)
 	return appended
 }
-
-// func ParallelTransform[T0 any, T1 any](values []T0, numThd int, do func(i int, v T0) (T1, bool)) []T1 {
-// 	flags := make([]bool, len(values))
-// 	appended := ParallelAppend(values, numThd, func(i int, v T0) T1 {
-// 		converted, ok := do(i, v)
-// 		flags[i] = ok
-// 		return converted
-// 	})
-// 	RemoveBothIf()
-
-// 	return appended
-// }
 
 // Insert inserts a value at a specific position in a slice.
 func Insert[T any](values *[]T, pos int, v T) []T {
@@ -697,6 +694,16 @@ func EqualSetIf[T any](lhv []T, rhv []T, equal func(T, T) bool) bool {
 		}
 	}
 	return true
+}
+
+// SelectN selects the nth element from each slice in the given 2D slice and returns a new 1D slice containing the selected elements.
+// The type parameter T represents the type of elements in the slices. The function returns a slice of type T.
+func SelectN[T any](vals [][]T, n int) []T {
+	selected := make([]T, len(vals))
+	for i, v := range vals {
+		selected[i] = v[n]
+	}
+	return selected
 }
 
 // GroupBy groups the elements of an array based on a key getter function.

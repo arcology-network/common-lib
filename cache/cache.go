@@ -23,24 +23,34 @@ package storage
 // Each entry in the cache holds two values, the first value is the old value, and the second value is the new value.
 // The new value will be set to the old value when the Finalize function is called.
 type ReadCache[K comparable, T any] struct {
-	nilK        K
-	mapper      func(K) uint64
-	singleCache map[K]*T
+	isNil     func(T) bool
+	cache     map[K]*T
+	enabled   bool
+	dirtyKeys []K
+	dirtyVals []T
 }
 
-func NewReadCache[K comparable, T any](numShards uint64, mapper func(K) uint64, nilK K) *ReadCache[K, T] {
+func NewReadCache[K comparable, T any](numShards uint64, isNil func(T) bool) *ReadCache[K, T] {
 	newReadCache := &ReadCache[K, T]{
-		nilK:        nilK,
-		mapper:      mapper,
-		singleCache: make(map[K]*T),
+		isNil:   isNil,
+		cache:   make(map[K]*T),
+		enabled: true,
 	}
 	return newReadCache
 }
 
-func (this *ReadCache[K, T]) Length() int { return len(this.singleCache) }
+func (this *ReadCache[K, T]) Status() bool { return this.enabled }
+func (this *ReadCache[K, T]) Enable()      { this.enabled = true }
+func (this *ReadCache[K, T]) Disable()     { this.enabled = false }
+
+func (this *ReadCache[K, T]) Length() int { return len(this.cache) }
 
 func (this *ReadCache[K, T]) Get(k K) (*T, bool) {
-	v, ok := this.singleCache[k]
+	if !this.enabled {
+		return nil, false
+	}
+
+	v, ok := this.cache[k]
 	if !ok {
 		return nil, false
 	}
@@ -48,11 +58,18 @@ func (this *ReadCache[K, T]) Get(k K) (*T, bool) {
 }
 
 func (this *ReadCache[K, T]) Commit(keys []K, values []T) {
-	for i, k := range keys {
-		this.singleCache[k] = &values[i]
+	if !this.enabled {
+		return
 	}
-	this.Clear()
+
+	for i, k := range keys {
+		if this.isNil(values[i]) {
+			delete(this.cache, k)
+		} else {
+			this.cache[k] = &values[i]
+		}
+	}
 }
 
-// Call this function to clear the cache.
-func (this *ReadCache[K, T]) Clear() {}
+// Call this function to clear the cache completely.
+func (this *ReadCache[K, T]) Clear() { clear(this.cache) }

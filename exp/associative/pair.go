@@ -32,27 +32,27 @@ type Pair[T0, T1 any] struct {
 type Pairs[T0, T1 any] []*Pair[T0, T1]
 
 // Firsts extracts the first elements from an array of pairs and returns a new slice.
-func (this *Pairs[T0, T1]) Array() *[]*Pair[T0, T1] {
-	return (*[]*Pair[T0, T1])(this)
+func (this Pairs[T0, T1]) Slice() *[]*Pair[T0, T1] {
+	return (*[]*Pair[T0, T1])(&this)
 }
 
 // Firsts extracts the first elements from an array of pairs and returns a new slice.
-func (this *Pairs[T0, T1]) Firsts() []T0 {
-	return slice.ParallelAppend(*this, 4, func(i int, pair *Pair[T0, T1]) T0 {
+func (this Pairs[T0, T1]) Firsts() []T0 {
+	return slice.ParallelAppend(this, 4, func(i int, pair *Pair[T0, T1]) T0 {
 		return pair.First
 	})
 }
 
 // Seconds extracts the second elements from an array of pairs and returns a new slice.
-func (this *Pairs[T0, T1]) Seconds() []T1 {
-	return slice.ParallelAppend(*this, 4, func(i int, pair *Pair[T0, T1]) T1 {
+func (this Pairs[T0, T1]) Seconds() []T1 {
+	return slice.ParallelAppend(this, 4, func(i int, pair *Pair[T0, T1]) T1 {
 		return pair.Second
 	})
 }
 
-func (this *Pairs[T0, T1]) Split() ([]T0, []T1) {
-	seconds := make([]T1, len(*this))
-	return slice.ParallelAppend(*this, 4, func(i int, pair *Pair[T0, T1]) T0 {
+func (this Pairs[T0, T1]) Split() ([]T0, []T1) {
+	seconds := make([]T1, len(this))
+	return slice.ParallelAppend(this, 4, func(i int, pair *Pair[T0, T1]) T0 {
 		seconds[i] = pair.Second
 		return pair.First
 	}), seconds
