@@ -51,7 +51,7 @@ func TestIndexerAlone(t *testing.T) {
 	)
 
 	// Create 10 transactions.
-	txs := slice.Append(make([]*Tx, 10), func(i int, tx *Tx) *Tx {
+	txs := slice.Transform(make([]*Tx, 10), func(i int, tx *Tx) *Tx {
 		time.Sleep(1 * time.Millisecond)
 		return &Tx{
 			hash:    strconv.Itoa(i),
@@ -94,7 +94,7 @@ func TestIndexerWithDB(t *testing.T) {
 	}
 
 	// Create 10 transactions.
-	txs := slice.Append(make([]*Tx, 10), func(i int, tx *Tx) *Tx {
+	txs := slice.Transform(make([]*Tx, 10), func(i int, tx *Tx) *Tx {
 		time.Sleep(1 * time.Millisecond)
 		return &Tx{
 			Hash:    strconv.Itoa(i),
@@ -113,12 +113,12 @@ func TestIndexerWithDB(t *testing.T) {
 	db := memdb.NewMemoryDB() // Tx DB
 
 	// Extract the primary keys.
-	keys := slice.Append(txs, func(_ int, tx *Tx) string {
+	keys := slice.Transform(txs, func(_ int, tx *Tx) string {
 		return string(tx.Hash[:])
 	})
 
 	// Encode the transactions.
-	encoded := slice.Append(txs, func(_ int, tx *Tx) []byte {
+	encoded := slice.Transform(txs, func(_ int, tx *Tx) []byte {
 		data, err := json.Marshal(tx)
 		if err != nil {
 			panic(err)
@@ -127,7 +127,7 @@ func TestIndexerWithDB(t *testing.T) {
 	})
 
 	// Decode the transactions.
-	queryTxs := slice.Append(encoded, func(i int, data []byte) *Tx {
+	queryTxs := slice.Transform(encoded, func(i int, data []byte) *Tx {
 		tx := &Tx{}
 		if err := json.Unmarshal(data, tx); err != nil {
 			panic(err)
@@ -146,7 +146,7 @@ func TestIndexerWithDB(t *testing.T) {
 	}
 
 	// Create the indexes for the transactions.
-	indics := slice.Append(txs, func(i int, tx *Tx) *txIndex {
+	indics := slice.Transform(txs, func(i int, tx *Tx) *txIndex {
 		return &txIndex{
 			time:       tx.Time,
 			height:     tx.Height,
@@ -170,14 +170,14 @@ func TestIndexerWithDB(t *testing.T) {
 	}
 
 	// Get the primary keys of the query results.
-	primaryKeys := slice.Append(res, func(i int, tx *txIndex) string {
+	primaryKeys := slice.Transform(res, func(i int, tx *txIndex) string {
 		return tx.primaryKey
 	})
 
 	// Get the transactions from the database using the primary keys.
 	encoded, _ = db.BatchGet(primaryKeys)
 
-	queryTxs = slice.Append(encoded, func(i int, data []byte) *Tx {
+	queryTxs = slice.Transform(encoded, func(i int, data []byte) *Tx {
 		tx := &Tx{}
 		json.Unmarshal(data, tx)
 		return tx

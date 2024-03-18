@@ -19,8 +19,8 @@ package orderedset
 
 import (
 	"fmt"
-	"sort"
 
+	"github.com/arcology-network/common-lib/common"
 	mapi "github.com/arcology-network/common-lib/exp/map"
 	"github.com/arcology-network/common-lib/exp/slice"
 )
@@ -29,14 +29,14 @@ import (
 // Entries with the same key are stored in a slice in the order they were inserted.
 type OrderedSet[K comparable] struct {
 	elements []K
-	dict     map[K]int
+	dict     map[K]*int
 	nilValue K
 }
 
 // NewIndexedSlice creates a new instance of OrderedSet with the specified page size, minimum number of pages, and pre-allocation size.
 func NewOrderedSet[K comparable](nilValue K, preAlloc int, vals ...K) *OrderedSet[K] {
 	set := &OrderedSet[K]{
-		dict:     make(map[K]int),
+		dict:     make(map[K]*int),
 		elements: append(make([]K, 0, preAlloc+len(vals)), vals...),
 		nilValue: nilValue,
 	}
@@ -45,14 +45,15 @@ func NewOrderedSet[K comparable](nilValue K, preAlloc int, vals ...K) *OrderedSe
 
 func (this *OrderedSet[K]) Init() *OrderedSet[K] {
 	for i, idx := range this.elements {
-		this.dict[idx] = i
+		// fmt.Println(*(&i))
+		this.dict[idx] = common.New(i)
 	}
 	return this
 }
 
-func (this *OrderedSet[K]) Dict() map[K]int { return this.dict }
-func (this *OrderedSet[K]) Elements() []K   { return this.elements }
-func (this *OrderedSet[K]) Length() int     { return len(this.elements) }
+func (this *OrderedSet[K]) Dict() map[K]*int { return this.dict }
+func (this *OrderedSet[K]) Elements() []K    { return this.elements }
+func (this *OrderedSet[K]) Length() int      { return len(this.elements) }
 func (this *OrderedSet[K]) Clone() *OrderedSet[K] {
 	return NewOrderedSet[K](this.nilValue, len(this.elements), this.elements...)
 }
@@ -82,7 +83,7 @@ func (this *OrderedSet[K]) Insert(keys ...K) {
 	for _, k := range keys {
 		if _, ok := this.dict[k]; !ok { // New entries
 			this.elements = append(this.elements, k)
-			this.dict[k] = len(this.elements) - 1
+			this.dict[k] = common.New(len(this.elements) - 1)
 		}
 	}
 }
@@ -93,7 +94,7 @@ func (this *OrderedSet[K]) At(idx int) *K {
 
 func (this *OrderedSet[K]) KeyToIndex(k K) int {
 	if idx, ok := this.dict[k]; ok {
-		return idx
+		return *idx
 	}
 	return -1
 }
@@ -110,32 +111,41 @@ func (this *OrderedSet[K]) DeleteByIndex(indices ...int) {
 }
 
 func (this *OrderedSet[K]) Delete(keys ...K) bool {
-	removed := make([]int, len(keys))
-	for i, k := range keys {
-		if idx, ok := this.dict[k]; ok {
-			slice.RemoveAt(&this.elements, idx)
-			delete(this.dict, k)
-			removed[i] = idx
-		}
+	dict := mapi.FromSlice(keys, func(k K) *int { return this.dict[k] })
+	for _, k := range keys {
+		delete(this.dict, k)
 	}
-	this.Sync(removed...)
+
+	minIdx := len(this.elements)
+	slice.RemoveIf(&this.elements, func(i int, k K) bool {
+		idx, ok := dict[k]
+		if ok && *idx < minIdx {
+			minIdx = *idx
+		}
+		return ok
+	})
+
+	// This function will reorder the elements in the slice and update the dict accordingly.
+	// Some elements may have been removed, so there are some gaps in the slice. The dictionary
+	// no longer reflects the correct index of the elements.
+	for i, k := range this.elements {
+		*this.dict[k] = i
+	}
 	return false
 }
 
-func (this *OrderedSet[K]) Sync(offsets ...int) {
-	sort.Ints(offsets)
-	offsets = append(offsets, len(this.elements))
-	for i := 0; i < len(offsets)-1; i++ {
-		for j := offsets[i]; j < offsets[i+1]; j++ {
-			k := this.elements[j]
-			this.dict[k] = this.dict[k] - 1
-		}
-	}
-}
+// func (this *OrderedSet[K]) Reorder() {
+// 	indices := mapi.Values(this.dict)
+// 	for i, idx := range indices {
+// 		*idx = i
+// 	}
+// }
 
 func (this *OrderedSet[K]) Exists(k K) (bool, int) {
-	v, ok := this.dict[k]
-	return ok, v
+	if v, ok := this.dict[k]; ok {
+		return ok, *v
+	}
+	return false, -1
 }
 
 func (this *OrderedSet[K]) Clear() {
@@ -147,7 +157,7 @@ func (this *OrderedSet[K]) Clear() {
 func (this *OrderedSet[K]) IsDirty() bool { return len(this.elements) != len(this.dict) }
 
 func (this *OrderedSet[K]) Equal(other *OrderedSet[K]) bool {
-	return slice.EqualSet(this.elements, other.elements) && mapi.EqualIf(this.dict, other.dict, func(v0 int, v1 int) bool { return v0 == v1 })
+	return slice.EqualSet(this.elements, other.elements) && mapi.EqualIf(this.dict, other.dict, func(v0 *int, v1 *int) bool { return *v0 == *v1 })
 }
 
 func (this *OrderedSet[K]) Print() {
@@ -158,8 +168,8 @@ func (this *OrderedSet[K]) Print() {
 // since it has some quite complicated consequences. !!!
 func (this *OrderedSet[K]) replace(idx int, v K) K {
 	old := this.elements[idx]
-	delete(this.dict, this.elements[idx]) // remove the old key
-	this.elements[idx] = v                // update the value
-	this.dict[this.elements[idx]] = idx   // update the dict
+	delete(this.dict, this.elements[idx])           // remove the old key
+	this.elements[idx] = v                          // update the value
+	this.dict[this.elements[idx]] = common.New(idx) // update the dict
 	return old
 }

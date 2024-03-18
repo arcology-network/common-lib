@@ -69,7 +69,7 @@ func TestQueryCacheTx(t *testing.T) {
 			},
 		}
 
-		if err := cache.Add("block", slice.Append(blocks, func(_ int, v *CachedBlock) interface{} { return v })...); err != nil {
+		if err := cache.Add("block", slice.Transform(blocks, func(_ int, v *CachedBlock) interface{} { return v })...); err != nil {
 			panic(err)
 		}
 
@@ -117,7 +117,7 @@ func TestQueryCacheTx(t *testing.T) {
 			},
 		}
 
-		if err := cache.Add("tx", slice.Append(txs, func(_ int, v *CachedTx) interface{} { return v })...); err != nil {
+		if err := cache.Add("tx", slice.Transform(txs, func(_ int, v *CachedTx) interface{} { return v })...); err != nil {
 			panic(err)
 		}
 
@@ -196,7 +196,7 @@ func TestQueryCacheTxPerformance1M(t *testing.T) {
 			Hash:   "0x" + fmt.Sprint(i),
 		}
 	}
-	txInterfaces := slice.Append(txs, func(_ int, v *CachedTx) interface{} { return v })
+	txInterfaces := slice.Transform(txs, func(_ int, v *CachedTx) interface{} { return v })
 
 	t0 := time.Now()
 	if err := cache.Add("tx", txInterfaces...); err != nil {

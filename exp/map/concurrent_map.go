@@ -108,7 +108,7 @@ func (this *ConcurrentMap[K, V]) BatchGet(keys []K, args ...interface{}) ([]V, [
 // DirectBatchGet retrieves the values associated with the specified shard IDs and keys from the ConcurrentMap.
 // It returns a slice of values in the same order as the keys.
 func (this *ConcurrentMap[K, V]) DirectBatchGet(shardIDs []uint8, keys []K, args ...interface{}) []V {
-	return slice.ParallelAppend(keys, 5, func(i int, _ K) V {
+	return slice.ParallelTransform(keys, 5, func(i int, _ K) V {
 		return this.shards[shardIDs[i]][keys[i]]
 	})
 }
@@ -230,7 +230,7 @@ func (this *ConcurrentMap[K, V]) Keys() []K {
 		defer this.shardLocks[i].Unlock()
 	}
 
-	keySet := slice.ParallelAppend[map[K]V](this.shards, 8, func(i int, m map[K]V) []K {
+	keySet := slice.ParallelTransform[map[K]V](this.shards, 8, func(i int, m map[K]V) []K {
 		return common.MapKeys(m)
 	})
 	return slice.Flatten(keySet)

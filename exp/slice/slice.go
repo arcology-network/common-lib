@@ -216,26 +216,26 @@ func ParallelForeach[T any](values []T, nThds int, do func(int, *T)) {
 }
 
 // Append applies a function to each element in a slice and returns a new slice with the results.
-func Append[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
-	vec := make([]T1, len(values))
-	for i := 0; i < len(values); i++ {
-		vec[i] = do(i, values[i])
-	}
-	return vec
-}
+// func Append[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
+// 	vec := make([]T1, len(values))
+// 	for i := 0; i < len(values); i++ {
+// 		vec[i] = do(i, values[i])
+// 	}
+// 	return vec
+// }
 
-// ParallelAppend applies a function to each index in a slice in parallel using multiple threads
-// and returns a new slice with the results.
-func ParallelAppend[T any, T1 any](values []T, numThd int, do func(i int, v T) T1) []T1 {
-	appended := make([]T1, len(values))
-	worker := func(start, end, index int, args ...interface{}) {
-		for i := start; i < end; i++ {
-			appended[i] = do(i, values[i])
-		}
-	}
-	common.ParallelWorker(len(values), numThd, worker)
-	return appended
-}
+// // ParallelAppend applies a function to each index in a slice in parallel using multiple threads
+// // and returns a new slice with the results.
+// func ParallelAppend[T any, T1 any](values []T, numThd int, do func(i int, v T) T1) []T1 {
+// 	appended := make([]T1, len(values))
+// 	worker := func(start, end, index int, args ...interface{}) {
+// 		for i := start; i < end; i++ {
+// 			appended[i] = do(i, values[i])
+// 		}
+// 	}
+// 	common.ParallelWorker(len(values), numThd, worker)
+// 	return appended
+// }
 
 // Transform applies a function to each element in a slice and returns a new slice with the results.
 func Transform[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
@@ -464,7 +464,7 @@ func Concate[T0, T1 any](array []T0, getter func(T0) []T1) []T1 {
 	// for i := 0; i < len(array); i++ {
 	// 	buffer[i] = getter(array[i])
 	// }
-	buffer := Append(array, func(_ int, v T0) []T1 { return getter(v) })
+	buffer := Transform(array, func(_ int, v T0) []T1 { return getter(v) })
 	return Flatten(buffer)
 }
 
@@ -719,7 +719,7 @@ func GroupBy[T0 any, T1 comparable](array []T0, getter func(int, T0) *T1, reserv
 	if len(reserved) > 0 {
 		length = reserved[0]
 	}
-	inkeys := ParallelAppend(array, 4, func(i int, v T0) *T1 { return getter(i, v) })
+	inkeys := ParallelTransform(array, 4, func(i int, v T0) *T1 { return getter(i, v) })
 
 	dict := make(map[T1]*[]T0)
 	for i, v := range array {
@@ -768,12 +768,12 @@ func GroupBy[T0 any, T1 comparable](array []T0, getter func(int, T0) *T1, reserv
 
 // Reference returns a new slice containing pointers to the elements in the original slice.
 func Reference[T any](array []T) []*T {
-	return Append(array, func(i int, v T) *T { return &v })
+	return Transform(array, func(i int, v T) *T { return &v })
 }
 
 // Dereference returns a new slice containing the values that the pointers in the original slice point to.
 func Dereference[T any](array []*T) []T {
-	return Append(array, func(i int, v *T) T { return *v })
+	return Transform(array, func(i int, v *T) T { return *v })
 }
 
 // MinElement returns the minimum element in a slice, if there are multiple minimum elements, it returns the first one.

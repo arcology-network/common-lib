@@ -17,6 +17,7 @@
 package mapi
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/arcology-network/common-lib/common"
@@ -39,7 +40,8 @@ func TestMapValues(t *testing.T) {
 	_map[21] = 25
 
 	keys := common.MapValues(_map)
-	if keys[0] != 99 || keys[1] != 25 {
+	sort.Ints(keys)
+	if keys[0] != 25 || keys[1] != 99 {
 		t.Error("Error: Not equal")
 	}
 }
@@ -139,19 +141,19 @@ func TestMapGenerics(t *testing.T) {
 		"2": 90,
 	}
 
-	if k, v := MaxKey(m3, func(k0, k1 string) bool { return k0 > k1 }); k != "4" || v != 12 {
+	if k, v := FindKey(m3, func(k0, k1 string) bool { return k0 > k1 }); k != "4" || v != 12 {
 		t.Error("Error: Failed to get the max !", k, v)
 	}
 
-	if k, v := MinKey(m3, func(k0, k1 string) bool { return k0 < k1 }); k != "1" || v != 89 {
+	if k, v := FindKey(m3, func(k0, k1 string) bool { return k0 < k1 }); k != "1" || v != 89 {
 		t.Error("Error: Failed to get the max !", k, v)
 	}
 
-	if k, v := MinValue(m3, func(k0, k1 int) bool { return k0 < k1 }); k != "4" || v != 12 {
+	if k, v := FindValue(m3, func(k0, k1 int) bool { return k0 < k1 }); k != "3" || v != 8 {
 		t.Error("Error: Failed to get the max !", k, v)
 	}
 
-	if k, v := MaxValue(m3, func(k0, k1 int) bool { return k0 > k1 }); k != "1" || v != 89 {
+	if k, v := FindValue(m3, func(k0, k1 int) bool { return k0 > k1 }); k != "2" || v != 90 {
 		t.Error("Error: Failed to get the max !", k, v)
 	}
 
@@ -165,19 +167,19 @@ func TestMapMaxMinGenerics(t *testing.T) {
 		"2": 90,
 	}
 
-	if k, v := MinKey(m3, func(k0, k1 string) bool { return k0 < k1 }); k != "1" || v != 89 {
+	if k, v := FindKey(m3, func(k0, k1 string) bool { return k0 < k1 }); k != "1" || v != 89 {
 		t.Error("Error: Failed to get the max !", k, v)
 	}
 
-	if k, v := MaxKey(m3, func(k0, k1 string) bool { return k0 > k1 }); k != "4" || v != 12 {
+	if k, v := FindKey(m3, func(k0, k1 string) bool { return k0 > k1 }); k != "4" || v != 12 {
 		t.Error("Error: Failed to get the max !", k, v)
 	}
 
-	if k, v := MinValue(m3, func(v0, v1 int) bool { return v0 < v1 }); k != "3" || v != 8 {
+	if k, v := FindValue(m3, func(v0, v1 int) bool { return v0 < v1 }); k != "3" || v != 8 {
 		t.Error("Error: Failed to get the max !", k, v)
 	}
 
-	if k, v := MaxValue(m3, func(v0, v1 int) bool { return v0 > v1 }); k != "2" || v != 90 {
+	if k, v := FindValue(m3, func(v0, v1 int) bool { return v0 > v1 }); k != "2" || v != 90 {
 		t.Error("Error: Failed to get the max !", k, v)
 	}
 }

@@ -38,21 +38,21 @@ func (this Pairs[T0, T1]) Slice() *[]*Pair[T0, T1] {
 
 // Firsts extracts the first elements from an array of pairs and returns a new slice.
 func (this Pairs[T0, T1]) Firsts() []T0 {
-	return slice.ParallelAppend(this, 4, func(i int, pair *Pair[T0, T1]) T0 {
+	return slice.ParallelTransform(this, 4, func(i int, pair *Pair[T0, T1]) T0 {
 		return pair.First
 	})
 }
 
 // Seconds extracts the second elements from an array of pairs and returns a new slice.
 func (this Pairs[T0, T1]) Seconds() []T1 {
-	return slice.ParallelAppend(this, 4, func(i int, pair *Pair[T0, T1]) T1 {
+	return slice.ParallelTransform(this, 4, func(i int, pair *Pair[T0, T1]) T1 {
 		return pair.Second
 	})
 }
 
 func (this Pairs[T0, T1]) Split() ([]T0, []T1) {
 	seconds := make([]T1, len(this))
-	return slice.ParallelAppend(this, 4, func(i int, pair *Pair[T0, T1]) T0 {
+	return slice.ParallelTransform(this, 4, func(i int, pair *Pair[T0, T1]) T0 {
 		seconds[i] = pair.Second
 		return pair.First
 	}), seconds
@@ -65,7 +65,7 @@ func (this *Pairs[T0, T1]) From(arr0 []T0, arr1 []T1, getter func(int, *T0) T0) 
 	// (*this) = make([]*Pair[T0, T1], len(arr0))
 
 	if len(arr0) > 8192 {
-		(*this) = Pairs[T0, T1](slice.Append(arr0, func(i int, v T0) *Pair[T0, T1] {
+		(*this) = Pairs[T0, T1](slice.Transform(arr0, func(i int, v T0) *Pair[T0, T1] {
 			return &Pair[T0, T1]{
 				First:  getter(i, &v),
 				Second: arr1[i],
@@ -74,7 +74,7 @@ func (this *Pairs[T0, T1]) From(arr0 []T0, arr1 []T1, getter func(int, *T0) T0) 
 		return this
 	}
 
-	(*this) = Pairs[T0, T1](slice.ParallelAppend(arr0, 8, func(i int, v T0) *Pair[T0, T1] {
+	(*this) = Pairs[T0, T1](slice.ParallelTransform(arr0, 8, func(i int, v T0) *Pair[T0, T1] {
 		return &Pair[T0, T1]{
 			First:  getter(i, &v),
 			Second: arr1[i],
@@ -90,7 +90,7 @@ func (this *Pairs[T0, T1]) FromSlice(arr0 []T0, arr1 []T1) *Pairs[T0, T1] {
 	// (*this) = make([]*Pair[T0, T1], len(arr0))
 
 	if len(arr0) > 8192 {
-		(*this) = Pairs[T0, T1](slice.Append(arr0, func(i int, v T0) *Pair[T0, T1] {
+		(*this) = Pairs[T0, T1](slice.Transform(arr0, func(i int, v T0) *Pair[T0, T1] {
 			return &Pair[T0, T1]{
 				First:  arr0[i],
 				Second: arr1[i],
@@ -99,7 +99,7 @@ func (this *Pairs[T0, T1]) FromSlice(arr0 []T0, arr1 []T1) *Pairs[T0, T1] {
 		return this
 	}
 
-	(*this) = Pairs[T0, T1](slice.ParallelAppend(arr0, 8, func(i int, v T0) *Pair[T0, T1] {
+	(*this) = Pairs[T0, T1](slice.ParallelTransform(arr0, 8, func(i int, v T0) *Pair[T0, T1] {
 		return &Pair[T0, T1]{
 			First:  arr0[i],
 			Second: arr1[i],

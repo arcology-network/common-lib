@@ -158,7 +158,7 @@ func (this *DeltaSet[K]) Insert(elems ...K) *DeltaSet[K] {
 	return this
 }
 
-// Insert inserts an element into the DeltaSet and updates the index.
+// Insert inserts an element into the Del taSet and updates the index.
 func (this *DeltaSet[K]) Delete(elems ...K) *DeltaSet[K] {
 	for _, elem := range elems {
 		if ok, _ := this.removed.Exists(elem); !ok {

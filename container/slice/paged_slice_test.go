@@ -177,7 +177,7 @@ func TestCustomType(t *testing.T) {
 
 	t0 = time.Now()
 	pagedSlice := make([]CustomType, paged.Cap())
-	slice.ParallelAppend(pagedSlice, 4, func(i int, _ CustomType) CustomType {
+	slice.ParallelTransform(pagedSlice, 4, func(i int, _ CustomType) CustomType {
 		return CustomType{
 			a: 1,
 			b: [20]byte{1, 2, 3},
