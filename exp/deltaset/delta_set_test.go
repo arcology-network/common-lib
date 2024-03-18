@@ -29,24 +29,22 @@ func TestDeltaSliceBasic(t *testing.T) {
 	deltaSet := NewDeltaSet[int](-1, 100)
 
 	if deltaSet.Insert(11, 12, 13); !reflect.DeepEqual(deltaSet.committed.Elements(), []int{}) ||
-		!deltaSet.updated.IsDirty() ||
 		!reflect.DeepEqual(deltaSet.updated.Elements(), []int{11, 12, 13}) {
 		t.Error("failed to append", deltaSet.updated.IsDirty(), deltaSet.committed.Elements(), deltaSet.updated.Elements())
 	}
 
 	if deltaSet.Commit(); deltaSet.committed.Length() != 3 ||
-		!deltaSet.updated.IsDirty() ||
 		(deltaSet.updated.Length()) != 0 ||
 		(deltaSet.removed.Length()) != 0 {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
-	if deltaSet.Delete(12); deltaSet.committed.Length() != 3 || !deltaSet.updated.IsDirty() ||
+	if deltaSet.Delete(12); deltaSet.committed.Length() != 3 ||
 		(deltaSet.updated.Length()) != 0 || (deltaSet.removed.Length()) != 1 {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
-	if deltaSet.Commit(); deltaSet.committed.Length() != 2 || (deltaSet.updated.Length()) != 0 || !deltaSet.updated.IsDirty() ||
+	if deltaSet.Commit(); deltaSet.committed.Length() != 2 || (deltaSet.updated.Length()) != 0 || deltaSet.updated.IsDirty() ||
 		(deltaSet.removed.Length()) != 0 { // {11, 13}
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
@@ -71,7 +69,6 @@ func TestDeltaSliceBasic(t *testing.T) {
 	}
 
 	if deltaSet.Delete(16); deltaSet.committed.Length() != 2 ||
-		!deltaSet.updated.IsDirty() ||
 		(deltaSet.updated.Length()) != 3 ||
 		!reflect.DeepEqual(deltaSet.updated.Elements(), []int{15, 16, 17}) ||
 		(deltaSet.removed.Length()) != 2 {

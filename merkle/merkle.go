@@ -178,7 +178,7 @@ func (this *Merkle) NodesToHashes(path []*Node) ([][]byte, [][][]byte) {
 	hashes := [][][]byte{}
 	subroots := make([][]byte, len(path))
 	for i, v := range path {
-		if childHashes := slice.Append(this.GetChildrenOf(v), func(_ int, v *Node) []byte { return (*v).hash }); len(childHashes) > 0 {
+		if childHashes := slice.Transform(this.GetChildrenOf(v), func(_ int, v *Node) []byte { return (*v).hash }); len(childHashes) > 0 {
 			subroots[i] = this.hasher.Hash(this.encoder.Encode(childHashes))
 			hashes = append(hashes, childHashes)
 		}

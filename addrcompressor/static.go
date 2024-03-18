@@ -11,7 +11,7 @@ func (this *CompressionLut) GetNewAccounts(originals []string) []string {
 	acctLen := 40
 	prefixLen := len("blcc://eth1.0/account/")
 
-	keys := slice.Append(originals, func(_ int, v string) string { return v[prefixLen : prefixLen+acctLen] })
+	keys := slice.Transform(originals, func(_ int, v string) string { return v[prefixLen : prefixLen+acctLen] })
 	return this.filterExistingKeys(slice.Unique(keys, func(str0, str1 string) bool { return str0 < str1 }), this.dict) // Get new keys
 }
 

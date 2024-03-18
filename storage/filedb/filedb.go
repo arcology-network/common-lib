@@ -240,7 +240,7 @@ func (this *FileDB) Get(key string) ([]byte, error) {
 }
 
 func (this *FileDB) BatchGet(nkeys []string) ([][]byte, error) {
-	files := slice.ParallelAppend(nkeys, 8, func(i int, _ string) string {
+	files := slice.ParallelTransform(nkeys, 8, func(i int, _ string) string {
 		return this.locateFile(nkeys[i]) //Must use the compressed ky to compute the shard
 	})
 

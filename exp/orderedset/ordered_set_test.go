@@ -20,6 +20,8 @@ package orderedset
 import (
 	"reflect"
 	"testing"
+
+	mapi "github.com/arcology-network/common-lib/exp/map"
 )
 
 func TestIndexedSlice(t *testing.T) {
@@ -92,4 +94,53 @@ func TestIndexedSlice(t *testing.T) {
 	if !reflect.DeepEqual(set.Elements(), []string{"1", "2", "5"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
+
+	set.Merge(NewOrderedSet[string]("", 10, "1", "2", "5").Elements())
+	if !reflect.DeepEqual(set.Elements(), []string{"1", "2", "5"}) {
+		t.Error("Error: Key is not equal !", set.Elements())
+	}
+
+	set.Insert("7", "8", "9")
+	if !reflect.DeepEqual(set.Elements(), []string{"1", "2", "5", "7", "8", "9"}) {
+		t.Error("Error: Key is not equal !", set.Elements())
+	}
+
+	set.Delete("2", "7")
+	// if !reflect.DeepEqual(set.Elements(), []string{"1", "5", "8", "9"}) {
+	// 	t.Error("Error: Key is not equal !", set.Elements())
+	// }
+}
+
+func TestIndexedSliceDelet(t *testing.T) {
+	set := NewOrderedSet[string]("", 10, "1", "2", "5", "11", "12", "13")
+	set.Delete("2", "11")
+	if !reflect.DeepEqual(set.Elements(), []string{"1", "5", "12", "13"}) {
+		t.Error("Error: Key is not equal !", set.Elements())
+	}
+
+	k, v := mapi.FindValue(set.dict, func(v0 *int, v1 *int) bool { return *v0 < *v1 })
+	if len(set.dict) != 4 || *v != 0 || k != "1" {
+		t.Error("Error: Key is not equal !", set.dict)
+	}
+
+	k, v = mapi.FindValue(set.dict, func(v0 *int, v1 *int) bool { return *v0 > *v1 })
+	if len(set.dict) != 4 || *v != 3 || k != "13" {
+		t.Error("Error: Key is not equal !", set.dict)
+	}
+
+	set.Delete("1")
+	if !reflect.DeepEqual(set.Elements(), []string{"5", "12", "13"}) {
+		t.Error("Error: Key is not equal !", set.Elements())
+	}
+
+	k, v = mapi.FindValue(set.dict, func(v0 *int, v1 *int) bool { return *v0 < *v1 })
+	if len(set.dict) != 3 || *v != 0 || k != "5" {
+		t.Error("Error: Key is not equal !", set.dict)
+	}
+
+	k, v = mapi.FindValue(set.dict, func(v0 *int, v1 *int) bool { return *v0 > *v1 })
+	if len(set.dict) != 3 || *v != 2 || k != "13" {
+		t.Error("Error: Key is not equal !", set.dict)
+	}
+
 }

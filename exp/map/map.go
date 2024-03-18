@@ -34,7 +34,7 @@ func IfFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, new func(k K
 }
 
 func ParalleIfFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, threads int, new func(k K) V) {
-	found := slice.ParallelAppend(keys, threads, func(_ int, k K) bool {
+	found := slice.ParallelTransform(keys, threads, func(_ int, k K) bool {
 		_, ok := source[k]
 		return ok
 	})
@@ -56,7 +56,7 @@ func IfNotFoundDo[M ~map[K]V, K comparable, V any, T any](source M, keys []T, ge
 }
 
 func ParallelIfNotFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, threads int, do func(k K) V) {
-	found := slice.ParallelAppend(keys, threads, func(_ int, k K) bool {
+	found := slice.ParallelTransform(keys, threads, func(_ int, k K) bool {
 		_, ok := source[k]
 		return ok
 	})
@@ -216,7 +216,7 @@ func ContainsAny[M ~map[K]V, K comparable, V any](m M, keys []K) bool {
 }
 
 // Keys returns a slice containing all the keys of a map.
-func MinKey[M ~map[K]V, K comparable, V any](m M, less func(K, K) bool) (K, V) {
+func FindKey[M ~map[K]V, K comparable, V any](m M, less func(K, K) bool) (K, V) {
 	var mink K
 	var minv V
 	var init bool
@@ -236,28 +236,27 @@ func MinKey[M ~map[K]V, K comparable, V any](m M, less func(K, K) bool) (K, V) {
 	return mink, minv
 }
 
-// Keys returns a slice containing all the keys of a map.
-func MaxKey[M ~map[K]V, K comparable, V any](m M, greater func(K, K) bool) (K, V) {
-	var maxk K
-	var maxv V
-	var init bool
-	for k, v := range m {
-		if !init {
-			maxk = k
-			maxv = v
-			init = true
-			continue
-		}
+// // Keys returns a slice containing all the keys of a map.
+// func MaxKey[M ~map[K]V, K comparable, V any](m M, greater func(K, K) bool) (K, V) {
+// 	var maxk K
+// 	var maxv V
+// 	var init bool
+// 	for k, v := range m {
+// 		if !init {
+// 			maxk = k
+// 			maxv = v
+// 			init = true
+// 			continue
+// 		}
 
-		if greater(k, maxk) {
-			maxk, maxv = k, v
-		}
-	}
-	return maxk, maxv
-}
+// 		if greater(k, maxk) {
+// 			maxk, maxv = k, v
+// 		}
+// 	}
+// 	return maxk, maxv
+// }
 
-// Keys returns a slice containing all the keys of a map.
-func MinValue[M ~map[K]V, K comparable, V any](m M, less func(V, V) bool) (K, V) {
+func FindValue[M ~map[K]V, K comparable, V any](m M, less func(V, V) bool) (K, V) {
 	var mink K
 	var minv V
 	var init bool
@@ -276,22 +275,42 @@ func MinValue[M ~map[K]V, K comparable, V any](m M, less func(V, V) bool) (K, V)
 	return mink, minv
 }
 
-// Keys returns a slice containing all the keys of a map.
-func MaxValue[M ~map[K]V, K comparable, V any](m M, greater func(V, V) bool) (K, V) {
-	var maxk K
-	var maxv V
-	var init bool
-	for k, v := range m {
-		if !init {
-			maxk = k
-			maxv = v
-			init = true
-			continue
-		}
+// // Keys returns a slice containing all the keys of a map.
+// func MinValue[M ~map[K]V, K comparable, V any](m M, less func(V, V) bool) (K, V) {
+// 	var mink K
+// 	var minv V
+// 	var init bool
+// 	for k, v := range m {
+// 		if !init {
+// 			mink = k
+// 			minv = v
+// 			init = true
+// 			continue
+// 		}
 
-		if greater(v, maxv) {
-			maxk, maxv = k, v
-		}
-	}
-	return maxk, maxv
-}
+// 		if less(v, minv) {
+// 			mink, minv = k, v
+// 		}
+// 	}
+// 	return mink, minv
+// }
+
+// // Keys returns a slice containing all the keys of a map.
+// func MaxValue[M ~map[K]V, K comparable, V any](m M, greater func(V, V) bool) (K, V) {
+// 	var maxk K
+// 	var maxv V
+// 	var init bool
+// 	for k, v := range m {
+// 		if !init {
+// 			maxk = k
+// 			maxv = v
+// 			init = true
+// 			continue
+// 		}
+
+// 		if greater(v, maxv) {
+// 			maxk, maxv = k, v
+// 		}
+// 	}
+// 	return maxk, maxv
+// }

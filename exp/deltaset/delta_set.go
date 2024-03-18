@@ -158,7 +158,7 @@ func (this *DeltaSet[K]) Insert(elems ...K) *DeltaSet[K] {
 	return this
 }
 
-// Insert inserts an element into the DeltaSet and updates the index.
+// Insert inserts an element into the Del taSet and updates the index.
 func (this *DeltaSet[K]) Delete(elems ...K) *DeltaSet[K] {
 	for _, elem := range elems {
 		if ok, _ := this.removed.Exists(elem); !ok {
@@ -308,7 +308,7 @@ func (this *DeltaSet[K]) Search(idx uint64) (K, *orderedset.OrderedSet[K], int, 
 	if mapped < 0 {
 		return this.nilVal, nil, -1, false
 	}
-	return set.KeyToIndex(mapped), set, mapped, true
+	return set.IndexToKey(mapped), set, mapped, true
 }
 
 func (this *DeltaSet[K]) KeyAt(idx uint64) K {
