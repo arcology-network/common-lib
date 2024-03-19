@@ -76,7 +76,11 @@ func (this *DeltaSet[K]) mapTo(idx int) (*orderedset.OrderedSet[K], int) {
 // Array returns the underlying slice of committed in the DeltaSet.
 func (this *DeltaSet[K]) Committed() *orderedset.OrderedSet[K] { return this.committed }
 func (this *DeltaSet[K]) Removed() *orderedset.OrderedSet[K]   { return this.removed }
-func (this *DeltaSet[K]) Added() *orderedset.OrderedSet[K]     { return this.updated }
+func (this *DeltaSet[K]) Updated() *orderedset.OrderedSet[K]   { return this.updated }
+
+func (this *DeltaSet[K]) SetCommitted(v *orderedset.OrderedSet[K]) { this.committed = v }
+func (this *DeltaSet[K]) SetRemoved(v *orderedset.OrderedSet[K])   { this.removed = v }
+func (this *DeltaSet[K]) SetUpdated(v *orderedset.OrderedSet[K])   { this.updated = v }
 
 // Elements returns the underlying slice of committed in the DeltaSet,
 // Non-nil values are returned in the order they were inserted, equals to committed + updated - removed.
@@ -103,10 +107,10 @@ func (this *DeltaSet[K]) Clear() {
 }
 
 // Debugging only
-func (this *DeltaSet[K]) SetCommitted(v []K) { this.committed.Insert(v...) }
-func (this *DeltaSet[K]) SetRemoved(v []K)   { this.removed.Insert(v...) }
-func (this *DeltaSet[K]) SetAppended(v []K)  { this.updated.Insert(v...) }
-func (this *DeltaSet[K]) SetNilVal(v K)      { this.nilVal = v }
+func (this *DeltaSet[K]) InsertCommitted(v []K) { this.committed.Insert(v...) }
+func (this *DeltaSet[K]) InsertRemoved(v []K)   { this.removed.Insert(v...) }
+func (this *DeltaSet[K]) InsertUpdated(v []K)   { this.updated.Insert(v...) }
+func (this *DeltaSet[K]) SetNilVal(v K)         { this.nilVal = v }
 
 // IsDirty returns true if the DeltaSet is up to date, with no
 func (this *DeltaSet[K]) IsDirty() bool {
