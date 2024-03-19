@@ -695,6 +695,16 @@ func TestMoveIf(t *testing.T) {
 	if len(strs) != 2 && strs[0] != 1 && strs[1] != 2 {
 		t.Error("Error: Failed to remove nil values !")
 	}
+
+	strs = []interface{}{"1"}
+
+	moved = MoveIf(&strs, func(_ int, v any) bool {
+		return v == "1"
+	})
+
+	if len(moved) != 1 || moved[0] != "1" || len(strs) != 0 {
+		t.Error("Error: Failed to remove nil values !")
+	}
 }
 
 func TestGroupBy(t *testing.T) {
