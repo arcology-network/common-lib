@@ -112,7 +112,8 @@ func (this *DeltaSet[K]) InsertRemoved(v []K)   { this.removed.Insert(v...) }
 func (this *DeltaSet[K]) InsertUpdated(v []K)   { this.updated.Insert(v...) }
 func (this *DeltaSet[K]) SetNilVal(v K)         { this.nilVal = v }
 
-// IsDirty returns true if the DeltaSet is up to date, with no
+// IsDirty returns true if the DeltaSet is up to date,
+// having no updated or removed elements.
 func (this *DeltaSet[K]) IsDirty() bool {
 	return this.removed.Length() != 0 || this.updated.Length() != 0
 }

@@ -33,4 +33,19 @@ func TestPairs(t *testing.T) {
 	if !slice.EqualSet(_0, pairs.Firsts()) || !slice.EqualSet(_1, pairs.Seconds()) {
 		t.Error("Error: Values are not equal !")
 	}
+
+	arr := []*Pair[int, string]{
+		{First: 1, Second: "str2"},
+		// {First: 2, Second: "str3"},
+	}
+
+	pairs3 := Pairs[int, string](arr)
+
+	movedp := slice.MoveIf((*[]*Pair[int, string])(&pairs3), func(_ int, v *Pair[int, string]) bool {
+		return v.First == 1
+	})
+
+	if len(movedp) != 1 || len(pairs3) != 0 {
+		t.Error("Error: Failed to remove nil values !")
+	}
 }
