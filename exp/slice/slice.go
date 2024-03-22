@@ -246,6 +246,17 @@ func Transform[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
 	return vec
 }
 
+// TransformIf applies a function to each element that satisfies a given condition in a slice and returns a new slice with the results.
+func TransformIf[T any, T1 any](values []T, do func(i int, v T) (bool, T1)) []T1 {
+	vec := make([]T1, 0, len(values))
+	for i := 0; i < len(values); i++ {
+		if ok, v := do(i, values[i]); ok {
+			vec = append(vec, v)
+		}
+	}
+	return vec
+}
+
 // ParallelTransform applies a function to each index in a slice in parallel using multiple threads
 // and returns a new slice with the results.
 func ParallelTransform[T any, T1 any](values []T, numThd int, do func(i int, v T) T1) []T1 {
