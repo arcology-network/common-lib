@@ -38,14 +38,14 @@ func (this *sortable[T]) Less(other btree.Item) bool {
 	return (*this.compare)(this.v, other.(*sortable[T]).v)
 }
 
-type Index[T any] struct {
+type SortedIndex[T any] struct {
 	Name      string
 	indexTree *btree.BTree
 	compare   func(T, T) bool
 }
 
-func NewIndex[T any](name string, compare func(T, T) bool) *Index[T] {
-	return &Index[T]{
+func NewSortedIndex[T any](name string, compare func(T, T) bool) *SortedIndex[T] {
+	return &SortedIndex[T]{
 		Name:      name,
 		indexTree: btree.New(4),
 		compare:   compare,
@@ -53,7 +53,7 @@ func NewIndex[T any](name string, compare func(T, T) bool) *Index[T] {
 }
 
 // Add new values to the index.
-func (this *Index[T]) Add(vals []T) {
+func (this *SortedIndex[T]) Add(vals []T) {
 	sortables := slice.Transform(vals, func(_ int, v T) *sortable[T] { return newSortable[T](v, &this.compare) })
 	for _, v := range sortables {
 		this.indexTree.ReplaceOrInsert(v)
@@ -61,7 +61,7 @@ func (this *Index[T]) Add(vals []T) {
 }
 
 // Remove the values from the index.
-func (this *Index[T]) Remove(vals []T) {
+func (this *SortedIndex[T]) Remove(vals []T) {
 	sortables := slice.Transform(vals, func(_ int, v T) *sortable[T] { return newSortable[T](v, &this.compare) })
 	for _, v := range sortables {
 		this.indexTree.Delete(v)
@@ -69,7 +69,7 @@ func (this *Index[T]) Remove(vals []T) {
 }
 
 // Export the index, return a slice of all the values in the index.
-func (this *Index[T]) Export() []T {
+func (this *SortedIndex[T]) Export() []T {
 	vals := make([]T, 0, this.indexTree.Len())
 	this.indexTree.Ascend(func(node btree.Item) bool {
 		vals = append(vals, node.(*sortable[T]).v)
@@ -79,13 +79,13 @@ func (this *Index[T]) Export() []T {
 }
 
 // Clear the index, return the number of items cleared.
-func (this *Index[T]) Clear() int {
+func (this *SortedIndex[T]) Clear() int {
 	size := this.indexTree.Len()
 	this.indexTree.Clear(false)
 	return size
 }
 
-func (this *Index[T]) GreaterThan(lower T) []T {
+func (this *SortedIndex[T]) GreaterThan(lower T) []T {
 	var got []btree.Item
 	this.indexTree.AscendGreaterOrEqual(newSortable[T](lower, &this.compare), func(node btree.Item) bool {
 		if len(got) == 0 && !this.compare(lower, node.(*sortable[T]).v) {
@@ -98,7 +98,7 @@ func (this *Index[T]) GreaterThan(lower T) []T {
 	return slice.Transform(got, func(_ int, v btree.Item) T { return v.(*sortable[T]).v })
 }
 
-func (this *Index[T]) GreaterEqualThan(lower T) []T {
+func (this *SortedIndex[T]) GreaterEqualThan(lower T) []T {
 	var got []btree.Item
 	this.indexTree.AscendGreaterOrEqual(newSortable[T](lower, &this.compare), func(node btree.Item) bool {
 		got = append(got, node)
@@ -107,7 +107,7 @@ func (this *Index[T]) GreaterEqualThan(lower T) []T {
 	return slice.Transform(got, func(_ int, v btree.Item) T { return v.(*sortable[T]).v })
 }
 
-func (this *Index[T]) LessThan(upper T) []T {
+func (this *SortedIndex[T]) LessThan(upper T) []T {
 	var got []btree.Item
 	this.indexTree.DescendLessOrEqual(newSortable[T](upper, &this.compare), func(node btree.Item) bool {
 		if len(got) == 0 && !this.compare(node.(*sortable[T]).v, upper) {
@@ -120,7 +120,7 @@ func (this *Index[T]) LessThan(upper T) []T {
 	return slice.Transform(got, func(_ int, v btree.Item) T { return v.(*sortable[T]).v }) // Move the result to a slice.
 }
 
-func (this *Index[T]) LessEqualThan(lower T) []T {
+func (this *SortedIndex[T]) LessEqualThan(lower T) []T {
 	var got []btree.Item
 	this.indexTree.DescendLessOrEqual(newSortable[T](lower, &this.compare), func(node btree.Item) bool {
 		got = append(got, node)
@@ -130,7 +130,7 @@ func (this *Index[T]) LessEqualThan(lower T) []T {
 }
 
 // This function is inclusive, both lower and upper are included.
-func (this *Index[T]) Between(lower, upper T) []T {
+func (this *SortedIndex[T]) Between(lower, upper T) []T {
 	var got []btree.Item
 	this.indexTree.AscendGreaterOrEqual(newSortable[T](lower, &this.compare), func(node btree.Item) bool {
 		if this.compare(upper, node.(*sortable[T]).v) {
@@ -142,7 +142,7 @@ func (this *Index[T]) Between(lower, upper T) []T {
 	return slice.Transform(got, func(_ int, v btree.Item) T { return v.(*sortable[T]).v }) // Move the result to a slice.
 }
 
-func (this *Index[T]) Find(v T) (T, bool) {
+func (this *SortedIndex[T]) Find(v T) (T, bool) {
 	var target btree.Item
 	this.indexTree.AscendGreaterOrEqual(newSortable[T](v, &this.compare), func(node btree.Item) bool {
 		target = node
@@ -155,7 +155,7 @@ func (this *Index[T]) Find(v T) (T, bool) {
 	return target.(*sortable[T]).v, true
 }
 
-func (this *Index[T]) BatchFind(vals []T) ([]T, []bool) {
+func (this *SortedIndex[T]) BatchFind(vals []T) ([]T, []bool) {
 	targets, founds := make([]T, len(vals)), make([]bool, len(vals))
 	for i, v := range vals {
 		targets[i], founds[i] = this.Find(v)

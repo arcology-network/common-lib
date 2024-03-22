@@ -19,19 +19,19 @@ package indexer
 
 import slice "github.com/arcology-network/common-lib/exp/slice"
 
-// Indexer is a collection of indexes that need to be updated together,
+// SortedIndexer is a collection of indexes that need to be updated together,
 // it is memory only, and is used to speed up the query process.
 //
 // It is either used with a database, which is used to store the actual data,
 // or used alone as a memory database that supports indexing.
-type Indexer[T any] struct {
+type SortedIndexer[T any] struct {
 	dict    map[string]int
-	indexes []*Index[T]
+	indexes []*SortedIndex[T]
 }
 
 // NewTable creates a new table with the given indexes.
-func NewIndexer[T any](indice ...*Index[T]) *Indexer[T] {
-	table := &Indexer[T]{
+func NewSortedIndexer[T any](indice ...*SortedIndex[T]) *SortedIndexer[T] {
+	table := &SortedIndexer[T]{
 		dict: map[string]int{},
 	}
 	for _, index := range indice {
@@ -44,21 +44,21 @@ func NewIndexer[T any](indice ...*Index[T]) *Indexer[T] {
 }
 
 // Update updates all indexes in the table, everytime new records are added.
-func (this *Indexer[T]) Update(v []T) {
-	slice.ParallelForeach(this.indexes, 4, func(i int, index **Index[T]) {
+func (this *SortedIndexer[T]) Update(v []T) {
+	slice.ParallelForeach(this.indexes, 4, func(i int, index **SortedIndex[T]) {
 		(**index).Add(v)
 	})
 }
 
 // removeIndex removes all the indices in the table specified by the input values.
-func (this *Indexer[T]) Remove(v []T) {
-	slice.ParallelForeach(this.indexes, 4, func(i int, index **Index[T]) {
+func (this *SortedIndexer[T]) Remove(v []T) {
+	slice.ParallelForeach(this.indexes, 4, func(i int, index **SortedIndex[T]) {
 		(**index).Remove(v)
 	})
 }
 
 // Column returns the index specified by the column name.
-func (this *Indexer[T]) Column(name string) *Index[T] {
+func (this *SortedIndexer[T]) Column(name string) *SortedIndex[T] {
 	if loc, ok := this.dict[name]; ok {
 		return this.indexes[loc]
 	}
