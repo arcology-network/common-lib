@@ -143,4 +143,8 @@ func TestIndexedSliceDelet(t *testing.T) {
 		t.Error("Error: Key is not equal !", set.dict)
 	}
 
+	set.SetAt(1, "15")
+	if !reflect.DeepEqual(set.Elements(), []string{"5", "15", "13"}) {
+		t.Error("Error: Key is not equal !", set.Elements())
+	}
 }

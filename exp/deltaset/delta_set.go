@@ -36,12 +36,12 @@ type DeltaSet[K comparable] struct {
 }
 
 // NewIndexedSlice creates a new instance of DeltaSet with the specified page size, minimum number of pages, and pre-allocation size.
-func NewDeltaSet[K comparable](nilVal K, preAlloc int, keys ...K) *DeltaSet[K] {
+func NewDeltaSet[K comparable](nilVal K, preAlloc int, hasher func([]byte) [32]byte, keys ...K) *DeltaSet[K] {
 	deltaSet := &DeltaSet[K]{
 		nilVal:    nilVal,
-		committed: orderedset.NewOrderedSet(nilVal, preAlloc),
-		updated:   orderedset.NewOrderedSet(nilVal, preAlloc),
-		removed:   orderedset.NewOrderedSet(nilVal, preAlloc),
+		committed: orderedset.NewOrderedSet(nilVal, preAlloc, hasher),
+		updated:   orderedset.NewOrderedSet(nilVal, preAlloc, hasher),
+		removed:   orderedset.NewOrderedSet(nilVal, preAlloc, hasher),
 	}
 	deltaSet.Insert(keys...)
 	return deltaSet
@@ -201,7 +201,7 @@ func (this *DeltaSet[K]) CloneDelta(v ...*orderedset.OrderedSet[K]) *DeltaSet[K]
 	if len(v) > 0 {
 		set.committed = v[0]
 	} else {
-		set.committed = orderedset.NewOrderedSet(this.nilVal, 0)
+		set.committed = orderedset.NewOrderedSet(this.nilVal, 0, nil)
 	}
 	return set
 }
