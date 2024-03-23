@@ -45,9 +45,9 @@ func TestIndexerAlone(t *testing.T) {
 	}
 
 	// Create a table with two indexes.
-	table := NewIndexer[*Tx](
-		NewIndex("time", func(a, b *Tx) bool { return a.time < b.time }),       // Index by time.
-		NewIndex("height", func(a, b *Tx) bool { return a.height < b.height }), // Index by height.
+	table := NewSortedIndexer[*Tx](
+		NewSortedIndex("time", func(a, b *Tx) bool { return a.time < b.time }),       // Index by time.
+		NewSortedIndex("height", func(a, b *Tx) bool { return a.height < b.height }), // Index by height.
 	)
 
 	// Create 10 transactions.
@@ -155,9 +155,9 @@ func TestIndexerWithDB(t *testing.T) {
 	})
 
 	// Create a table with two indexes.
-	table := NewIndexer[*txIndex](
-		NewIndex("time", func(a, b *txIndex) bool { return a.time.Nanosecond() < b.time.Nanosecond() }), // Index by time.
-		NewIndex("height", func(a, b *txIndex) bool { return a.height < b.height }),                     // Index by height.
+	table := NewSortedIndexer[*txIndex](
+		NewSortedIndex("time", func(a, b *txIndex) bool { return a.time.Nanosecond() < b.time.Nanosecond() }), // Index by time.
+		NewSortedIndex("height", func(a, b *txIndex) bool { return a.height < b.height }),                     // Index by height.
 	)
 
 	// Update the table with the indexes.

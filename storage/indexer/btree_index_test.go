@@ -47,7 +47,7 @@ func TestBTree(t *testing.T) {
 func TestInteger(t *testing.T) {
 	type Int int
 
-	index := NewIndex("id", func(a, b Int) bool { return a < b })
+	index := NewSortedIndex("id", func(a, b Int) bool { return a < b })
 	newVals := slice.ParallelTransform(make([]Int, 10), 4, func(i int, _ Int) Int { return Int(i) })
 
 	t0 := time.Now()
@@ -102,7 +102,7 @@ func TestIndex(t *testing.T) {
 		height uint64
 	}
 
-	index := NewIndex("id", func(a, b *Tx) bool { return a.id < b.id })
+	index := NewSortedIndex("id", func(a, b *Tx) bool { return a.id < b.id })
 	txs := slice.ParallelTransform(make([]*Tx, 10), 4, func(i int, _ *Tx) *Tx { return &Tx{id: fmt.Sprint(i), height: uint64(i)} })
 	index.Add(txs)
 
@@ -120,7 +120,7 @@ func TestIndex(t *testing.T) {
 func BenchmarkInteger(t *testing.B) {
 	type Int int
 
-	index := NewIndex("id", func(a, b Int) bool { return a < b })
+	index := NewSortedIndex("id", func(a, b Int) bool { return a < b })
 	newVals := slice.ParallelTransform(make([]Int, 1000000), 4, func(i int, _ Int) Int { return Int(i) })
 
 	t0 := time.Now()
