@@ -609,12 +609,12 @@ func TestReferenceAndDereference(t *testing.T) {
 
 func TestMinMaxElem(t *testing.T) {
 	src := []int{4, 2, 86, 3, 1}
-	minidx, min := Min(src, func(a, b int) bool { return a < b })
+	minidx, min := Extreme(src, func(a, b int) bool { return a < b })
 	if min != 1 || minidx != 4 {
 		t.Error("Expected: ", min, minidx)
 	}
 
-	maxIdx, max := Max(src, func(a, b int) bool { return a > b })
+	maxIdx, max := Extreme(src, func(a, b int) bool { return a > b })
 	if max != 86 || maxIdx != 2 {
 		t.Error("Expected: ", min, minidx)
 	}

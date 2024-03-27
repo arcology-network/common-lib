@@ -96,9 +96,7 @@ func (this *PagedSlice[T]) PushBack(v T) {
 // PopBack removes and returns the value at the end of the PagedSlice.
 func (this *PagedSlice[T]) PopBack() T {
 	v := this.Back()
-	// if v != nil {
 	this.length--
-	// }
 	return v
 }
 
@@ -116,7 +114,7 @@ func (this *PagedSlice[T]) ToSlice(start int, end int) []T {
 	return buffer
 }
 
-// PopBackToBuffer removes and copies the elements from the end of the PagedSlice to the specified buffer.
+// PopBackToBuffer removes and copies the elements from the end of the PagedSlice to a specified buffer.
 func (this *PagedSlice[T]) PopBackToBuffer(buffer []T) {
 	start := common.Max(this.length-len(buffer), 0)
 	this.ToBuffer(start, common.Min(start+len(buffer), this.Size()), buffer)

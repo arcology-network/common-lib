@@ -43,7 +43,12 @@ func (this *ReadCache[K, T]) Status() bool { return this.enabled }
 func (this *ReadCache[K, T]) Enable()      { this.enabled = true }
 func (this *ReadCache[K, T]) Disable()     { this.enabled = false }
 
-func (this *ReadCache[K, T]) Length() int { return len(this.cache) }
+func (this *ReadCache[K, T]) Length() int {
+	if !this.enabled {
+		return 0
+	}
+	return len(this.cache)
+}
 
 func (this *ReadCache[K, T]) Get(k K) (*T, bool) {
 	if !this.enabled {

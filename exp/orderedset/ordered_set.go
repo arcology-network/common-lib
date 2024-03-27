@@ -31,31 +31,33 @@ type OrderedSet[K comparable] struct {
 	elements []K
 	dict     map[K]*int
 	nilValue K
+	hasher   func(K) [32]byte
 }
 
 // NewIndexedSlice creates a new instance of OrderedSet with the specified page size, minimum number of pages, and pre-allocation size.
-func NewOrderedSet[K comparable](nilValue K, preAlloc int, vals ...K) *OrderedSet[K] {
+func NewOrderedSet[K comparable](nilValue K, preAlloc int, hasher func(K) [32]byte, vals ...K) *OrderedSet[K] {
 	set := &OrderedSet[K]{
 		dict:     make(map[K]*int),
 		elements: append(make([]K, 0, preAlloc+len(vals)), vals...),
 		nilValue: nilValue,
+		hasher:   hasher,
 	}
 	return set.Init()
 }
 
 func (this *OrderedSet[K]) Init() *OrderedSet[K] {
 	for i, idx := range this.elements {
-		// fmt.Println(*(&i))
 		this.dict[idx] = common.New(i)
 	}
 	return this
 }
 
-func (this *OrderedSet[K]) Dict() map[K]*int { return this.dict }
-func (this *OrderedSet[K]) Elements() []K    { return this.elements }
-func (this *OrderedSet[K]) Length() int      { return len(this.elements) }
+func (this *OrderedSet[K]) Hasher() func(K) [32]byte { return this.hasher }
+func (this *OrderedSet[K]) Dict() map[K]*int         { return this.dict }
+func (this *OrderedSet[K]) Elements() []K            { return this.elements }
+func (this *OrderedSet[K]) Length() int              { return len(this.elements) }
 func (this *OrderedSet[K]) Clone() *OrderedSet[K] {
-	return NewOrderedSet[K](this.nilValue, len(this.elements), this.elements...)
+	return NewOrderedSet(this.nilValue, len(this.elements), nil, this.elements...)
 }
 
 func (this *OrderedSet[K]) Size(getter func(K) int) int { // For encoding
@@ -86,6 +88,19 @@ func (this *OrderedSet[K]) Insert(keys ...K) {
 			this.dict[k] = common.New(len(this.elements) - 1)
 		}
 	}
+}
+
+// SetAt sets the element at the specified index to the new value.
+// The dict is updated with the new key.
+func (this *OrderedSet[K]) SetAt(idx int, newv K) bool {
+	if idx < 0 || idx >= len(this.elements) {
+		return false
+	}
+
+	this.elements[idx] = newv             // Replace the old key with the new key
+	delete(this.dict, this.elements[idx]) // remove the old key from the dict
+	this.dict[newv] = common.New(idx)     // Add the new key to the dict
+	return true
 }
 
 func (this *OrderedSet[K]) At(idx int) *K {
@@ -125,21 +140,14 @@ func (this *OrderedSet[K]) Delete(keys ...K) bool {
 		return ok
 	})
 
-	// This function will reorder the elements in the slice and update the dict accordingly.
 	// Some elements may have been removed, so there are some gaps in the slice. The dictionary
-	// no longer reflects the correct index of the elements.
+	// no longer reflects the correct index of the elements. This function will reorder the elements
+	// in the slice and update the dict accordingly.
 	for i, k := range this.elements {
 		*this.dict[k] = i
 	}
 	return false
 }
-
-// func (this *OrderedSet[K]) Reorder() {
-// 	indices := mapi.Values(this.dict)
-// 	for i, idx := range indices {
-// 		*idx = i
-// 	}
-// }
 
 func (this *OrderedSet[K]) Exists(k K) (bool, int) {
 	if v, ok := this.dict[k]; ok {
@@ -162,14 +170,4 @@ func (this *OrderedSet[K]) Equal(other *OrderedSet[K]) bool {
 
 func (this *OrderedSet[K]) Print() {
 	fmt.Println(this.dict, this.elements)
-}
-
-// This is for debug purpose only !!, don't use it in production
-// since it has some quite complicated consequences. !!!
-func (this *OrderedSet[K]) replace(idx int, v K) K {
-	old := this.elements[idx]
-	delete(this.dict, this.elements[idx])           // remove the old key
-	this.elements[idx] = v                          // update the value
-	this.dict[this.elements[idx]] = common.New(idx) // update the dict
-	return old
 }

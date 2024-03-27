@@ -29,6 +29,11 @@ func NewDo[T any](length int, init func(i int) T) []T {
 	return values
 }
 
+// ToSlice converts a list of values to a slice.
+func ToSlice[T any](vals ...T) []T {
+	return vals
+}
+
 // ParallelAppend applies a function to each index in a slice in parallel using multiple threads and returns a new slice with the results.
 func ParallelNew[T any](length int, numThd int, init func(i int) T) []T {
 	values := make([]T, length)
@@ -788,7 +793,40 @@ func Dereference[T any](array []*T) []T {
 }
 
 // MinElement returns the minimum element in a slice, if there are multiple minimum elements, it returns the first one.
-func Min[T0 any](array []T0, less func(T0, T0) bool) (int, T0) {
+// func Min[T0 any](array []T0, less func(T0, T0) bool) (int, T0) {
+// 	if len(array) == 0 {
+// 		return -1, *new(T0)
+// 	}
+
+// 	idx := 0
+// 	minv := array[idx]
+// 	for i := idx; i < len(array); i++ {
+// 		if less(array[i], minv) {
+// 			idx = i
+// 			minv = array[i]
+// 		}
+// 	}
+// 	return idx, minv
+// }
+
+// // MaxElement returns the index and the maximum element in a slice. If there are multiple maximum elements, it returns the first one.
+// func Max[T0 any](array []T0, greater func(T0, T0) bool) (int, T0) {
+// 	if len(array) == 0 {
+// 		return -1, *new(T0)
+// 	}
+
+// 	idx := 0
+// 	maxv := array[idx]
+// 	for i := idx; i < len(array); i++ {
+// 		if greater(array[i], maxv) {
+// 			idx = i
+// 			maxv = array[i]
+// 		}
+// 	}
+// 	return idx, maxv
+// }
+
+func Extreme[T0 any](array []T0, compare func(T0, T0) bool) (int, T0) {
 	if len(array) == 0 {
 		return -1, *new(T0)
 	}
@@ -796,29 +834,12 @@ func Min[T0 any](array []T0, less func(T0, T0) bool) (int, T0) {
 	idx := 0
 	minv := array[idx]
 	for i := idx; i < len(array); i++ {
-		if less(array[i], minv) {
+		if compare(array[i], minv) {
 			idx = i
 			minv = array[i]
 		}
 	}
 	return idx, minv
-}
-
-// MaxElement returns the index and the maximum element in a slice. If there are multiple maximum elements, it returns the first one.
-func Max[T0 any](array []T0, greater func(T0, T0) bool) (int, T0) {
-	if len(array) == 0 {
-		return -1, *new(T0)
-	}
-
-	idx := 0
-	maxv := array[idx]
-	for i := idx; i < len(array); i++ {
-		if greater(array[i], maxv) {
-			idx = i
-			maxv = array[i]
-		}
-	}
-	return idx, maxv
 }
 
 func MinNumeric[T constraints.Float | constraints.Integer](array []T) (int, T) {
