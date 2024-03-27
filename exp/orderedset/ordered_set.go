@@ -31,11 +31,11 @@ type OrderedSet[K comparable] struct {
 	elements []K
 	dict     map[K]*int
 	nilValue K
-	hasher   func([]byte) [32]byte
+	hasher   func(K) [32]byte
 }
 
 // NewIndexedSlice creates a new instance of OrderedSet with the specified page size, minimum number of pages, and pre-allocation size.
-func NewOrderedSet[K comparable](nilValue K, preAlloc int, hasher func([]byte) [32]byte, vals ...K) *OrderedSet[K] {
+func NewOrderedSet[K comparable](nilValue K, preAlloc int, hasher func(K) [32]byte, vals ...K) *OrderedSet[K] {
 	set := &OrderedSet[K]{
 		dict:     make(map[K]*int),
 		elements: append(make([]K, 0, preAlloc+len(vals)), vals...),
@@ -52,10 +52,10 @@ func (this *OrderedSet[K]) Init() *OrderedSet[K] {
 	return this
 }
 
-func (this *OrderedSet[K]) Hasher() func([]byte) [32]byte { return this.hasher }
-func (this *OrderedSet[K]) Dict() map[K]*int              { return this.dict }
-func (this *OrderedSet[K]) Elements() []K                 { return this.elements }
-func (this *OrderedSet[K]) Length() int                   { return len(this.elements) }
+func (this *OrderedSet[K]) Hasher() func(K) [32]byte { return this.hasher }
+func (this *OrderedSet[K]) Dict() map[K]*int         { return this.dict }
+func (this *OrderedSet[K]) Elements() []K            { return this.elements }
+func (this *OrderedSet[K]) Length() int              { return len(this.elements) }
 func (this *OrderedSet[K]) Clone() *OrderedSet[K] {
 	return NewOrderedSet(this.nilValue, len(this.elements), nil, this.elements...)
 }

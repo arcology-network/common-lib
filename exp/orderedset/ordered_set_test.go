@@ -25,7 +25,7 @@ import (
 )
 
 func TestIndexedSlice(t *testing.T) {
-	set := NewOrderedSet[string]("", 10, "1", "2", "5")
+	set := NewOrderedSet[string]("", 10, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5")
 	set.Insert("11")
 
 	if ok, _ := set.Exists("11"); !ok {
@@ -50,12 +50,12 @@ func TestIndexedSlice(t *testing.T) {
 		t.Error("Error: Key is not equal !")
 	}
 
-	set.replace(1, "11")
+	set.SetAt(1, "11")
 	if !reflect.DeepEqual(set.Elements(), []string{"2", "11"}) {
 		t.Error("Error: Key is not equal !")
 	}
 
-	set.replace(0, "111")
+	set.SetAt(0, "111")
 	if !reflect.DeepEqual(set.Elements(), []string{"111", "11"}) {
 		t.Error("Error: Key is not equal !")
 	}
@@ -75,12 +75,12 @@ func TestIndexedSlice(t *testing.T) {
 		t.Error("Error: Key is not equal !")
 	}
 
-	set.Merge(NewOrderedSet[string]("", 10, "1", "2", "5").Elements())
+	set.Merge(NewOrderedSet[string]("", 10, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5").Elements())
 	if !reflect.DeepEqual(set.Elements(), []string{"111", "222", "1", "2", "5"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
 
-	set.Merge(NewOrderedSet[string]("", 10, "111", "222", "1", "2", "6").Elements())
+	set.Merge(NewOrderedSet[string]("", 10, func(str string) [32]byte { return [32]byte{} }, "111", "222", "1", "2", "6").Elements())
 	if !reflect.DeepEqual(set.Elements(), []string{"111", "222", "1", "2", "5", "6"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
@@ -90,12 +90,12 @@ func TestIndexedSlice(t *testing.T) {
 		t.Error("Error: Key is not equal !")
 	}
 
-	set.Merge(NewOrderedSet[string]("", 10, "1", "2", "5").Elements())
+	set.Merge(NewOrderedSet[string]("", 10, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5").Elements())
 	if !reflect.DeepEqual(set.Elements(), []string{"1", "2", "5"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
 
-	set.Merge(NewOrderedSet[string]("", 10, "1", "2", "5").Elements())
+	set.Merge(NewOrderedSet[string]("", 10, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5").Elements())
 	if !reflect.DeepEqual(set.Elements(), []string{"1", "2", "5"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
@@ -112,7 +112,7 @@ func TestIndexedSlice(t *testing.T) {
 }
 
 func TestIndexedSliceDelet(t *testing.T) {
-	set := NewOrderedSet[string]("", 10, "1", "2", "5", "11", "12", "13")
+	set := NewOrderedSet[string]("", 10, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5", "11", "12", "13")
 	set.Delete("2", "11")
 	if !reflect.DeepEqual(set.Elements(), []string{"1", "5", "12", "13"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
