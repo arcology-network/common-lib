@@ -94,7 +94,7 @@ func TestCcmapBasic(t *testing.T) {
 		t.Error("Error: Entries don't match")
 	}
 
-	if ccmap.Size() != 4 {
+	if ccmap.Length() != 4 {
 		t.Error("Error: Wrong entry count")
 	}
 }
@@ -290,7 +290,7 @@ func TestParallelDo(t *testing.T) {
 		return nil, false
 	})
 
-	if ccmap.Size() != 5 {
+	if ccmap.Length() != 5 {
 		t.Error("Error: Wrong entry count")
 	}
 

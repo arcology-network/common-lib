@@ -17,61 +17,62 @@
 
 package storage
 
-import (
-	"github.com/arcology-network/common-lib/common"
-	ccmap "github.com/arcology-network/common-lib/exp/map"
-)
-
-// RWCache is a read only cache that is used to store the read values from the storage.
+// ReadCache is a read only cache that is used to store the read values from the storage.
 // The cache updates itself when the update is called. The implementation isn't thread safe.
 // So, it's the caller's responsibility to ensure that the cache is only accessed by one thread updating it.
 // Each entry in the cache holds two values, the first value is the old value, and the second value is the new value.
 // The new value will be set to the old value when the Finalize function is called.
-type RWCache[K comparable, V any] struct {
-	isNil   func(V) bool
-	cache   *ccmap.ConcurrentMap[K, V]
+type ReadCache[K comparable, T any] struct {
+	isNil   func(T) bool
+	cache   map[K]*T
 	enabled bool
 }
 
-func NewRWCache[K comparable, V any](numShards uint64, isNil func(V) bool, hasher func(K) uint64) *RWCache[K, V] {
-	return &RWCache[K, V]{
+func NewReadCache[K comparable, T any](numShards uint64, isNil func(T) bool) *ReadCache[K, T] {
+	newReadCache := &ReadCache[K, T]{
 		isNil:   isNil,
-		cache:   ccmap.NewConcurrentMap[K, V](common.Min(int(numShards), 256), isNil, hasher),
+		cache:   make(map[K]*T),
 		enabled: true,
 	}
+	return newReadCache
 }
 
-func (this *RWCache[K, V]) Status() bool { return this.enabled }
-func (this *RWCache[K, V]) Enable()      { this.enabled = true }
-func (this *RWCache[K, V]) Disable()     { this.enabled = false }
+func (this *ReadCache[K, T]) Status() bool { return this.enabled }
+func (this *ReadCache[K, T]) Enable()      { this.enabled = true }
+func (this *ReadCache[K, T]) Disable()     { this.enabled = false }
 
-func (this *RWCache[K, V]) Length() int {
+func (this *ReadCache[K, T]) Length() int {
 	if !this.enabled {
 		return 0
 	}
-	return int(this.cache.Length())
+	return len(this.cache)
 }
 
-func (this *RWCache[K, V]) Get(k K) (*V, bool) {
+func (this *ReadCache[K, T]) Get(k K) (*T, bool) {
 	if !this.enabled {
 		return nil, false
 	}
 
-	v, ok := this.cache.Get(k)
+	v, ok := this.cache[k]
 	if !ok {
 		return nil, false
 	}
-	return &v, ok
+	return v, ok
 }
 
-func (this *RWCache[K, V]) Commit(keys []K, values []V) {
+func (this *ReadCache[K, T]) Commit(keys []K, values []T) {
 	if !this.enabled {
 		return
 	}
-	this.cache.BatchSet(keys, values)
+
+	for i, k := range keys {
+		if this.isNil(values[i]) {
+			delete(this.cache, k)
+		} else {
+			this.cache[k] = &values[i]
+		}
+	}
 }
 
 // Call this function to clear the cache completely.
-func (this *RWCache[K, V]) Clear() {
-	this.cache.Clear()
-}
+func (this *ReadCache[K, T]) Clear() { clear(this.cache) }
