@@ -10,7 +10,7 @@ func TestCache(t *testing.T) {
 	readCache := NewReadCache[string](4, func(v int) bool { return v == math.MaxInt32 })
 
 	// readCache.Update([]string{"123", "456", "789"}, []int{1, 2, 3})
-	readCache.Commit([]string{"123", "456", "789"}, []int{1, 2, 3})
+	readCache.Precommit([]string{"123", "456", "789"}, []int{1, 2, 3})
 
 	if v, ok := readCache.Get("123"); !ok || *v != 1 {
 		t.Error("Error: Values mismatched !")
@@ -29,7 +29,7 @@ func TestCache(t *testing.T) {
 	}
 
 	// readCache.Update([]string{"444", "555", "666"}, []int{4, 5, 6})
-	readCache.Commit([]string{"444", "555", "666"}, []int{4, 5, 6})
+	readCache.Precommit([]string{"444", "555", "666"}, []int{4, 5, 6})
 
 	if v, ok := readCache.Get("444"); !ok || *v != 4 {
 		t.Error("Error: Values mismatched !")
@@ -48,7 +48,7 @@ func TestCache(t *testing.T) {
 	}
 
 	// readCache.Update([]string{"444", "456", "666"}, []int{7, 8, 9})
-	readCache.Commit([]string{"444", "456", "666"}, []int{7, 8, 9})
+	readCache.Precommit([]string{"444", "456", "666"}, []int{7, 8, 9})
 
 	if v, ok := readCache.Get("444"); !ok || *v != 7 {
 		t.Error("Error: Values mismatched !", *v)
