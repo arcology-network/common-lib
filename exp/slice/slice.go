@@ -330,13 +330,13 @@ func UniqueInts[T constraints.Integer](nums []T) []T {
 	if len(nums) <= 1 {
 		return nums
 	}
-	if common.IsType[[]int](nums) {
-		sort.Ints(To[T, int](nums))
-	} else {
-		sort.Slice(nums, func(i, j int) bool {
-			return (nums[i] < nums[j])
-		})
-	}
+	// if common.IsType[[]int](nums) {
+	// 	sort.Ints(To[T, int](nums))
+	// } else {
+	sort.Slice(nums, func(i, j int) bool {
+		return (nums[i] < nums[j])
+	})
+	// }
 
 	current := 0
 	for i := 0; i < len(nums); i++ {
@@ -792,40 +792,6 @@ func Dereference[T any](array []*T) []T {
 	return Transform(array, func(i int, v *T) T { return *v })
 }
 
-// MinElement returns the minimum element in a slice, if there are multiple minimum elements, it returns the first one.
-// func Min[T0 any](array []T0, less func(T0, T0) bool) (int, T0) {
-// 	if len(array) == 0 {
-// 		return -1, *new(T0)
-// 	}
-
-// 	idx := 0
-// 	minv := array[idx]
-// 	for i := idx; i < len(array); i++ {
-// 		if less(array[i], minv) {
-// 			idx = i
-// 			minv = array[i]
-// 		}
-// 	}
-// 	return idx, minv
-// }
-
-// // MaxElement returns the index and the maximum element in a slice. If there are multiple maximum elements, it returns the first one.
-// func Max[T0 any](array []T0, greater func(T0, T0) bool) (int, T0) {
-// 	if len(array) == 0 {
-// 		return -1, *new(T0)
-// 	}
-
-// 	idx := 0
-// 	maxv := array[idx]
-// 	for i := idx; i < len(array); i++ {
-// 		if greater(array[i], maxv) {
-// 			idx = i
-// 			maxv = array[i]
-// 		}
-// 	}
-// 	return idx, maxv
-// }
-
 func Extreme[T0 any](array []T0, compare func(T0, T0) bool) (int, T0) {
 	if len(array) == 0 {
 		return -1, *new(T0)
@@ -842,7 +808,7 @@ func Extreme[T0 any](array []T0, compare func(T0, T0) bool) (int, T0) {
 	return idx, minv
 }
 
-func MinNumeric[T constraints.Float | constraints.Integer](array []T) (int, T) {
+func Min[T constraints.Float | constraints.Integer](array []T) (int, T) {
 	if len(array) == 0 {
 		return -1, 0
 	}
@@ -858,7 +824,7 @@ func MinNumeric[T constraints.Float | constraints.Integer](array []T) (int, T) {
 	return idx, minv
 }
 
-func MaxNumeric[T constraints.Float | constraints.Integer](array []T) (int, T) {
+func Max[T constraints.Float | constraints.Integer](array []T) (int, T) {
 	if len(array) == 0 {
 		return -1, 0
 	}

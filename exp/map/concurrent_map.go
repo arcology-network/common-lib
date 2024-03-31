@@ -57,11 +57,11 @@ func (this *ConcurrentMap[K, V]) Clear() *ConcurrentMap[K, V] {
 
 // Size returns the total number of key-value pairs in the ConcurrentMap.
 // It isn't exactly accurate since the map is being accessed concurrently.
-func (this *ConcurrentMap[K, V]) Size() uint32 {
-	v := slice.Accumulate[map[K]V, int](this.shards, 0, func(i int, m map[K]V) int {
-		return len((m))
+func (this *ConcurrentMap[K, V]) Length() uint64 {
+	v := slice.Accumulate(this.shards, 0, func(i int, m map[K]V) uint64 {
+		return uint64(len(m))
 	})
-	return uint32(v)
+	return v
 }
 
 // Get retrieves the value associated with the specified key from the ConcurrentMap.
@@ -105,9 +105,9 @@ func (this *ConcurrentMap[K, V]) BatchGet(keys []K, args ...interface{}) ([]V, [
 	return values, found
 }
 
-// DirectBatchGet retrieves the values associated with the specified shard IDs and keys from the ConcurrentMap.
+// BatchGetFromShards retrieves the values associated with the specified shard IDs and keys from the ConcurrentMap.
 // It returns a slice of values in the same order as the keys.
-func (this *ConcurrentMap[K, V]) DirectBatchGet(shardIDs []uint8, keys []K, args ...interface{}) []V {
+func (this *ConcurrentMap[K, V]) BatchGetFromShards(shardIDs []uint8, keys []K, args ...interface{}) []V {
 	return slice.ParallelTransform(keys, 5, func(i int, _ K) V {
 		return this.shards[shardIDs[i]][keys[i]]
 	})
@@ -172,7 +172,7 @@ func (this *ConcurrentMap[K, V]) BatchUpdate(keys []K, values []V, updater func(
 // If the values slice is longer than the keys slice, the extra values are ignored.
 func (this *ConcurrentMap[K, V]) BatchSet(keys []K, values []V) {
 	shardIDs := this.Hash8s(keys)
-	this.DirectBatchSet(shardIDs, keys, values)
+	this.BatchSetToShards(shardIDs, keys, values)
 }
 
 func (this *ConcurrentMap[K, V]) BatchSetIf(keys []K, setter func(K) (V, bool)) {
@@ -184,11 +184,11 @@ func (this *ConcurrentMap[K, V]) BatchSetIf(keys []K, setter func(K) (V, bool)) 
 	slice.RemoveIf(&keys, func(i int, k K) bool { return flags[i] })
 	slice.RemoveIf(&values, func(i int, v V) bool { return flags[i] })
 
-	this.DirectBatchSet(this.Hash8s(keys), keys, values)
+	this.BatchSetToShards(this.Hash8s(keys), keys, values)
 }
 
-// DirectBatchSet associates the specified values with the specified shard IDs and keys in the ConcurrentMap.
-func (this *ConcurrentMap[K, V]) DirectBatchSet(ids []uint64, keys []K, values []V) {
+// BatchSetToShard associates the specified values with the specified shard IDs and keys in the ConcurrentMap.
+func (this *ConcurrentMap[K, V]) BatchSetToShards(ids []uint64, keys []K, values []V) {
 	slice.ParallelForeach(this.shards, 8, func(shardNum int, shard *map[K]V) {
 		for i := 0; i < len(ids); i++ {
 			if ids[i] == uint64(shardNum) { // If the key belongs to this shard
@@ -204,11 +204,11 @@ func (this *ConcurrentMap[K, V]) DirectBatchSet(ids []uint64, keys []K, values [
 
 func (this *ConcurrentMap[K, V]) BatchSetWith(keys []K, setter func(k *K) V) {
 	shardIDs := this.Hash8s(keys)
-	this.DirectBatchSetWith(shardIDs, keys, setter)
+	this.BatchSetToShardWith(shardIDs, keys, setter)
 }
 
-// DirectBatchSet associates the specified values with the specified shard IDs and keys in the ConcurrentMap.
-func (this *ConcurrentMap[K, V]) DirectBatchSetWith(ids []uint64, keys []K, setter func(k *K) V) {
+// BatchSetToShard associates the specified values with the specified shard IDs and keys in the ConcurrentMap.
+func (this *ConcurrentMap[K, V]) BatchSetToShardWith(ids []uint64, keys []K, setter func(k *K) V) {
 	slice.ParallelForeach(this.shards, 8, func(shardNum int, shard *map[K]V) {
 		for i := 0; i < len(ids); i++ {
 			if ids[i] == uint64(shardNum) { // If the key belongs to this shard
@@ -230,7 +230,7 @@ func (this *ConcurrentMap[K, V]) Keys() []K {
 		defer this.shardLocks[i].Unlock()
 	}
 
-	keySet := slice.ParallelTransform[map[K]V](this.shards, 8, func(i int, m map[K]V) []K {
+	keySet := slice.ParallelTransform(this.shards, 8, func(i int, m map[K]V) []K {
 		return common.MapKeys(m)
 	})
 	return slice.Flatten(keySet)
