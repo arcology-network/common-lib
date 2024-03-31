@@ -19,7 +19,7 @@ func TestReapinglist(t *testing.T) {
 		ethCommon.BytesToHash([]byte{19, 20, 21}),
 	}
 	reapinglist := ReapingList{
-		List:      Arr2Ptr(hashes),
+		List:      hashes,
 		Timestamp: big.NewInt(12),
 	}
 

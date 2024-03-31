@@ -19,7 +19,7 @@ func Test_getList(t *testing.T) {
 	}
 	succeful := []bool{true, true, true, true, true, false, true}
 	inclusive := InclusiveList{
-		HashList:   Arr2Ptr(hashes),
+		HashList:   hashes,
 		Successful: succeful,
 	}
 	inclusive.Mode = InclusiveMode_Results
@@ -38,7 +38,7 @@ func TestInclusive(t *testing.T) {
 	}
 	succeful := []bool{true, true, true, true, true, false, true}
 	inclusive := InclusiveList{
-		HashList:   Arr2Ptr(hashes),
+		HashList:   hashes,
 		Successful: succeful,
 	}
 

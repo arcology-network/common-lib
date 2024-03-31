@@ -69,19 +69,3 @@ func (il *InclusiveList) GobDecode(data []byte) error {
 	il.HashList = arrs
 	return nil
 }
-
-func Ptr2Arr(array []*ethCommon.Hash) []ethCommon.Hash {
-	hashArray := make([]ethCommon.Hash, len(array))
-	for i := range array {
-		hashArray[i] = *array[i]
-	}
-	return hashArray
-}
-
-func Arr2Ptr(array []ethCommon.Hash) []*ethCommon.Hash {
-	hashArray := make([]*ethCommon.Hash, len(array))
-	for i := range array {
-		hashArray[i] = &array[i]
-	}
-	return hashArray
-}
