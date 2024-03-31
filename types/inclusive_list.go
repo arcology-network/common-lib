@@ -11,13 +11,13 @@ const (
 )
 
 type InclusiveList struct {
-	HashList   []*ethCommon.Hash
+	HashList   []ethCommon.Hash
 	Successful []bool
 	Mode       byte
 }
 
 func (il *InclusiveList) CopyListAddHeight(height, round uint64) *InclusiveList {
-	hashList := make([]*ethCommon.Hash, len(il.HashList))
+	hashList := make([]ethCommon.Hash, len(il.HashList))
 
 	// for i := range il.HashList {
 	// 	// hash := il.HashList[i]
@@ -31,13 +31,13 @@ func (il *InclusiveList) CopyListAddHeight(height, round uint64) *InclusiveList 
 		HashList:   hashList,
 	}
 }
-func (il InclusiveList) GetList() (selectList []*ethCommon.Hash, clearList []*ethCommon.Hash) {
-	selectList = make([]*ethCommon.Hash, 0, len(il.HashList))
-	clearList = make([]*ethCommon.Hash, 0, len(il.HashList))
+func (il InclusiveList) GetList() (selectList []ethCommon.Hash, clearList []ethCommon.Hash) {
+	selectList = make([]ethCommon.Hash, 0, len(il.HashList))
+	clearList = make([]ethCommon.Hash, 0, len(il.HashList))
 	for i, hashItem := range il.HashList {
-		if hashItem == nil {
-			continue
-		}
+		// if hashItem == nil {
+		// 	continue
+		// }
 
 		switch il.Mode {
 		case InclusiveMode_Message:
@@ -55,7 +55,7 @@ func (il InclusiveList) GetList() (selectList []*ethCommon.Hash, clearList []*et
 }
 
 func (il *InclusiveList) GobEncode() ([]byte, error) {
-	hashArray := Ptr2Arr(il.HashList)
+	hashArray := il.HashList
 	data := [][]byte{
 		Hashes(hashArray).Encode(),
 		codec.Bools(il.Successful).Encode(),
@@ -66,7 +66,7 @@ func (il *InclusiveList) GobDecode(data []byte) error {
 	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
 	arrs := Hashes([]ethCommon.Hash{}).Decode(fields[0])
 	il.Successful = codec.Bools(il.Successful).Decode(fields[1]).(codec.Bools)
-	il.HashList = Arr2Ptr(arrs)
+	il.HashList = arrs
 	return nil
 }
 
