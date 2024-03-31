@@ -97,10 +97,10 @@ func (this *CachePolicy) isFixed() bool {
 	return this.quota == 0 || this.quota == math.MaxUint64
 }
 
-func (this *CachePolicy) Size() uint32 {
+func (this *CachePolicy) Length() uint64 {
 	this.lock.RLock()
 	defer this.lock.RUnlock()
-	return this.scoreboard.Size()
+	return this.scoreboard.Length()
 }
 
 func (this *CachePolicy) AddToStats(keys []string, vals []intf.Accessible) {

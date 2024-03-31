@@ -60,7 +60,7 @@ func (this *ReadCache[K, T]) Get(k K) (*T, bool) {
 	return v, ok
 }
 
-func (this *ReadCache[K, T]) Commit(keys []K, values []T) {
+func (this *ReadCache[K, T]) Precommit(keys []K, values []T) {
 	if !this.enabled {
 		return
 	}

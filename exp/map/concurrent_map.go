@@ -172,7 +172,7 @@ func (this *ConcurrentMap[K, V]) BatchUpdate(keys []K, values []V, updater func(
 // If the values slice is longer than the keys slice, the extra values are ignored.
 func (this *ConcurrentMap[K, V]) BatchSet(keys []K, values []V) {
 	shardIDs := this.Hash8s(keys)
-	this.BatchSetToShard(shardIDs, keys, values)
+	this.BatchSetToShards(shardIDs, keys, values)
 }
 
 func (this *ConcurrentMap[K, V]) BatchSetIf(keys []K, setter func(K) (V, bool)) {
@@ -184,11 +184,11 @@ func (this *ConcurrentMap[K, V]) BatchSetIf(keys []K, setter func(K) (V, bool)) 
 	slice.RemoveIf(&keys, func(i int, k K) bool { return flags[i] })
 	slice.RemoveIf(&values, func(i int, v V) bool { return flags[i] })
 
-	this.BatchSetToShard(this.Hash8s(keys), keys, values)
+	this.BatchSetToShards(this.Hash8s(keys), keys, values)
 }
 
 // BatchSetToShard associates the specified values with the specified shard IDs and keys in the ConcurrentMap.
-func (this *ConcurrentMap[K, V]) BatchSetToShard(ids []uint64, keys []K, values []V) {
+func (this *ConcurrentMap[K, V]) BatchSetToShards(ids []uint64, keys []K, values []V) {
 	slice.ParallelForeach(this.shards, 8, func(shardNum int, shard *map[K]V) {
 		for i := 0; i < len(ids); i++ {
 			if ids[i] == uint64(shardNum) { // If the key belongs to this shard
