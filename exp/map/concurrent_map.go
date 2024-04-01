@@ -53,15 +53,13 @@ func NewConcurrentMap[K comparable, V any](
 	}
 }
 
-func (this *ConcurrentMap[K, V]) Clear() *ConcurrentMap[K, V] {
+func (this *ConcurrentMap[K, V]) Clear() {
 	this.globalLock.Lock()
 	defer this.globalLock.Unlock()
 
 	slice.ParallelForeach(this.shards, len(this.shards), func(i int, _ *map[K]V) {
 		clear(this.shards[i])
 	})
-	this.shardLocks = make([]sync.RWMutex, len(this.shards))
-	return this
 }
 
 // Size returns the total number of key-value pairs in the ConcurrentMap.
@@ -139,6 +137,14 @@ func (this *ConcurrentMap[K, V]) Set(key K, v V, args ...interface{}) {
 	} else {
 		this.shards[shardID][key] = v
 	}
+}
+
+func (this *ConcurrentMap[K, V]) RemoveIf(condition func(K, V) bool) {
+	slice.ParallelForeach(this.shards, len(this.shards), func(shardNum int, shard *map[K]V) {
+		this.shardLocks[shardNum].Lock()
+		defer this.shardLocks[shardNum].Unlock()
+		RemoveIf(*shard, condition)
+	})
 }
 
 // Set associates the specified value with the specified key in the ConcurrentMap.
