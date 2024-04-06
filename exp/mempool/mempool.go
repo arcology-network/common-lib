@@ -1,4 +1,4 @@
-// Mempool is responsible for managing a pool of objects of the same type. It is thread-safe.
+// Mempool is responsible for managing a pool of pool of the same type. It is thread-safe.
 package mempool
 
 import (
@@ -7,13 +7,13 @@ import (
 	indexedslice "github.com/arcology-network/common-lib/container/slice"
 )
 
-// Mempool represents a pool of objects of the same type.
+// Mempool represents a pool of pool of the same type.
 type Mempool[T any] struct {
 	new      func() T
 	resetter func(T)
 	parent   interface{}   // Parent Mempool
 	children []interface{} // Child Mempools
-	objects  *indexedslice.PagedSlice[T]
+	pool     *indexedslice.PagedSlice[T]
 	counter  int
 	lock     sync.Mutex
 }
@@ -25,18 +25,18 @@ func NewMempool[T any](perPage, numPages int, new func() T, resetter func(T)) *M
 		resetter: resetter,
 		parent:   nil,
 		children: []interface{}{},
-		objects:  indexedslice.NewPagedSlice[T](perPage, numPages, perPage*numPages),
+		pool:     indexedslice.NewPagedSlice[T](perPage, numPages, perPage*numPages),
 		counter:  0,
 	}
 
-	mempool.objects.Foreach(func(i int, v *T) {
-		mempool.objects.Set(i, new())
+	mempool.pool.Foreach(func(i int, v *T) {
+		mempool.pool.Set(i, new())
 	})
 	return mempool
 }
 
-func (this *Mempool[T]) Size() int    { return this.objects.Size() }
-func (this *Mempool[T]) MinSize() int { return this.objects.MinSize() }
+func (this *Mempool[T]) Size() int    { return this.pool.Size() }
+func (this *Mempool[T]) MinSize() int { return this.pool.MinSize() }
 
 // New returns an object from the Mempool.
 
@@ -51,11 +51,11 @@ func (this *Mempool[T]) New() T {
 	// defer this.lock.Unlock()
 
 	// var v T
-	// if this.counter >= this.objects.Size() {
+	// if this.counter >= this.pool.Size() {
 	// 	v = this.new()
 	// } else {
-	// 	// v = this.objects.Get(this.counter)
-	// 	v = this.objects.PopBack()
+	// 	// v = this.pool.Get(this.counter)
+	// 	v = this.pool.PopBack()
 	// }
 
 	// this.counter++
@@ -66,10 +66,10 @@ func (this *Mempool[T]) Return(v T) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 	this.resetter(v)
-	this.objects.PushBack(v)
+	this.pool.PushBack(v)
 }
 
-// New returns an array of objects from the Mempool.
+// New returns an array of pool from the Mempool.
 func (this *Mempool[T]) NewArray(num int) []T {
 	this.lock.Lock()
 	defer this.lock.Unlock()
@@ -77,28 +77,28 @@ func (this *Mempool[T]) NewArray(num int) []T {
 	arr := make([]T, num)
 	for i := 0; i < num; i++ {
 		var v T
-		if this.counter >= this.objects.Size() {
+		if this.counter >= this.pool.Size() {
 			arr[i] = this.new()
-			this.objects.PushBack(v)
+			this.pool.PushBack(v)
 		} else {
-			arr[i] = this.objects.Get(this.counter)
+			arr[i] = this.pool.Get(this.counter)
 		}
 	}
 	this.counter += num
 	return arr
 }
 
-// Reclaim resets the Mempool, allowing the objects to be reused.
+// Reclaim resets the Mempool, allowing the pool to be reused.
 func (this *Mempool[T]) Reset() {
 	this.counter = 0
-	this.objects.Resize(this.objects.MinSize())
-	// this.objects.Foreach(func(i int, v *T) {
+	this.pool.Resize(this.pool.MinSize())
+	// this.pool.Foreach(func(i int, v *T) {
 	// 	this.resetter(*v)
 	// })
 
-	this.objects = indexedslice.NewPagedSlice[T](this.objects.PageSize(), this.objects.NumPages(), this.objects.PageSize()*this.objects.NumPages())
-	this.objects.Foreach(func(i int, v *T) {
-		this.objects.Set(i, this.new())
+	this.pool = indexedslice.NewPagedSlice[T](this.pool.PageSize(), this.pool.NumPages(), this.pool.PageSize()*this.pool.NumPages())
+	this.pool.Foreach(func(i int, v *T) {
+		this.pool.Set(i, this.new())
 	})
 }
 
