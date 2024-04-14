@@ -27,15 +27,20 @@ import (
 // "github.com/HPISTechnologies/common-lib/common"
 
 func TestPipeline(t *testing.T) {
+	i := 0
 	pipe := NewPipeline(
 		10, // Buffer size
 		5,  // Sleep time 5ms
-		func(k string) (string, bool) {
-			return k + "-1", true
+		func(k ...string) (string, bool) {
+			if i < 2 {
+				i++
+				return k[0] + "-12", false
+			}
+			return k[0] + "-1", true
 		},
-		func(k string) (string, bool) {
+		func(k ...string) (string, bool) {
 			time.Sleep(1 * time.Second)
-			return k + "-2", true
+			return k[0] + "-2", true
 		},
 	) // Time out after 5 seconds
 
@@ -45,7 +50,7 @@ func TestPipeline(t *testing.T) {
 	output := pipe.Await()
 	fmt.Println(output)
 
-	if !reflect.DeepEqual(output, []string{"key1-1-2", "key2-1-2", "key3-1-2"}) {
+	if !reflect.DeepEqual(output, []string{"key1-12-2", "key2-12-2", "key3-1-2"}) {
 		t.Error("Couple Failed", output)
 	}
 }
@@ -54,12 +59,12 @@ func TestPipelineClose(t *testing.T) {
 	pipe := NewPipeline(
 		10, // Buffer size
 		5,  // Sleep time 5ms
-		func(k string) (string, bool) {
-			return k + "-1", true
+		func(k ...string) (string, bool) {
+			return k[0] + "-1", true
 		},
-		func(k string) (string, bool) {
+		func(k ...string) (string, bool) {
 			time.Sleep(2 * time.Second)
-			return k + "-2", true
+			return k[0] + "-2", true
 		},
 	) // Time out after 5 seconds
 
@@ -69,6 +74,6 @@ func TestPipelineClose(t *testing.T) {
 	pipe.Close()
 	output := []string{}
 	for i := 0; i < len(output); i++ {
-		output = append(output, <-pipe.channels[1])
+		output = append(output, <-pipe.inChans[1])
 	}
 }
