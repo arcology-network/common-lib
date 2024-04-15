@@ -77,3 +77,29 @@ func TestPipelineClose(t *testing.T) {
 		output = append(output, <-pipe.inChans[1])
 	}
 }
+
+func TestPipelineRedirect(t *testing.T) {
+	pipe := NewPipeline(
+		10, // Buffer size
+		5,  // Sleep time 5ms
+		func(k ...string) (string, bool) {
+			return k[0] + "-1", true
+		},
+		func(k ...string) (string, bool) {
+			return k[0] + "-2", true
+		},
+	) // Time out after 5 seconds
+	pipe.Start()
+
+	outChan := make(chan string, 3)
+	pipe.RedirectTo(outChan)
+
+	pipe.Push("key1", "key2", "key3")
+	pipe.Close()
+
+	output := ToSlice(outChan)
+
+	if !reflect.DeepEqual(output, []string{"key1-1-2", "key2-1-2", "key3-1-2"}) {
+		t.Error("Couple Failed", output)
+	}
+}
