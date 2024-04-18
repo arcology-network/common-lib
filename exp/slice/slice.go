@@ -462,7 +462,6 @@ func Clone[T any](src []T, fun ...func(T) T) []T {
 		for i := range src {
 			dst[i] = fun[0](src[i])
 		}
-		return dst
 	} else {
 		copy(dst, src)
 	}
