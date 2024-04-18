@@ -1,13 +1,22 @@
-package storage
+package cache
 
 import (
 	"testing"
 
+	xxhash "github.com/cespare/xxhash/v2"
 	"github.com/ethereum/go-ethereum/common/math"
 )
 
 func TestCache(t *testing.T) {
-	readCache := NewReadCache[string](4, func(v int) bool { return v == math.MaxInt32 })
+	readCache := NewReadCache[string](4,
+		func(v int) bool {
+			return v == math.MaxInt32
+		},
+		func(k string) uint64 {
+			return uint64(xxhash.Sum64([]byte(k)))
+		},
+		nil,
+	)
 
 	// readCache.Update([]string{"123", "456", "789"}, []int{1, 2, 3})
 	readCache.Precommit([]string{"123", "456", "789"}, []int{1, 2, 3})
@@ -47,8 +56,7 @@ func TestCache(t *testing.T) {
 		t.Error("Error: Values mismatched !")
 	}
 
-	// readCache.Update([]string{"444", "456", "666"}, []int{7, 8, 9})
-	readCache.Precommit([]string{"444", "456", "666"}, []int{7, 8, 9})
+	readCache.Commit([]string{"444", "456", "666"}, []int{7, 8, 9})
 
 	if v, ok := readCache.Get("444"); !ok || *v != 7 {
 		t.Error("Error: Values mismatched !", *v)

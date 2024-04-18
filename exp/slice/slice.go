@@ -286,7 +286,7 @@ func Insert[T any](values *[]T, pos int, v T) []T {
 }
 
 // Insert inserts a value at a specific position in a slice.
-func PushFront[T any](values *[]T, v T) []T {
+func PushFront[T any](v T, values *[]T) []T {
 	return Insert(values, 0, v)
 }
 

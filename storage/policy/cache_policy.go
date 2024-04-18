@@ -28,17 +28,17 @@ type CachePolicy struct {
 	threshold         float64
 	scoreboard        *ccmap.ConcurrentMap[string, any]
 	scoreDistribution *Distribution
-
-	keys   []string
-	sizes  []uint32
-	scores []interface{} // access counts
-	lock   sync.RWMutex
+	keys              []string
+	sizes             []uint32
+	scores            []interface{} // access counts
+	lock              sync.RWMutex
+	Enabled           bool
 }
 
 // Memory hard Quota
 func NewCachePolicy(hardQuota uint64, threshold float64) *CachePolicy {
 	m := ccmap.NewConcurrentMap[string, any](8, func(v any) bool { return v == nil }, func(k string) uint64 {
-		return xxhash.Sum64([]byte(k))
+		return xxhash.Sum64String(k)
 	})
 
 	policy := &CachePolicy{
@@ -47,6 +47,7 @@ func NewCachePolicy(hardQuota uint64, threshold float64) *CachePolicy {
 		threshold:         threshold,
 		scoreboard:        m,
 		scoreDistribution: NewDistribution(),
+		Enabled:           true, // Enable by default
 
 		keys:   make([]string, 0, 65536),
 		sizes:  make([]uint32, 0, 65536),
@@ -55,6 +56,9 @@ func NewCachePolicy(hardQuota uint64, threshold float64) *CachePolicy {
 	policy.adjustThreshold(hardQuota, threshold)
 	return policy
 }
+
+func (this *CachePolicy) Enable()  { this.Enabled = true }
+func (this *CachePolicy) Disable() { this.Enabled = false }
 
 func (this *CachePolicy) Customize(db intf.PersistentStorage) *CachePolicy {
 	if this != nil {

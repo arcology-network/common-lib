@@ -15,64 +15,59 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package storage
+package cache
+
+import (
+	mapi "github.com/arcology-network/common-lib/exp/map"
+	policy "github.com/arcology-network/common-lib/storage/policy"
+)
 
 // ReadCache is a read only cache that is used to store the read values from the storage.
 // The cache updates itself when the update is called. The implementation isn't thread safe.
 // So, it's the caller's responsibility to ensure that the cache is only accessed by one thread updating it.
 // Each entry in the cache holds two values, the first value is the old value, and the second value is the new value.
 // The new value will be set to the old value when the Finalize function is called.
-type ReadCache[K comparable, T any] struct {
-	isNil   func(T) bool
-	cache   map[K]*T
+type ReadCache[K comparable, V any] struct {
+	*mapi.ConcurrentMap[K, V]
 	enabled bool
+	policy  *policy.CachePolicy
 }
 
-func NewReadCache[K comparable, T any](numShards uint64, isNil func(T) bool) *ReadCache[K, T] {
-	newReadCache := &ReadCache[K, T]{
-		isNil:   isNil,
-		cache:   make(map[K]*T),
-		enabled: true,
+func NewReadCache[K comparable, V any](numShards uint64, isNil func(V) bool, hasher func(K) uint64, policy *policy.CachePolicy) *ReadCache[K, V] {
+	newReadCache := &ReadCache[K, V]{
+		ConcurrentMap: mapi.NewConcurrentMap(int(numShards), isNil, hasher),
+		enabled:       true,
+		policy:        policy,
 	}
 	return newReadCache
 }
 
-func (this *ReadCache[K, T]) Status() bool { return this.enabled }
-func (this *ReadCache[K, T]) Enable()      { this.enabled = true }
-func (this *ReadCache[K, T]) Disable()     { this.enabled = false }
+func (this *ReadCache[K, V]) Status() bool                { return this.enabled }
+func (this *ReadCache[K, V]) Enable()                     { this.enabled = true }
+func (this *ReadCache[K, V]) Disable()                    { this.enabled = false }
+func (this *ReadCache[K, V]) Hash(k K) uint64             { return this.ConcurrentMap.Hash(k) }
+func (this *ReadCache[K, V]) Policy() *policy.CachePolicy { return this.policy }
 
-func (this *ReadCache[K, T]) Length() int {
-	if !this.enabled {
-		return 0
-	}
-	return len(this.cache)
-}
-
-func (this *ReadCache[K, T]) Get(k K) (*T, bool) {
+func (this *ReadCache[K, V]) Get(k K) (*V, bool) {
 	if !this.enabled {
 		return nil, false
 	}
 
-	v, ok := this.cache[k]
+	v, ok := this.ConcurrentMap.Get(k)
 	if !ok {
 		return nil, false
 	}
-	return v, ok
+	return &v, ok
 }
 
-func (this *ReadCache[K, T]) Precommit(keys []K, values []T) {
-	if !this.enabled {
-		return
-	}
-
-	for i, k := range keys {
-		if this.isNil(values[i]) {
-			delete(this.cache, k)
-		} else {
-			this.cache[k] = &values[i]
-		}
+func (this *ReadCache[K, V]) Set(k K, v V) {
+	if this.enabled {
+		this.ConcurrentMap.Set(k, v)
 	}
 }
 
-// Call this function to clear the cache completely.
-func (this *ReadCache[K, T]) Clear() { clear(this.cache) }
+func (this *ReadCache[K, V]) Commit(keys []K, values []V) {
+	if this.enabled {
+		this.BatchSet(keys, values)
+	}
+}

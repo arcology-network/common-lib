@@ -100,6 +100,25 @@ func BenchmarkForeach(b *testing.B) {
 // 	}
 // }
 
+func BenchmarkCcmapInit(b *testing.B) {
+	ccmaps := make([]*ConcurrentMap[string, int], 1000)
+	t0 := time.Now()
+	for i := 0; i < len(ccmaps); i++ {
+		ccmaps[i] = NewConcurrentMap(4, func(v int) bool { return false }, func(k string) uint64 {
+			return uint64(slice.Sum[byte, int]([]byte(k)))
+		})
+	}
+	fmt.Println("Init ConcurrentMaps", len(ccmaps), time.Since(t0))
+
+	nativeMaps := make([]map[string]int, len(ccmaps))
+	t0 = time.Now()
+	for i := 0; i < len(ccmaps); i++ {
+		// nativeMaps := make([]*ConcurrentMap[string, int], len(ccmaps))
+		nativeMaps[i] = make(map[string]int)
+	}
+	fmt.Println("Init native maps", len(nativeMaps), time.Since(t0))
+}
+
 func BenchmarkCcmapBatchSet(b *testing.B) {
 	genString := func() string {
 		var letters = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
