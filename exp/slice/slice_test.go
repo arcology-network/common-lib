@@ -796,6 +796,29 @@ func TestSortBy1st(t *testing.T) {
 	}
 }
 
+func TestClone(t *testing.T) {
+	nums := []int{4, 5, 3, 2}
+	num2 := Clone(nums)
+	if !reflect.DeepEqual(num2, []int{4, 5, 3, 2}) {
+		t.Error("Error: Failed to clone values !")
+	}
+
+	num2 = CloneIf(nums, func(v int) bool { return v < 4 })
+	if !reflect.DeepEqual(num2, []int{3, 2}) {
+		t.Error("Error: Failed to clone values !")
+	}
+
+	num2 = Clone(nums, func(v int) int { return v + 1 })
+	if !reflect.DeepEqual(num2, []int{5, 6, 4, 3}) {
+		t.Error("Error: Failed to clone values !")
+	}
+
+	num2 = CloneIf(nums, func(v int) bool { return v < 4 }, func(v int) int { return v + 1 })
+	if !reflect.DeepEqual(num2, []int{4, 3}) {
+		t.Error("Error: Failed to clone values !", num2)
+	}
+}
+
 func BenchmarkTestUniqueInts(t *testing.B) {
 	t0 := time.Now()
 	arr := NewDo(1000000, func(i int) int { return rand.Int() })

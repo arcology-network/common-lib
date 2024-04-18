@@ -40,7 +40,7 @@ func NewUnorderedIndexer[K comparable, T, V any](
 }
 
 // New creates a new StateCommitter instance.
-func (this *UnorderedIndexer[K, T, V]) Add(transitions []T) {
+func (this *UnorderedIndexer[K, T, V]) Import(transitions []T) {
 	for _, t := range transitions {
 		if k, ok := this.isIndexable(t); ok { // If the transition is indexable by the index.
 			this.Set(k, t)

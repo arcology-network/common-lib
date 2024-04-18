@@ -456,17 +456,28 @@ func Contains[T any](values []T, target T, equal func(v0, v1 T) bool) bool {
 }
 
 // Clone creates a copy of a slice and returns the copied slice.
-func Clone[T any](src []T) []T {
+func Clone[T any](src []T, fun ...func(T) T) []T {
 	dst := make([]T, len(src))
-	copy(dst, src)
+	if len(fun) > 0 {
+		for i := range src {
+			dst[i] = fun[0](src[i])
+		}
+		return dst
+	} else {
+		copy(dst, src)
+	}
 	return dst
 }
 
 // CloneIf creates a copy of a slice based on a given condition and returns the copied slice.
-func CloneIf[T any](src []T, condition func(v T) bool) []T {
+func CloneIf[T any](src []T, condition func(v T) bool, fun ...func(T) T) []T {
 	dst := make([]T, 0, len(src))
 	for i := range src {
 		if condition(src[i]) {
+			if len(fun) > 0 {
+				dst = append(dst, fun[0](src[i]))
+				continue
+			}
 			dst = append(dst, src[i])
 		}
 	}
