@@ -85,7 +85,6 @@ func (this *Pipeline[T]) Start() *Pipeline[T] {
 				select {
 				case inv, ok := <-this.inChans[i]:
 					if ok {
-						// fmt.Println(this.name, ok)
 						if outVals, ok := this.workers[i](inv, &this.buffer[i]); ok {
 							for j := 0; j < len(outVals); j++ {
 								this.inChans[i+1] <- outVals[j] // Send to the downstream channel
@@ -129,16 +128,15 @@ func (this *Pipeline[T]) Push(vals ...T) {
 // Awiat waits for all the results to be processed and returns. No new values can be pushed into the Pipeline
 // after before Await() returns.
 func (this *Pipeline[T]) Await() []T {
-	out := make(chan T, 1024)
-	this.windUp(out)
-	arr := ToSlice(out)
+	arr := this.windUp()
 	this.inChans[0] = make(chan T, this.channelSize) // Reopen the entrance channel
 	return arr
 }
 
 // Close the Pipeline and terminate all goroutines.
 func (this *Pipeline[T]) Close() {
-	this.windUp(nil)
+	this.windUp()
+	this.quit.Store(true)
 
 	// The entrance channel is closed already by the windUp function.
 	for i := 1; i < len(this.inChans); i++ {
@@ -148,18 +146,17 @@ func (this *Pipeline[T]) Close() {
 
 // windUp Closes the entrance channel and
 // waits for all the results to be processed.
-func (this *Pipeline[T]) windUp(out chan T) {
+func (this *Pipeline[T]) windUp() []T {
 	close(this.inChans[0]) // No more values to push
 
+	out := make([]T, 0, 1024)
 	for {
 		select {
 		case v := <-this.inChans[len(this.inChans)-1]:
-			if out != nil {
-				out <- v
-			}
+			out = append(out, v)
 		default:
 			if this.IsVacant() {
-				return
+				return out
 			}
 		}
 	}
