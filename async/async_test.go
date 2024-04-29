@@ -22,6 +22,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/arcology-network/common-lib/exp/slice"
 )
 
 // "github.com/HPISTechnologies/common-lib/common"
@@ -29,23 +31,33 @@ import (
 func TestPipeline(t *testing.T) {
 	i := 0
 	pipe := NewPipeline(
+		"test1",
 		10, // Buffer size
 		5,  // Sleep time 5ms
-		func(k ...string) (string, bool) {
+		func(k string, buffer *[]string) ([]string, bool) {
 			if i < 2 {
 				i++
-				return k[0] + "-12", false
+				*buffer = append(*buffer, k+"-12")
+				return []string{}, false
 			}
-			return k[0] + "-1", true
+
+			if len(k) != 0 {
+				*buffer = append(*buffer, k+"-1")
+				v := slice.Move(buffer)
+				return v, true
+			} else {
+				return nil, false
+			}
 		},
-		func(k ...string) (string, bool) {
+		func(k string, buffer *[]string) ([]string, bool) {
 			time.Sleep(1 * time.Second)
-			return k[0] + "-2", true
+
+			*buffer = append(*buffer, k+"-2")
+			return slice.Move(buffer), true
 		},
 	) // Time out after 5 seconds
 
 	pipe.Start()
-
 	pipe.Push("key1", "key2", "key3")
 	output := pipe.Await()
 	fmt.Println(output)
@@ -57,47 +69,58 @@ func TestPipeline(t *testing.T) {
 
 func TestPipelineClose(t *testing.T) {
 	pipe := NewPipeline(
+		"test1",
 		10, // Buffer size
 		5,  // Sleep time 5ms
-		func(k ...string) (string, bool) {
-			return k[0] + "-1", true
+		func(k string, buffer *[]string) ([]string, bool) {
+			if len(k) == 0 {
+				return []string{}, true
+			}
+			return []string{k + "-1"}, true
 		},
-		func(k ...string) (string, bool) {
-			time.Sleep(2 * time.Second)
-			return k[0] + "-2", true
+		func(k string, buffer *[]string) ([]string, bool) {
+			if len(k) == 0 {
+				return nil, false
+			}
+			return []string{k + "-2"}, true
 		},
 	) // Time out after 5 seconds
 
 	pipe.Start()
-
 	pipe.Push("key1", "key2", "key3")
 	pipe.Close()
-	output := []string{}
-	for i := 0; i < len(output); i++ {
-		output = append(output, <-pipe.inChans[1])
-	}
 }
 
 func TestPipelineRedirect(t *testing.T) {
 	pipe := NewPipeline(
+		"test1",
 		10, // Buffer size
 		5,  // Sleep time 5ms
-		func(k ...string) (string, bool) {
-			return k[0] + "-1", true
+		func(k string, buffer *[]string) ([]string, bool) {
+			if len(k) == 0 {
+				return []string{}, true
+			}
+			return []string{k + "-1"}, true
 		},
-		func(k ...string) (string, bool) {
-			return k[0] + "-2", true
+		func(k string, buffer *[]string) ([]string, bool) {
+			if len(k) == 0 {
+				return nil, false
+			}
+			return []string{k + "-2"}, true
 		},
 	) // Time out after 5 seconds
 	pipe.Start()
+	pipe.Push("key1", "key2", "key3")
 
 	outChan := make(chan string, 3)
 	pipe.RedirectTo(outChan)
 
-	pipe.Push("key1", "key2", "key3")
-	pipe.Close()
-
-	output := ToSlice(outChan)
+	output := []string{}
+	for i := 0; i < 3; i++ {
+		v := <-outChan
+		fmt.Println(v)
+		output = append(output, v)
+	}
 
 	if !reflect.DeepEqual(output, []string{"key1-1-2", "key2-1-2", "key3-1-2"}) {
 		t.Error("Couple Failed", output)

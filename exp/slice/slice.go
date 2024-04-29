@@ -80,6 +80,13 @@ func PadLeft[T any](values []T, v T, targetLen int) []T {
 	return append(make([]T, targetLen-len(values)), values...)
 }
 
+// Move all the elements in a slice to a new slice and clears the original slice.
+func Move[T comparable](values *[]T) []T {
+	ret := *values
+	*values = (*values)[:0]
+	return ret
+}
+
 // Remove removes all occurrences of a target value from a slice.
 // It modifies the original slice and returns the modified slice.
 func Remove[T comparable](values *[]T, target T) []T {
@@ -818,6 +825,7 @@ func Extreme[T0 any](array []T0, compare func(T0, T0) bool) (int, T0) {
 	return idx, minv
 }
 
+// Find the minimum value in a slice
 func Min[T constraints.Float | constraints.Integer](array []T) (int, T) {
 	if len(array) == 0 {
 		return -1, 0
@@ -834,6 +842,17 @@ func Min[T constraints.Float | constraints.Integer](array []T) (int, T) {
 	return idx, minv
 }
 
+// Find the minimum value in a slice with a condition
+func MinIf[T0 any, T1 constraints.Float | constraints.Integer](array []T0, fun func(T0) T1) (int, T0) {
+	vals := make([]T1, len(array))
+	for i, v := range array {
+		vals[i] = fun(v)
+	}
+	idx, _ := Min(vals)
+	return idx, array[idx]
+}
+
+// Find the maximum value in a slice
 func Max[T constraints.Float | constraints.Integer](array []T) (int, T) {
 	if len(array) == 0 {
 		return -1, 0
@@ -848,4 +867,14 @@ func Max[T constraints.Float | constraints.Integer](array []T) (int, T) {
 		}
 	}
 	return idx, maxv
+}
+
+// Find the maximum value in a slice with a condition
+func MaxIf[T0 any, T1 constraints.Float | constraints.Integer](array []T0, fun func(T0) T1) (int, T0) {
+	vals := make([]T1, len(array))
+	for i, v := range array {
+		vals[i] = fun(v)
+	}
+	idx, _ := Max(vals)
+	return idx, array[idx]
 }
