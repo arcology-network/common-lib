@@ -18,6 +18,7 @@
 package async
 
 import (
+	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -28,35 +29,36 @@ import (
 // The first function consumes the input from the channel and produces
 // an output that is sent to the second channel, which is consumed by the second function.
 type Pipeline[T any] struct {
-	total       atomic.Int64
+	name        string
 	sleepTime   time.Duration
 	channelSize int
 
 	// outChan chan T
-	inChans []chan T
-	outBufs [][]T // Buffers to store the values temporarily before pushing to the next channel.
-	workers []func(...T) (T, bool)
-	isBusy  []*atomic.Bool
-	quit    atomic.Bool
+	inChans      []chan T
+	buffer       [][]T // Buffers to store the values temporarily before pushing to the next channel.
+	workers      []func(T, *[]T) ([]T, bool)
+	isWorkerBusy []*atomic.Bool
+	quit         atomic.Bool
 }
 
-func NewPipeline[T any](channelSize int, sleepTime time.Duration, workers ...func(...T) (T, bool)) *Pipeline[T] {
+func NewPipeline[T any](name string, channelSize int, sleepTime time.Duration, workers ...func(T, *[]T) ([]T, bool)) *Pipeline[T] {
 	pl := &Pipeline[T]{
-		sleepTime:   sleepTime,
-		workers:     workers,
-		inChans:     make([]chan T, len(workers)+1),
-		outBufs:     make([][]T, len(workers)),          // output outBuf
-		isBusy:      make([]*atomic.Bool, len(workers)), // if the worker is busy
-		channelSize: channelSize,
-		quit:        atomic.Bool{},
+		name:         name,
+		sleepTime:    sleepTime,
+		workers:      workers,
+		inChans:      make([]chan T, len(workers)+1),
+		buffer:       make([][]T, len(workers)),          // output outBuf
+		isWorkerBusy: make([]*atomic.Bool, len(workers)), // if the worker is busy
+		channelSize:  channelSize,
+		quit:         atomic.Bool{},
 	}
 
-	for i := 0; i < len(pl.isBusy); i++ {
-		pl.isBusy[i] = &atomic.Bool{}
+	for i := 0; i < len(pl.isWorkerBusy); i++ {
+		pl.isWorkerBusy[i] = &atomic.Bool{}
 	}
 
-	for i := 0; i < len(pl.outBufs); i++ {
-		pl.outBufs[i] = make([]T, 0, channelSize)
+	for i := 0; i < len(pl.buffer); i++ {
+		pl.buffer[i] = make([]T, 0, channelSize)
 	}
 
 	for i := 0; i < len(pl.inChans); i++ {
@@ -70,72 +72,62 @@ func (this *Pipeline[T]) Start() *Pipeline[T] {
 	for i := 0; i < len(this.workers); i++ {
 		go func(i int) {
 			for {
-				if len(this.inChans[i]) > 0 {
-					this.isBusy[i].Store(true)
-				}
-
-				if !this.isBusy[i].Load() && this.quit.Load() {
+				if !this.isWorkerBusy[i].Load() && this.quit.Load() {
 					return
 				}
 
+				// No job in the channel
+				if len(this.inChans[i]) == 0 {
+					time.Sleep(10 * time.Millisecond)
+					continue
+				}
+
+				this.isWorkerBusy[i].Store(true)
 				select {
 				case inv, ok := <-this.inChans[i]:
 					if ok {
-						if outv, ok := this.workers[i](inv); ok {
-							this.outBufs[i] = append(this.outBufs[i], outv)
-							for j := 0; j < len(this.outBufs[i]); j++ {
-								this.inChans[i+1] <- this.outBufs[i][j] // Send to the downstream channel
+						fmt.Println(this.name, ok)
+						if outVals, ok := this.workers[i](inv, &this.buffer[i]); ok {
+							for j := 0; j < len(outVals); j++ {
+								this.inChans[i+1] <- outVals[j] // Send to the downstream channel
 							}
-							this.outBufs[i] = this.outBufs[i][:0] // Reset the outBuf
-						} else {
-							this.outBufs[i] = append(this.outBufs[i], outv)
+						}
+					} else { // Closed channel
+						if this.quit.Load() {
+							return // Closed because of quit, return
 						}
 					}
-					this.isBusy[i].Store(false)
-
 				default:
-					time.Sleep(this.sleepTime * time.Millisecond)
+					if !this.isWorkerBusy[i].Load() && this.quit.Load() {
+						return
+					}
 				}
+				this.isWorkerBusy[i].Store(false)
 			}
 		}(i)
 	}
 	return this
 }
 
-// Redict all the results to be processed and returns. No new values can be pushed into the pipeline
+// Redict all the results to be processed and returns. No new values can be pushed into the Pipeline
 // after before Await() returns.
-func (this *Pipeline[T]) RedirectTo(outChan chan T) []T {
+func (this *Pipeline[T]) RedirectTo(outChan chan T) {
 	go func() {
 		for {
-			if this.quit.Load() {
-				return
-			}
-
-			select {
-			case v := <-this.inChans[len(this.inChans)-1]:
-				outChan <- v
-			default:
-				time.Sleep(this.sleepTime * time.Millisecond)
-			}
+			v := <-this.inChans[len(this.inChans)-1]
+			outChan <- v
 		}
 	}()
-
-	out := make(chan T, 1024)
-	this.windUp(out)
-	arr := ToSlice(out)
-	this.inChans[0] = make(chan T, this.channelSize) // Reopen the entrance channel
-	return arr
 }
 
 // Push pushes values to the inChans.
 func (this *Pipeline[T]) Push(vals ...T) {
-	this.total.Add(int64(len(vals)))
 	for _, v := range vals {
 		this.inChans[0] <- v // Push to the first channel
 	}
 }
 
-// Awiat waits for all the results to be processed and returns. No new values can be pushed into the pipeline
+// Awiat waits for all the results to be processed and returns. No new values can be pushed into the Pipeline
 // after before Await() returns.
 func (this *Pipeline[T]) Await() []T {
 	out := make(chan T, 1024)
@@ -145,23 +137,11 @@ func (this *Pipeline[T]) Await() []T {
 	return arr
 }
 
-// Close the pipeline and terminate all goroutines.
+// Close the Pipeline and terminate all goroutines.
 func (this *Pipeline[T]) Close() {
 	this.windUp(nil)
-	this.quit.Store(true)
 
-	for {
-		idx, _ := slice.FindFirstIf(this.isBusy, func(f *atomic.Bool) bool {
-			return f.Load()
-		})
-
-		if idx == -1 {
-			break
-		} else {
-			time.Sleep(this.sleepTime * time.Millisecond)
-		}
-	}
-
+	// The entrance channel is closed already by the windUp function.
 	for i := 1; i < len(this.inChans); i++ {
 		close(this.inChans[i])
 	}
@@ -171,21 +151,23 @@ func (this *Pipeline[T]) Close() {
 // waits for all the results to be processed.
 func (this *Pipeline[T]) windUp(out chan T) {
 	close(this.inChans[0]) // No more values to push
-	for {
-		if this.IsVacant() {
-			break
-		}
 
-		if out != nil {
-			v := <-this.inChans[len(this.inChans)-1]
-			out <- v
+	for {
+		select {
+		case v := <-this.inChans[len(this.inChans)-1]:
+			if out != nil {
+				out <- v
+			}
+		default:
+			if this.IsVacant() {
+				return
+			}
 		}
-		time.Sleep(this.sleepTime * time.Millisecond)
 	}
 }
 
 func (this *Pipeline[T]) IsVacant() bool {
-	activeWorkers := slice.CountIf[*atomic.Bool, int](this.isBusy, func(_ int, b **atomic.Bool) bool {
+	activeWorkers := slice.CountIf[*atomic.Bool, int](this.isWorkerBusy, func(_ int, b **atomic.Bool) bool {
 		return (*b).Load()
 	})
 
@@ -193,7 +175,7 @@ func (this *Pipeline[T]) IsVacant() bool {
 		return len(*b) > 0
 	})
 
-	activeBuffs := slice.CountIf[[]T, int](this.outBufs, func(_ int, b *[]T) bool {
+	activeBuffs := slice.CountIf[[]T, int](this.buffer, func(_ int, b *[]T) bool {
 		return len(*b) > 0
 	})
 	return activeWorkers+activeChans+activeBuffs == 0
