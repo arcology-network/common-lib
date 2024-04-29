@@ -18,7 +18,6 @@
 package async
 
 import (
-	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -76,7 +75,7 @@ func (this *Pipeline[T]) Start() *Pipeline[T] {
 					return
 				}
 
-				// No job in the channel
+				// No job in the channel, this may affect performance
 				if len(this.inChans[i]) == 0 {
 					time.Sleep(10 * time.Millisecond)
 					continue
@@ -86,7 +85,7 @@ func (this *Pipeline[T]) Start() *Pipeline[T] {
 				select {
 				case inv, ok := <-this.inChans[i]:
 					if ok {
-						fmt.Println(this.name, ok)
+						// fmt.Println(this.name, ok)
 						if outVals, ok := this.workers[i](inv, &this.buffer[i]); ok {
 							for j := 0; j < len(outVals); j++ {
 								this.inChans[i+1] <- outVals[j] // Send to the downstream channel
