@@ -47,13 +47,17 @@ func (this *Slice[T]) Append(v T) *Slice[T] {
 	return this
 }
 
-func (this *Slice[T]) MoveToSlice() *Slice[T] {
+func (this *Slice[T]) MoveToSlice() []T {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	slice := &Slice[T]{
-		values: this.values,
-	}
+	values := this.values
 	this.values = this.values[:0]
-	return slice
+	return values
+}
+
+func (this *Slice[T]) Length() int {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	return len(this.values)
 }

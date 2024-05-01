@@ -35,18 +35,20 @@ type Pipeline[T any] struct {
 	// outChan chan T
 	inChans      []chan T
 	buffer       [][]T // Buffers to store the values temporarily before pushing to the next channel.
-	workers      []func(T, *[]T) ([]T, bool)
+	buffers      []*Slice[T]
+	workers      []func(T, *Slice[T]) ([]T, bool)
 	isWorkerBusy []*atomic.Bool
 	quit         atomic.Bool
 }
 
-func NewPipeline[T any](name string, channelSize int, sleepTime time.Duration, workers ...func(T, *[]T) ([]T, bool)) *Pipeline[T] {
+func NewPipeline[T any](name string, channelSize int, sleepTime time.Duration, workers ...func(T, *Slice[T]) ([]T, bool)) *Pipeline[T] {
 	pl := &Pipeline[T]{
 		name:         name,
 		sleepTime:    sleepTime,
 		workers:      workers,
 		inChans:      make([]chan T, len(workers)+1),
 		buffer:       make([][]T, len(workers)),          // output outBuf
+		buffers:      make([]*Slice[T], len(workers)),    // output outBuf
 		isWorkerBusy: make([]*atomic.Bool, len(workers)), // if the worker is busy
 		channelSize:  channelSize,
 		quit:         atomic.Bool{},
@@ -58,6 +60,10 @@ func NewPipeline[T any](name string, channelSize int, sleepTime time.Duration, w
 
 	for i := 0; i < len(pl.buffer); i++ {
 		pl.buffer[i] = make([]T, 0, channelSize)
+	}
+
+	for i := 0; i < len(pl.buffers); i++ {
+		pl.buffers[i] = NewSlice[T]()
 	}
 
 	for i := 0; i < len(pl.inChans); i++ {
@@ -85,7 +91,7 @@ func (this *Pipeline[T]) Start() *Pipeline[T] {
 				select {
 				case inv, ok := <-this.inChans[i]:
 					if ok {
-						if outVals, ok := this.workers[i](inv, &this.buffer[i]); ok {
+						if outVals, ok := this.workers[i](inv, this.buffers[i]); ok {
 							for j := 0; j < len(outVals); j++ {
 								this.inChans[i+1] <- outVals[j] // Send to the downstream channel
 							}

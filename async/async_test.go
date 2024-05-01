@@ -22,8 +22,6 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	"github.com/arcology-network/common-lib/exp/slice"
 )
 
 // "github.com/HPISTechnologies/common-lib/common"
@@ -32,8 +30,8 @@ func TestSlice(t *testing.T) {
 	ccslice := NewSlice[string]()
 	strs := ccslice.Append("a").Append("b").Append("c").MoveToSlice()
 
-	if !reflect.DeepEqual(strs.values, []string{"a", "b", "c"}) || len(ccslice.values) != 0 {
-		t.Error("Failed", strs.values)
+	if !reflect.DeepEqual(strs, []string{"a", "b", "c"}) || len(ccslice.values) != 0 {
+		t.Error("Failed", strs)
 	}
 }
 
@@ -43,26 +41,25 @@ func TestPipeline(t *testing.T) {
 		"test1",
 		10, // Buffer size
 		5,  // Sleep time 5ms
-		func(k string, buffer *[]string) ([]string, bool) {
+		func(k string, buffer *Slice[string]) ([]string, bool) {
 			if i < 2 {
 				i++
-				*buffer = append(*buffer, k+"-12")
+				buffer.Append(k + "-12")
 				return []string{}, false
 			}
 
 			if len(k) != 0 {
-				*buffer = append(*buffer, k+"-1")
-				v := slice.Move(buffer)
+				// *buffer = append(*buffer, k+"-1")
+				v := buffer.Append(k + "-1").MoveToSlice()
+				// v := slice.Move(buffer)
 				return v, true
 			} else {
 				return nil, false
 			}
 		},
-		func(k string, buffer *[]string) ([]string, bool) {
+		func(k string, buffer *Slice[string]) ([]string, bool) {
 			time.Sleep(1 * time.Second)
-
-			*buffer = append(*buffer, k+"-2")
-			return slice.Move(buffer), true
+			return buffer.Append(k + "-2").MoveToSlice(), true
 		},
 	) // Time out after 5 seconds
 
@@ -81,17 +78,18 @@ func TestPipelineClose(t *testing.T) {
 		"test1",
 		10, // Buffer size
 		5,  // Sleep time 5ms
-		func(k string, buffer *[]string) ([]string, bool) {
+		func(k string, buffer *Slice[string]) ([]string, bool) {
 			if len(k) == 0 {
 				return []string{}, true
 			}
-			return []string{k + "-1"}, true
+
+			return buffer.Append(k + "-1").MoveToSlice(), true
 		},
-		func(k string, buffer *[]string) ([]string, bool) {
+		func(k string, buffer *Slice[string]) ([]string, bool) {
 			if len(k) == 0 {
 				return nil, false
 			}
-			return []string{k + "-2"}, true
+			return buffer.Append(k + "-2").MoveToSlice(), true
 		},
 	) // Time out after 5 seconds
 
@@ -105,17 +103,17 @@ func TestPipelineRedirect(t *testing.T) {
 		"test1",
 		10, // Buffer size
 		5,  // Sleep time 5ms
-		func(k string, buffer *[]string) ([]string, bool) {
+		func(k string, buffer *Slice[string]) ([]string, bool) {
 			if len(k) == 0 {
 				return []string{}, true
 			}
-			return []string{k + "-1"}, true
+			return buffer.Append(k + "-1").MoveToSlice(), true
 		},
-		func(k string, buffer *[]string) ([]string, bool) {
+		func(k string, buffer *Slice[string]) ([]string, bool) {
 			if len(k) == 0 {
 				return nil, false
 			}
-			return []string{k + "-2"}, true
+			return buffer.Append(k + "-2").MoveToSlice(), true
 		},
 	) // Time out after 5 seconds
 	pipe.Start()
