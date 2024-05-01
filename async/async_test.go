@@ -28,6 +28,15 @@ import (
 
 // "github.com/HPISTechnologies/common-lib/common"
 
+func TestSlice(t *testing.T) {
+	ccslice := NewSlice[string]()
+	strs := ccslice.Append("a").Append("b").Append("c").MoveToSlice()
+
+	if !reflect.DeepEqual(strs.values, []string{"a", "b", "c"}) || len(ccslice.values) != 0 {
+		t.Error("Failed", strs.values)
+	}
+}
+
 func TestPipeline(t *testing.T) {
 	i := 0
 	pipe := NewPipeline(

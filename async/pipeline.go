@@ -129,7 +129,7 @@ func (this *Pipeline[T]) Push(vals ...T) {
 // after before Await() returns.
 func (this *Pipeline[T]) Await() []T {
 	arr := this.windUp()
-	this.inChans[0] = make(chan T, this.channelSize) // Reopen the entrance channel
+	// this.inChans[0] = make(chan T, this.channelSize) // Reopen the entrance channel
 	return arr
 }
 
@@ -147,7 +147,7 @@ func (this *Pipeline[T]) Close() {
 // windUp Closes the entrance channel and
 // waits for all the results to be processed.
 func (this *Pipeline[T]) windUp() []T {
-	close(this.inChans[0]) // No more values to push
+	// close(this.inChans[0]) // No more values to push
 
 	out := make([]T, 0, 1024)
 	for {
@@ -171,8 +171,8 @@ func (this *Pipeline[T]) IsVacant() bool {
 		return len(*b) > 0
 	})
 
-	activeBuffs := slice.CountIf[[]T, int](this.buffer, func(_ int, b *[]T) bool {
-		return len(*b) > 0
-	})
-	return activeWorkers+activeChans+activeBuffs == 0
+	// activeBuffs := slice.CountIf[[]T, int](this.buffer, func(_ int, b *[]T) bool {
+	// 	return len(*b) > 0
+	// })
+	return activeWorkers+activeChans == 0
 }
