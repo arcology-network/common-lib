@@ -34,8 +34,7 @@ type Pipeline[T any] struct {
 
 	// outChan chan T
 	inChans      []chan T
-	buffer       [][]T // Buffers to store the values temporarily before pushing to the next channel.
-	buffers      []*Slice[T]
+	buffers      []*Slice[T] // Buffers to store the values temporarily before pushing to the downstream channel.
 	workers      []func(T, *Slice[T]) ([]T, bool)
 	isWorkerBusy []*atomic.Bool
 	quit         atomic.Bool
@@ -47,7 +46,6 @@ func NewPipeline[T any](name string, channelSize int, sleepTime time.Duration, w
 		sleepTime:    sleepTime,
 		workers:      workers,
 		inChans:      make([]chan T, len(workers)+1),
-		buffer:       make([][]T, len(workers)),          // output outBuf
 		buffers:      make([]*Slice[T], len(workers)),    // output outBuf
 		isWorkerBusy: make([]*atomic.Bool, len(workers)), // if the worker is busy
 		channelSize:  channelSize,
@@ -56,10 +54,6 @@ func NewPipeline[T any](name string, channelSize int, sleepTime time.Duration, w
 
 	for i := 0; i < len(pl.isWorkerBusy); i++ {
 		pl.isWorkerBusy[i] = &atomic.Bool{}
-	}
-
-	for i := 0; i < len(pl.buffer); i++ {
-		pl.buffer[i] = make([]T, 0, channelSize)
 	}
 
 	for i := 0; i < len(pl.buffers); i++ {
@@ -135,7 +129,7 @@ func (this *Pipeline[T]) Push(vals ...T) {
 // after before Await() returns.
 func (this *Pipeline[T]) Await() []T {
 	arr := this.windUp()
-	// this.inChans[0] = make(chan T, this.channelSize) // Reopen the entrance channel
+	this.inChans[0] = make(chan T, this.channelSize) // Reopen the entrance channel
 	return arr
 }
 
@@ -153,7 +147,7 @@ func (this *Pipeline[T]) Close() {
 // windUp Closes the entrance channel and
 // waits for all the results to be processed.
 func (this *Pipeline[T]) windUp() []T {
-	// close(this.inChans[0]) // No more values to push
+	close(this.inChans[0]) // No more values to push
 
 	out := make([]T, 0, 1024)
 	for {
@@ -177,8 +171,8 @@ func (this *Pipeline[T]) IsVacant() bool {
 		return len(*b) > 0
 	})
 
-	// activeBuffs := slice.CountIf[[]T, int](this.buffer, func(_ int, b *[]T) bool {
-	// 	return len(*b) > 0
-	// })
-	return activeWorkers+activeChans == 0
+	activeBuffs := slice.CountIf[*Slice[T], int](this.buffers, func(_ int, buffer **Slice[T]) bool {
+		return (*buffer).Length() > 0
+	})
+	return activeWorkers+activeChans+activeBuffs == 0
 }
