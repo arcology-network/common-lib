@@ -29,19 +29,25 @@ import (
 // Entries with the same key are stored in a slice in the order they were inserted.
 type OrderedSet[K comparable] struct {
 	elements []K
+	index    []int
 	dict     map[K]*int
 	nilValue K
 	hasher   func(K) [32]byte
 }
 
 // NewIndexedSlice creates a new instance of OrderedSet with the specified page size, minimum number of pages, and pre-allocation size.
-func NewOrderedSet[K comparable](nilValue K, preAlloc int, hasher func(K) [32]byte, vals ...K) *OrderedSet[K] {
+func NewOrderedSet[K comparable](
+	nilValue K,
+	preAlloc int,
+	hasher func(K) [32]byte,
+	vals ...K) *OrderedSet[K] {
 	set := &OrderedSet[K]{
 		dict:     make(map[K]*int),
 		elements: append(make([]K, 0, preAlloc+len(vals)), vals...),
 		nilValue: nilValue,
 		hasher:   hasher,
 	}
+
 	return set.Init()
 }
 
@@ -84,11 +90,26 @@ func (this *OrderedSet[K]) Sub(elements []K) *OrderedSet[K] {
 func (this *OrderedSet[K]) Insert(keys ...K) {
 	for _, k := range keys {
 		if _, ok := this.dict[k]; !ok { // New entries
+			this.dict[k] = common.New(len(this.elements))
 			this.elements = append(this.elements, k)
-			this.dict[k] = common.New(len(this.elements) - 1)
 		}
 	}
 }
+
+// Insert inserts an element into the OrderedSet and updates the dict with the specified key.
+// If the element already exists, it is updated. Otherwise, it is added.
+// Returns the dict of the element in the slice.
+// func (this *OrderedSet[K]) InsertAfter(k K) {
+// 	pos := this.getter(k)
+
+// 	idx := sort.Search(len(this.elements), func(i int) bool { return a[i] >= x })
+// 	slice.Insert(&a, idx, x)
+
+// 	if _, ok := this.dict[k]; !ok { // New entries
+// 		this.dict[k] = common.New(len(this.elements))
+// 		this.elements = append(this.elements, k)
+// 	}
+// }
 
 // SetAt sets the element at the specified index to the new value.
 // The dict is updated with the new key.
@@ -97,8 +118,8 @@ func (this *OrderedSet[K]) SetAt(idx int, newv K) bool {
 		return false
 	}
 
-	this.elements[idx] = newv             // Replace the old key with the new key
 	delete(this.dict, this.elements[idx]) // remove the old key from the dict
+	this.elements[idx] = newv             // Replace the old key with the new key
 	this.dict[newv] = common.New(idx)     // Add the new key to the dict
 	return true
 }
@@ -122,6 +143,11 @@ func (this *OrderedSet[K]) DeleteByIndex(indices ...int) {
 	for _, idx := range indices {
 		delete(this.dict, this.elements[idx]) // remove the old key
 		slice.RemoveAt(&this.elements, idx)
+	}
+
+	idx, _ := slice.Min(indices)
+	for i, k := range this.elements[idx:] {
+		*this.dict[k] = i + idx
 	}
 }
 
@@ -170,4 +196,20 @@ func (this *OrderedSet[K]) Equal(other *OrderedSet[K]) bool {
 
 func (this *OrderedSet[K]) Print() {
 	fmt.Println(this.dict, this.elements)
+}
+
+// Count the number of elements BEFORE the specified key, not including the key itself.
+func (this *OrderedSet[K]) CountBefore(key K) int {
+	if idx, ok := this.dict[key]; ok {
+		return *idx
+	}
+	return -1
+}
+
+// Count the number of elements AFTER the specified index, not including the key itself.
+func (this *OrderedSet[K]) CountAfter(key K) int {
+	if idx, ok := this.dict[key]; ok {
+		return len(this.dict) - *idx - 1
+	}
+	return -1
 }

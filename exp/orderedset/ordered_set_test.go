@@ -105,6 +105,14 @@ func TestIndexedSlice(t *testing.T) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
 
+	if set.CountAfter("2") != 4 {
+		t.Error("Error: should be", 4)
+	}
+
+	if set.CountBefore("2") != 1 {
+		t.Error("Error: should be", 1, "actual: ", set.CountBefore("2"))
+	}
+
 	set.Delete("2", "7")
 	// if !reflect.DeepEqual(set.Elements(), []string{"1", "5", "8", "9"}) {
 	// 	t.Error("Error: Key is not equal !", set.Elements())
@@ -147,4 +155,5 @@ func TestIndexedSliceDelet(t *testing.T) {
 	if !reflect.DeepEqual(set.Elements(), []string{"5", "15", "13"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
+
 }

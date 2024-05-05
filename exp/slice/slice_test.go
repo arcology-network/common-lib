@@ -594,6 +594,21 @@ func TestInsert(t *testing.T) {
 	if !EqualSet(src, []int{10, 4, 10, 2, 6, 3, 1, 11}) {
 		t.Error("Expected: ", "{10, 4, 10, 2, 6, 3, 1, 11}", "actual: ", src)
 	}
+
+	InsertIf(&src, int(12), func(int, int) bool { return false })
+	if !EqualSet(src, []int{10, 4, 10, 2, 6, 3, 1, 11, 12}) {
+		t.Error("Expected: ", "{10, 4, 10, 2, 6, 3, 1, 11, 12}", "actual: ", src)
+	}
+
+	InsertIf(&src, int(12), func(_ int, v int) bool { return v >= 2 })
+	if !EqualSet(src, []int{12, 10, 4, 10, 2, 6, 3, 1, 11, 12}) {
+		t.Error("Expected: ", "{12, 10, 4, 10, 2, 6, 3, 1, 11}", "actual: ", src)
+	}
+
+	InsertIf(&src, int(31), func(_ int, v int) bool { return v == 3 })
+	if !EqualSet(src, []int{12, 10, 4, 10, 2, 6, 3, 31, 1, 11, 12}) {
+		t.Error("Expected: ", "{12, 10, 4, 10, 2, 6, 3, 1, 11}", "actual: ", src)
+	}
 }
 
 func TestReferenceAndDereference(t *testing.T) {

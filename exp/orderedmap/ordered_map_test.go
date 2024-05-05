@@ -18,6 +18,8 @@
 package orderedmap
 
 import (
+	"fmt"
+	"sort"
 	"testing"
 
 	"github.com/arcology-network/common-lib/exp/slice"
@@ -73,4 +75,9 @@ func TestIndexedSlice(t *testing.T) {
 		t.Error("Error: Key is not equal !")
 	}
 
+	x := 6
+	a := []int{1, 2, 3, 4, 55}
+	i := sort.Search(len(a), func(i int) bool { return a[i] >= x })
+	slice.Insert(&a, i, x)
+	fmt.Println(a)
 }

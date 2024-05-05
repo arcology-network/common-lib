@@ -292,6 +292,17 @@ func Insert[T any](values *[]T, pos int, v T) []T {
 	return *values
 }
 
+// InsertIf inserts a value at a specific position in a slice based on a given condition.
+func InsertIf[T any](values *[]T, newv T, condition func(int, T) bool) {
+	for i, v := range *values {
+		if condition(i, v) {
+			*values = append((*values)[:i], append([]T{newv}, (*values)[i:]...)...)
+			return
+		}
+	}
+	*values = append(*values, newv)
+}
+
 // Insert inserts a value at a specific position in a slice.
 func PushFront[T any](v T, values *[]T) []T {
 	return Insert(values, 0, v)

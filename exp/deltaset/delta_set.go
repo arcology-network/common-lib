@@ -61,6 +61,7 @@ func (*DeltaSet[K]) New(
 	}
 }
 
+// mapTo returns the set and the mapped index of the specified index.
 func (this *DeltaSet[K]) mapTo(idx int) (*orderedset.OrderedSet[K], int) {
 	if idx >= int(this.Length()) {
 		return nil, -1
@@ -72,6 +73,12 @@ func (this *DeltaSet[K]) mapTo(idx int) (*orderedset.OrderedSet[K], int) {
 	}
 	return this.committed, idx
 }
+
+// Reindex calculates the index of the element in the DeltaSet by skipping the removed elements.
+// func (this *DeltaSet[K]) Reindex(idx int) (*orderedset.OrderedSet[K], int) {
+// 	// set, idx := this.mapTo(idx)
+
+// }
 
 // Array returns the underlying slice of committed in the DeltaSet.
 func (this *DeltaSet[K]) Committed() *orderedset.OrderedSet[K] { return this.committed }
@@ -357,27 +364,6 @@ func (this *DeltaSet[K]) Exists(k K) (bool, int) {
 
 	return false, -1
 }
-
-// Commit commits the updated and removed lists to the committed list.
-// Commit assumes that the updated and removed lists are disjoint.
-// func (this *DeltaSet[K]) Commit(other ...*DeltaSet[K]) *DeltaSet[K] {
-// 	updatedElems := slice.Transform(other, func(_ int, v *DeltaSet[K]) []K {
-// 		return v.updated.Elements()
-// 	})
-// 	slice.PushFront(&updatedElems, this.updated.Elements())
-
-// 	removed := slice.Transform(other, func(_ int, v *DeltaSet[K]) []K {
-// 		return v.removed.Elements()
-// 	})
-// 	slice.PushFront(&removed, this.removed.Elements())
-
-// 	this.committed.Merge(slice.Flatten(updatedElems)) // Merge the updated list to the committed list
-// 	this.committed.Sub(slice.Flatten(removed))        // Remove the removed list from the committed list
-// 	this.ResetDelta()                                 // Reset the updated and removed lists to empty
-// 	fmt.Println(updatedElems)
-// 	fmt.Println(removed)
-// 	return this
-// }
 
 func (this *DeltaSet[K]) Commit(other ...*DeltaSet[K]) *DeltaSet[K] {
 	updateBuffer := make([]K, slice.CountDo(other, func(_ int, v **DeltaSet[K]) int { return (*v).updated.Length() })+this.updated.Length())
