@@ -19,27 +19,35 @@ package orderedmap
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"testing"
 
 	"github.com/arcology-network/common-lib/exp/slice"
 )
 
-func TestIndexedSlice(t *testing.T) {
+func TestIndexedSliceBasic(t *testing.T) {
 	set := NewOrderedMap[string, int, *[]int](
 		nil,
 		10,
 		func(key string, v int) *[]int {
 			return &[]int{v}
 		},
+
 		func(key string, value int, newValue **[]int) {
 			**newValue = append(**newValue, value)
+		},
+
+		func(k string, keys *[]string, v *[]int, newValue *[]*[]int) int {
+			*keys = append(*keys, k)
+			*newValue = append(*newValue, v)
+			return len(*keys) - 1
 		})
 
 	set.Insert([]string{"11"}, []int{11})
 	set.Insert([]string{"11"}, []int{22})
 	if v, ok := set.Get("11"); !ok || len(*v) != 2 || (*v)[0] != 11 || (*v)[1] != 22 {
-		t.Error("Error: Key is not equal !")
+		t.Error("Error: Key is not equal !", v)
 	}
 
 	set.Insert([]string{"33"}, []int{33})
@@ -80,4 +88,47 @@ func TestIndexedSlice(t *testing.T) {
 	i := sort.Search(len(a), func(i int) bool { return a[i] >= x })
 	slice.Insert(&a, i, x)
 	fmt.Println(a)
+}
+
+func TestIndexedSliceSorted(t *testing.T) {
+	set := NewOrderedMap[string, int, int](
+		-1,
+		10,
+		func(key string, v int) int {
+			return 0
+		},
+
+		func(key string, rawv int, v *int) {
+			*v = rawv
+		},
+
+		func(k string, keys *[]string, v int, vals *[]int) int {
+			i := sort.SearchInts(*vals, v)
+			slice.Insert(keys, i, k)
+			slice.Insert(vals, i, v)
+			return i
+		},
+	)
+	set.Insert([]string{"11"}, []int{11})
+	set.Insert([]string{"12"}, []int{12})
+
+	set.Insert([]string{"1"}, []int{1})
+	set.Insert([]string{"15"}, []int{5})
+
+	if !reflect.DeepEqual(set.keys, []string{"1", "15", "11", "12"}) == false {
+		t.Error("Error: Key is not equal !")
+	}
+
+	if !reflect.DeepEqual(set.Values(), []int{1, 5, 11, 12}) == false {
+		t.Error("Error: Key is not equal !")
+	}
+
+	set.Delete("11")
+	if !reflect.DeepEqual(set.keys, []string{"1", "15", "12"}) == false {
+		t.Error("Error: Key is not equal !")
+	}
+
+	if !reflect.DeepEqual(set.Values(), []int{1, 5, 12}) == false {
+		t.Error("Error: Key is not equal !")
+	}
 }

@@ -20,6 +20,7 @@ package orderedmap
 import (
 	"runtime"
 
+	mapi "github.com/arcology-network/common-lib/exp/map"
 	"github.com/arcology-network/common-lib/exp/slice"
 )
 
@@ -31,6 +32,7 @@ type OrderedMap[K comparable, T, V any] struct {
 	values   []V
 	init     func(K, T) V
 	setter   func(K, T, *V)
+	inserter func(K, *[]K, V, *[]V) int // Insert a new element into the slice
 	nilValue V
 }
 
@@ -39,13 +41,15 @@ func NewOrderedMap[K comparable, T, V any](
 	nilValue V,
 	preAlloc int,
 	init func(K, T) V,
-	setter func(K, T, *V)) *OrderedMap[K, T, V] {
+	setter func(K, T, *V),
+	inserter func(K, *[]K, V, *[]V) int) *OrderedMap[K, T, V] {
 	set := &OrderedMap[K, T, V]{
 		dict:     make(map[K]*int),
 		keys:     make([]K, 0, preAlloc),
 		values:   make([]V, 0, preAlloc),
 		init:     init,
 		setter:   setter,
+		inserter: inserter,
 		nilValue: nilValue,
 	}
 	return set.Init()
@@ -66,7 +70,7 @@ func (this *OrderedMap[K, T, V]) KVs() ([]K, []V)  { return this.keys, this.valu
 func (this *OrderedMap[K, T, V]) Length() int      { return len(this.values) }
 
 func (this *OrderedMap[K, T, V]) Clone() *OrderedMap[K, T, V] {
-	cloned := NewOrderedMap[K, T, V](this.nilValue, len(this.values), this.init, this.setter)
+	cloned := NewOrderedMap[K, T, V](this.nilValue, len(this.values), this.init, this.setter, this.inserter)
 	cloned.keys = slice.Clone(this.keys)
 	cloned.values = slice.Clone(this.values)
 	return cloned.Init()
@@ -94,14 +98,47 @@ func (this *OrderedMap[K, T, V]) Insert(keys []K, vals []T) *OrderedMap[K, T, V]
 	return this
 }
 
-func (this *OrderedMap[K, T, V]) InsertDo(vals []T, getter func(int, T) K) *OrderedMap[K, T, V] {
-	for i, v := range vals {
-		this.Set(getter(i, v), v)
+func (this *OrderedMap[K, T, V]) KeyToIndex(k K) int {
+	if idx, ok := this.dict[k]; ok {
+		return *idx
 	}
-	return this
+	return -1
 }
 
-func (this *OrderedMap[K, T, V]) Set(k K, v T) {
+func (this *OrderedMap[K, T, V]) IndexToKey(idx int) K {
+	return this.keys[idx]
+}
+
+func (this *OrderedMap[K, T, V]) Set(k K, v T) int {
+	idx, ok := this.dict[k]
+	if ok { // Existing entry
+		this.setter(k, v, &this.values[*idx])
+		return *idx
+	}
+	newv := this.init(k, v)
+
+	// Default inserter, simply append the new element to the slice.
+	if this.inserter == nil {
+		this.values = append(this.values, newv)
+		this.keys = append(this.keys, k)
+		length := len(this.values) - 1
+		this.dict[k] = &length
+		return length
+	}
+
+	// Custom inserter.
+	newIdx := this.inserter(k, &this.keys, newv, &this.values)
+	this.dict[k] = &newIdx
+
+	// Indices are shifted after the new element is inserted,so we need to update the dict.
+	for i := newIdx + 1; i < len(this.keys); i++ {
+		v := this.dict[this.keys[i]]
+		*v = i
+	}
+	return newIdx
+}
+
+func (this *OrderedMap[K, T, V]) DoSet(k K, v T, setter func(*[]K, *[]V)) {
 	idx, ok := this.dict[k]
 	if !ok { // New entries
 		this.values = append(this.values, this.init(k, v))
@@ -124,13 +161,6 @@ func (this *OrderedMap[K, T, V]) At(idx int) (K, V) {
 	return this.keys[idx], this.values[idx]
 }
 
-func (this *OrderedMap[K, T, V]) KeyToIndex(k K) int {
-	if idx, ok := this.dict[k]; ok {
-		return *idx
-	}
-	return -1
-}
-
 func (this *OrderedMap[K, T, V]) Exists(k K) bool {
 	_, ok := this.dict[k]
 	return ok
@@ -145,20 +175,63 @@ func (this *OrderedMap[K, T, V]) Clear() {
 // Debugging function to check if the dict is in sync with the slice.
 func (this *OrderedMap[K, T, V]) IsDirty() bool { return len(this.values) != len(this.dict) }
 
-// func (this *OrderedMap[K, T, V]) Equal(other *OrderedMap[K, T, V]) bool {
-// 	return slice.EqualSet(this.values, other.values) && mapi.EqualIf(this.dict, other.dict, func(v0 int, v1 int) bool { return v0 == v1 })
-// }
+func (this *OrderedMap[K, T, V]) DeleteByIndex(indices ...int) {
+	for _, idx := range indices {
+		delete(this.dict, this.keys[idx]) // remove the old key
+		slice.RemoveAt(&this.keys, idx)
+		slice.RemoveAt(&this.values, idx)
+	}
 
-// func (this *OrderedMap[K, T, V]) Print() {
-// 	fmt.Println(this.dict, this.values)
-// }
+	idx, _ := slice.Min(indices)
+	// Only need to update the elements after the last deleted index, previous elements' indices are not affected.
+	for i, k := range this.keys[idx:] {
+		*this.dict[k] = i + idx
+	}
+}
 
-// This is for debug purpose only !!, don't use it in production
-// since it has some quite complicated consequences. !!!
-// func (this *OrderedMap[K, T, V]) replace(idx int, v K) K {
-// 	old := this.values[idx]
-// 	delete(this.dict, this.values[idx]) // remove the old key
-// 	this.values[idx] = v                // update the value
-// 	this.dict[this.values[idx]] = idx   // update the dict
-// 	return old
-// }
+func (this *OrderedMap[K, T, V]) Delete(k K) bool {
+	idx, ok := this.dict[k]
+	if !ok {
+		return false
+	}
+	slice.RemoveAt(&this.keys, *idx)
+	slice.RemoveAt(&this.values, *idx)
+	delete(this.dict, k)
+
+	// Only update the dict for the elements after the deleted element.
+	for i := *idx; i < len(this.keys); i++ {
+		*this.dict[this.keys[i]] = i
+	}
+	return true
+}
+
+func (this *OrderedMap[K, T, V]) DeleteBatch(keys ...K) bool {
+	dict := mapi.FromSlice(keys, func(k K) *int { return this.dict[k] })
+	for _, k := range keys {
+		idx := this.dict[k]
+		slice.RemoveAt(&this.keys, *idx)
+
+	}
+
+	minIdx := len(this.values)
+	slice.RemoveBothIf(&this.keys, &this.values, func(i int, k K, _ V) bool {
+		idx, ok := dict[k]
+		if ok && *idx < minIdx {
+			minIdx = *idx
+		}
+		return ok
+	})
+
+	//Remove the keys from the dictionary
+	for _, k := range keys {
+		delete(this.dict, k)
+	}
+
+	// Some elements may have been removed, so there are some gaps in the slice. The dictionary
+	// no longer reflects the correct index of the elements. This function will reorder the elements
+	// in the slice and update the dict accordingly.
+	for i, k := range this.keys {
+		*this.dict[k] = i
+	}
+	return false
+}

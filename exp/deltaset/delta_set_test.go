@@ -4,7 +4,7 @@
 *   This program is free software: you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
 *   the Free Software Foundation, either version 3 of the License, or
-*   (mapTo your option) any later version.
+*   any later version.
 
 *   This program is distributed in the hope that it will be useful,
 *   but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/arcology-network/common-lib/common"
+	"github.com/arcology-network/common-lib/exp/slice"
 )
 
 func TestDeltaSliceBasic(t *testing.T) {
@@ -114,7 +115,6 @@ func TestDeltaSliceBasic(t *testing.T) {
 	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17}) || !reflect.DeepEqual(deltaSet.updated.Elements(), []int{18, 19, 20, 21}) {
 		t.Error("failed to commit", deltaSet.committed.Elements(), deltaSet.updated.Elements())
 	}
-
 }
 
 func TestDeltaSliceAddThenDelete(t *testing.T) {
@@ -303,7 +303,11 @@ func TestDeltaDeleteThenAddBack(t *testing.T) {
 }
 
 func TestMultiMerge(t *testing.T) {
-	deltaSet := NewDeltaSet[int](-1, 100, nil)
+	appender := func(keys *[]int, k int) {
+		slice.AscendAppend(keys, k)
+	}
+
+	deltaSet := NewDeltaSet[int](-1, 100, appender)
 	deltaSet.Insert(13, 15, 17)
 	deltaSet.Commit()
 
@@ -314,6 +318,16 @@ func TestMultiMerge(t *testing.T) {
 	deltaSet.Commit(_set0, _set1)
 
 	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{17, 58, 59, 20, 51, 78, 71}) {
+		t.Error("failed to commit", deltaSet.committed.Elements())
+	}
+
+	deltaSet.Delete(58, 17, 20)
+	if !reflect.DeepEqual(deltaSet.Elements(), []int{59, 51, 78, 71}) {
+		t.Error("failed to commit", deltaSet.committed.Elements())
+	}
+
+	rmved := deltaSet.Removed().Elements()
+	if !reflect.DeepEqual(rmved, []int{17, 20, 58}) {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 }

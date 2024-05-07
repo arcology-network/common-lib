@@ -28,15 +28,19 @@ func NewUnorderedIndexer[K comparable, T, V any](
 	isIndexable func(T) (K, bool),
 	init func(K, T) V,
 	setter func(K, T, *V)) *UnorderedIndexer[K, T, V] {
-	return &UnorderedIndexer[K, T, V]{
+
+	indexer := &UnorderedIndexer[K, T, V]{
 		isIndexable: isIndexable,
-		OrderedMap: orderedmap.NewOrderedMap[K, T, V](
-			nilValue,
-			1024,
-			init,
-			setter,
-		),
 	}
+
+	indexer.OrderedMap = orderedmap.NewOrderedMap[K, T, V](
+		nilValue,
+		1024,
+		init,
+		setter,
+		nil,
+	)
+	return indexer
 }
 
 // New creates a new StateCommitter instance.

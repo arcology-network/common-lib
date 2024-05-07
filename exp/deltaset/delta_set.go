@@ -36,12 +36,12 @@ type DeltaSet[K comparable] struct {
 }
 
 // NewIndexedSlice creates a new instance of DeltaSet with the specified page size, minimum number of pages, and pre-allocation size.
-func NewDeltaSet[K comparable](nilVal K, preAlloc int, hasher func(K) [32]byte, keys ...K) *DeltaSet[K] {
+func NewDeltaSet[K comparable](nilVal K, preAlloc int, appender func(*[]K, K), keys ...K) *DeltaSet[K] {
 	deltaSet := &DeltaSet[K]{
 		nilVal:    nilVal,
-		committed: orderedset.NewOrderedSet(nilVal, preAlloc, hasher),
-		updated:   orderedset.NewOrderedSet(nilVal, preAlloc, hasher),
-		removed:   orderedset.NewOrderedSet(nilVal, preAlloc, hasher),
+		committed: orderedset.NewOrderedSet(nilVal, preAlloc, nil),
+		updated:   orderedset.NewOrderedSet(nilVal, preAlloc, nil),
+		removed:   orderedset.NewOrderedSet(nilVal, preAlloc, appender),
 	}
 	deltaSet.Insert(keys...)
 	return deltaSet
@@ -374,9 +374,9 @@ func (this *DeltaSet[K]) Commit(other ...*DeltaSet[K]) *DeltaSet[K] {
 	slice.ConcateToBuffer(other, &removedBuffer, func(v *DeltaSet[K]) []K { return v.removed.Elements() })
 	copy(removedBuffer[len(removedBuffer)-this.removed.Length():], this.removed.Elements())
 
-	this.committed.Merge(updateBuffer) // Merge the updated list to the committed list
-	this.committed.Sub(removedBuffer)  // Remove the removed list from the committed list
-	this.ResetDelta()                  // Reset the updated and removed lists to empty	// return this
+	this.committed.Insert(updateBuffer...) // Merge the updated list to the committed list
+	this.committed.Sub(removedBuffer)      // Remove the removed list from the committed list
+	this.ResetDelta()                      // Reset the updated and removed lists to empty	// return this
 
 	return this
 }

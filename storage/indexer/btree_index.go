@@ -78,6 +78,16 @@ func (this *SortedIndex[T]) Export() []T {
 	return vals
 }
 
+// Export the index, return a slice of all the values in the index.
+// func (this *SortedIndex[T]) At(idx uint64) *T {
+// 	vals := make([]T, 0, this.indexTree.Len())
+// 	this.indexTree.Ascend(func(node btree.Item) bool {
+// 		vals = append(vals, node.(*sortable[T]).v)
+// 		return true
+// 	})
+// 	return vals
+// }
+
 // Clear the index, return the number of items cleared.
 func (this *SortedIndex[T]) Clear() int {
 	size := this.indexTree.Len()

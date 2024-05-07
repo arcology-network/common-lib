@@ -834,6 +834,49 @@ func TestClone(t *testing.T) {
 	}
 }
 
+func TestOrderedAppend(t *testing.T) {
+	nums := []int{}
+	AscendAppend(&nums, 4)
+	AscendAppend(&nums, 5)
+	AscendAppend(&nums, 6)
+	AscendAppend(&nums, 2)
+	AscendAppend(&nums, 9)
+	AscendAppend(&nums, 1)
+
+	if !reflect.DeepEqual(nums, []int{1, 2, 4, 5, 6, 9}) {
+		t.Error("Error: Failed to clone values !", nums)
+	}
+
+	nums = []int{}
+	DescendAppend(&nums, 4)
+	DescendAppend(&nums, 5)
+	DescendAppend(&nums, 6)
+	DescendAppend(&nums, 2)
+	DescendAppend(&nums, 9)
+	DescendAppend(&nums, 1)
+
+	if !reflect.DeepEqual(nums, []int{9, 6, 5, 4, 2, 1}) {
+		t.Error("Error: Failed to clone values !", nums)
+	}
+
+	nums = make([]int, 0, 10000)
+	t0 := time.Now()
+	for i := 0; i < 1000; i++ {
+		AscendAppend(&nums, rand.Intn(1000))
+	}
+	fmt.Println("AscendAppend: ", 1000, " entries in:", time.Now().Sub(t0))
+
+	t0 = time.Now()
+	total := 0
+	for i := 0; i < 1000; i++ {
+		for _, v := range nums[:1000] {
+			total += v
+		}
+	}
+	fmt.Println("Sum: ", 1000, " entries in:", time.Now().Sub(t0))
+
+}
+
 func BenchmarkTestUniqueInts(t *testing.B) {
 	t0 := time.Now()
 	arr := NewDo(1000000, func(i int) int { return rand.Int() })

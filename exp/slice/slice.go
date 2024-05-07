@@ -889,3 +889,23 @@ func MaxIf[T0 any, T1 constraints.Float | constraints.Integer](array []T0, fun f
 	idx, _ := Max(vals)
 	return idx, array[idx]
 }
+
+// Append a value to a slice and keep the slice sorted, this is convenient but low efficiency.
+func AscendAppend[T constraints.Ordered](values *[]T, v T) []T {
+	nPos := sort.Search(len(*values), func(i int) bool {
+		return v <= (*values)[i]
+	})
+
+	Insert(values, nPos, v)
+	return *values
+}
+
+// Append a value to a slice and keep the slice sorted, this is convenient but low efficiency.
+func DescendAppend[T constraints.Ordered](values *[]T, v T) []T {
+	nPos := sort.Search(len(*values), func(i int) bool {
+		return v >= (*values)[i]
+	})
+
+	Insert(values, nPos, v)
+	return *values
+}
