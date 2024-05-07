@@ -45,7 +45,7 @@ func TestIndexerAlone(t *testing.T) {
 	}
 
 	// Create a table with two indexes.
-	table := NewSortedIndexer[*Tx](
+	table := NewOrderedIndexer[*Tx](
 		NewSortedIndex("time", func(a, b *Tx) bool { return a.time < b.time }),       // Index by time.
 		NewSortedIndex("height", func(a, b *Tx) bool { return a.height < b.height }), // Index by height.
 	)
@@ -155,7 +155,7 @@ func TestIndexerWithDB(t *testing.T) {
 	})
 
 	// Create a table with two indexes.
-	table := NewSortedIndexer[*txIndex](
+	table := NewOrderedIndexer[*txIndex](
 		NewSortedIndex("time", func(a, b *txIndex) bool { return a.time.Nanosecond() < b.time.Nanosecond() }), // Index by time.
 		NewSortedIndex("height", func(a, b *txIndex) bool { return a.height < b.height }),                     // Index by height.
 	)
