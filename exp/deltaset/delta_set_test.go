@@ -18,6 +18,7 @@ package deltaset
 
 import (
 	"fmt"
+	"math/rand"
 	"reflect"
 	"testing"
 	"time"
@@ -391,4 +392,34 @@ func BenchmarkDeltaDeleteThenAddBack(t *testing.B) {
 	t0 = time.Now()
 	deltaSet.CloneDelta()
 	fmt.Println("CloneDelta", time.Since(t0))
+}
+
+func BenchmarkGetNthNonNil(b *testing.B) {
+	deltaSet := NewDeltaSet[int](-1, 100, nil)
+	deltaSet.Insert(13, 15, 17)
+
+	deltaSet.Insert(18, 19, 20, 21) // { 13, 15, 17} + { 18, 19, 20, 21}
+	deltaSet.DeleteByIndex(1)       //  { 13, -15, 17} + { 18, 19, 20, 21}
+	deltaSet.DeleteByIndex(4)       // { 13, -15, 17} + { 18, -19, 20, 21}'
+
+	total := 10000
+	for i := 0; i < total; i++ {
+		deltaSet.Insert(i)
+	}
+
+	for i := 0; i < total/2; i++ {
+		deltaSet.DeleteByIndex(uint64(rand.Intn(1000000)))
+	}
+
+	t0 := time.Now()
+	for i := 0; i < total; i++ {
+		deltaSet.GetNthNonNil(uint64(i))
+	}
+	fmt.Println("GetNthNonNil", time.Since(t0))
+
+	// t0 = time.Now()
+	// for i := 0; i < total; i++ {
+	// 	deltaSet.GetNthNonNil(uint64(i))
+	// }
+	// fmt.Println("GetNthNonNilv2", time.Since(t0))
 }

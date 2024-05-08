@@ -245,42 +245,57 @@ func (this *DeltaSet[K]) GetByIndex(idx uint64) (K, bool) {
 
 // NthNonNil returns the nth non-nil value from the DeltaSet.
 // The nth non-nil value isn't necessarily the nth value in the DeltaSet, but the nth non-nil value.
+// func (this *DeltaSet[K]) GetNthNonNil(nth uint64) (K, int, bool) {
+// 	// If the nth value is out of range, no need to search. The nil value is returned.
+// 	if nth >= this.NonNilCount() {
+// 		return *new(K), -1, false
+// 	}
+
+// 	// This isn't efficient; it is better to search from the beginning or the min and max indices of the removed list to
+// 	// narrow down the search range. However, that requires some extra code to keep track of the corresponding indices of
+// 	// the keys in the removed list.
+// 	cnt := 0
+// 	for i := 0; i < int(this.Length()); i++ {
+// 		if K, ok := this.GetByIndex(uint64(i)); ok {
+// 			if uint64(cnt) == nth {
+// 				return K, i, true
+// 			}
+// 			cnt++
+// 		}
+// 	}
+// 	return *new(K), -1, false
+// }
+
+// NthNonNil returns the nth non-nil value from the DeltaSet. This version is more efficient than the previous one,
+// when removed values aren't evenly distributed in the DeltaSet.
+// The nth non-nil value isn't necessarily the nth value in the DeltaSet, but the nth non-nil value.
 func (this *DeltaSet[K]) GetNthNonNil(nth uint64) (K, int, bool) {
 	// If the nth value is out of range, no need to search. The nil value is returned.
 	if nth >= this.NonNilCount() {
 		return *new(K), -1, false
 	}
 
+	removedElems := this.removed.Elements()
+	start := 0
+	for _, k := range removedElems {
+		if idx := this.IdxOf(k); idx <= uint64(nth) {
+			start++
+		}
+	}
+
 	// This isn't efficient; it is better to search from the beginning or the min and max indices of the removed list to
 	// narrow down the search range. However, that requires some extra code to keep track of the corresponding indices of
 	// the keys in the removed list.
-	cnt := 0
-	for i := 0; i < int(this.Length()); i++ {
+	for i, cnt := start, 0; i < int(this.Length()); i++ {
 		if K, ok := this.GetByIndex(uint64(i)); ok {
-			if uint64(cnt) == nth {
+			if uint64(cnt) == nth+uint64(start) {
 				return K, i, true
 			}
 			cnt++
 		}
 	}
+
 	return *new(K), -1, false
-
-	// dict := this.removed.Dict()
-	// _, minv := mapi.MinValue(dict, func(l int, r int) bool { return l < r })
-	// _, maxv := mapi.MaxValue(dict, func(l int, r int) bool { return l > r })
-
-	// if nth < uint64(minv) {
-	// 	if k, ok := this.GetByIndex(nth); ok {
-	// 		return k, int(nth), true
-	// 	}
-	// }
-
-	// if nth > uint64(maxv) {
-	// 	if k, ok := this.GetByIndex(nth - uint64(this.removed.Length())); ok {
-	// 		return k, int(nth), true
-	// 	}
-	// }
-
 }
 
 // Back get the last non-nil value from the DeltaSet.
