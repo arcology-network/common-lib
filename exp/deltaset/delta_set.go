@@ -266,8 +266,7 @@ func (this *DeltaSet[K]) GetByIndex(idx uint64) (K, bool) {
 // 	return *new(K), -1, false
 // }
 
-// NthNonNil returns the nth non-nil value from the DeltaSet. This version is more efficient than the previous one,
-// when removed values aren't evenly distributed in the DeltaSet.
+// NthNonNil returns the nth non-nil value from the DeltaSet.
 // The nth non-nil value isn't necessarily the nth value in the DeltaSet, but the nth non-nil value.
 func (this *DeltaSet[K]) GetNthNonNil(nth uint64) (K, int, bool) {
 	// If the nth value is out of range, no need to search. The nil value is returned.
@@ -275,13 +274,15 @@ func (this *DeltaSet[K]) GetNthNonNil(nth uint64) (K, int, bool) {
 		return *new(K), -1, false
 	}
 
-	removedElems := this.removed.Elements()
 	start := 0
+	removedElems := this.removed.Elements()
+	// if this.Length() > uint64(len(removedElems)) {
 	for _, k := range removedElems {
 		if idx := this.IdxOf(k); idx <= uint64(nth) {
 			start++
 		}
 	}
+	// }
 
 	// This isn't efficient; it is better to search from the beginning or the min and max indices of the removed list to
 	// narrow down the search range. However, that requires some extra code to keep track of the corresponding indices of

@@ -352,13 +352,35 @@ func TestStringsetCodec(t *testing.T) {
 	}
 }
 
-func TestHash16s(t *testing.T) {
+func TestBytes16s(t *testing.T) {
 	in := [][16]byte{{1, 2, 3, 4, 5}, {5, 6, 7, 8, 9}}
 
-	data := Hash16s(in).Encode()
-	out := Hash16s(in).Decode(data).(Hash16s)
+	data := Bytes16s(in).Encode()
+	out := Bytes16s(in).Decode(data).(Bytes16s)
 
 	if !reflect.DeepEqual(in, ([][16]byte)(out)) {
+		t.Error("Uint8s Mismatched !")
+	}
+}
+
+func TestHash12s(t *testing.T) {
+	in := [][12]byte{{1, 2, 3, 4, 5}, {5, 6, 7, 8, 9}}
+
+	data := Bytes12s(in).Encode()
+	out := Bytes12s(in).Decode(data).(Bytes12s)
+
+	if !reflect.DeepEqual(in, ([][12]byte)(out)) {
+		t.Error("Uint8s Mismatched !")
+	}
+}
+
+func TestHash4s(t *testing.T) {
+	in := [][4]byte{{1, 2, 3, 4}, {5, 6, 7, 8}}
+
+	data := Bytes4s(in).Encode()
+	out := Bytes4s(in).Decode(data).(Bytes4s)
+
+	if !reflect.DeepEqual(in, ([][4]byte)(out)) {
 		t.Error("Uint8s Mismatched !")
 	}
 }

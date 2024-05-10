@@ -386,12 +386,12 @@ func Unique[T comparable](src []T, less func(lhv, rhv T) bool) []T {
 	}
 
 	var uniqueElems []T
-	UniqueDo(src, less, func(offset int) { uniqueElems = src[:current+1] })
+	DoUnique(src, less, func(offset int) { uniqueElems = src[:current+1] })
 	return uniqueElems
 }
 
-// UniqueDo removes duplicate elements from a slice of comparable types and applies a function to the modified slice.
-func UniqueDo[T comparable](nums []T, less func(lhv, rhv T) bool, do func(int)) {
+// DoUnique removes duplicate elements from a slice of comparable types and applies a function to the modified slice.
+func DoUnique[T comparable](nums []T, less func(lhv, rhv T) bool, do func(int)) {
 	sort.Slice(nums, func(i, j int) bool {
 		return less(nums[i], nums[j])
 	})
