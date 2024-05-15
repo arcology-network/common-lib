@@ -12,20 +12,20 @@ const (
 type Bytes16 [BYTE16_LEN]byte
 
 func NewBytes16(v byte) Bytes16 {
-	hash16 := [BYTE16_LEN]byte{}
-	for i := range hash16 {
-		hash16[i] = v
+	bytes16 := [BYTE16_LEN]byte{}
+	for i := range bytes16 {
+		bytes16[i] = v
 	}
-	return hash16
+	return bytes16
 }
 
 func (Bytes16) FromSlice(v []byte) Bytes16 {
-	hash16 := [BYTE16_LEN]byte{}
+	bytes16 := [BYTE16_LEN]byte{}
 	length := math.Min(float64(BYTE16_LEN), float64(len(v)))
 	for i := 0; i < int(length); i++ {
-		hash16[i] = v[i]
+		bytes16[i] = v[i]
 	}
-	return hash16
+	return bytes16
 }
 
 func (this *Bytes16) Get() interface{} {

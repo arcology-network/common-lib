@@ -441,7 +441,7 @@ func TestParallelForeach(t *testing.T) {
 func TestFindLastIf(t *testing.T) {
 	nums := []int{4, '/', 5, '/', 6}
 
-	idx, _ := FindLastIf(nums, func(v int) bool { return v == '/' })
+	idx, _ := FindLastIf(nums, func(_ int, v int) bool { return v == '/' })
 	if idx != 3 {
 		t.Error("Error: Failed to remove nil values !")
 	}
@@ -451,7 +451,7 @@ func TestFindLastIf(t *testing.T) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
-	idx, _ = FindFirstIf(nums, func(v int) bool { return v == '/' })
+	idx, _ = FindFirstIf(nums, func(_ int, v int) bool { return v == '/' })
 	if idx != 1 {
 		t.Error("Error: Failed to remove nil values !")
 	}
@@ -464,7 +464,7 @@ func TestFindLastIf(t *testing.T) {
 	str := "4/5/6"
 	charArr := []byte(str)
 
-	idx, _ = FindLastIf(charArr, func(v byte) bool { return v == '/' })
+	idx, _ = FindLastIf(charArr, func(_ int, v byte) bool { return v == '/' })
 	if idx != 3 {
 		t.Error("Error: FindLastIf() Failed")
 	}

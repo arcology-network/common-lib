@@ -37,6 +37,12 @@ func (this Bytes20) Clone() interface{} {
 	return target
 }
 
+func (hash Bytes20) FromBytes(bytes []byte) Bytes20 {
+	hash = Bytes20{}
+	copy(hash[:], bytes)
+	return hash
+}
+
 func (this Bytes20) Encode() []byte {
 	return this[:]
 }

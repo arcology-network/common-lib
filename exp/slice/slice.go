@@ -321,10 +321,10 @@ func Resize[T any](values *[]T, newSize int) []T {
 }
 
 // CopyIf copies elements from a slice to a new slice based on a given condition.
-func CopyIf[T any](values []T, condition func(v T) bool) []T {
+func CopyIf[T any](values []T, condition func(_ int, v T) bool) []T {
 	copied := make([]T, 0, len(values))
 	for i := 0; i < len(values); i++ {
-		if condition(values[i]) {
+		if condition(i, values[i]) {
 			copied = append(copied, values[i])
 		}
 	}
@@ -433,9 +433,9 @@ func FindFirst[T comparable](values []T, v T) (int, *T) {
 }
 
 // FindFirstIf finds the first element in a slice that satisfies a given condition and returns its index and a pointer to the element
-func FindFirstIf[T any](values []T, condition func(v T) bool) (int, *T) {
+func FindFirstIf[T any](values []T, condition func(_ int, v T) bool) (int, *T) {
 	for i := 0; i < len(values); i++ {
-		if condition(values[i]) {
+		if condition(i, values[i]) {
 			return i, &(values)[i]
 		}
 	}
@@ -453,9 +453,9 @@ func FindLast[T comparable](values *[]T, v T) (int, *T) {
 }
 
 // FindLastIf finds the last element in a slice that satisfies a given condition and returns its index and a pointer to the element.
-func FindLastIf[T any](values []T, condition func(v T) bool) (int, *T) {
+func FindLastIf[T any](values []T, condition func(_ int, v T) bool) (int, *T) {
 	for i := len(values) - 1; i >= 0; i-- {
-		if condition((values)[i]) {
+		if condition(i, (values)[i]) {
 			return i, &(values)[i]
 		}
 	}

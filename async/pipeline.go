@@ -155,14 +155,14 @@ func (this *Pipeline[T]) windUp() []T {
 		case v := <-this.inChans[len(this.inChans)-1]:
 			out = append(out, v)
 		default:
-			if this.IsVacant() {
+			if this.allDone() {
 				return out
 			}
 		}
 	}
 }
 
-func (this *Pipeline[T]) IsVacant() bool {
+func (this *Pipeline[T]) allDone() bool {
 	activeWorkers := slice.CountIf[*atomic.Bool, int](this.isWorkerBusy, func(_ int, b **atomic.Bool) bool {
 		return (*b).Load()
 	})
