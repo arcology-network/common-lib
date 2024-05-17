@@ -24,8 +24,6 @@ import (
 	"time"
 )
 
-// "github.com/HPISTechnologies/common-lib/common"
-
 func TestSlice(t *testing.T) {
 	ccslice := NewSlice[string]()
 	strs := ccslice.Append("a").Append("b").Append("c").MoveToSlice()

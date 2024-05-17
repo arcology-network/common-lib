@@ -18,6 +18,7 @@
 package async
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -36,6 +37,7 @@ type Pipeline[T any] struct {
 	inChans      []chan T
 	buffers      []*Slice[T] // Buffers to store the values temporarily before pushing to the downstream channel.
 	workers      []func(T, *Slice[T]) ([]T, bool)
+	locks        []sync.Mutex
 	isWorkerBusy []*atomic.Bool
 	quit         atomic.Bool
 }
@@ -50,6 +52,7 @@ func NewPipeline[T any](name string, channelSize int, sleepTime time.Duration, w
 		isWorkerBusy: make([]*atomic.Bool, len(workers)), // if the worker is busy
 		channelSize:  channelSize,
 		quit:         atomic.Bool{},
+		locks:        make([]sync.Mutex, len(workers)),
 	}
 
 	for i := 0; i < len(pl.isWorkerBusy); i++ {
@@ -81,30 +84,27 @@ func (this *Pipeline[T]) Start() *Pipeline[T] {
 					continue
 				}
 
-				this.isWorkerBusy[i].Store(true)
-				select {
-				case inv, ok := <-this.inChans[i]:
-					if ok {
-						if outVals, ok := this.workers[i](inv, this.buffers[i]); ok {
-							for j := 0; j < len(outVals); j++ {
-								this.inChans[i+1] <- outVals[j] // Send to the downstream channel
-							}
-						}
-					} else { // Closed channel
-						if this.quit.Load() {
-							return // Closed because of quit, return
-						}
-					}
-				default:
-					if !this.isWorkerBusy[i].Load() && this.quit.Load() {
-						return
-					}
-				}
-				this.isWorkerBusy[i].Store(false)
+				this.DoTask(this.inChans[i], this.inChans[i+1], i, this.workers[i], this.buffers[i], this.isWorkerBusy[i])
 			}
 		}(i)
 	}
 	return this
+}
+
+func (this *Pipeline[T]) DoTask(inQueue, outQueue chan T, i int, worker func(T, *Slice[T]) ([]T, bool), buffer *Slice[T], flag *atomic.Bool) bool {
+	this.locks[i].Lock()
+	defer this.locks[i].Unlock()
+
+	flag.Store(true)
+	if inv, ok := <-inQueue; ok {
+		if outVals, ok := worker(inv, buffer); ok {
+			for j := 0; j < len(outVals); j++ {
+				outQueue <- outVals[j] // Send to the downstream channel
+			}
+		}
+	}
+	flag.Store(false)
+	return !this.isWorkerBusy[i].Load() && this.quit.Load()
 }
 
 // Redict all the results to be processed and returns. No new values can be pushed into the Pipeline

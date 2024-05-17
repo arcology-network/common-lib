@@ -130,7 +130,7 @@ func TestPagedSlice(t *testing.T) {
 		*v = 111
 	})
 
-	idx, _ := slice.FindFirstIf(paged.ToSlice(0, paged.Size()), func(v int) bool {
+	idx, _ := slice.FindFirstIf(paged.ToSlice(0, paged.Size()), func(_ int, v int) bool {
 		return v != 111
 	})
 
@@ -205,7 +205,7 @@ func TestCustomType(t *testing.T) {
 	})
 
 	vec := paged.ToSlice(0, paged.Size())
-	idx, _ := slice.FindFirstIf(vec, func(v CustomType) bool {
+	idx, _ := slice.FindFirstIf(vec, func(_ int, v CustomType) bool {
 		return (v).a != 999 || v.b != [20]byte{3, 2, 1} || v.e != "hi hello"
 	})
 
