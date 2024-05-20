@@ -553,7 +553,7 @@ func TestReorderBy(t *testing.T) {
 func TestAnyIs(t *testing.T) {
 	var e []byte
 	v := []interface{}{1, 2, e, nil}
-	if Count[interface{}, int](v, nil) != 1 {
+	if Count(v, nil) != 1 {
 		t.Error("Error: Not equal")
 	}
 }

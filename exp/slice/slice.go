@@ -642,10 +642,10 @@ func Sum[T0 constraints.Integer | constraints.Float | byte, T1 constraints.Float
 }
 
 // Count counts the number of occurrences of a value in a slice.
-func Count[T comparable, T1 constraints.Integer](values []T, target T) T1 {
-	total := T1(0)
+func Count[T comparable](values []T, target T) uint64 {
+	total := uint64(0)
 	for i := 0; i < len(values); i++ {
-		if target == values[i] {
+		if values[i] == target {
 			total++
 		}
 	}
@@ -653,8 +653,8 @@ func Count[T comparable, T1 constraints.Integer](values []T, target T) T1 {
 }
 
 // Count counts the number of occurrences of a value in a slice.
-func CountIf[T0 any, T1 constraints.Integer](values []T0, condition func(int, *T0) bool) T1 {
-	total := T1(0)
+func CountIf[T0 any](values []T0, condition func(int, *T0) bool) uint64 {
+	total := uint64(0)
 	for i := 0; i < len(values); i++ {
 		if condition(i, &values[i]) {
 			total++

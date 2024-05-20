@@ -40,10 +40,10 @@ func (this *Slice[T]) Get(idx int) T {
 }
 
 // Start starts the goroutines.
-func (this *Slice[T]) Append(v T) *Slice[T] {
+func (this *Slice[T]) Append(v ...T) *Slice[T] {
 	this.lock.Lock()
 	defer this.lock.Unlock()
-	this.values = append(this.values, v)
+	this.values = append(this.values, v...)
 	return this
 }
 
@@ -56,8 +56,19 @@ func (this *Slice[T]) MoveToSlice() []T {
 	return values
 }
 
+func (this *Slice[T]) ToSlice() []T {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	return this.values
+}
+
 func (this *Slice[T]) Length() int {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 	return len(this.values)
+}
+
+func (this *Slice[T]) Clear() {
+	this.values = this.values[:0]
 }
