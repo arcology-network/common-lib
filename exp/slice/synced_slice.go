@@ -15,39 +15,39 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package async
+package slice
 
 import "sync"
 
-type Slice[T any] struct {
+type SyncedSlice[T any] struct {
 	values []T
 	lock   sync.Mutex
 }
 
 // Start starts the goroutines.
-func NewSlice[T any]() *Slice[T] {
-	return &Slice[T]{
+func NewSlice[T any]() *SyncedSlice[T] {
+	return &SyncedSlice[T]{
 		values: []T{},
 		lock:   sync.Mutex{},
 	}
 }
 
 // Start starts the goroutines.
-func (this *Slice[T]) Get(idx int) T {
+func (this *SyncedSlice[T]) Get(idx int) T {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 	return this.values[idx]
 }
 
 // Start starts the goroutines.
-func (this *Slice[T]) Append(v ...T) *Slice[T] {
+func (this *SyncedSlice[T]) Append(v ...T) *SyncedSlice[T] {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 	this.values = append(this.values, v...)
 	return this
 }
 
-func (this *Slice[T]) MoveToSlice() []T {
+func (this *SyncedSlice[T]) MoveToSlice() []T {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -56,19 +56,19 @@ func (this *Slice[T]) MoveToSlice() []T {
 	return values
 }
 
-func (this *Slice[T]) ToSlice() []T {
+func (this *SyncedSlice[T]) ToSlice() []T {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
 	return this.values
 }
 
-func (this *Slice[T]) Length() int {
+func (this *SyncedSlice[T]) Length() int {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 	return len(this.values)
 }
 
-func (this *Slice[T]) Clear() {
+func (this *SyncedSlice[T]) Clear() {
 	this.values = this.values[:0]
 }
