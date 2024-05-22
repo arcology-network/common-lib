@@ -18,6 +18,7 @@
 package async
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -33,12 +34,15 @@ type Pipeline[T any] struct {
 	sleepTime   time.Duration
 	channelSize int
 
-	inChans []chan T
-	buffers []*Slice[T] // Buffers to store the values temporarily before pushing to the downstream channel.
-	workers []func(T, *Slice[T]) ([]T, bool, bool)
-	vacant  []*atomic.Bool
-	quit    atomic.Bool
-	locks   []sync.Mutex
+	inChans     []chan T
+	buffers     []*Slice[T] // Buffers to store the values temporarily before pushing to the downstream channel.
+	workers     []func(T, *Slice[T]) ([]T, bool, bool)
+	vacant      []*atomic.Bool
+	totalVacant atomic.Uint64
+	quit        atomic.Bool
+	locks       []sync.Mutex
+
+	counter atomic.Uint64
 }
 
 func NewPipeline[T any](name string, channelSize int, sleepTime time.Duration, workers ...func(T, *Slice[T]) ([]T, bool, bool)) *Pipeline[T] {
@@ -89,13 +93,16 @@ func (this *Pipeline[T]) Start() *Pipeline[T] {
 func (this *Pipeline[T]) DoTask(inQueue, outQueue chan T, i int, worker func(T, *Slice[T]) ([]T, bool, bool), buffer *Slice[T]) {
 	select {
 	case inv := <-inQueue:
-		outVals, ok, vacant := worker(inv, buffer)
+		outVals, ok, isVacant := worker(inv, buffer)
 		if ok {
 			for j := 0; j < len(outVals); j++ {
 				outQueue <- outVals[j] // Send to the downstream channel
 			}
 		}
-		this.vacant[i].Store(vacant)
+		if isVacant {
+			this.totalVacant.Add(1)
+		}
+		// this.vacant[i].Store(vacant)
 	default:
 		time.Sleep(this.sleepTime)
 	}
@@ -129,7 +136,9 @@ func (this *Pipeline[T]) Await() []T {
 			out = append(out, v)
 		default:
 			if this.allDone() {
-				this.resetWorkerStatus()
+				fmt.Println("Total Time:", this.counter.Load()/(1000*1000), "ms")
+				this.totalVacant.Store(0)
+				// this.resetWorkerStatus()
 				return out
 			}
 			time.Sleep(10 * this.sleepTime)
@@ -149,13 +158,8 @@ func (this *Pipeline[T]) Close() {
 }
 
 func (this *Pipeline[T]) allDone() bool {
-	return slice.CountIf[*atomic.Bool](this.vacant, func(i int, b **atomic.Bool) bool {
-		return (*b).Load()
-	}) == uint64(len(this.workers))
-}
-
-func (this *Pipeline[T]) resetWorkerStatus() {
-	for i := 0; i < len(this.vacant); i++ {
-		this.vacant[i].Store(false)
-	}
+	t0 := time.Now()
+	flag := this.totalVacant.Load() == uint64(len(this.workers))
+	this.counter.Add(uint64(time.Since(t0)))
+	return flag
 }
