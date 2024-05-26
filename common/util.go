@@ -13,8 +13,7 @@ import (
 
 	"unsafe"
 
-	"github.com/arcology-network/common-lib/encoding"
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 )
 
@@ -127,18 +126,6 @@ func GobDecode(data []byte, x interface{}) error {
 //		}
 //		return uniques
 //	}
-
-func CalculateHash(hashes []*evmCommon.Hash) evmCommon.Hash {
-	if len(hashes) == 0 {
-		return evmCommon.Hash{}
-	}
-	datas := make([][]byte, len(hashes))
-	for i := range hashes {
-		datas[i] = hashes[i].Bytes()
-	}
-	hash := sha256.Sum256(encoding.Byteset(datas).Encode())
-	return evmCommon.BytesToHash(hash[:])
-}
 
 // TrapSignal catches the SIGTERM and executes cb function. After that it exits
 // with code 1.

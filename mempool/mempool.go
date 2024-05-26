@@ -1,3 +1,4 @@
+// Mempool is responsible for managing a pool of objects of the same type. It is thread-safe.
 package mempool
 
 import (
@@ -5,73 +6,79 @@ import (
 	"sync"
 )
 
-type Mempool struct {
-	nf      func() interface{}
-	id      string
-	tls     map[string]*Mempool
-	objects []interface{}
-	next    int
-	parent  *Mempool
-	guard   sync.Mutex
+// Mempool represents a pool of objects of the same type.
+type Mempool[T any] struct {
+	initializer func() *T
+	id          string
+	pools       map[string]*Mempool[T]
+	objects     []*T
+	next        int
+	parent      *Mempool[T]
+	lock        sync.Mutex
 }
 
-func NewMempool(id interface{}, nf func() interface{}) *Mempool {
-	return &Mempool{
-		id:      fmt.Sprintf("%v", id),
-		nf:      nf,
-		tls:     make(map[string]*Mempool),
-		objects: nil,
-		next:    0,
-		parent:  nil,
+// NewMempool creates a new Mempool instance with the given ID and object creation function.
+func NewMempool[T any](id interface{}, initializer func() *T) *Mempool[T] {
+	return &Mempool[T]{
+		id:          fmt.Sprintf("%v", id),
+		initializer: initializer,
+		pools:       make(map[string]*Mempool[T]),
+		objects:     nil,
+		next:        0,
+		parent:      nil,
 	}
 }
 
-func (m *Mempool) GetTlsMempool(id interface{}) *Mempool {
-	m.guard.Lock()
-	defer m.guard.Unlock()
+// GetPool returns the thread-local Mempool associated with the given ID.
+// If the thread-local Mempool does not exist, it creates a new one.
+func (m *Mempool[T]) GetPool(id interface{}) *Mempool[T] {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 
 	newId := fmt.Sprintf("%v%v", m.id, id)
 	if m.parent != nil {
-		return m.parent.GetTlsMempool(newId)
+		return m.parent.GetPool(newId)
 	}
 
-	if m.tls[newId] == nil {
-		newMempool := NewMempool(newId, m.nf)
+	if m.pools[newId] == nil {
+		newMempool := NewMempool(newId, m.initializer)
 		newMempool.parent = m
-		m.tls[newId] = newMempool
+		m.pools[newId] = newMempool
 	}
-	return m.tls[newId]
+	return m.pools[newId]
 }
 
-func (m *Mempool) Get() interface{} {
-	// if len(m.objects) <= m.next {
-	// 	m.objects = append(m.objects, make([]interface{}, 1024)...)
-	// }
+// Get returns an object from the Mempool.
+func (m *Mempool[T]) Get() *T {
+	if len(m.objects) <= m.next {
+		m.objects = append(m.objects, make([]*T, 4096)...)
+	}
 
-	// if m.objects[m.next] == nil {
-	// 	m.objects[m.next] = m.nf()
-	// }
-	// m.next++
-	// return m.objects[m.next-1]
+	if m.objects[m.next] == nil {
+		m.objects[m.next] = m.initializer()
+	}
+	m.next++
+	return m.objects[m.next-1]
 
-	return m.nf()
+	// return m.initializer()
 }
 
-func (m *Mempool) Reclaim() {
-	// fmt.Println("Mempool.Reclaim:", m.id, "next =", m.next)
+// Reclaim resets the Mempool, allowing the objects to be reused.
+func (m *Mempool[T]) Reclaim() {
 	m.next = 0
 }
 
-func (m *Mempool) ReclaimRecursive() {
-	// fmt.Println("Mempool.ReclaimRecursive:", m.id)
-	for _, v := range m.tls {
+// ReclaimRecursive resets the Mempool and all its thread-local Mempools recursively.
+func (m *Mempool[T]) ReclaimRecursive() {
+	for _, v := range m.pools {
 		v.ReclaimRecursive()
 	}
 	m.Reclaim()
 }
 
-func (m *Mempool) ForEachAllocated(f func(obj interface{})) {
-	for _, v := range m.tls {
+// ForEachAllocated iterates over all allocated objects in the Mempool and executes the given function on each object.
+func (m *Mempool[T]) ForEachAllocated(f func(obj interface{})) {
+	for _, v := range m.pools {
 		v.ForEachAllocated(f)
 	}
 

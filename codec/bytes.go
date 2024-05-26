@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"unsafe"
 
-	evmCommon "github.com/arcology-network/evm/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -13,6 +13,11 @@ const (
 )
 
 type Bytes []byte
+
+func (*Bytes) LessAsUint64(first, second []byte) bool {
+	return *(*uint64)(unsafe.Pointer((*[8]byte)(unsafe.Pointer(&first)))) <
+		*(*uint64)(unsafe.Pointer((*[8]byte)(unsafe.Pointer(&second))))
+}
 
 func (this *Bytes) Get() interface{} {
 	return *this
@@ -120,7 +125,7 @@ func (this Byteset) Flatten() []byte {
 	return buffer
 }
 
-func (this Byteset) Checksum() evmCommon.Hash {
+func (this Byteset) Checksum() ethCommon.Hash {
 	return sha256.Sum256(this.Flatten())
 }
 

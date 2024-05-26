@@ -1,8 +1,8 @@
 package types
 
 import (
-	encoding "github.com/arcology-network/common-lib/encoding"
-	evmCommon "github.com/arcology-network/evm/common"
+	codec "github.com/arcology-network/common-lib/codec"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -11,13 +11,14 @@ const (
 )
 
 type InclusiveList struct {
-	HashList   []*evmCommon.Hash
-	Successful []bool
-	Mode       byte
+	HashList      []ethCommon.Hash
+	Successful    []bool
+	Mode          byte
+	GenerationIdx uint32
 }
 
 func (il *InclusiveList) CopyListAddHeight(height, round uint64) *InclusiveList {
-	hashList := make([]*evmCommon.Hash, len(il.HashList))
+	hashList := make([]ethCommon.Hash, len(il.HashList))
 
 	// for i := range il.HashList {
 	// 	// hash := il.HashList[i]
@@ -31,13 +32,13 @@ func (il *InclusiveList) CopyListAddHeight(height, round uint64) *InclusiveList 
 		HashList:   hashList,
 	}
 }
-func (il InclusiveList) GetList() (selectList []*evmCommon.Hash, clearList []*evmCommon.Hash) {
-	selectList = make([]*evmCommon.Hash, 0, len(il.HashList))
-	clearList = make([]*evmCommon.Hash, 0, len(il.HashList))
+func (il InclusiveList) GetList() (selectList []ethCommon.Hash, clearList []ethCommon.Hash) {
+	selectList = make([]ethCommon.Hash, 0, len(il.HashList))
+	clearList = make([]ethCommon.Hash, 0, len(il.HashList))
 	for i, hashItem := range il.HashList {
-		if hashItem == nil {
-			continue
-		}
+		// if hashItem == nil {
+		// 	continue
+		// }
 
 		switch il.Mode {
 		case InclusiveMode_Message:
@@ -55,33 +56,19 @@ func (il InclusiveList) GetList() (selectList []*evmCommon.Hash, clearList []*ev
 }
 
 func (il *InclusiveList) GobEncode() ([]byte, error) {
-	hashArray := Ptr2Arr(il.HashList)
+	hashArray := il.HashList
 	data := [][]byte{
 		Hashes(hashArray).Encode(),
-		encoding.Bools(il.Successful).Encode(),
+		codec.Bools(il.Successful).Encode(),
+		codec.Uint32(il.GenerationIdx).Encode(),
 	}
-	return encoding.Byteset(data).Encode(), nil
+	return codec.Byteset(data).Encode(), nil
 }
 func (il *InclusiveList) GobDecode(data []byte) error {
-	fields := encoding.Byteset{}.Decode(data)
-	arrs := Hashes([]evmCommon.Hash{}).Decode(fields[0])
-	il.Successful = encoding.Bools(il.Successful).Decode(fields[1])
-	il.HashList = Arr2Ptr(arrs)
+	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
+	arrs := Hashes([]ethCommon.Hash{}).Decode(fields[0])
+	il.Successful = codec.Bools(il.Successful).Decode(fields[1]).(codec.Bools)
+	il.GenerationIdx = uint32(codec.Uint32(il.GenerationIdx).Decode(fields[2]).(codec.Uint32))
+	il.HashList = arrs
 	return nil
-}
-
-func Ptr2Arr(array []*evmCommon.Hash) []evmCommon.Hash {
-	hashArray := make([]evmCommon.Hash, len(array))
-	for i := range array {
-		hashArray[i] = *array[i]
-	}
-	return hashArray
-}
-
-func Arr2Ptr(array []evmCommon.Hash) []*evmCommon.Hash {
-	hashArray := make([]*evmCommon.Hash, len(array))
-	for i := range array {
-		hashArray[i] = &array[i]
-	}
-	return hashArray
 }

@@ -37,6 +37,12 @@ func (this Bytes20) Clone() interface{} {
 	return target
 }
 
+func (hash Bytes20) FromBytes(bytes []byte) Bytes20 {
+	hash = Bytes20{}
+	copy(hash[:], bytes)
+	return hash
+}
+
 func (this Bytes20) Encode() []byte {
 	return this[:]
 }
@@ -55,10 +61,11 @@ func (this Bytes20) Decode(buffer []byte) interface{} {
 	return Bytes20(this)
 }
 
+// Convert to hex string with 0x prefix
 func (this Bytes20) Hex() string {
 	var bytes [2 * len(this)]byte
 	hex.Encode(bytes[:], this[:])
-	return string(bytes[:])
+	return "0x" + string(bytes[:])
 }
 
 // func (this Bytes20) UUID(seed uint64) Bytes20 {

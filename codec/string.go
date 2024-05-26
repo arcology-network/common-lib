@@ -1,6 +1,7 @@
 package codec
 
 import (
+	"encoding/hex"
 	"sort"
 	"unsafe"
 
@@ -201,6 +202,14 @@ func (Strings) FromBytes(byteSet [][]byte) []string {
 		strings[i] = String("").Decode(byteSet[i]).(string)
 	}
 	return strings
+}
+
+func (this Strings) ToHex() []string {
+	hexStrings := make([]string, len(this))
+	for i := 0; i < len(hexStrings); i++ {
+		hexStrings[i] = hex.EncodeToString([]byte(this[i]))
+	}
+	return hexStrings
 }
 
 type Stringset [][]string

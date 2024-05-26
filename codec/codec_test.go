@@ -6,8 +6,12 @@ import (
 	"math/big"
 	"math/rand"
 	"reflect"
+	"sort"
 	"testing"
 	"time"
+	"unsafe"
+
+	"golang.org/x/crypto/sha3"
 )
 
 type Type struct {
@@ -348,13 +352,35 @@ func TestStringsetCodec(t *testing.T) {
 	}
 }
 
-func TestHash16s(t *testing.T) {
+func TestBytes16s(t *testing.T) {
 	in := [][16]byte{{1, 2, 3, 4, 5}, {5, 6, 7, 8, 9}}
 
-	data := Hash16s(in).Encode()
-	out := Hash16s(in).Decode(data).(Hash16s)
+	data := Bytes16s(in).Encode()
+	out := Bytes16s(in).Decode(data).(Bytes16s)
 
 	if !reflect.DeepEqual(in, ([][16]byte)(out)) {
+		t.Error("Uint8s Mismatched !")
+	}
+}
+
+func TestHash12s(t *testing.T) {
+	in := [][12]byte{{1, 2, 3, 4, 5}, {5, 6, 7, 8, 9}}
+
+	data := Bytes12s(in).Encode()
+	out := Bytes12s(in).Decode(data).(Bytes12s)
+
+	if !reflect.DeepEqual(in, ([][12]byte)(out)) {
+		t.Error("Uint8s Mismatched !")
+	}
+}
+
+func TestHash4s(t *testing.T) {
+	in := [][4]byte{{1, 2, 3, 4}, {5, 6, 7, 8}}
+
+	data := Bytes4s(in).Encode()
+	out := Bytes4s(in).Decode(data).(Bytes4s)
+
+	if !reflect.DeepEqual(in, ([][4]byte)(out)) {
 		t.Error("Uint8s Mismatched !")
 	}
 }
@@ -409,4 +435,39 @@ func TestU256(t *testing.T) {
 	if !out.Eq(v) || int(out[0]) != 50 {
 		t.Error("U256 Mismatched !")
 	}
+}
+
+func TestLessAsUint64(t *testing.T) {
+	v := Bytes([]byte{1, 1, 3, 4, 5, 6, 7, 8, 9, 10})
+	v2 := Bytes([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
+	if v.LessAsUint64(v, v2) {
+		t.Error("LessAsUint64 Mismatched !")
+	}
+}
+
+func BenchmarkLessAsUint64(t *testing.B) {
+	v := Bytes([]byte{1, 1, 3, 4, 5, 6, 7, 8, 9, 10})
+	v2 := Bytes([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
+	if v.LessAsUint64(v, v2) {
+		t.Error("LessAsUint64 Mismatched !")
+	}
+
+	firsts := make([][]byte, 1000000)
+	for i := range firsts {
+		v := sha3.Sum256([]byte(fmt.Sprint(i)))
+		firsts[i] = v[:]
+	}
+
+	t0 := time.Now()
+	sort.Slice(firsts, func(i, j int) bool {
+		return *(*uint64)(unsafe.Pointer((*[8]byte)(unsafe.Pointer(&firsts[i])))) <
+			*(*uint64)(unsafe.Pointer((*[8]byte)(unsafe.Pointer(&firsts[j]))))
+	})
+	fmt.Println(time.Since(t0))
+
+	t0 = time.Now()
+	sort.Slice(firsts, func(i, j int) bool {
+		return string(firsts[i]) < string(firsts[j])
+	})
+	fmt.Println(time.Since(t0))
 }

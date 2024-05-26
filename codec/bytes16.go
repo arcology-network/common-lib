@@ -6,114 +6,114 @@ import (
 )
 
 const (
-	HASH16_LEN = 16
+	BYTE16_LEN = 16
 )
 
-type Hash16 [HASH16_LEN]byte
+type Bytes16 [BYTE16_LEN]byte
 
-func NewHash16(v byte) Hash16 {
-	hash16 := [HASH16_LEN]byte{}
-	for i := range hash16 {
-		hash16[i] = v
+func NewBytes16(v byte) Bytes16 {
+	bytes16 := [BYTE16_LEN]byte{}
+	for i := range bytes16 {
+		bytes16[i] = v
 	}
-	return hash16
+	return bytes16
 }
 
-func (Hash16) FromSlice(v []byte) Hash16 {
-	hash16 := [HASH16_LEN]byte{}
-	length := math.Min(float64(HASH16_LEN), float64(len(v)))
+func (Bytes16) FromSlice(v []byte) Bytes16 {
+	bytes16 := [BYTE16_LEN]byte{}
+	length := math.Min(float64(BYTE16_LEN), float64(len(v)))
 	for i := 0; i < int(length); i++ {
-		hash16[i] = v[i]
+		bytes16[i] = v[i]
 	}
-	return hash16
+	return bytes16
 }
 
-func (this *Hash16) Get() interface{} {
+func (this *Bytes16) Get() interface{} {
 	return *this
 }
 
-func (this *Hash16) Set(v interface{}) {
-	*this = v.(Hash16)
+func (this *Bytes16) Set(v interface{}) {
+	*this = v.(Bytes16)
 }
 
-func (hash Hash16) Size() uint32 {
-	return uint32(HASH16_LEN)
+func (hash Bytes16) Size() uint32 {
+	return uint32(BYTE16_LEN)
 }
 
-func (this Hash16) Clone() interface{} {
-	target := Hash16{}
+func (this Bytes16) Clone() interface{} {
+	target := Bytes16{}
 	copy(target[:], this[:])
 	return target
 }
 
-func (hash Hash16) FromBytes(bytes []byte) Hash16 {
-	hash = Hash16{}
+func (hash Bytes16) FromBytes(bytes []byte) Bytes16 {
+	hash = Bytes16{}
 	copy(hash[:], bytes)
 	return hash
 }
 
-func (hash Hash16) Encode() []byte {
+func (hash Bytes16) Encode() []byte {
 	return hash[:]
 }
 
-func (this Hash16) Decode(buffer []byte) interface{} {
+func (this Bytes16) Decode(buffer []byte) interface{} {
 	if len(buffer) == 0 {
 		return this
 	}
 
 	copy(this[:], buffer)
-	return Hash16(this)
+	return Bytes16(this)
 }
 
-type Hash16s [][16]byte
+type Bytes16s [][16]byte
 
-func (this Hash16s) Clone() Hash16s {
-	target := make([][HASH16_LEN]byte, len(this))
+func (this Bytes16s) Clone() Bytes16s {
+	target := make([][BYTE16_LEN]byte, len(this))
 	for i := 0; i < len(this); i++ {
 		copy(target[i][:], this[i][:])
 	}
-	return Hash16s(target)
+	return Bytes16s(target)
 }
 
-func (this Hash16s) Encode() []byte {
-	return Hash16s(this).Flatten()
+func (this Bytes16s) Encode() []byte {
+	return Bytes16s(this).Flatten()
 }
 
-func (this Hash16s) EncodeToBuffer(buffer []byte) int {
+func (this Bytes16s) EncodeToBuffer(buffer []byte) int {
 	for i := 0; i < len(this); i++ {
-		copy(buffer[i*HASH16_LEN:], this[i][:])
+		copy(buffer[i*BYTE16_LEN:], this[i][:])
 	}
-	return len(this) * HASH16_LEN
+	return len(this) * BYTE16_LEN
 }
 
-func (this Hash16s) Decode(data []byte) interface{} {
-	this = make([][16]byte, len(data)/HASH16_LEN)
+func (this Bytes16s) Decode(data []byte) interface{} {
+	this = make([][16]byte, len(data)/BYTE16_LEN)
 	for i := 0; i < len(this); i++ {
-		copy(this[i][:], data[i*HASH16_LEN:(i+1)*HASH16_LEN])
+		copy(this[i][:], data[i*BYTE16_LEN:(i+1)*BYTE16_LEN])
 	}
 	return this
 }
 
-func (this Hash16s) Size() uint32 {
-	return uint32(len(this) * HASH16_LEN)
+func (this Bytes16s) Size() uint32 {
+	return uint32(len(this) * BYTE16_LEN)
 }
 
-func (this Hash16s) Flatten() []byte {
-	buffer := make([]byte, len(this)*HASH16_LEN)
+func (this Bytes16s) Flatten() []byte {
+	buffer := make([]byte, len(this)*BYTE16_LEN)
 	for i := 0; i < len(this); i++ {
-		copy(buffer[i*HASH16_LEN:(i+1)*HASH16_LEN], this[i][:])
+		copy(buffer[i*BYTE16_LEN:(i+1)*BYTE16_LEN], this[i][:])
 	}
 	return buffer
 }
 
-func (this Hash16s) Len() int {
+func (this Bytes16s) Len() int {
 	return len(this)
 }
 
-func (this Hash16s) Less(i, j int) bool {
+func (this Bytes16s) Less(i, j int) bool {
 	return bytes.Compare(this[i][:], this[j][:]) < 0
 }
 
-func (this Hash16s) Swap(i, j int) {
+func (this Bytes16s) Swap(i, j int) {
 	this[i], this[j] = this[j], this[i]
 }

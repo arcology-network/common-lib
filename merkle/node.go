@@ -4,7 +4,6 @@ import (
 	"math"
 
 	codec "github.com/arcology-network/common-lib/codec"
-	"github.com/arcology-network/common-lib/encoding"
 )
 
 type Node struct {
@@ -36,7 +35,7 @@ func (this *Node) Encode() []byte {
 		codec.Uint32(this.id).Encode(),
 		codec.Uint32(this.level).Encode(),
 		codec.Uint32(this.parent).Encode(),
-		encoding.Uint32s(this.children).Encode(),
+		codec.Uint32s(this.children).Encode(),
 		this.hash[:],
 	}.Encode()
 }
