@@ -1,10 +1,6 @@
 module github.com/arcology-network/common-lib
 
-go 1.21.3
-
-toolchain go1.21.4
-
-replace github.com/arcology-network/concurrenturl => ../concurrenturl/
+go 1.22
 
 replace github.com/arcology-network/arcology-network/btree => ../btree/
 
@@ -20,7 +16,6 @@ require (
 )
 
 require (
-	github.com/cespare/xxhash v1.1.0
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/google/btree v1.1.2
 	github.com/google/uuid v1.3.0
