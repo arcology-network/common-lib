@@ -1,3 +1,20 @@
+/*
+ *   Copyright (c) 2024 Arcology Network
+
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 // The Compressor class is a data structure that is used for compressing and decompressing data. It provides a way
 // to map keys to their corresponding indices and vice versa. This can be useful in scenarios where you want to reduce
 // the size of data by replacing repetitive keys with their corresponding indices
