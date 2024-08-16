@@ -15,6 +15,8 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+// scheduletype is a package that contains the constants and functions for the scheduler
+// that shareed by other packages.
 package scheduletype
 
 import "github.com/arcology-network/common-lib/exp/slice"
@@ -35,18 +37,6 @@ const (
 	PARALLEL_EXECUTION   = uint8(0) // The default method
 	SEQUENTIAL_EXECUTION = uint8(255)
 )
-
-// Get the callee key from a message
-// func ToKey(msg *eucommon.StandardMessage) string {
-// 	if (*msg.Native).To == nil {
-// 		return ""
-// 	}
-
-// 	if len(msg.Native.Data) == 0 {
-// 		return string((*msg.Native.To)[:schtype.FUNCTION_SIGNATURE_LENGTH])
-// 	}
-// 	return CallToKey((*msg.Native.To)[:], msg.Native.Data[:schtype.FUNCTION_SIGNATURE_LENGTH])
-// }
 
 func CallToKey(addr []byte, funSign []byte) string {
 	return string(addr[:FUNCTION_SIGNATURE_LENGTH]) + string(funSign[:FUNCTION_SIGNATURE_LENGTH])
