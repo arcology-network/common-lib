@@ -32,7 +32,7 @@ import (
 	intf "github.com/arcology-network/common-lib/types/storage/common"
 	stgtype "github.com/arcology-network/common-lib/types/storage/common"
 	"github.com/arcology-network/common-lib/types/storage/commutative"
-	stgeth "github.com/arcology-network/common-lib/types/storage/eth"
+	stgeth "github.com/arcology-network/common-lib/types/storage/platform"
 	univalue "github.com/arcology-network/common-lib/types/storage/univalue"
 )
 
@@ -298,4 +298,13 @@ func (this *WriteCache) Print() {
 		fmt.Println("Level : ", i)
 		elem.Print()
 	}
+}
+
+// Calculate the checksum of the writecache for integrity check.
+func (this *WriteCache) Checksum() [32]byte {
+	values := mapi.Values(this.kvDict)
+	sort.SliceStable(values, func(i, j int) bool {
+		return *values[i].GetPath() < *values[j].GetPath()
+	})
+	return univalue.Univalues(values).Checksum()
 }

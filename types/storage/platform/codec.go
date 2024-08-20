@@ -15,7 +15,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package stgtype
+package ethplatform
 
 import (
 	stgintf "github.com/arcology-network/common-lib/types/storage/common"

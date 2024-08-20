@@ -23,13 +23,14 @@ import (
 	"github.com/arcology-network/common-lib/common"
 	mapi "github.com/arcology-network/common-lib/exp/map"
 	"github.com/arcology-network/common-lib/exp/slice"
+	"golang.org/x/crypto/sha3"
 )
 
 // OrderedSet represents a slice with an dict. It is a hybrid combining a slice and a map support fast lookups and iteration.
 // Entries with the same key are stored in a slice in the order they were inserted.
 type OrderedSet[K comparable] struct {
 	elements []K
-	index    []int
+	// index    []int
 	dict     map[K]*int
 	nilValue K
 	hasher   func(K) [32]byte
@@ -84,9 +85,8 @@ func (this *OrderedSet[K]) Sub(elements []K) *OrderedSet[K] {
 	return this
 }
 
-// Insert inserts an element into the OrderedSet and updates the dict with the specified key.
-// If the element already exists, it is updated. Otherwise, it is added.
-// Returns the dict of the element in the slice.
+// This function is used to insert a new element into the OrderedSet.
+// The elements CANNOT be updated， because it is a set. They can only be added or deleted.
 func (this *OrderedSet[K]) Insert(keys ...K) {
 	for _, k := range keys {
 		if _, ok := this.dict[k]; !ok { // New entries
@@ -145,6 +145,7 @@ func (this *OrderedSet[K]) DeleteByIndex(indices ...int) {
 		slice.RemoveAt(&this.elements, idx)
 	}
 
+	// Shift the indices of the elements after the deleted elements.
 	idx, _ := slice.Min(indices)
 	for i, k := range this.elements[idx:] {
 		*this.dict[k] = i + idx
@@ -194,10 +195,6 @@ func (this *OrderedSet[K]) Equal(other *OrderedSet[K]) bool {
 	return slice.EqualSet(this.elements, other.elements) && mapi.EqualIf(this.dict, other.dict, func(v0 *int, v1 *int) bool { return *v0 == *v1 })
 }
 
-func (this *OrderedSet[K]) Print() {
-	fmt.Println(this.dict, this.elements)
-}
-
 // Count the number of elements BEFORE the specified key, not including the key itself.
 func (this *OrderedSet[K]) CountBefore(key K) int {
 	if idx, ok := this.dict[key]; ok {
@@ -212,4 +209,28 @@ func (this *OrderedSet[K]) CountAfter(key K) int {
 		return len(this.dict) - *idx - 1
 	}
 	return -1
+}
+
+func (this *OrderedSet[K]) Print() {
+	fmt.Println(this.dict, this.elements)
+}
+
+func (this *OrderedSet[K]) Checksum(encoder func(K) [32]byte) [32]byte {
+	if len(this.dict) != len(this.elements) {
+		panic("The dict is not in sync with the slice: " + fmt.Sprint(len(this.dict), len(this.elements)))
+	}
+
+	kByteArr := make([][]byte, len(this.elements))
+	counter := 0
+	for k, idx := range this.dict {
+		if this.elements[*idx] != k {
+			panic("The dict is not in sync with the slice: " + fmt.Sprint(k, this.elements[*idx]))
+		}
+		hash := encoder(k)
+
+		kByteArr[counter] = hash[:]
+		counter++
+	}
+
+	return sha3.Sum256(slice.Flatten(kByteArr))
 }

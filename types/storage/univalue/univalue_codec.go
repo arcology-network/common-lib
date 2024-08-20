@@ -21,8 +21,8 @@ import (
 	codec "github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
 
-	stgcodec "github.com/arcology-network/common-lib/types/storage/codec"
-	stgintf "github.com/arcology-network/common-lib/types/storage/common"
+	stgcommon "github.com/arcology-network/common-lib/types/storage/common"
+	stgcodec "github.com/arcology-network/common-lib/types/storage/platform"
 )
 
 func (this *Univalue) Encode() []byte {
@@ -39,14 +39,14 @@ func (this *Univalue) Sizes() []uint32 {
 	return []uint32{
 		this.HeaderSize(),
 		this.Property.Size(),
-		this.value.(stgintf.Type).Size(),
+		this.value.(stgcommon.Type).Size(),
 	}
 }
 
 func (this *Univalue) Size() uint32 {
 	return this.HeaderSize() +
 		this.Property.Size() +
-		common.IfThenDo1st(this.value != nil, func() uint32 { return this.value.(stgintf.Type).Size() }, 0)
+		common.IfThenDo1st(this.value != nil, func() uint32 { return this.value.(stgcommon.Type).Size() }, 0)
 }
 
 func (this *Univalue) FillHeader(buffer []byte) int {
@@ -54,7 +54,7 @@ func (this *Univalue) FillHeader(buffer []byte) int {
 		buffer,
 		[]uint32{
 			this.Property.Size(),
-			common.IfThenDo1st(this.value != nil, func() uint32 { return this.value.(stgintf.Type).Size() }, 0),
+			common.IfThenDo1st(this.value != nil, func() uint32 { return this.value.(stgcommon.Type).Size() }, 0),
 		},
 	)
 }
@@ -64,7 +64,7 @@ func (this *Univalue) EncodeToBuffer(buffer []byte) int {
 
 	offset += this.Property.EncodeToBuffer(buffer[offset:])
 	offset += common.IfThenDo1st(this.value != nil, func() int {
-		return codec.Bytes(this.value.(stgintf.Type).Encode()).EncodeToBuffer(buffer[offset:])
+		return codec.Bytes(this.value.(stgcommon.Type).Encode()).EncodeToBuffer(buffer[offset:])
 	}, 0)
 
 	return offset
@@ -86,12 +86,12 @@ func (this *Univalue) GetEncoded() []byte {
 		return []byte{}
 	}
 
-	if this.Value().(stgintf.Type).IsCommutative() {
-		return this.value.(stgintf.Type).Value().(codec.Encodable).Encode()
+	if this.Value().(stgcommon.Type).IsCommutative() {
+		return this.value.(stgcommon.Type).Value().(codec.Encodable).Encode()
 	}
 
 	if len(this.cache) > 0 {
-		return this.value.(stgintf.Type).Value().(codec.Encodable).Encode()
+		return this.value.(stgcommon.Type).Value().(codec.Encodable).Encode()
 	}
 	return this.cache
 }

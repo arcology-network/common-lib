@@ -21,6 +21,7 @@ import (
 	"runtime"
 
 	"github.com/arcology-network/common-lib/exp/slice"
+	"golang.org/x/crypto/sha3"
 )
 
 // OrderedMap represents a slice with an dict. It is a hybrid combining a slice and a map support fast lookups and iteration.
@@ -142,8 +143,18 @@ func (this *OrderedMap[K, T, V]) Clear() {
 	this.values = this.values[:0]
 }
 
+func (this *OrderedMap[K, T, V]) Checksum(less func(K, K), encoder func(K, V) ([]byte, []byte)) [32]byte {
+	kByteArr, vByteArr := make([][]byte, len(this.keys)), make([][]byte, len(this.values))
+	for i := 0; i < len(this.keys); i++ {
+		kByteArr[i], vByteArr[i] = encoder(this.keys[i], this.values[i])
+	}
+	return sha3.Sum256(append(slice.Flatten(kByteArr), slice.Flatten(vByteArr)...))
+}
+
 // Debugging function to check if the dict is in sync with the slice.
-func (this *OrderedMap[K, T, V]) IsDirty() bool { return len(this.values) != len(this.dict) }
+func (this *OrderedMap[K, T, V]) IsDirty() bool {
+	return len(this.values) != len(this.dict)
+}
 
 // func (this *OrderedMap[K, T, V]) Equal(other *OrderedMap[K, T, V]) bool {
 // 	return slice.EqualSet(this.values, other.values) && mapi.EqualIf(this.dict, other.dict, func(v0 int, v1 int) bool { return v0 == v1 })

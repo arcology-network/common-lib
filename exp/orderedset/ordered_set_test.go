@@ -18,6 +18,7 @@
 package orderedset
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -39,6 +40,14 @@ func TestIndexedSlice(t *testing.T) {
 	if !reflect.DeepEqual(set.Elements(), []string{"1", "2", "5", "11"}) {
 		t.Error("Error: Key is not equal !")
 	}
+
+	hash := set.Checksum(func(k string) [32]byte {
+		hash := [32]byte{}
+		copy(hash[:], []byte(k))
+		return hash
+	})
+
+	fmt.Print(hash)
 
 	set.DeleteByIndex(0)
 	if !reflect.DeepEqual(set.Elements(), []string{"2", "5", "11"}) {
@@ -84,6 +93,14 @@ func TestIndexedSlice(t *testing.T) {
 	if !reflect.DeepEqual(set.Elements(), []string{"111", "222", "1", "2", "5", "6"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
+
+	hash = set.Checksum(func(k string) [32]byte {
+		hash := [32]byte{}
+		copy(hash[:], []byte(k))
+		return hash
+	})
+
+	fmt.Print(hash)
 
 	set.Clear()
 	if set.Length() != 0 {

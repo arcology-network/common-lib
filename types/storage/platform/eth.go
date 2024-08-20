@@ -15,7 +15,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package common
+package ethplatform
 
 import (
 	"strings"
