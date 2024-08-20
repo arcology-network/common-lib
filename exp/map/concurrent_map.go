@@ -397,7 +397,7 @@ func (this *ConcurrentMap[K, V]) KVs(less ...func(k0, k1 K) bool) ([]K, []V) {
 	return keys, common.FilterFirst(this.BatchGet(keys))
 }
 
-func (this *ConcurrentMap[K, V]) Checksum(less func(k0, k1 K) bool, encoders func(k K, v V) ([]byte, []byte)) [32]byte {
+func (this *ConcurrentMap[K, V]) Checksum(less func(K, K) bool, encoders func(K, V) ([]byte, []byte)) [32]byte {
 	keys, values := this.KVs(less)
 	kBytes, vBytes := make([][]byte, len(keys)), make([][]byte, len(values))
 	for i, _ := range values {

@@ -17,7 +17,10 @@
 
 package mapi
 
-import slice "github.com/arcology-network/common-lib/exp/slice"
+import (
+	slice "github.com/arcology-network/common-lib/exp/slice"
+	"golang.org/x/crypto/sha3"
+)
 
 func Foreach[M ~map[K]V, K comparable, V any](source M, do func(k K, v *V)) {
 	for k, v := range source {
@@ -314,3 +317,12 @@ func FindValue[M ~map[K]V, K comparable, V any](m M, less func(V, V) bool) (K, V
 // 	}
 // 	return maxk, maxv
 // }
+
+func Checksum[M ~map[K]V, K comparable, V any](m M, less func(K, K) bool, encoder func(K, V) ([]byte, []byte)) [32]byte {
+	keys, values := KVs(m)
+	kByteArr, vByteArr := make([][]byte, len(keys)), make([][]byte, len(values))
+	for i := 0; i < len(keys); i++ {
+		kByteArr[i], vByteArr[i] = encoder(keys[i], values[i])
+	}
+	return sha3.Sum256(append(slice.Flatten(kByteArr), slice.Flatten(vByteArr)...))
+}

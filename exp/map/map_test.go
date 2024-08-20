@@ -20,6 +20,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
 )
 
@@ -32,6 +33,12 @@ func TestMapKeys(t *testing.T) {
 	if len(keys) != 2 || (keys[0] != 11 && keys[0] != 21) {
 		t.Error("Error: Not equal")
 	}
+
+	less := func(k0 uint32, k1 uint32) bool { return k0 < k1 }
+	encoder := func(k uint32, v int) ([]byte, []byte) {
+		return codec.Uint32(k).Encode(), codec.Int64(v).Encode()
+	}
+	Checksum(_map, less, encoder)
 }
 
 func TestMapValues(t *testing.T) {
