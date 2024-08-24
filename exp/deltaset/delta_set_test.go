@@ -320,12 +320,13 @@ func TestMultiMerge(t *testing.T) {
 }
 
 func TestGetNthNonNil(t *testing.T) {
-	deltaSet := NewDeltaSet[int](-1, 100, nil)
+	deltaSet := NewDeltaSet[int](0, 100, nil)
 	deltaSet.Insert(13, 15, 17)
 
-	deltaSet.Insert(18, 19, 20, 21) // { 13, 15, 17} + { 18, 19, 20, 21}
-	deltaSet.DeleteByIndex(1)       //  { 13, -15, 17} + { 18, 19, 20, 21}
-	deltaSet.DeleteByIndex(4)       // { 13, -15, 17} + { 18, -19, 20, 21}'
+	deltaSet.Insert(18, 19, 20, 21) //  { 13, 15, 17} +  { 18, 19, 20, 21}
+	// DeleteByIndex wouldn't shift the indices
+	deltaSet.DeleteByIndex(1) //  { 13, 15, 17} + { 18, 19, 20, 21} - {15} = { 13, 17, 18, 19, 20, 21}
+	deltaSet.DeleteByIndex(4) //  { 13, 15, 17} + { 18, 19, 20, 21} - {15, 19}
 
 	if k, idx, ok := deltaSet.GetNthNonNil(0); k != 13 || idx != 0 || !ok {
 		t.Error("failed to commit", k)
@@ -333,6 +334,11 @@ func TestGetNthNonNil(t *testing.T) {
 
 	if k, idx, ok := deltaSet.GetNthNonNil(1); k != 17 || idx != 2 || !ok {
 		t.Error("failed to commit", k)
+	}
+
+	// Check if the deleted entry is still accessible.
+	if k, ok := deltaSet.GetByIndex(1); k != deltaSet.nilVal || ok {
+		t.Error("A deleted entry shouldn't be available any more", k)
 	}
 
 	if k, idx, ok := deltaSet.GetNthNonNil(2); k != 18 || idx != 3 || !ok {
@@ -345,6 +351,11 @@ func TestGetNthNonNil(t *testing.T) {
 
 	if k, idx, ok := deltaSet.GetNthNonNil(4); k != 21 || idx != 6 || !ok {
 		t.Error("failed to commit", k)
+	}
+
+	// Check if the deleted entry is still accessible.
+	if k, ok := deltaSet.GetByIndex(4); k != deltaSet.nilVal || ok {
+		t.Error("A deleted entry shouldn't be available any more", k)
 	}
 
 	deltaSet.Commit()

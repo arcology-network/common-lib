@@ -82,12 +82,16 @@ func (this *Path) Preload(k string, arg interface{}) {
 	}
 }
 
+// Clone creates a new Path object with the same committed and delta sets.
+// the delta set is a deep copy of the original delta set, but the committed set is a shallow copy.
+// This is because the committed set should never be modified until the commit time.
 func (this *Path) Clone() interface{} {
 	return &Path{
 		DeltaSet:  this.DeltaSet.Clone(),
 		preloaded: this.preloaded,
 	}
 }
+
 func (this *Path) Equal(other interface{}) bool { return this.DeltaSet.Equal(other.(*Path).DeltaSet) }
 
 func (this *Path) Get() (interface{}, uint32, uint32) {
@@ -111,16 +115,16 @@ func (this *Path) ApplyDelta(typedVals []stgintf.Type) (stgintf.Type, int, error
 	// Due to the async nature of the importing process, the preloaded value may not be in the first element of the slice.
 	// If this is the case, we need to find the preloaded value and set it to the preloaded field of the first element.
 	if this.preloaded != nil {
-		this.DeltaSet.SetCommitted(this.preloaded)
+		this.DeltaSet.SetCommitted(this.preloaded) // Set the preloaded value to the committed value so the delta set can be applied on.
 	} else {
 		if idx, v := slice.FindFirstIf(typedVals, func(_ int, v stgintf.Type) bool { return v.(*Path).preloaded != nil }); idx >= 0 {
-			typedVals[idx].(*Path).preloaded = nil
-			this.preloaded = (*v).(*Path).preloaded
+			common.Swap(&this.preloaded, &(*v).(*Path).preloaded)
+			this.DeltaSet.SetCommitted(this.preloaded)
 		}
 	}
 
 	deltaSets := slice.Transform(typedVals, func(_ int, v stgintf.Type) *deltaset.DeltaSet[string] { return v.(*Path).DeltaSet })
-	this.Commit(deltaSets...)
+	this.Commit(deltaSets...) // Apply the delta sets to the committed value，including its own delta set.
 	return this, len(typedVals), nil
 }
 

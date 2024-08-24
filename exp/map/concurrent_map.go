@@ -53,6 +53,15 @@ func NewConcurrentMap[K comparable, V any](
 	}
 }
 
+// Sizes returns a slice containing the number of key-value pairs in each shard.
+func (this *ConcurrentMap[K, V]) Sizes() []int {
+	sizes := make([]int, len(this.shards))
+	for i, shard := range this.shards {
+		sizes[i] = len(shard)
+	}
+	return sizes
+}
+
 func (this *ConcurrentMap[K, V]) Clear() {
 	this.globalLock.Lock()
 	defer this.globalLock.Unlock()

@@ -170,4 +170,7 @@ func BenchmarkCcmapBatchSet(b *testing.B) {
 
 	ccmap.BatchSet(paths, values)
 	fmt.Println("BatchSet "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
+
+	fmt.Println("sum:", slice.Sum[int, int](ccmap.Sizes()))
+
 }

@@ -122,3 +122,10 @@ func Equal[T comparable](lhv, rhv *T, wildcard func(*T) bool) bool {
 func EqualIf[T any](lhv, rhv *T, equal func(*T, *T) bool, wildcard func(*T) bool) bool {
 	return (lhv == rhv) || ((lhv != nil) && (rhv != nil) && equal(lhv, rhv)) || ((lhv == nil && wildcard(rhv)) || (rhv == nil && wildcard(lhv)))
 }
+
+// Swap swaps two values.
+func Swap[T any](lhv, rhv *T) {
+	v := *lhv
+	*lhv = *rhv
+	*rhv = v
+}

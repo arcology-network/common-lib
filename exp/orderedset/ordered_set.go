@@ -30,8 +30,7 @@ import (
 // Entries with the same key are stored in a slice in the order they were inserted.
 type OrderedSet[K comparable] struct {
 	elements []K
-	// index    []int
-	dict     map[K]*int
+	dict     map[K]*int // Using a pointer to the index, so that it can be updated without having to reinsert the key.
 	nilValue K
 	hasher   func(K) [32]byte
 }
@@ -152,15 +151,17 @@ func (this *OrderedSet[K]) DeleteByIndex(indices ...int) {
 	}
 }
 
+// If an element is deleted, the index of the elements after the deleted element will be shifted.
 func (this *OrderedSet[K]) Delete(keys ...K) bool {
-	dict := mapi.FromSlice(keys, func(k K) *int { return this.dict[k] })
+	removalLookup := mapi.FromSlice(keys, func(k K) *int { return this.dict[k] }) // Copy the keys to a removal map for faster lookup.
 	for _, k := range keys {
-		delete(this.dict, k)
+		delete(this.dict, k) // Delete the key from the dict first.
 	}
 
-	minIdx := len(this.elements)
+	// Shift the indices of the elements after the deleted elements.
+	minIdx := len(this.elements) // Find the leftmost index of the deleted elements to start shifting the indices.
 	slice.RemoveIf(&this.elements, func(i int, k K) bool {
-		idx, ok := dict[k]
+		idx, ok := removalLookup[k] // If the element is in the removal map, it will be deleted.
 		if ok && *idx < minIdx {
 			minIdx = *idx
 		}
