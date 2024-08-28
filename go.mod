@@ -4,11 +4,11 @@ go 1.22
 
 replace github.com/arcology-network/arcology-network/btree => ../btree/
 
-replace github.com/ethereum/go-ethereum v1.13.1 => ../concurrent-evm/
+replace github.com/ethereum/go-ethereum v1.14.8 => ../concurrent-evm/
 
 require (
 	github.com/dgraph-io/badger v1.6.2
-	github.com/ethereum/go-ethereum v1.13.1
+	github.com/ethereum/go-ethereum v1.14.8
 	github.com/holiman/uint256 v1.2.4
 	github.com/natefinch/atomic v1.0.1
 	golang.org/x/crypto v0.18.0
