@@ -62,8 +62,8 @@ func (this Bytes) Encode() []byte {
 	return []byte(this)
 }
 
-func (this Bytes) Size() uint32 {
-	return uint32(len(this))
+func (this Bytes) Size() uint64 {
+	return uint64(len(this))
 }
 
 func (this Bytes) Clone() interface{} {
@@ -107,22 +107,22 @@ func (this Byteset) Clone() interface{} {
 	return Byteset(target)
 }
 
-func (this Byteset) Size() uint32 {
+func (this Byteset) Size() uint64 {
 	if len(this) == 0 {
 		return 0
 	}
 
-	total := (len(this) + 1) * UINT32_LEN // Header size
+	total := (len(this) + 1) * UINT64_LEN // Header size
 	for i := 0; i < len(this); i++ {
 		total += len(this[i])
 	}
-	return uint32(total)
+	return uint64(total)
 }
 
-func (this Byteset) Sizes() Uint32s {
-	sizes := make([]uint32, len(this))
+func (this Byteset) Sizes() Uint64s {
+	sizes := make([]uint64, len(this))
 	for i := range this {
-		sizes[i] = uint32(len(this[i]))
+		sizes[i] = uint64(len(this[i]))
 	}
 	return sizes
 }
@@ -153,11 +153,11 @@ func (this Byteset) Encode() []byte {
 	return buffer
 }
 
-func (this Byteset) HeaderSize() uint32 {
+func (this Byteset) HeaderSize() uint64 {
 	if len(this) == 0 {
 		return 0
 	}
-	return uint32(len(this)+1) * UINT32_LEN
+	return uint64(len(this)+1) * UINT64_LEN
 }
 
 func (this Byteset) FillHeader(buffer []byte) {
@@ -165,12 +165,12 @@ func (this Byteset) FillHeader(buffer []byte) {
 		return
 	}
 
-	Uint32(len(this)).EncodeToBuffer(buffer)
+	Uint64(len(this)).EncodeToBuffer(buffer)
 
-	offset := uint32(0)
+	offset := uint64(0)
 	for i := 0; i < len(this); i++ {
-		Uint32(offset).EncodeToBuffer(buffer[(i+1)*UINT32_LEN:])
-		offset += uint32(len(this[i]))
+		Uint64(offset).EncodeToBuffer(buffer[(i+1)*UINT64_LEN:])
+		offset += uint64(len(this[i]))
 	}
 }
 
@@ -182,8 +182,8 @@ func (this Byteset) EncodeToBuffer(buffer []byte) int {
 
 	offset := this.HeaderSize()
 	for i := 0; i < len(this); i++ {
-		copy(buffer[offset:offset+uint32(len(this[i]))], this[i])
-		offset += uint32(len(this[i]))
+		copy(buffer[offset:offset+uint64(len(this[i]))], this[i])
+		offset += uint64(len(this[i]))
 	}
 	return int(offset)
 }
@@ -193,17 +193,17 @@ func (this Byteset) Decode(buffer []byte) interface{} {
 		return Byteset{}
 	}
 
-	count := uint32(Uint32(0).Decode(buffer[:UINT32_LEN]).(Uint32))
+	count := uint64(Uint64(0).Decode(buffer[:UINT64_LEN]).(Uint64))
 	this = make([][]byte, count)
 
-	headerLen := (count + 1) * UINT32_LEN
-	prev := uint32(Uint32(0).Decode(buffer[UINT32_LEN : UINT32_LEN+UINT32_LEN]).(Uint32))
-	next := uint32(0)
+	headerLen := (count + 1) * UINT64_LEN
+	prev := uint64(Uint64(0).Decode(buffer[UINT64_LEN : UINT64_LEN+UINT64_LEN]).(Uint64))
+	next := uint64(0)
 	for i := 0; i < int(count); i++ {
 		if i == int(count)-1 {
-			next = uint32(len(buffer)) - headerLen
+			next = uint64(len(buffer)) - headerLen
 		} else {
-			next = uint32(Uint32(0).Decode(buffer[UINT32_LEN+(i+1)*UINT32_LEN : UINT32_LEN+(i+2)*UINT32_LEN]).(Uint32))
+			next = uint64(Uint64(0).Decode(buffer[UINT64_LEN+(i+1)*UINT64_LEN : UINT64_LEN+(i+2)*UINT64_LEN]).(Uint64))
 		}
 
 		this[i] = buffer[headerLen+prev : headerLen+next]
@@ -226,19 +226,19 @@ func (this Bytegroup) Clone() Bytegroup {
 	return Bytegroup(target)
 }
 
-func (bytegroup Bytegroup) Sizes() []uint32 {
-	sizes := make([]uint32, len(bytegroup))
+func (bytegroup Bytegroup) Sizes() []uint64 {
+	sizes := make([]uint64, len(bytegroup))
 	for i := range bytegroup {
-		sizes[i] = uint32(len(bytegroup[i]))
+		sizes[i] = uint64(len(bytegroup[i]))
 	}
 	return sizes
 }
 
 func (bytegroup Bytegroup) Flatten() [][]byte {
 	lengths := bytegroup.Sizes()
-	buffer := make([][]byte, Uint32s(lengths).Sum())
+	buffer := make([][]byte, Uint64s(lengths).Sum())
 
-	positions := append([]uint32{0}, Uint32s(lengths).Accumulate()...)
+	positions := append([]uint64{0}, Uint64s(lengths).Accumulate()...)
 	for i := 0; i < len(positions)-1; i++ {
 		copy(buffer[positions[i]:positions[i+1]], bytegroup[i])
 	}

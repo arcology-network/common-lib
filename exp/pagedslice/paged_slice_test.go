@@ -15,7 +15,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package indexedslice
+package paged
 
 import (
 	"fmt"
@@ -182,7 +182,7 @@ func TestCustomType(t *testing.T) {
 
 	t0 := time.Now()
 	paged := NewPagedSlice[CustomType](4096, 1000, 4096*1000)
-	paged.ParallelForeach(func(v *CustomType) {
+	paged.ParallelForeach(func(_ int, v *CustomType) {
 		*v = CustomType{
 			a: 1,
 			b: [20]byte{1, 2, 3},

@@ -19,7 +19,6 @@ package cache
 
 import (
 	mapi "github.com/arcology-network/common-lib/exp/map"
-	policy "github.com/arcology-network/common-lib/storage/policy"
 )
 
 // ReadCache is a read only cache that is used to store the read values from the storage.
@@ -30,23 +29,20 @@ import (
 type ReadCache[K comparable, V any] struct {
 	*mapi.ConcurrentMap[K, V]
 	enabled bool
-	policy  *policy.CachePolicy
 }
 
-func NewReadCache[K comparable, V any](numShards uint64, isNil func(V) bool, hasher func(K) uint64, policy *policy.CachePolicy) *ReadCache[K, V] {
+func NewReadCache[K comparable, V any](numShards uint64, isNil func(V) bool, hasher func(K) uint64) *ReadCache[K, V] {
 	newReadCache := &ReadCache[K, V]{
 		ConcurrentMap: mapi.NewConcurrentMap(int(numShards), isNil, hasher),
 		enabled:       true,
-		policy:        policy,
 	}
 	return newReadCache
 }
 
-func (this *ReadCache[K, V]) Status() bool                { return this.enabled }
-func (this *ReadCache[K, V]) Enable()                     { this.enabled = true }
-func (this *ReadCache[K, V]) Disable()                    { this.enabled = false }
-func (this *ReadCache[K, V]) Hash(k K) uint64             { return this.ConcurrentMap.Hash(k) }
-func (this *ReadCache[K, V]) Policy() *policy.CachePolicy { return this.policy }
+func (this *ReadCache[K, V]) Status() bool    { return this.enabled }
+func (this *ReadCache[K, V]) Enable()         { this.enabled = true }
+func (this *ReadCache[K, V]) Disable()        { this.enabled = false }
+func (this *ReadCache[K, V]) Hash(k K) uint64 { return this.ConcurrentMap.Hash(k) }
 
 func (this *ReadCache[K, V]) Get(k K) (*V, bool) {
 	if !this.enabled {

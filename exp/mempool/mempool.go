@@ -21,7 +21,7 @@ package mempool
 import (
 	"sync"
 
-	indexedslice "github.com/arcology-network/common-lib/container/slice"
+	indexedslice "github.com/arcology-network/common-lib/exp/pagedslice"
 )
 
 // Mempool represents a pool of pool of the same type.

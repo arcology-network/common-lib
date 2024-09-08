@@ -37,8 +37,8 @@ func (this *Bytes32) Set(v interface{}) {
 	*this = v.(Bytes32)
 }
 
-func (this Bytes32) Size() uint32 {
-	return uint32(HASH32_LEN)
+func (this Bytes32) Size() uint64 {
+	return uint64(HASH32_LEN)
 }
 
 func (this Bytes32) Sum(offset uint64) uint64 {
@@ -116,8 +116,8 @@ func (this Bytes32s) Decode(buffer []byte) interface{} {
 	return this
 }
 
-func (this Bytes32s) Size() uint32 {
-	return uint32(len(this) * HASH32_LEN)
+func (this Bytes32s) Size() uint64 {
+	return uint64(len(this) * HASH32_LEN)
 }
 
 func (this Bytes32s) Flatten() []byte {

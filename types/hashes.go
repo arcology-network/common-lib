@@ -68,8 +68,8 @@ func (hashes Hashes) Decode(data []byte) []ethCommon.Hash {
 	return hashes
 }
 
-func (hashes Hashes) Size() uint32 {
-	return uint32(len(hashes) * ethCommon.HashLength)
+func (hashes Hashes) Size() uint64 {
+	return uint64(len(hashes) * ethCommon.HashLength)
 }
 
 func (hashes Hashes) Flatten() []byte {

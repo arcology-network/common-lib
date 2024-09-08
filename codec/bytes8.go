@@ -61,8 +61,8 @@ func (this *Hash8) Set(v interface{}) {
 	*this = v.(Hash8)
 }
 
-func (hash Hash8) Size() uint32 {
-	return uint32(HASH8_LEN)
+func (hash Hash8) Size() uint64 {
+	return uint64(HASH8_LEN)
 }
 
 func (hash Hash8) FromBytes(bytes []byte) Hash8 {
@@ -106,8 +106,8 @@ func (hashes Hash8s) Decode(data []byte) interface{} {
 	return hashes
 }
 
-func (hashes Hash8s) Size() uint32 {
-	return uint32(len(hashes) * HASH8_LEN)
+func (hashes Hash8s) Size() uint64 {
+	return uint64(len(hashes) * HASH8_LEN)
 }
 
 func (hashes Hash8s) Flatten() []byte {

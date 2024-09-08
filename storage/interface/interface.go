@@ -23,7 +23,7 @@ type Accessible interface {
 	Value() interface{}
 	Reads() uint32
 	Writes() uint32
-	Size() uint32
+	Size() uint64
 }
 
 const (

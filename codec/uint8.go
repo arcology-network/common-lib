@@ -46,7 +46,7 @@ func (this *Uint8) Set(v interface{}) {
 	*this = v.(Uint8)
 }
 
-func (v Uint8) Size() uint32 {
+func (v Uint8) Size() uint64 {
 	return UINT8_LEN
 }
 
@@ -88,8 +88,8 @@ func (this Uint8s) Sum() int64 {
 	return sum
 }
 
-func (this Uint8s) Size() uint32 {
-	return uint32(len(this))
+func (this Uint8s) Size() uint64 {
+	return uint64(len(this))
 }
 
 func (this Uint8s) Encode() []byte {

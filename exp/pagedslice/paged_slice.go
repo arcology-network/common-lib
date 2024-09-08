@@ -18,7 +18,7 @@
 // The PagedSlice class is a custom data structure that represents an array that is divided into multiple pages or pages.
 // It is designed to efficiently handle large arrays by storing the elements in a paginated manner to optimize memory usage
 // and improve performance.
-package indexedslice
+package paged
 
 import (
 	"math"
@@ -198,9 +198,9 @@ func (this *PagedSlice[T]) Foreach(functor func(int, *T)) *PagedSlice[T] {
 }
 
 // ParallelForeach applies the specified functor to each element.
-func (this *PagedSlice[T]) ParallelForeach(functor func(*T)) *PagedSlice[T] {
+func (this *PagedSlice[T]) ParallelForeach(functor func(int, *T)) *PagedSlice[T] {
 	common.ParallelFor(0, this.length, 6, func(i int) {
-		functor(this.at(i))
+		functor(i, this.at(i))
 	})
 	return this
 }

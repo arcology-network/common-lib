@@ -6,6 +6,8 @@ replace github.com/arcology-network/arcology-network/btree => ../btree/
 
 replace github.com/ethereum/go-ethereum v1.13.1 => ../concurrent-evm/
 
+// replace github.com/emirpasic/gods/v2 => ../v2/
+
 require (
 	github.com/dgraph-io/badger v1.6.2
 	github.com/ethereum/go-ethereum v1.13.1
@@ -17,6 +19,7 @@ require (
 
 require (
 	github.com/cespare/xxhash/v2 v2.2.0
+	github.com/emirpasic/gods/v2 v2.0.0-alpha
 	github.com/google/btree v1.1.2
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-memdb v1.3.4

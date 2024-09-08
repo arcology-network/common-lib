@@ -47,7 +47,7 @@ func (this *Uint64) Set(v interface{}) {
 	*this = v.(Uint64)
 }
 
-func (Uint64) Size() uint32 {
+func (Uint64) Size() uint64 {
 	return UINT64_LEN
 }
 
@@ -95,6 +95,19 @@ func (this Uint64s) Sum() int64 {
 		sum += int64(this[i])
 	}
 	return sum
+}
+
+func (this Uint64s) Accumulate() []uint64 {
+	if len(this) == 0 {
+		return []uint64{}
+	}
+
+	values := make([]uint64, len(this))
+	values[0] = this[0]
+	for i := 1; i < len(this); i++ {
+		values[i] = values[i-1] + this[i]
+	}
+	return values
 }
 
 func (this Uint64s) Unique() []uint64 {

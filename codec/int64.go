@@ -46,8 +46,8 @@ func (this *Int64) Set(v interface{}) {
 	*this = v.(Int64)
 }
 
-func (this Int64) Size() uint32 {
-	return uint32(INT64_LEN)
+func (this Int64) Size() uint64 {
+	return uint64(INT64_LEN)
 }
 
 func (this Int64) Encode() []byte {

@@ -37,8 +37,8 @@ type CompressionLut struct {
 	IdxToKeyLut []string
 	dict        *ccmap.ConcurrentMap
 	tempLut     *CompressionLut
-	length      uint32
-	offset      uint32
+	length      uint64
+	offset      uint64
 	lock        sync.RWMutex
 	depths      [][2]int
 }
