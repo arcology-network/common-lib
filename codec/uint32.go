@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	UINT32_LEN = 4
+	UINT32_LEN = uint64(4)
 )
 
 type Uint32 uint32
