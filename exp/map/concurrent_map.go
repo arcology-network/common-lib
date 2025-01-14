@@ -348,6 +348,20 @@ func (this *ConcurrentMap[K, V]) ParallelForeachDo(do func(K, V)) {
 	})
 }
 
+// Parallel deletes the key-value pairs for which the specified delete function returns true.
+func (this *ConcurrentMap[K, V]) ParallelDelete(del func(K, V) bool) {
+	this.globalLock.Lock()
+	defer this.globalLock.Unlock()
+
+	slice.ParallelForeach(this.shards, len(this.shards), func(_ int, shard *map[K]V) {
+		for k, v := range *shard {
+			if del(k, v) {
+				delete(*shard, k)
+			}
+		}
+	})
+}
+
 func (this *ConcurrentMap[K, V]) ParallelDo(keys []K, do func(i int, k K, v V, b bool) (V, bool)) {
 	this.globalLock.Lock()
 	defer this.globalLock.Unlock()
@@ -394,8 +408,8 @@ func (this *ConcurrentMap[K, V]) UnsafeParallelFor(first int, last int, key func
 
 // KVs returns two slices: one containing all the keys in the ConcurrentMap, and one containing the corresponding values.
 func (this *ConcurrentMap[K, V]) KVs(less ...func(k0, k1 K) bool) ([]K, []V) {
-	this.globalLock.Lock()
-	defer this.globalLock.Unlock()
+	this.globalLock.RLock()
+	defer this.globalLock.RUnlock()
 
 	keys := this.Keys()
 	if len(less) > 0 {

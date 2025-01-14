@@ -325,6 +325,27 @@ func PushFront[T any](v T, values *[]T) []T {
 	return Insert(values, 0, v)
 }
 
+// Insert inserts a value at a specific position in a slice.
+func PopFront[T any](values *[]T) *T {
+	if len(*values) == 0 {
+		return nil
+	}
+	v := (*values)[0]
+	copy((*values)[0:], (*values)[1:])
+	(*values) = (*values)[:len(*values)-1]
+	return &v
+}
+
+// Insert inserts a value at a specific position in a slice.
+func PopBack[T any](values *[]T) *T {
+	if len(*values) == 0 {
+		return nil
+	}
+	v := (*values)[len(*values)-1]
+	*values = (*values)[:len(*values)-1]
+	return &v
+}
+
 // Resize resizes a slice to a new length.
 // If the new length is greater than the current length, it appends the required number of elements to the slice.
 // If the new length is less than or equal to the current length, it truncates the slice.

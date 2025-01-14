@@ -48,7 +48,7 @@ type Bytesn[T ipArray] struct{}
 // 	*this = v.(Bytesn[T])
 // }
 
-// func (this Bytesn[T]) Size() uint32 {
+// func (this Bytesn[T]) Size() uint64 {
 // 	return uint32(HASH32_LEN)
 // }
 
@@ -126,7 +126,7 @@ type Bytesn[T ipArray] struct{}
 // 	return this
 // }
 
-// func (this Bytesn[T]s) Size() uint32 {
+// func (this Bytesn[T]s) Size() uint64 {
 // 	return uint32(len(this) * HASH32_LEN)
 // }
 

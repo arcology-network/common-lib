@@ -55,7 +55,7 @@ func (this *Uint256) Uint64() uint64 {
 	return (*uint256.Int)(this).ToBig().Uint64()
 }
 
-func (this *Uint256) Size() uint32 {
+func (this *Uint256) Size() uint64 {
 	return 32
 }
 

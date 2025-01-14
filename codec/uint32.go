@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	UINT32_LEN = 4
+	UINT32_LEN = uint64(4)
 )
 
 type Uint32 uint32
@@ -45,19 +45,19 @@ func (this *Uint32) Set(v interface{}) {
 	*this = v.(Uint32)
 }
 
-func (Uint32) Size() uint32 {
-	return UINT32_LEN
+func (Uint32) Size() uint64 {
+	return UINT64_LEN
 }
 
 func (this Uint32) Encode() []byte {
-	buffer := make([]byte, UINT32_LEN)
+	buffer := make([]byte, UINT64_LEN)
 	this.EncodeToBuffer(buffer)
 	return buffer
 }
 
 func (this Uint32) EncodeToBuffer(buffer []byte) int {
 	binary.LittleEndian.PutUint32(buffer, uint32(this))
-	return UINT32_LEN
+	return UINT64_LEN
 }
 
 func (this Uint32) Decode(buffer []byte) interface{} {
@@ -68,7 +68,7 @@ func (this Uint32) Decode(buffer []byte) interface{} {
 type Uint32s []uint32
 
 func (this Uint32s) Encode() []byte {
-	buffer := make([]byte, uint32(len(this)*UINT32_LEN))
+	buffer := make([]byte, uint64(len(this)*UINT64_LEN))
 	this.EncodeToBuffer(buffer)
 	return buffer
 }
@@ -78,7 +78,7 @@ func (this Uint32s) EncodeToBuffer(buffer []byte) int {
 	for i := range this {
 		offset += Uint32(this[i]).EncodeToBuffer(buffer[offset:])
 	}
-	return len(this) * UINT32_LEN
+	return len(this) * UINT64_LEN
 }
 
 func (this Uint32s) Decode(buffer []byte) interface{} {
@@ -86,30 +86,30 @@ func (this Uint32s) Decode(buffer []byte) interface{} {
 		return this
 	}
 
-	this = make([]uint32, len(buffer)/UINT32_LEN)
+	this = make([]uint32, len(buffer)/UINT64_LEN)
 	for i := range this {
-		this[i] = uint32(Uint32(this[i]).Decode(buffer[i*UINT32_LEN : (i+1)*UINT32_LEN]).(Uint32))
+		this[i] = uint32(Uint32(this[i]).Decode(buffer[i*UINT64_LEN : (i+1)*UINT64_LEN]).(Uint32))
 	}
 	return Uint32s(this)
 }
 
-func (this Uint32s) Accumulate() []uint32 {
+func (this Uint32s) Accumulate() []uint64 {
 	if len(this) == 0 {
-		return []uint32{}
+		return []uint64{}
 	}
 
-	values := make([]uint32, len(this))
-	values[0] = this[0]
+	values := make([]uint64, len(this))
+	values[0] = uint64(this[0])
 	for i := 1; i < len(this); i++ {
-		values[i] = values[i-1] + this[i]
+		values[i] = values[i-1] + uint64(this[i])
 	}
 	return values
 }
 
-func (this Uint32s) Sum() uint32 {
-	sum := uint32(0)
+func (this Uint32s) Sum() uint64 {
+	sum := uint64(0)
 	for i := range this {
-		sum += uint32(this[i])
+		sum += uint64(this[i])
 	}
 	return sum
 }

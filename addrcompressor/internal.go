@@ -151,10 +151,10 @@ func (this *CompressionLut) replaceSubstring(original string, pos [][2]int) stri
 
 func (this *CompressionLut) searchInDict(key string, buffer *bytes.Buffer) {
 	if v, ok := this.dict.Get(key); ok {
-		buffer.WriteString("[" + strconv.Itoa(int(v.(uint32)+this.offset)) + "]")
+		buffer.WriteString("[" + strconv.Itoa(int(v.(uint64)+this.offset)) + "]")
 	} else {
 		if v, ok := this.tempLut.dict.Get(key); ok {
-			buffer.WriteString("[" + strconv.Itoa(int(v.(uint32)+this.tempLut.offset)) + "]")
+			buffer.WriteString("[" + strconv.Itoa(int(v.(uint64)+this.tempLut.offset)) + "]")
 		} else {
 			buffer.WriteString(key)
 		}
@@ -173,7 +173,7 @@ func (this *CompressionLut) insertToDict(newKeys []string, dict *ccmap.Concurren
 
 	offset := this.dict.Size()
 	indices := make([]interface{}, len(newKeys))
-	for i := uint32(0); i < uint32(len(newKeys)); i++ {
+	for i := uint64(0); i < uint64(len(newKeys)); i++ {
 		indices[i] = i + offset
 	}
 	this.dict.BatchSet(newKeys, indices)
@@ -182,7 +182,7 @@ func (this *CompressionLut) insertToDict(newKeys []string, dict *ccmap.Concurren
 func (this *CompressionLut) merge(nKeys []string, nValues []interface{}) {
 	length := this.dict.Size()
 	for i := range nValues {
-		nValues[i] = nValues[i].(uint32) + length
+		nValues[i] = nValues[i].(uint64) + length
 	}
 	this.dict.BatchSet(nKeys, nValues)
 }
@@ -194,7 +194,7 @@ func (this *CompressionLut) Commit() {
 	length := len(this.IdxToKeyLut)
 	this.IdxToKeyLut = append(this.IdxToKeyLut, make([]string, this.tempLut.dict.Size())...)
 	for i := 0; i < len(nValues); i++ {
-		this.IdxToKeyLut[length+int(nValues[i].(uint32))] = nKeys[i]
+		this.IdxToKeyLut[length+int(nValues[i].(uint64))] = nKeys[i]
 	}
 
 	this.merge(nKeys, nValues)

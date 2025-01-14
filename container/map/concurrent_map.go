@@ -61,14 +61,14 @@ func NewConcurrentMap(args ...interface{}) *ConcurrentMap {
 }
 
 // Size returns the total number of key-value pairs in the ConcurrentMap.
-func (this *ConcurrentMap) Size() uint32 {
+func (this *ConcurrentMap) Size() uint64 {
 	total := 0
 	for i := 0; i < int(this.numShards); i++ {
 		this.shardLocks[i].RLock()
 		total += len(this.sharded[i])
 		this.shardLocks[i].RUnlock()
 	}
-	return uint32(total)
+	return uint64(total)
 }
 
 // Get retrieves the value associated with the specified key from the ConcurrentMap.

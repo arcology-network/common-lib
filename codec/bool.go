@@ -41,8 +41,8 @@ func (this *Bool) Set(v interface{}) {
 	*this = v.(Bool)
 }
 
-func (this Bool) Size() uint32 {
-	return uint32(BOOL_LEN)
+func (this Bool) Size() uint64 {
+	return uint64(BOOL_LEN)
 }
 
 func (this Bool) Encode() []byte {

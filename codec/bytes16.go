@@ -53,8 +53,8 @@ func (this *Bytes16) Set(v interface{}) {
 	*this = v.(Bytes16)
 }
 
-func (hash Bytes16) Size() uint32 {
-	return uint32(BYTE16_LEN)
+func (hash Bytes16) Size() uint64 {
+	return uint64(BYTE16_LEN)
 }
 
 func (this Bytes16) Clone() interface{} {
@@ -111,8 +111,8 @@ func (this Bytes16s) Decode(data []byte) interface{} {
 	return this
 }
 
-func (this Bytes16s) Size() uint32 {
-	return uint32(len(this) * BYTE16_LEN)
+func (this Bytes16s) Size() uint64 {
+	return uint64(len(this) * BYTE16_LEN)
 }
 
 func (this Bytes16s) Flatten() []byte {

@@ -19,28 +19,28 @@ package codec
 
 type Encoder struct{}
 
-func (Encoder) Size(args []interface{}) uint32 {
-	length := uint32(0)
+func (Encoder) Size(args []interface{}) uint64 {
+	length := uint64(0)
 	for i := 0; i < len(args); i++ {
 		if args[i] != nil {
 			length += args[i].(Encodable).Size()
 		}
 	}
-	return UINT32_LEN*uint32(len(args)+1) + uint32(length)
+	return UINT64_LEN*uint64(len(args)+1) + uint64(length)
 }
 
 func (this Encoder) ToBuffer(buffer []byte, args []interface{}) {
-	offset := uint32(0)
+	offset := uint64(0)
 	Uint32(len(args)).EncodeToBuffer(buffer)
 	for i := 0; i < len(args); i++ {
-		Uint32(offset).EncodeToBuffer(buffer[(i+1)*UINT32_LEN:]) // Fill header info
+		Uint32(offset).EncodeToBuffer(buffer[(i+1)*UINT64_LEN:]) // Fill header info
 		if args[i] != nil {
 			offset += args[i].(Encodable).Size()
 		}
 	}
-	headerSize := uint32((len(args) + 1) * UINT32_LEN)
+	headerSize := uint64((len(args) + 1) * UINT64_LEN)
 
-	offset = uint32(0)
+	offset = uint64(0)
 	for i := 0; i < len(args); i++ {
 		if args[i] != nil {
 			end := headerSize + offset + args[i].(Encodable).Size()
@@ -50,12 +50,12 @@ func (this Encoder) ToBuffer(buffer []byte, args []interface{}) {
 	}
 }
 
-func (Encoder) FillHeader(buffer []byte, lengths []uint32) int {
-	Uint32(len(lengths)).EncodeToBuffer(buffer[UINT32_LEN*0:])
-	offset := uint32(0)
+func (Encoder) FillHeader(buffer []byte, lengths []uint64) int {
+	Uint32(len(lengths)).EncodeToBuffer(buffer[UINT64_LEN*0:])
+	offset := uint64(0)
 	for i := 0; i < len(lengths); i++ {
-		Uint32(offset).EncodeToBuffer(buffer[UINT32_LEN*(i+1):])
-		offset += uint32(lengths[i])
+		Uint32(offset).EncodeToBuffer(buffer[UINT64_LEN*(i+1):])
+		offset += uint64(lengths[i])
 	}
-	return (len(lengths) + 1) * UINT32_LEN
+	return (len(lengths) + 1) * UINT64_LEN
 }

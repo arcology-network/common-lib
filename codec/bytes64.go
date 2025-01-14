@@ -27,8 +27,8 @@ const (
 
 type Hash64 [HASH64_LEN]byte
 
-func (hash Hash64) Size() uint32 {
-	return uint32(HASH64_LEN)
+func (hash Hash64) Size() uint64 {
+	return uint64(HASH64_LEN)
 }
 
 func (this Hash64) Sum(offset uint64) uint64 {
@@ -87,8 +87,8 @@ func (this Hash64s) Decode(buffer []byte) interface{} {
 	return Hash64s(this)
 }
 
-func (hashes Hash64s) Size() uint32 {
-	return uint32(len(hashes) * HASH64_LEN)
+func (hashes Hash64s) Size() uint64 {
+	return uint64(len(hashes) * HASH64_LEN)
 }
 
 func (hashes Hash64s) Flatten() []byte {

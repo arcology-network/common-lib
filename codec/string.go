@@ -77,8 +77,8 @@ func (this String) EncodeToBuffer(buffer []byte) int {
 	return len(this) * CHAR_LEN
 }
 
-func (this String) Size() uint32 {
-	return uint32(len(this))
+func (this String) Size() uint64 {
+	return uint64(len(this))
 }
 
 func (String) Decode(buffer []byte) interface{} {
@@ -104,17 +104,17 @@ func (this Strings) Encode() []byte {
 	return buffer
 }
 
-func (this Strings) HeaderSize() uint32 {
+func (this Strings) HeaderSize() uint64 {
 	if len(this) == 0 {
 		return 0
 	}
-	return uint32(len(this)+1) * UINT32_LEN
+	return uint64(len(this)+1) * UINT64_LEN
 }
 
-func (this Strings) Size() uint32 {
-	total := uint32(0)
+func (this Strings) Size() uint64 {
+	total := uint64(0)
 	for i := 0; i < len(this); i++ {
-		total += uint32(len(this[i]))
+		total += uint64(len(this[i]))
 	}
 	return this.HeaderSize() + total
 }
@@ -123,11 +123,11 @@ func (this Strings) FillHeader(buffer []byte) {
 	if len(this) == 0 {
 		return
 	}
-	Uint32(len(this)).EncodeToBuffer(buffer)
+	Uint64(len(this)).EncodeToBuffer(buffer)
 
 	offset := 0
 	for i := 0; i < len(this); i++ {
-		Uint32(offset).EncodeToBuffer(buffer[UINT32_LEN*(i+1):])
+		Uint64(offset).EncodeToBuffer(buffer[UINT64_LEN*(i+1):])
 		offset += len(this[i])
 	}
 }
@@ -140,8 +140,8 @@ func (this Strings) EncodeToBuffer(buffer []byte) int {
 
 	offset := this.HeaderSize()
 	for i := 0; i < len(this); i++ {
-		copy(buffer[offset:offset+uint32(len(this[i]))], this[i])
-		offset += uint32(len(this[i]))
+		copy(buffer[offset:offset+uint64(len(this[i]))], this[i])
+		offset += uint64(len(this[i]))
 	}
 	return int(offset)
 }
@@ -231,12 +231,12 @@ func (this Strings) ToHex() []string {
 
 type Stringset [][]string
 
-func (this Stringset) Size() uint32 {
+func (this Stringset) Size() uint64 {
 	length := 0
 	for i := 0; i < len(this); i++ {
 		length += int(Strings(this[i]).Size())
 	}
-	return uint32(len(this)+1)*UINT32_LEN + uint32(length)
+	return uint64(len(this)+1)*UINT64_LEN + uint64(length)
 }
 
 func (this Stringset) Encode() []byte {
@@ -247,7 +247,7 @@ func (this Stringset) Encode() []byte {
 }
 
 func (this Stringset) EncodeToBuffer(buffer []byte) int {
-	lengths := make([]uint32, len(this))
+	lengths := make([]uint64, len(this))
 	for i := 0; i < len(this); i++ {
 		lengths[i] = Strings(this[i]).Size()
 	}

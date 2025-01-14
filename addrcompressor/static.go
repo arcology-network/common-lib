@@ -55,10 +55,10 @@ func (this *CompressionLut) CompressStaticKey(original string) string {
 
 	key := original[prefixLen : prefixLen+acctLen]
 	if id, ok := this.dict.Get(key); ok {
-		original = "[" + strconv.Itoa(int(prefixid)) + "]" + "/[" + strconv.Itoa(int(id.(uint32)+this.offset)) + "]" + original[prefixLen+acctLen:]
+		original = "[" + strconv.Itoa(int(prefixid)) + "]" + "/[" + strconv.Itoa(int(id.(uint64)+this.offset)) + "]" + original[prefixLen+acctLen:]
 	} else {
 		if id, ok := this.tempLut.dict.Get(key); ok {
-			original = "[" + strconv.Itoa(int(prefixid)) + "]" + "/[" + strconv.Itoa(int(id.(uint32)+this.length)) + "]" + original[prefixLen+acctLen:]
+			original = "[" + strconv.Itoa(int(prefixid)) + "]" + "/[" + strconv.Itoa(int(id.(uint64)+this.length)) + "]" + original[prefixLen+acctLen:]
 		}
 	}
 	return original

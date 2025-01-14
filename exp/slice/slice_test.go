@@ -435,6 +435,46 @@ func TestForeach(t *testing.T) {
 	}
 }
 
+func TestPopFrontAndBack(t *testing.T) {
+	nums := []int{4, 5, 5, 6}
+
+	PopBack(&nums)
+	if len(nums) != 3 || nums[0] != 4 || nums[1] != 5 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	PopBack(&nums)
+	if len(nums) != 2 || nums[0] != 4 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	PopBack(&nums)
+	if len(nums) != 1 || nums[0] != 4 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	nums = []int{4, 5, 5, 6}
+	PopFront(&nums)
+	if len(nums) != 3 || nums[0] != 5 || nums[2] != 6 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	PopFront(&nums)
+	if len(nums) != 2 || nums[0] != 5 || nums[1] != 6 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	PopFront(&nums)
+	if len(nums) != 1 || nums[0] != 6 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+
+	PopFront(&nums)
+	if len(nums) != 0 {
+		t.Error("Error: Failed to remove nil values !")
+	}
+}
+
 func TestParallelForeach(t *testing.T) {
 	nums := []int{3, 5, 5, 6, 6}
 	ParallelForeach(nums, 120, func(_ int, lhv *int) { (*lhv) = (*lhv) + 1 })
