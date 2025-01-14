@@ -32,8 +32,8 @@ type Pair[T0, T1 any] struct {
 type Pairs[T0, T1 any] []*Pair[T0, T1]
 
 // Firsts extracts the first elements from an array of pairs and returns a new slice.
-func (this Pairs[T0, T1]) Slice() *[]*Pair[T0, T1] {
-	return (*[]*Pair[T0, T1])(&this)
+func (this *Pairs[T0, T1]) Slice() *[]*Pair[T0, T1] {
+	return (*[]*Pair[T0, T1])(this)
 }
 
 // Firsts extracts the first elements from an array of pairs and returns a new slice.
