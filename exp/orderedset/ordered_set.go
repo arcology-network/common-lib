@@ -51,6 +51,10 @@ func NewOrderedSet[K comparable](
 	return set.Init()
 }
 
+func NewFrom[K comparable](other *OrderedSet[K]) *OrderedSet[K] {
+	return NewOrderedSet(other.nilValue, 0, other.hasher)
+}
+
 func (this *OrderedSet[K]) Init() *OrderedSet[K] {
 	for i, idx := range this.elements {
 		this.dict[idx] = common.New(i)
@@ -78,6 +82,7 @@ func (this *OrderedSet[K]) Merge(elements []K) *OrderedSet[K] {
 }
 
 func (this *OrderedSet[K]) Sub(elements []K) *OrderedSet[K] {
+	this.Delete(elements...)
 	for _, ele := range elements {
 		this.Delete(ele)
 	}
@@ -161,7 +166,7 @@ func (this *OrderedSet[K]) Delete(keys ...K) bool {
 	// Shift the indices of the elements after the deleted elements.
 	minIdx := len(this.elements) // Find the leftmost index of the deleted elements to start shifting the indices.
 	slice.RemoveIf(&this.elements, func(i int, k K) bool {
-		idx, ok := removalLookup[k] // If the element is in the removal map, it will be deleted.
+		idx, ok := removalLookup[k] // If the element is already in the removal map, it will be deleted.
 		if ok && *idx < minIdx {
 			minIdx = *idx
 		}

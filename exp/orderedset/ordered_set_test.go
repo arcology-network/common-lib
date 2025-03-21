@@ -174,3 +174,13 @@ func TestIndexedSliceDelet(t *testing.T) {
 	}
 
 }
+
+func BenchmarkIndexedSliceDelete(t *testing.B) {
+	elems := make([]string, 100000)
+	for i := 0; i < len(elems); i++ {
+		elems[i] = fmt.Sprintf("%d", i) + "-111111111111111111111111111111111111111111111111111111111111"
+	}
+
+	set := NewOrderedSet("", 10, func(str string) [32]byte { return [32]byte{} }, elems[len(elems):]...)
+	set.Delete(elems...)
+}

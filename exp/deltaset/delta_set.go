@@ -61,6 +61,15 @@ func (*DeltaSet[K]) New(
 	}
 }
 
+func (*DeltaSet[K]) NewFrom(other *DeltaSet[K]) *DeltaSet[K] {
+	return &DeltaSet[K]{
+		nilVal:    other.GetNilVal(),
+		committed: orderedset.NewFrom(other.committed),
+		updated:   orderedset.NewFrom(other.updated),
+		removed:   orderedset.NewFrom(other.removed),
+	}
+}
+
 // mapTo returns the set and the mapped index of the specified index.
 func (this *DeltaSet[K]) mapTo(idx int) (*orderedset.OrderedSet[K], int) {
 	if idx >= int(this.Length()) {
@@ -117,7 +126,9 @@ func (this *DeltaSet[K]) Clear() {
 func (this *DeltaSet[K]) InsertCommitted(v []K) { this.committed.Insert(v...) }
 func (this *DeltaSet[K]) InsertRemoved(v []K)   { this.removed.Insert(v...) }
 func (this *DeltaSet[K]) InsertUpdated(v []K)   { this.updated.Insert(v...) }
-func (this *DeltaSet[K]) SetNilVal(v K)         { this.nilVal = v }
+
+func (this *DeltaSet[K]) GetNilVal() K  { return this.nilVal }
+func (this *DeltaSet[K]) SetNilVal(v K) { this.nilVal = v }
 
 // IsDirty returns true if the DeltaSet is up to date,
 // having no updated or removed elements.
@@ -382,10 +393,12 @@ func (this *DeltaSet[K]) Exists(k K) (bool, int) {
 }
 
 func (this *DeltaSet[K]) Commit(other ...*DeltaSet[K]) *DeltaSet[K] {
+	// Merge updated elements from all the delta sets
 	updateBuffer := make([]K, slice.CountDo(other, func(_ int, v **DeltaSet[K]) int { return (*v).updated.Length() })+this.updated.Length())
 	slice.ConcateToBuffer(other, &updateBuffer, func(v *DeltaSet[K]) []K { return v.updated.Elements() })
 	copy(updateBuffer[len(updateBuffer)-this.updated.Length():], this.updated.Elements())
 
+	// Merge deleted elements from all the delta sets
 	removedBuffer := make([]K, slice.CountDo(other, func(_ int, v **DeltaSet[K]) int { return (*v).removed.Length() })+this.removed.Length())
 	slice.ConcateToBuffer(other, &removedBuffer, func(v *DeltaSet[K]) []K { return v.removed.Elements() })
 	copy(removedBuffer[len(removedBuffer)-this.removed.Length():], this.removed.Elements())
