@@ -392,7 +392,7 @@ func (this *DeltaSet[K]) Exists(k K) (bool, int) {
 	return false, -1
 }
 
-func (this *DeltaSet[K]) Commit(other ...*DeltaSet[K]) *DeltaSet[K] {
+func (this *DeltaSet[K]) Commit(other []*DeltaSet[K]) *DeltaSet[K] {
 	// Merge updated elements from all the delta sets
 	updateBuffer := make([]K, slice.CountDo(other, func(_ int, v **DeltaSet[K]) int { return (*v).updated.Length() })+this.updated.Length())
 	slice.ConcateToBuffer(other, &updateBuffer, func(v *DeltaSet[K]) []K { return v.updated.Elements() })
