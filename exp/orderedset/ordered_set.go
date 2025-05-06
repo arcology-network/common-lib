@@ -78,9 +78,7 @@ func (this *OrderedSet[K]) Merge(elements []K) *OrderedSet[K] {
 }
 
 func (this *OrderedSet[K]) Sub(elements []K) *OrderedSet[K] {
-	for _, ele := range elements {
-		this.Delete(ele)
-	}
+	this.Delete(elements...)
 	return this
 }
 
