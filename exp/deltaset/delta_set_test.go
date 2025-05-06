@@ -34,7 +34,7 @@ func TestDeltaSliceBasic(t *testing.T) {
 		t.Error("failed to append", deltaSet.updated.IsDirty(), deltaSet.committed.Elements(), deltaSet.updated.Elements())
 	}
 
-	if deltaSet.Commit(); deltaSet.committed.Length() != 3 ||
+	if deltaSet.Commit([]*DeltaSet[int]{}); deltaSet.committed.Length() != 3 ||
 		(deltaSet.updated.Length()) != 0 ||
 		(deltaSet.removed.Length()) != 0 {
 		t.Error("failed to commit", deltaSet.committed.Elements())
@@ -45,7 +45,7 @@ func TestDeltaSliceBasic(t *testing.T) {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
-	if deltaSet.Commit(); deltaSet.committed.Length() != 2 || (deltaSet.updated.Length()) != 0 || deltaSet.updated.IsDirty() ||
+	if deltaSet.Commit([]*DeltaSet[int]{}); deltaSet.committed.Length() != 2 || (deltaSet.updated.Length()) != 0 || deltaSet.updated.IsDirty() ||
 		(deltaSet.removed.Length()) != 0 { // {11, 13}
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
@@ -80,7 +80,7 @@ func TestDeltaSliceBasic(t *testing.T) {
 		t.Error("Failed to get Elements()", deltaSet.Elements())
 	}
 
-	if deltaSet.Commit(); !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17}) || (deltaSet.updated.Length()) != 0 || (deltaSet.removed.Length()) != 0 {
+	if deltaSet.Commit([]*DeltaSet[int]{}); !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17}) || (deltaSet.updated.Length()) != 0 || (deltaSet.removed.Length()) != 0 {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 	// { 13, 15, 17} + { 18, 19, 20, 21}
@@ -121,7 +121,7 @@ func TestDeltaSliceBasic(t *testing.T) {
 func TestDeltaSliceAddThenDelete(t *testing.T) {
 	deltaSet := NewDeltaSet[int](-1, 100, nil)
 	deltaSet.Insert(13, 15, 17)
-	deltaSet.Commit()
+	deltaSet.Commit([]*DeltaSet[int]{})
 
 	deltaSet.Insert(18, 19, 20, 21) // { 13, 15, 17} + { 18, 19, 20, 21}
 
@@ -135,7 +135,7 @@ func TestDeltaSliceAddThenDelete(t *testing.T) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
-	deltaSet.Commit()
+	deltaSet.Commit([]*DeltaSet[int]{})
 	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 21}) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
@@ -189,7 +189,7 @@ func TestCascadeDeltaCommit(t *testing.T) {
 	deltaSet.Insert(18, 19, 20, 21) // { 13, 15, 17} + { 18, 19, 20, 21}
 	deltaSet.DeleteByIndex(1)       // After { 13, 15, 17} + { 18, 19, 20, 21}
 	deltaSet.DeleteByIndex(4)       // After { 13, 15, 17} + { 18, 19, 20, 21}
-	deltaSet.Commit()
+	deltaSet.Commit([]*DeltaSet[int]{})
 
 	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 20, 21}) {
 		t.Error("failed to commit", deltaSet.committed.Elements())
@@ -199,7 +199,7 @@ func TestCascadeDeltaCommit(t *testing.T) {
 func TestCascadeDeltaClone(t *testing.T) {
 	deltaSet := NewDeltaSet[int](-1, 100, nil)
 	deltaSet.Insert(13, 15, 17)
-	deltaSet.Commit()
+	deltaSet.Commit([]*DeltaSet[int]{})
 
 	deltaSet.Insert(18, 19, 20, 21) // { 13, 15, 17} + { 18, 19, 20, 21}
 
@@ -228,8 +228,8 @@ func TestCascadeDeltaClone(t *testing.T) {
 		t.Error("failed to commit", deltaSet.removed.Elements())
 	}
 
-	deltaSet.Commit()
-	set2.Commit()
+	deltaSet.Commit([]*DeltaSet[int]{})
+	set2.Commit([]*DeltaSet[int]{})
 
 	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 21}) {
 		t.Error("failed to commit", deltaSet.committed.Elements())
@@ -260,7 +260,7 @@ func TestCascadeDeltaClone(t *testing.T) {
 func TestDeltaDeleteThenAddBack(t *testing.T) {
 	deltaSet := NewDeltaSet[int](-1, 100, nil)
 	deltaSet.Insert(13, 15, 17)
-	deltaSet.Commit()
+	deltaSet.Commit([]*DeltaSet[int]{})
 
 	deltaSet.Insert(18, 19, 20, 21) // { 13, 15, 17} + { 18, 19, 20, 21}
 
@@ -282,7 +282,7 @@ func TestDeltaDeleteThenAddBack(t *testing.T) {
 		t.Error("failed to commit", deltaSet.updated.Elements())
 	}
 
-	deltaSet.Commit()
+	deltaSet.Commit([]*DeltaSet[int]{})
 	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17, 18, 19, 20, 21}) {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
@@ -306,13 +306,13 @@ func TestDeltaDeleteThenAddBack(t *testing.T) {
 func TestMultiMerge(t *testing.T) {
 	deltaSet := NewDeltaSet[int](-1, 100, nil)
 	deltaSet.Insert(13, 15, 17)
-	deltaSet.Commit()
+	deltaSet.Commit([]*DeltaSet[int]{})
 
 	_set0 := NewDeltaSet[int](-1, 100, nil).Insert(58, 59, 20, 51).Delete(13)
 	_set1 := NewDeltaSet[int](-1, 100, nil).Insert(78, 59, 70, 71).Delete(15, 70)
 
 	// (13, 15, 17) + (58, 59, 20, 51) + (78, 59, 70, 71) - (13, 15, 70) = (17, 58, 59, 20, 51, 78, 59, 71)
-	deltaSet.Commit(_set0, _set1)
+	deltaSet.Commit([]*DeltaSet[int]{_set0, _set1})
 
 	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{17, 58, 59, 20, 51, 78, 71}) {
 		t.Error("failed to commit", deltaSet.committed.Elements())
@@ -320,7 +320,7 @@ func TestMultiMerge(t *testing.T) {
 }
 
 func TestGetNthNonNil(t *testing.T) {
-	deltaSet := NewDeltaSet[int](0, 100, nil)
+	deltaSet := NewDeltaSet(0, 100, nil)
 	deltaSet.Insert(13, 15, 17)
 
 	deltaSet.Insert(18, 19, 20, 21) //  { 13, 15, 17} +  { 18, 19, 20, 21}
@@ -358,7 +358,7 @@ func TestGetNthNonNil(t *testing.T) {
 		t.Error("A deleted entry shouldn't be available any more", k)
 	}
 
-	deltaSet.Commit()
+	deltaSet.Commit([]*DeltaSet[int]{})
 	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 20, 21}) {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
@@ -397,7 +397,7 @@ func BenchmarkDeltaDeleteThenAddBack(t *testing.B) {
 	fmt.Println("Insert", time.Since(t0))
 
 	t0 = time.Now()
-	deltaSet.Commit()
+	deltaSet.Commit([]*DeltaSet[int]{})
 	fmt.Println("Commit", time.Since(t0))
 
 	t0 = time.Now()

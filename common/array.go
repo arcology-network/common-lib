@@ -74,3 +74,12 @@ func Append[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
 	}
 	return vec
 }
+
+// TrimTrail removes trailing elements from a slice that are equal to a specified value.
+func TrimTrail[T comparable](s []T, zero T) []T {
+	i := len(s) - 1
+	for i >= 0 && s[i] == zero {
+		i--
+	}
+	return s[:i+1]
+}
