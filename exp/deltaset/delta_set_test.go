@@ -320,7 +320,7 @@ func TestMultiMerge(t *testing.T) {
 }
 
 func TestGetNthNonNil(t *testing.T) {
-	deltaSet := NewDeltaSet[int](0, 100, nil)
+	deltaSet := NewDeltaSet(0, 100, nil)
 	deltaSet.Insert(13, 15, 17)
 
 	deltaSet.Insert(18, 19, 20, 21) //  { 13, 15, 17} +  { 18, 19, 20, 21}
