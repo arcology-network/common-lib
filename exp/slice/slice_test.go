@@ -348,7 +348,7 @@ func TestUniqueSorted(t *testing.T) {
 	}
 
 	t0 = time.Now()
-	UniqueInts(nums)
+	UniqueInteger(nums)
 	fmt.Println("Unique: ", 1000000, " entries in:", time.Now().Sub(t0))
 
 	for i := 0; i < len(nums); i++ {
@@ -356,34 +356,34 @@ func TestUniqueSorted(t *testing.T) {
 	}
 }
 
-func TestUniqueInts(t *testing.T) {
+func TestUniqueInteger(t *testing.T) {
 	nums := []int{4, 5, 5, 6, 1, 4, 2, 3, 3}
-	nums = UniqueInts(nums)
+	nums = UniqueInteger(nums)
 
 	if !reflect.DeepEqual(nums, []int{1, 2, 3, 4, 5, 6}) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	nums = []int{4}
-	nums = UniqueInts(nums)
+	nums = UniqueInteger(nums)
 	if !reflect.DeepEqual(nums, []int{4}) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	nums = []int{3, 3}
-	nums = UniqueInts(nums)
+	nums = UniqueInteger(nums)
 	if !reflect.DeepEqual(nums, []int{3}) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	nums = []int{}
-	nums = UniqueInts(nums)
+	nums = UniqueInteger(nums)
 	if !reflect.DeepEqual(nums, []int{}) {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	nums = []int{7, 6, 5, 4, 3, 2, 1}
-	nums = UniqueInts(nums)
+	nums = UniqueInteger(nums)
 	if !reflect.DeepEqual(nums, []int{1, 2, 3, 4, 5, 6, 7}) {
 		t.Error("Error: Failed to remove nil values !")
 	}
@@ -394,8 +394,8 @@ func TestUniqueInts(t *testing.T) {
 	}
 
 	t0 := time.Now()
-	UniqueInts(nums)
-	fmt.Println("UniqueInts: ", len(nums), "in ", time.Now().Sub(t0))
+	UniqueInteger(nums)
+	fmt.Println("UniqueInteger: ", len(nums), "in ", time.Now().Sub(t0))
 
 	for i := 0; i < 1000000; i++ {
 		nums[i] = rand.Intn(5000000)
@@ -891,11 +891,11 @@ func TestClone(t *testing.T) {
 	}
 }
 
-func BenchmarkTestUniqueInts(t *testing.B) {
+func BenchmarkTestUniqueInteger(t *testing.B) {
 	t0 := time.Now()
 	arr := NewDo(1000000, func(i int) int { return rand.Int() })
-	UniqueInts(arr)
-	fmt.Println("UniqueInts: ", 1000000, " entries in:", time.Now().Sub(t0))
+	UniqueInteger(arr)
+	fmt.Println("UniqueInteger: ", 1000000, " entries in:", time.Now().Sub(t0))
 
 	t0 = time.Now()
 	arr = NewDo(1000000, func(i int) int { return rand.Int() })
