@@ -219,7 +219,7 @@ func (this *ConcurrentMap[K, V]) BatchSetToShards(ids []uint64, keys []K, values
 			if ids[i] == uint64(shardNum) { // If the key belongs to this shard
 				if this.isNilVal(values[i]) {
 					delete(this.shards[shardNum], keys[i]) // Delete the key-value pair from the shard.
-					return
+					continue
 				}
 				this.shards[shardNum][keys[i]] = values[i] // Update the value in the shard.
 			}
@@ -243,7 +243,7 @@ func (this *ConcurrentMap[K, V]) BatchSetToShardWith(ids []uint64, keys []K, set
 				v := setter(&keys[i])
 				if this.isNilVal(v) {
 					delete(this.shards[shardNum], keys[i]) // Delete the key-value pair from the shard.
-					return
+					continue
 				}
 				this.shards[shardNum][keys[i]] = v // Update the value in the shard.
 			}
