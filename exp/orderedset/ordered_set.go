@@ -75,25 +75,30 @@ func (this *OrderedSet[K]) Size(getter func(K) int) int { // For encoding
 }
 
 func (this *OrderedSet[K]) Merge(elements []K) *OrderedSet[K] {
-	for _, ele := range elements {
-		this.Insert(ele)
-	}
+	this.InsertBatch(elements)
 	return this
 }
 
 func (this *OrderedSet[K]) Sub(elements []K) *OrderedSet[K] {
-	this.Delete(elements...)
+	this.DeleteBatch(elements)
 	return this
 }
 
 // This function is used to insert a new element into the OrderedSet.
 // The elements CANNOT be updated， because it is a set. They can only be added or deleted.
-func (this *OrderedSet[K]) Insert(keys ...K) {
+func (this *OrderedSet[K]) InsertBatch(keys []K) {
 	for _, k := range keys {
 		if _, ok := this.dict[k]; !ok { // New entries
 			this.dict[k] = common.New(len(this.elements))
 			this.elements = append(this.elements, k)
 		}
+	}
+}
+
+func (this *OrderedSet[K]) Insert(k K) {
+	if _, ok := this.dict[k]; !ok { // New entries
+		this.dict[k] = common.New(len(this.elements))
+		this.elements = append(this.elements, k)
 	}
 }
 
@@ -154,7 +159,7 @@ func (this *OrderedSet[K]) DeleteByIndex(indices ...int) {
 }
 
 // If an element is deleted, the index of the elements after the deleted element will be shifted.
-func (this *OrderedSet[K]) Delete(keys ...K) bool {
+func (this *OrderedSet[K]) DeleteBatch(keys []K) bool {
 	removalLookup := mapi.FromSlice(keys, func(k K) *int { return this.dict[k] }) // Copy the keys to a removal map for faster lookup.
 	for _, k := range keys {
 		delete(this.dict, k) // Delete the key from the dict first.
@@ -175,6 +180,19 @@ func (this *OrderedSet[K]) Delete(keys ...K) bool {
 	// in the slice and update the dict accordingly.
 	for i, k := range this.elements {
 		*this.dict[k] = i
+	}
+	return false
+}
+
+// If an element is deleted, the index of the elements after the deleted element will be shifted.
+func (this *OrderedSet[K]) Delete(key K) bool {
+	if idx, ok := this.dict[key]; ok {
+		delete(this.dict, key)               // Delete the key from the dict first.
+		slice.RemoveAt(&this.elements, *idx) // Remove the element from the slice.
+
+		for i := *idx; i < len(this.elements); i++ {
+			*this.dict[this.elements[i]] = i // An elements has been removed, update the indices of the elements after the deleted element.
+		}
 	}
 	return false
 }

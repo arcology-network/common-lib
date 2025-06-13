@@ -27,7 +27,7 @@ import (
 
 func TestIndexedSlice(t *testing.T) {
 	set := NewOrderedSet[string]("", 10, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5")
-	set.Insert("11")
+	set.InsertBatch([]string{"11"})
 
 	if ok, _ := set.Exists("11"); !ok {
 		t.Error("Error: Key is not equal !")
@@ -69,7 +69,7 @@ func TestIndexedSlice(t *testing.T) {
 		t.Error("Error: Key is not equal !")
 	}
 
-	set.Insert("111")
+	set.InsertBatch([]string{"111"})
 	if !reflect.DeepEqual(set.Elements(), []string{"111", "11"}) {
 		t.Error("Error: Key is not equal !")
 	}
@@ -79,7 +79,7 @@ func TestIndexedSlice(t *testing.T) {
 		t.Error("Error: Key is not equal !")
 	}
 
-	set.Delete("11")
+	set.DeleteBatch([]string{"11"})
 	if !reflect.DeepEqual(set.Elements(), []string{"111", "222"}) {
 		t.Error("Error: Key is not equal !")
 	}
@@ -117,7 +117,7 @@ func TestIndexedSlice(t *testing.T) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
 
-	set.Insert("7", "8", "9")
+	set.InsertBatch([]string{"7", "8", "9"})
 	if !reflect.DeepEqual(set.Elements(), []string{"1", "2", "5", "7", "8", "9"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
@@ -130,7 +130,7 @@ func TestIndexedSlice(t *testing.T) {
 		t.Error("Error: should be", 1, "actual: ", set.CountBefore("2"))
 	}
 
-	set.Delete("2", "7")
+	set.DeleteBatch([]string{"2", "7"})
 	// if !reflect.DeepEqual(set.Elements(), []string{"1", "5", "8", "9"}) {
 	// 	t.Error("Error: Key is not equal !", set.Elements())
 	// }
@@ -138,7 +138,7 @@ func TestIndexedSlice(t *testing.T) {
 
 func TestIndexedSliceDelet(t *testing.T) {
 	set := NewOrderedSet[string]("", 10, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5", "11", "12", "13")
-	set.Delete("2", "11")
+	set.DeleteBatch([]string{"2", "11"})
 	if !reflect.DeepEqual(set.Elements(), []string{"1", "5", "12", "13"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
@@ -182,5 +182,5 @@ func BenchmarkIndexedSliceDelete(t *testing.B) {
 	}
 
 	set := NewOrderedSet("", 10, func(str string) [32]byte { return [32]byte{} }, elems[len(elems):]...)
-	set.Delete(elems...)
+	set.DeleteBatch(elems)
 }

@@ -382,7 +382,7 @@ func CopyIfDo[T0, T1 any](values []T0, condition func(T0) bool, do func(T0) T1) 
 
 // UniqueInts removes duplicate elements from a slice of integers.
 // It modifies the original slice and returns the modified slice.
-func UniqueInts[T constraints.Integer](nums []T) []T {
+func UniqueInteger[T constraints.Integer](nums []T) []T {
 	if len(nums) <= 1 {
 		return nums
 	}
