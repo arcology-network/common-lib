@@ -32,6 +32,7 @@ type StandardMessage struct {
 	Native     *evmcore.Message
 	Source     uint8
 	PrepaidGas uint64 // Gas required for the deferred TX if it has one. Set by the scheduler only. Multiprocessor won't touch it.
+	IsDeferred bool   // If the message is deferred execution.
 }
 
 // AddrAndSignature return the address and the first 4 bytes of the signature of the message.
