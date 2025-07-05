@@ -18,8 +18,10 @@
 package orderedmap
 
 import (
+	"reflect"
 	"runtime"
 
+	mapi "github.com/arcology-network/common-lib/exp/map"
 	"github.com/arcology-network/common-lib/exp/slice"
 	"golang.org/x/crypto/sha3"
 )
@@ -156,9 +158,12 @@ func (this *OrderedMap[K, T, V]) IsDirty() bool {
 	return len(this.values) != len(this.dict)
 }
 
-// func (this *OrderedMap[K, T, V]) Equal(other *OrderedMap[K, T, V]) bool {
-// 	return slice.EqualSet(this.values, other.values) && mapi.EqualIf(this.dict, other.dict, func(v0 int, v1 int) bool { return v0 == v1 })
-// }
+func (this *OrderedMap[K, T, V]) Equal(other *OrderedMap[K, T, V], comparer func(*int, *int) bool) bool {
+	return reflect.DeepEqual(this.keys, other.keys) &&
+		reflect.DeepEqual(this.values, other.values) &&
+		reflect.DeepEqual(this.nilValue, other.nilValue) &&
+		mapi.EqualIf(this.dict, other.dict, comparer)
+}
 
 // func (this *OrderedMap[K, T, V]) Print() {
 // 	fmt.Println(this.dict, this.values)

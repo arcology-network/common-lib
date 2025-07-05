@@ -18,6 +18,8 @@
 package mapi
 
 import (
+	"reflect"
+
 	slice "github.com/arcology-network/common-lib/exp/slice"
 	"golang.org/x/crypto/sha3"
 )
@@ -106,7 +108,7 @@ func Sub[M ~map[K]V, K comparable, V any](from, to M) M {
 	return from
 }
 
-// Sub substracts the key-value pairs from one map into another map.
+// EqualIf compares two maps for equality based on a custom equality function for values.
 func EqualIf[M ~map[K]V, K comparable, V any](m0, m1 M, equal func(v0 V, v1 V) bool) bool {
 	if len(m0) != len(m1) {
 		return false
@@ -114,6 +116,20 @@ func EqualIf[M ~map[K]V, K comparable, V any](m0, m1 M, equal func(v0 V, v1 V) b
 
 	for k, v0 := range m1 {
 		if v1, ok := m0[k]; !ok || !equal(v0, v1) {
+			return false
+		}
+	}
+	return true
+}
+
+// Equal compares two maps for equality using the default equality operator for values.
+func Equal[M ~map[K]V, K comparable, V any](m0, m1 M) bool {
+	if len(m0) != len(m1) {
+		return false
+	}
+
+	for k, v0 := range m1 {
+		if v1, ok := m0[k]; !ok || !reflect.DeepEqual(v0, v1) {
 			return false
 		}
 	}
