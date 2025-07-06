@@ -32,7 +32,7 @@ type DeltaSet[K comparable] struct {
 
 	committed *orderedset.OrderedSet[K]
 	added     *orderedset.OrderedSet[K] // New entires and added entries
-	removed   *orderedset.OrderedSet[K] // Entries to be removed including the newly
+	removed   *orderedset.OrderedSet[K] // Entries to be removed including the newly added entries
 }
 
 // NewIndexedSlice creates a new instance of DeltaSet with the specified page size, minimum number of pages, and pre-allocation size.
@@ -96,7 +96,10 @@ func (this *DeltaSet[K]) IsEmpty() bool {
 
 func (this *DeltaSet[K]) Committed() *orderedset.OrderedSet[K] { return this.committed }
 func (this *DeltaSet[K]) Removed() *orderedset.OrderedSet[K]   { return this.removed }
-func (this *DeltaSet[K]) Updated() *orderedset.OrderedSet[K]   { return this.added }
+func (this *DeltaSet[K]) Added() *orderedset.OrderedSet[K]     { return this.added }
+
+func (this *DeltaSet[K]) SizeRemoved() int { return this.removed.Length() }
+func (this *DeltaSet[K]) SizeAdded() int   { return this.added.Length() }
 
 func (this *DeltaSet[K]) SetCommitted(v *orderedset.OrderedSet[K]) { this.committed = v }
 func (this *DeltaSet[K]) SetRemoved(v *orderedset.OrderedSet[K])   { this.removed = v }
@@ -129,7 +132,7 @@ func (this *DeltaSet[K]) Clear() {
 // Debugging only
 func (this *DeltaSet[K]) InsertCommitted(v []K) { this.committed.InsertBatch(v) }
 func (this *DeltaSet[K]) InsertRemoved(v []K)   { this.removed.InsertBatch(v) }
-func (this *DeltaSet[K]) InsertUpdated(v []K)   { this.added.InsertBatch(v) }
+func (this *DeltaSet[K]) InsertAdded(v []K)     { this.added.InsertBatch(v) }
 
 func (this *DeltaSet[K]) GetNilVal() K  { return this.nilVal }
 func (this *DeltaSet[K]) SetNilVal(v K) { this.nilVal = v }
