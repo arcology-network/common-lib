@@ -28,11 +28,18 @@ const (
 
 type Bytes20 [BYTES20_LEN]byte
 
-func (this *Bytes20) Get() interface{} {
+func (this *Bytes20) Fill(v int8) Bytes20 {
+	for i := 0; i < BYTES20_LEN; i++ {
+		(*this)[i] = byte(v)
+	}
 	return *this
 }
 
-func (this *Bytes20) Set(v interface{}) {
+func (this *Bytes20) Get() any {
+	return *this
+}
+
+func (this *Bytes20) Set(v any) {
 	*this = v.(Bytes20)
 }
 
@@ -48,7 +55,7 @@ func (this Bytes20) Sum(offset uint64) uint64 {
 	return total
 }
 
-func (this Bytes20) Clone() interface{} {
+func (this Bytes20) Clone() any {
 	target := Bytes20{}
 	copy(target[:], this[:])
 	return target
@@ -69,7 +76,7 @@ func (this Bytes20) EncodeToBuffer(buffer []byte) int {
 	return len(this)
 }
 
-func (this Bytes20) Decode(buffer []byte) interface{} {
+func (this Bytes20) Decode(buffer []byte) any {
 	if len(buffer) == 0 {
 		return this
 	}
@@ -115,7 +122,7 @@ func (this Byte20s) EncodeToBuffer(buffer []byte) int {
 	return len(this) * BYTES20_LEN
 }
 
-func (this Byte20s) Decode(data []byte) interface{} {
+func (this Byte20s) Decode(data []byte) any {
 	this = make([][BYTES20_LEN]byte, len(data)/BYTES20_LEN)
 	for i := 0; i < len(this); i++ {
 		copy(this[i][:], data[i*BYTES20_LEN:(i+1)*BYTES20_LEN])

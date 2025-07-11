@@ -19,7 +19,7 @@ package codec
 
 type Encoder struct{}
 
-func (Encoder) Size(args []interface{}) uint64 {
+func (Encoder) Size(args []any) uint64 {
 	length := uint64(0)
 	for i := 0; i < len(args); i++ {
 		if args[i] != nil {
@@ -29,7 +29,7 @@ func (Encoder) Size(args []interface{}) uint64 {
 	return UINT64_LEN*uint64(len(args)+1) + uint64(length)
 }
 
-func (this Encoder) ToBuffer(buffer []byte, args []interface{}) {
+func (this Encoder) ToBuffer(buffer []byte, args []any) {
 	offset := uint64(0)
 	Uint32(len(args)).EncodeToBuffer(buffer)
 	for i := 0; i < len(args); i++ {

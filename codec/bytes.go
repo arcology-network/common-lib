@@ -18,8 +18,10 @@
 package codec
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"unsafe"
 
 	ethCommon "github.com/ethereum/go-ethereum/common"
@@ -142,8 +144,28 @@ func (this Byteset) Flatten() []byte {
 	return buffer
 }
 
+func (this Byteset) Equal(other Byteset) bool {
+	if len(this) != len(other) {
+		return false
+	}
+
+	for i := range this {
+		if len(this[i]) != len(other[i]) {
+			return false
+		}
+		if !bytes.Equal(this[i], other[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func (this Byteset) Checksum() ethCommon.Hash {
 	return sha256.Sum256(this.Flatten())
+}
+
+func (this Byteset) Hash(hasher func([]byte) []byte) []byte {
+	return hasher(this.Flatten())
 }
 
 func (this Byteset) Encode() []byte {
@@ -210,6 +232,13 @@ func (this Byteset) Decode(buffer []byte) interface{} {
 		prev = next
 	}
 	return Byteset(this)
+}
+
+func (this Byteset) Print() {
+	for i, b := range this {
+		fmt.Printf("Byteset[%d]: %s\n", i, b)
+	}
+	fmt.Println()
 }
 
 type Bytegroup [][][]byte

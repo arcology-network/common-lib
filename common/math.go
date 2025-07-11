@@ -37,6 +37,11 @@ func Max[T ~int8 | ~int32 | ~int | ~int64 | ~uint8 | ~uint32 | ~uint64 | ~float6
 	return b
 }
 
+// IsBetween checks if a value is within the range defined by min and max, inclusive.
+func IsBetween[T ~int8 | ~int32 | ~int | ~int64 | ~uint8 | ~uint32 | ~uint64 | ~float64](value, min, max T) bool {
+	return value >= min && value <= max
+}
+
 // Remainder calculates the remainder of dividing the total sum of the ASCII values of the characters in the key by numShards.
 func Remainder(numShards int, key string) int {
 	if len(key) == 0 {
