@@ -30,7 +30,7 @@ const (
 
 type Uint8 uint8
 
-func (this *Uint8) Clone() interface{} {
+func (this *Uint8) Clone() any {
 	if this == nil {
 		return this
 	}
@@ -38,11 +38,11 @@ func (this *Uint8) Clone() interface{} {
 	return common.New(*this)
 }
 
-func (this *Uint8) Get() interface{} {
+func (this *Uint8) Get() any {
 	return *this
 }
 
-func (this *Uint8) Set(v interface{}) {
+func (this *Uint8) Set(v any) {
 	*this = v.(Uint8)
 }
 
@@ -61,7 +61,7 @@ func (v Uint8) EncodeToBuffer(buffer []byte) int {
 	return UINT8_LEN
 }
 
-func (this Uint8) Decode(data []byte) interface{} {
+func (this Uint8) Decode(data []byte) any {
 	this = Uint8(data[0])
 	return this
 }
@@ -72,11 +72,11 @@ func (v Uint8) Checksum() ethCommon.Hash {
 
 type Uint8s []uint8
 
-func (this Uint8s) Get() interface{} {
+func (this Uint8s) Get() any {
 	return this.Sum()
 }
 
-func (this *Uint8s) Set(v interface{}) {
+func (this *Uint8s) Set(v any) {
 	*this = append(*this, v.(uint8))
 }
 
@@ -105,7 +105,7 @@ func (this Uint8s) EncodeToBuffer(buffer []byte) int {
 	return len(this) * UINT8_LEN
 }
 
-func (this Uint8s) Decode(buffer []byte) interface{} {
+func (this Uint8s) Decode(buffer []byte) any {
 	if len(buffer) == 0 {
 		return this
 	}

@@ -30,7 +30,7 @@ const (
 
 type Int64 int64
 
-func (this *Int64) Clone() interface{} {
+func (this *Int64) Clone() any {
 	if this == nil {
 		return this
 	}
@@ -38,11 +38,11 @@ func (this *Int64) Clone() interface{} {
 	return common.New(*this)
 }
 
-func (this *Int64) Get() interface{} {
+func (this *Int64) Get() any {
 	return *this
 }
 
-func (this *Int64) Set(v interface{}) {
+func (this *Int64) Set(v any) {
 	*this = v.(Int64)
 }
 
@@ -61,7 +61,7 @@ func (this Int64) EncodeToBuffer(buffer []byte) int {
 	return INT64_LEN
 }
 
-func (this Int64) Decode(buffer []byte) interface{} {
+func (this Int64) Decode(buffer []byte) any {
 	if len(buffer) == 0 {
 		return this
 	}

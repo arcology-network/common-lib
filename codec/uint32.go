@@ -29,7 +29,7 @@ const (
 
 type Uint32 uint32
 
-func (this *Uint32) Clone() interface{} {
+func (this *Uint32) Clone() any {
 	if this == nil {
 		return this
 	}
@@ -37,11 +37,11 @@ func (this *Uint32) Clone() interface{} {
 	return common.New(*this)
 }
 
-func (this *Uint32) Get() interface{} {
+func (this *Uint32) Get() any {
 	return *this
 }
 
-func (this *Uint32) Set(v interface{}) {
+func (this *Uint32) Set(v any) {
 	*this = v.(Uint32)
 }
 
@@ -60,7 +60,7 @@ func (this Uint32) EncodeToBuffer(buffer []byte) int {
 	return UINT64_LEN
 }
 
-func (this Uint32) Decode(buffer []byte) interface{} {
+func (this Uint32) Decode(buffer []byte) any {
 	this = Uint32(binary.LittleEndian.Uint32(buffer))
 	return Uint32(this)
 }
@@ -81,7 +81,7 @@ func (this Uint32s) EncodeToBuffer(buffer []byte) int {
 	return len(this) * UINT64_LEN
 }
 
-func (this Uint32s) Decode(buffer []byte) interface{} {
+func (this Uint32s) Decode(buffer []byte) any {
 	if len(buffer) == 0 {
 		return this
 	}

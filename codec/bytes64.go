@@ -39,7 +39,7 @@ func (this Hash64) Sum(offset uint64) uint64 {
 	return total
 }
 
-func (this Hash64) Clone() interface{} {
+func (this Hash64) Clone() any {
 	target := Hash64{}
 	copy(target[:], this[:])
 	return target
@@ -49,7 +49,7 @@ func (hash Hash64) Encode() []byte {
 	return hash[:]
 }
 
-func (hash Hash64) Decode(data []byte) interface{} {
+func (hash Hash64) Decode(data []byte) any {
 	copy(hash[:], data)
 	return Hash64(hash)
 }
@@ -75,7 +75,7 @@ func (this Hash64s) EncodeToBuffer(buffer []byte) int {
 	return len(this) * HASH64_LEN
 }
 
-func (this Hash64s) Decode(buffer []byte) interface{} {
+func (this Hash64s) Decode(buffer []byte) any {
 	if len(buffer) == 0 {
 		return this
 	}

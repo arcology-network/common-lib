@@ -19,7 +19,6 @@ package codec
 
 import (
 	"bytes"
-	"math"
 )
 
 const (
@@ -32,15 +31,6 @@ func NewBytes12(v byte) Bytes12 {
 	hash16 := [BYTES12_LEN]byte{}
 	for i := range hash16 {
 		hash16[i] = v
-	}
-	return hash16
-}
-
-func (Bytes12) FromSlice(v []byte) Bytes12 {
-	hash16 := [BYTES12_LEN]byte{}
-	length := math.Min(float64(BYTES12_LEN), float64(len(v)))
-	for i := 0; i < int(length); i++ {
-		hash16[i] = v[i]
 	}
 	return hash16
 }

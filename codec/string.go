@@ -40,7 +40,7 @@ type String string
 // 	return (*string)(unsafe.Pointer(b))
 // }
 
-func (this String) Clone() interface{} {
+func (this String) Clone() any {
 	b := make([]byte, len(this))
 	copy(b, this)
 	return String(*(*string)(unsafe.Pointer(&b)))
@@ -81,7 +81,7 @@ func (this String) Size() uint64 {
 	return uint64(len(this))
 }
 
-func (String) Decode(buffer []byte) interface{} {
+func (String) Decode(buffer []byte) any {
 	return String(buffer)
 }
 
@@ -146,7 +146,7 @@ func (this Strings) EncodeToBuffer(buffer []byte) int {
 	return int(offset)
 }
 
-func (this Strings) Decode(bytes []byte) interface{} {
+func (this Strings) Decode(bytes []byte) any {
 	if len(bytes) == 0 {
 		return Strings{}
 	}
@@ -168,7 +168,7 @@ func (Strings) singleThreadDecode(fields [][]byte) []string {
 
 func (Strings) multiThreadDecode(fields [][]byte) []string {
 	this := make([]string, len(fields))
-	worker := func(start, end, index int, args ...interface{}) {
+	worker := func(start, end, index int, args ...any) {
 		for i := start; i < end; i++ {
 			this[i] = string(String("").Decode(fields[i]).(String))
 		}
@@ -185,7 +185,7 @@ func (this Strings) Flatten() []byte {
 	}
 
 	buffer := make([]byte, positions[len(positions)-1])
-	worker := func(start, end, index int, args ...interface{}) {
+	worker := func(start, end, index int, args ...any) {
 		for i := start; i < end; i++ {
 			copy(buffer[positions[i]:positions[i+1]], []byte(this[i]))
 		}
@@ -196,7 +196,7 @@ func (this Strings) Flatten() []byte {
 
 func (this Strings) Clone() Strings {
 	nStrings := make([]string, len(this))
-	worker := func(start, end, index int, args ...interface{}) {
+	worker := func(start, end, index int, args ...any) {
 		for i := start; i < end; i++ {
 			nStrings[i] = string(String(this[i]).Clone().(String))
 		}
@@ -259,7 +259,7 @@ func (this Stringset) EncodeToBuffer(buffer []byte) int {
 	return offset
 }
 
-func (this Stringset) Decode(buffer []byte) interface{} {
+func (this Stringset) Decode(buffer []byte) any {
 	if len(buffer) == 0 {
 		return this
 	}
@@ -281,7 +281,7 @@ func (this Stringset) Flatten() []string {
 	}
 
 	buffer := make([]string, positions[len(positions)-1])
-	worker := func(start, end, index int, args ...interface{}) {
+	worker := func(start, end, index int, args ...any) {
 		for i := start; i < end; i++ {
 			copy(buffer[positions[i]:positions[i+1]], (this[i]))
 		}

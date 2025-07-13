@@ -19,7 +19,6 @@ package codec
 
 import (
 	"bytes"
-	"math"
 )
 
 const (
@@ -36,20 +35,11 @@ func NewBytes16(v byte) Bytes16 {
 	return bytes16
 }
 
-func (Bytes16) FromSlice(v []byte) Bytes16 {
-	bytes16 := [BYTE16_LEN]byte{}
-	length := math.Min(float64(BYTE16_LEN), float64(len(v)))
-	for i := 0; i < int(length); i++ {
-		bytes16[i] = v[i]
-	}
-	return bytes16
-}
-
-func (this *Bytes16) Get() interface{} {
+func (this *Bytes16) Get() any {
 	return *this
 }
 
-func (this *Bytes16) Set(v interface{}) {
+func (this *Bytes16) Set(v any) {
 	*this = v.(Bytes16)
 }
 
@@ -57,7 +47,7 @@ func (hash Bytes16) Size() uint64 {
 	return uint64(BYTE16_LEN)
 }
 
-func (this Bytes16) Clone() interface{} {
+func (this Bytes16) Clone() any {
 	target := Bytes16{}
 	copy(target[:], this[:])
 	return target
@@ -73,7 +63,7 @@ func (hash Bytes16) Encode() []byte {
 	return hash[:]
 }
 
-func (this Bytes16) Decode(buffer []byte) interface{} {
+func (this Bytes16) Decode(buffer []byte) any {
 	if len(buffer) == 0 {
 		return this
 	}
@@ -103,7 +93,7 @@ func (this Bytes16s) EncodeToBuffer(buffer []byte) int {
 	return len(this) * BYTE16_LEN
 }
 
-func (this Bytes16s) Decode(data []byte) interface{} {
+func (this Bytes16s) Decode(data []byte) any {
 	this = make([][16]byte, len(data)/BYTE16_LEN)
 	for i := 0; i < len(this); i++ {
 		copy(this[i][:], data[i*BYTE16_LEN:(i+1)*BYTE16_LEN])

@@ -29,11 +29,11 @@ const (
 
 type Bytes32 [HASH32_LEN]byte
 
-func (this *Bytes32) Get() interface{} {
+func (this *Bytes32) Get() any {
 	return *this
 }
 
-func (this *Bytes32) Set(v interface{}) {
+func (this *Bytes32) Set(v any) {
 	*this = v.(Bytes32)
 }
 
@@ -49,7 +49,7 @@ func (this Bytes32) Sum(offset uint64) uint64 {
 	return total
 }
 
-func (this Bytes32) Clone() interface{} {
+func (this Bytes32) Clone() any {
 	target := Bytes32{}
 	copy(target[:], this[:])
 	return target
@@ -64,7 +64,7 @@ func (this Bytes32) EncodeToBuffer(buffer []byte) int {
 	return len(this)
 }
 
-func (this Bytes32) Decode(buffer []byte) interface{} {
+func (this Bytes32) Decode(buffer []byte) any {
 	copy(this[:], buffer)
 	return Bytes32(this)
 }
@@ -104,7 +104,7 @@ func (this Bytes32s) EncodeToBuffer(buffer []byte) int {
 	return len(this) * HASH32_LEN
 }
 
-func (this Bytes32s) Decode(buffer []byte) interface{} {
+func (this Bytes32s) Decode(buffer []byte) any {
 	if len(buffer) == 0 {
 		return this
 	}

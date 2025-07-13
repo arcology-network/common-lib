@@ -23,7 +23,7 @@ import (
 
 type Uint256 uint256.Int
 
-func (this *Uint256) Clone() interface{} {
+func (this *Uint256) Clone() any {
 	if this == nil {
 		return this
 	}
@@ -69,7 +69,7 @@ func (this *Uint256) EncodeToBuffer(buffer []byte) int {
 	return Uint64s((*uint256.Int)(this)[:]).EncodeToBuffer(buffer)
 }
 
-func (this *Uint256) Decode(buffer []byte) interface{} {
+func (this *Uint256) Decode(buffer []byte) any {
 	copy(this[:], Uint64s{}.Decode(buffer).(Uint64s))
 	return this
 }
