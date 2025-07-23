@@ -129,3 +129,21 @@ func Swap[T any](lhv, rhv *T) {
 	*lhv = *rhv
 	*rhv = v
 }
+
+func TrimLeft[T comparable](s []T, cutset T) []T {
+	for i := 0; i < len(s); i++ {
+		if s[i] != cutset {
+			return s[i:]
+		}
+	}
+	return s
+}
+
+func TrimRight[T comparable](s []T, cutset T) []T {
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] != cutset {
+			return s[:i+1]
+		}
+	}
+	return s[:0]
+}

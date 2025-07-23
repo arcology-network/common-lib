@@ -33,3 +33,51 @@ func TestParallelFor(t *testing.T) {
 		t.Error("ParallelFor Failed")
 	}
 }
+
+func TestTrimLeft(t *testing.T) {
+	s := []int{0, 0, 1, 2, 0}
+	result := TrimLeft(s, 0)
+	expected := []int{1, 2, 0}
+	if len(result) != len(expected) {
+		t.Errorf("TrimLeft failed: expected length %d, got %d", len(expected), len(result))
+	}
+	for i := range expected {
+		if result[i] != expected[i] {
+			t.Errorf("TrimLeft failed at index %d: expected %d, got %d", i, expected[i], result[i])
+		}
+	}
+
+	// Test with no cutset at the start
+	s2 := []int{1, 2, 0}
+	result2 := TrimLeft(s2, 0)
+	if len(result2) != len(s2) {
+		t.Errorf("TrimLeft failed: expected length %d, got %d", len(s2), len(result2))
+	}
+
+	s = []int{0}
+	result = TrimLeft(s, 0)
+	if len(result) != 0 {
+		t.Errorf("TrimLeft failed: expected empty slice, got %d elements", len(result))
+	}
+}
+
+func TestTrimRight(t *testing.T) {
+	s := []int{0, 1, 2, 0, 0}
+	result := TrimRight(s, 0)
+	expected := []int{0, 1, 2}
+	if len(result) != len(expected) {
+		t.Errorf("TrimRight failed: expected length %d, got %d", len(expected), len(result))
+	}
+	for i := range expected {
+		if result[i] != expected[i] {
+			t.Errorf("TrimRight failed at index %d: expected %d, got %d", i, expected[i], result[i])
+		}
+	}
+
+	// Test with no cutset at the end
+	s2 := []int{0, 1, 2}
+	result2 := TrimRight(s2, 0)
+	if len(result2) != len(s2) {
+		t.Errorf("TrimRight failed: expected length %d, got %d", len(s2), len(result2))
+	}
+}

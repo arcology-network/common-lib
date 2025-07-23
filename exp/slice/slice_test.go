@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -354,6 +355,36 @@ func TestUniqueSorted(t *testing.T) {
 	for i := 0; i < len(nums); i++ {
 		nums[i] = rand.Intn(100)
 	}
+}
+
+func TestUniqueIf(t *testing.T) {
+	nums := []any{3, 1, 1, 1, 1, 1, 1, 3, 2}
+	sort.SliceStable(nums, func(i, j int) bool {
+		return nums[i].(int) < nums[j].(int)
+	})
+
+	nums = UniqueIf(nums, func(lhv, rhv any) bool { return lhv.(int) == rhv.(int) })
+	if !reflect.DeepEqual(nums, []any{1, 2, 3}) {
+		t.Error("Error: Failed to remove nil values !", nums)
+	}
+
+	strs := []string{"path/path2/*", "path/path2/path3/*", "path2/*", "path/path2/path3/path4/path5", "path/*"}
+	sort.SliceStable(strs, func(i, j int) bool {
+		return len(strs[i]) < len(strs[j]) || strs[i] < strs[j]
+	})
+
+	strs = Transform(strs, func(_ int, v string) string {
+		return strings.TrimSuffix(v, "*")
+	})
+
+	strs = UniqueIf(strs, func(lhv, rhv string) bool {
+		return lhv == rhv[:len(lhv)]
+	})
+
+	if !reflect.DeepEqual(strs, []string{"path/", "path2/"}) {
+		t.Error("Error: Failed to remove nil values !", strs)
+	}
+
 }
 
 func TestUniqueInteger(t *testing.T) {
