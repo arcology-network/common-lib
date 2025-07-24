@@ -26,8 +26,8 @@ import (
 	"github.com/arcology-network/common-lib/common"
 )
 
-func TestDeltaSliceBasic(t *testing.T) {
-	deltaSet := NewDeltaSet(-1, 100, nil)
+func TestSoftDeltaSliceBasic(t *testing.T) {
+	deltaSet := NewSoftDeltaSet(-1, 100, nil)
 
 	if deltaSet.InsertBatch([]int{11, 12, 13}); !reflect.DeepEqual(deltaSet.committed.Elements(), []int{}) ||
 		!reflect.DeepEqual(deltaSet.stagedAdds.Elements(), []int{11, 12, 13}) {
@@ -117,8 +117,8 @@ func TestDeltaSliceBasic(t *testing.T) {
 	}
 }
 
-func TestDeltaSliceAddThenDelete(t *testing.T) {
-	deltaSet := NewDeltaSet(-1, 100, nil)
+func TestSoftDeltaSliceAddThenDelete(t *testing.T) {
+	deltaSet := NewSoftDeltaSet(-1, 100, nil)
 	deltaSet.InsertBatch([]int{13, 15, 17})
 	deltaSet.Commit(nil)
 
@@ -186,8 +186,8 @@ func TestDeltaSliceAddThenDelete(t *testing.T) {
 	}
 }
 
-func TestCascadeDeltaCommit(t *testing.T) {
-	deltaSet := NewDeltaSet[int](-1, 100, nil)
+func TestCascadeSoftDeltaCommit(t *testing.T) {
+	deltaSet := NewSoftDeltaSet[int](-1, 100, nil)
 	deltaSet.InsertBatch([]int{13, 15, 17})
 
 	deltaSet.InsertBatch([]int{18, 19, 20, 21}) // { 13, 15, 17} + { 18, 19, 20, 21}
@@ -200,29 +200,25 @@ func TestCascadeDeltaCommit(t *testing.T) {
 	}
 }
 
-func TestCascadeDeltaClone(t *testing.T) {
-	deltaSet := NewDeltaSet[int](-1, 100, nil)
+func TestCascadeSoftDeltaClone(t *testing.T) {
+	deltaSet := NewSoftDeltaSet(-1, 100, nil)
 	deltaSet.InsertBatch([]int{13, 15, 17})
 	deltaSet.Commit(nil)
 
 	deltaSet.InsertBatch([]int{18, 19, 20, 21}) // { 13, 15, 17} + { 18, 19, 20, 21}
 
-	// if deltaSet.NonNilCount() != 7 {
-	// 	t.Error("failed to commit", deltaSet.NonNilCount())
-	// }
-
 	deltaSet.DeleteByIndex(1) //
 	deltaSet.DeleteByIndex(4) //
-	deltaSet.DeleteByIndex(5) // will remove {15, 19, 20}
-
-	// if deltaSet.NonNilCount() != 4 {
-	// 	t.Error("failed to commit", deltaSet.NonNilCount())
-	// }
+	deltaSet.DeleteByIndex(5) // will remove {15, 19, 20} left: {13, 17, 18, 21}
 
 	if deltaSet.tombstones.Length() != 3 ||
 		!reflect.DeepEqual(deltaSet.tombstones.Elements(), []int{15, 19, 20}) ||
 		!reflect.DeepEqual(deltaSet.stagedAdds.Elements(), []int{18, 19, 20, 21}) {
 		t.Error("failed to commit", deltaSet.tombstones.Elements())
+	}
+
+	if !reflect.DeepEqual(deltaSet.Elements(), []int{13, 17, 18, 21}) {
+		t.Error("failed to commit", deltaSet.Elements())
 	}
 
 	set2 := deltaSet.CloneFull()
@@ -232,15 +228,21 @@ func TestCascadeDeltaClone(t *testing.T) {
 		t.Error("failed to commit", deltaSet.tombstones.Elements())
 	}
 
-	deltaSet.Commit(nil)
+	if !deltaSet.Equal(set2) {
+		t.Error("Mismatch", "expected", set2, "actual:", deltaSet.tombstones.Elements())
+		deltaSet.Print()
+		fmt.Println("-----------------------")
+		set2.Print()
+	}
 	set2.Commit(nil)
+	deltaSet.Commit(nil)
+
+	if !deltaSet.Equal(set2) {
+		t.Error("Mismatch", "expected", set2, "actual:", deltaSet.tombstones.Elements())
+	}
 
 	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 21}) {
 		t.Error("failed to commit", deltaSet.committed.Elements())
-	}
-
-	if !deltaSet.Equal(set2) {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
 	}
 
 	deltaSet.DeleteBatch([]int{13})
@@ -261,8 +263,8 @@ func TestCascadeDeltaClone(t *testing.T) {
 	}
 }
 
-func TestDeltaDeleteThenAddBack(t *testing.T) {
-	deltaSet := NewDeltaSet(-1, 100, nil)
+func TestSoftDeltaDeleteThenAddBack(t *testing.T) {
+	deltaSet := NewSoftDeltaSet(-1, 100, nil)
 	deltaSet.InsertBatch([]int{13, 15, 17})
 	deltaSet.Commit(nil)
 
@@ -308,7 +310,7 @@ func TestDeltaDeleteThenAddBack(t *testing.T) {
 	}
 }
 
-func TestMultiMerge(t *testing.T) {
+func TestMultiSoftSetMerge(t *testing.T) {
 	deltaSet := NewDeltaSet(-1, 100, nil)
 	deltaSet.InsertBatch([]int{13, 15, 17})
 	deltaSet.Commit(nil)
@@ -328,7 +330,7 @@ func TestMultiMerge(t *testing.T) {
 	}
 }
 
-func TestGetNthNonNil(t *testing.T) {
+func TestSoftDeltaGetNthNonNil(t *testing.T) {
 	deltaSet := NewDeltaSet(0, 100, nil)
 	deltaSet.InsertBatch([]int{13, 15, 17})
 
@@ -394,7 +396,7 @@ func TestGetNthNonNil(t *testing.T) {
 
 }
 
-func BenchmarkDeltaDeleteThenAddBack(t *testing.B) {
+func BenchmarkDeltaSoftDeleteThenAddBack(t *testing.B) {
 	deltaSet := NewDeltaSet[int](-1, 1000000, nil)
 	randoms := make([]int, 1000000)
 	for i := 0; i < 1000000; i++ {
@@ -410,11 +412,11 @@ func BenchmarkDeltaDeleteThenAddBack(t *testing.B) {
 	fmt.Println("Commit", time.Since(t0))
 
 	t0 = time.Now()
-	// deltaSet.CloneDelta()
+	deltaSet.CloneDelta()
 	fmt.Println("CloneDelta", time.Since(t0))
 }
 
-func BenchmarkGetNthNonNil(b *testing.B) {
+func BenchmarkSoftGetNthNonNil(b *testing.B) {
 	deltaSet := NewDeltaSet[int](-1, 100, nil)
 	deltaSet.InsertBatch([]int{13, 15, 17})
 

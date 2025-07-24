@@ -93,7 +93,7 @@ func EitherEqualsTo[T any](lhv interface{}, rhv T, equal func(v interface{}) boo
 }
 
 // FilterFirst returns the first element of a pair.
-func FilterFirst[T0, T1 any](v0 T0, v1 T1) T0 { return v0 }
+func FilterFirst(v ...any) any { return v[0] }
 
 // FilterSecond returns the second element of a pair.
 func FilterSecond[T0, T1 any](v0 T0, v1 T1) T1 { return v1 }
