@@ -15,43 +15,52 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package deltaset
+package softdeltaset
+
+import (
+	"github.com/arcology-network/common-lib/exp/deltaset"
+)
 
 // DeltaSet represents a mutable view over a base set, allowing staged additions and deletions.
-type TombstoneSet[K comparable] struct {
-	DeltaSet[K]
+type StagedRemovalset[K comparable] struct {
+	deltaset.DeltaSet[K]
 }
 
-func NewTombstoneSet[K comparable](nilVal K, preAlloc int, hasher func(K) [32]byte, keys ...K) *TombstoneSet[K] {
-	return &TombstoneSet[K]{
-		DeltaSet: *NewDeltaSet(nilVal, preAlloc, hasher, keys...),
+func NewStagedRemovalset[K comparable](nilVal K, preAlloc int, hasher func(K) [32]byte, keys ...K) *StagedRemovalset[K] {
+	return &StagedRemovalset[K]{
+		DeltaSet: *deltaset.NewDeltaSet(nilVal, preAlloc, hasher, keys...),
 	}
 }
 
-func (this *TombstoneSet[K]) CloneFull() *TombstoneSet[K] {
+func (this *StagedRemovalset[K]) CloneFull() *StagedRemovalset[K] {
 	set := this.CloneDelta()
-	set.committed = this.committed.Clone()
+	set.SetCommitted(this.Committed().Clone())
 	return set
 }
 
 // Clone returns a new instance with the shared shared committed set.
-func (this *TombstoneSet[K]) Clone() *TombstoneSet[K] {
+func (this *StagedRemovalset[K]) Clone() *StagedRemovalset[K] {
 	this.DeltaSet.Clone()
 	return this
 }
 
-func (this *TombstoneSet[K]) CloneDelta() *TombstoneSet[K] {
-	return &TombstoneSet[K]{
+func (this *StagedRemovalset[K]) CloneDelta() *StagedRemovalset[K] {
+	return &StagedRemovalset[K]{
 		DeltaSet: *this.DeltaSet.CloneDelta(),
 	}
 }
 
-func (this *TombstoneSet[K]) Length() uint64 {
+func (this *StagedRemovalset[K]) Length() uint64 {
 	return this.DeltaSet.NonNilCount()
 }
 
-func (this *TombstoneSet[K]) NewFrom(other *TombstoneSet[K]) *TombstoneSet[K] {
-	return &TombstoneSet[K]{
+func (this *StagedRemovalset[K]) NewFrom(other *StagedRemovalset[K]) *StagedRemovalset[K] {
+	return &StagedRemovalset[K]{
 		DeltaSet: *this.DeltaSet.NewFrom(&other.DeltaSet),
 	}
+}
+
+func (this *StagedRemovalset[K]) Clear() {
+	this.ResetDelta()
+	this.Committed().Clear()
 }

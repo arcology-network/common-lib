@@ -30,49 +30,49 @@ func TestDeltaSliceBasic(t *testing.T) {
 	deltaSet := NewDeltaSet(-1, 100, nil)
 
 	if deltaSet.InsertBatch([]int{11, 12, 13}); !reflect.DeepEqual(deltaSet.committed.Elements(), []int{}) ||
-		!reflect.DeepEqual(deltaSet.stagedAdds.Elements(), []int{11, 12, 13}) {
-		t.Error("failed to append", deltaSet.stagedAdds.IsDirty(), deltaSet.committed.Elements(), deltaSet.stagedAdds.Elements())
+		!reflect.DeepEqual(deltaSet.stagedAdditions.Elements(), []int{11, 12, 13}) {
+		t.Error("failed to append", deltaSet.stagedAdditions.IsDirty(), deltaSet.committed.Elements(), deltaSet.stagedAdditions.Elements())
 	}
 
 	if deltaSet.Commit(nil); deltaSet.committed.Length() != 3 ||
-		(deltaSet.stagedAdds.Length()) != 0 ||
-		(deltaSet.tombstones.Length()) != 0 {
+		(deltaSet.stagedAdditions.Length()) != 0 ||
+		(deltaSet.stagedRemovals.Length()) != 0 {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
 	if deltaSet.DeleteBatch([]int{12}); deltaSet.committed.Length() != 3 ||
-		(deltaSet.stagedAdds.Length()) != 0 || (deltaSet.tombstones.Length()) != 1 {
+		(deltaSet.stagedAdditions.Length()) != 0 || (deltaSet.stagedRemovals.Length()) != 1 {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
-	if deltaSet.Commit(nil); deltaSet.committed.Length() != 2 || (deltaSet.stagedAdds.Length()) != 0 || deltaSet.stagedAdds.IsDirty() ||
-		(deltaSet.tombstones.Length()) != 0 { // {11, 13}
+	if deltaSet.Commit(nil); deltaSet.committed.Length() != 2 || (deltaSet.stagedAdditions.Length()) != 0 || deltaSet.stagedAdditions.IsDirty() ||
+		(deltaSet.stagedRemovals.Length()) != 0 { // {11, 13}
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 	// {11, 13} + {15, 16, 17}
-	if deltaSet.InsertBatch([]int{15, 16, 17}); deltaSet.committed.Length() != 2 || (deltaSet.stagedAdds.Length()) != 3 || (deltaSet.tombstones.Length()) != 0 {
+	if deltaSet.InsertBatch([]int{15, 16, 17}); deltaSet.committed.Length() != 2 || (deltaSet.stagedAdditions.Length()) != 3 || (deltaSet.stagedRemovals.Length()) != 0 {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 	// {11, 13} + {15, 16, 17}
 	if deltaSet.Delete(16); deltaSet.committed.Length() != 2 ||
-		(deltaSet.stagedAdds.Length()) != 3 ||
-		// !deltaSet.stagedAdds .IsDirty() ||
-		!reflect.DeepEqual(deltaSet.stagedAdds.Elements(), []int{15, 16, 17}) ||
-		(deltaSet.tombstones.Length()) != 1 {
-		t.Error("failed to commit", deltaSet.stagedAdds.Elements(), deltaSet.committed.Elements())
+		(deltaSet.stagedAdditions.Length()) != 3 ||
+		// !deltaSet.stagedAdditions .IsDirty() ||
+		!reflect.DeepEqual(deltaSet.stagedAdditions.Elements(), []int{15, 16, 17}) ||
+		(deltaSet.stagedRemovals.Length()) != 1 {
+		t.Error("failed to commit", deltaSet.stagedAdditions.Elements(), deltaSet.committed.Elements())
 	}
 
 	if deltaSet.DeleteBatch([]int{11}); deltaSet.committed.Length() != 2 ||
-		(deltaSet.stagedAdds.Length()) != 3 ||
-		!reflect.DeepEqual(deltaSet.stagedAdds.Elements(), []int{15, 16, 17}) ||
-		(deltaSet.tombstones.Length()) != 2 {
+		(deltaSet.stagedAdditions.Length()) != 3 ||
+		!reflect.DeepEqual(deltaSet.stagedAdditions.Elements(), []int{15, 16, 17}) ||
+		(deltaSet.stagedRemovals.Length()) != 2 {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
-	// Re-delete a uncommitted entry, the tombstones set will grow but neither the committed nor stagedAdds  set not change.
+	// Re-delete a uncommitted entry, the stagedRemovals set will grow but neither the committed nor stagedAdditions  set not change.
 	if deltaSet.Delete(16); deltaSet.committed.Length() != 2 ||
-		(deltaSet.stagedAdds.Length()) != 3 ||
-		!reflect.DeepEqual(deltaSet.stagedAdds.Elements(), []int{15, 16, 17}) ||
-		(deltaSet.tombstones.Length()) != 2 {
+		(deltaSet.stagedAdditions.Length()) != 3 ||
+		!reflect.DeepEqual(deltaSet.stagedAdditions.Elements(), []int{15, 16, 17}) ||
+		(deltaSet.stagedRemovals.Length()) != 2 {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
@@ -80,7 +80,7 @@ func TestDeltaSliceBasic(t *testing.T) {
 		t.Error("Failed to get Elements()", deltaSet.Elements())
 	}
 
-	if deltaSet.Commit(nil); !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17}) || (deltaSet.stagedAdds.Length()) != 0 || (deltaSet.tombstones.Length()) != 0 {
+	if deltaSet.Commit(nil); !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17}) || (deltaSet.stagedAdditions.Length()) != 0 || (deltaSet.stagedRemovals.Length()) != 0 {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 	// { 13, 15, 17} + { 18, 19, 20, 21}
@@ -112,8 +112,8 @@ func TestDeltaSliceBasic(t *testing.T) {
 	deltaSet.DeleteByIndex(4) // After { 13, 15, 17} + { 18, 19, 21}
 	deltaSet.DeleteByIndex(5) // will remove { 13, 15, 17} + { 18, 19}
 
-	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17}) || !reflect.DeepEqual(deltaSet.stagedAdds.Elements(), []int{18, 19, 20, 21}) {
-		t.Error("failed to commit", deltaSet.committed.Elements(), deltaSet.stagedAdds.Elements())
+	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17}) || !reflect.DeepEqual(deltaSet.stagedAdditions.Elements(), []int{18, 19, 20, 21}) {
+		t.Error("failed to commit", deltaSet.committed.Elements(), deltaSet.stagedAdditions.Elements())
 	}
 }
 
@@ -125,64 +125,64 @@ func TestDeltaSliceAddThenDelete(t *testing.T) {
 	deltaSet.InsertBatch([]int{18, 19, 20, 21}) // { 13, 15, 17} + { 18, 19, 20, 21}
 
 	// deltaSet.Delete([]int{118, 119, 210, 211}) // non-existing entries, should not affect the set
-	// if deltaSet.tombstones.Length() != 0 {
-	// 	t.Error("Deleting non-existing elements should not affect the set", deltaSet.tombstones.Elements())
+	// if deltaSet.stagedRemovals.Length() != 0 {
+	// 	t.Error("Deleting non-existing elements should not affect the set", deltaSet.stagedRemovals.Elements())
 	// }
 
-	deltaSet.DeleteByIndex(1) // After { 13, 15, 17} + { 18, 19, 20, 21} tombstones: {15}
-	deltaSet.DeleteByIndex(4) // After { 13, 15, 17} + { 18, 19, 21}  tombstones { 15, 19}
+	deltaSet.DeleteByIndex(1) // After { 13, 15, 17} + { 18, 19, 20, 21} stagedRemovals: {15}
+	deltaSet.DeleteByIndex(4) // After { 13, 15, 17} + { 18, 19, 21}  stagedRemovals { 15, 19}
 	deltaSet.DeleteByIndex(5) // will remove { 13, 15, 17} + { 18, 19}
 
-	if deltaSet.tombstones.Length() != 3 ||
-		!reflect.DeepEqual(deltaSet.tombstones.Elements(), []int{15, 19, 20}) ||
-		!reflect.DeepEqual(deltaSet.stagedAdds.Elements(), []int{18, 19, 20, 21}) {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+	if deltaSet.stagedRemovals.Length() != 3 ||
+		!reflect.DeepEqual(deltaSet.stagedRemovals.Elements(), []int{15, 19, 20}) ||
+		!reflect.DeepEqual(deltaSet.stagedAdditions.Elements(), []int{18, 19, 20, 21}) {
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	deltaSet.Commit(nil)
 	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 21}) {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	deltaSet.DeleteBatch([]int{13})
 	deltaSet.Delete(17)
-	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 21}) || !reflect.DeepEqual(deltaSet.tombstones.Elements(), []int{13, 17}) {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 21}) || !reflect.DeepEqual(deltaSet.stagedRemovals.Elements(), []int{13, 17}) {
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	if common.FilterFirst(deltaSet.Exists(13)).(bool) || common.FilterFirst(deltaSet.Exists(17)).(bool) || common.FilterFirst(deltaSet.Exists(25)).(bool) {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	if !common.FilterFirst(deltaSet.Exists(18)).(bool) || !common.FilterFirst(deltaSet.Exists(21)).(bool) {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	deltaSet.InsertBatch([]int{13, 17, 22})                                        // Add the deleted entires back to the set
 	if !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 17, 18, 21}) || // Won't change until commit.
-		// !reflect.DeepEqual(deltaSet.stagedAdds .Elements(), []int{13, 17, 22}) ||
-		!reflect.DeepEqual(deltaSet.tombstones.Elements(), []int{}) {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+		// !reflect.DeepEqual(deltaSet.stagedAdditions .Elements(), []int{13, 17, 22}) ||
+		!reflect.DeepEqual(deltaSet.stagedRemovals.Elements(), []int{}) {
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	if !common.FilterFirst(deltaSet.Exists(13)).(bool) {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	if v, ok := deltaSet.TryGetKey(0); !ok || v != 13 {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	if v, ok := deltaSet.TryGetKey(1); !ok || v != 17 {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	if v, ok := deltaSet.TryGetKey(2); !ok || v != 18 {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	if v, ok := deltaSet.TryGetKey(3); !ok || v != 21 {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 }
 
@@ -219,17 +219,17 @@ func TestCascadeDeltaClone(t *testing.T) {
 	// 	t.Error("failed to commit", deltaSet.NonNilCount())
 	// }
 
-	if deltaSet.tombstones.Length() != 3 ||
-		!reflect.DeepEqual(deltaSet.tombstones.Elements(), []int{15, 19, 20}) ||
-		!reflect.DeepEqual(deltaSet.stagedAdds.Elements(), []int{18, 19, 20, 21}) {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+	if deltaSet.stagedRemovals.Length() != 3 ||
+		!reflect.DeepEqual(deltaSet.stagedRemovals.Elements(), []int{15, 19, 20}) ||
+		!reflect.DeepEqual(deltaSet.stagedAdditions.Elements(), []int{18, 19, 20, 21}) {
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	set2 := deltaSet.CloneFull()
 	if !deltaSet.Equal(set2) {
 		deltaSet.Print()
 		set2.Print()
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	deltaSet.Commit(nil)
@@ -240,16 +240,16 @@ func TestCascadeDeltaClone(t *testing.T) {
 	}
 
 	if !deltaSet.Equal(set2) {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	deltaSet.DeleteBatch([]int{13})
 	if common.FilterFirst(deltaSet.Exists(13)).(bool) {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	if !common.FilterFirst(set2.Exists(13)).(bool) {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	if v, ok := deltaSet.TryGetKey(0); ok {
@@ -271,20 +271,20 @@ func TestDeltaDeleteThenAddBack(t *testing.T) {
 	deltaSet.DeleteByIndex(1) //
 	deltaSet.DeleteByIndex(4) //
 	deltaSet.DeleteByIndex(5) // will remove {15, 19, 20}
-	if deltaSet.tombstones.Length() != 3 ||
+	if deltaSet.stagedRemovals.Length() != 3 ||
 		!reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17}) ||
-		!reflect.DeepEqual(deltaSet.tombstones.Elements(), []int{15, 19, 20}) ||
-		!reflect.DeepEqual(deltaSet.stagedAdds.Elements(), []int{18, 19, 20, 21}) {
-		t.Error("failed to commit", deltaSet.tombstones.Elements())
+		!reflect.DeepEqual(deltaSet.stagedRemovals.Elements(), []int{15, 19, 20}) ||
+		!reflect.DeepEqual(deltaSet.stagedAdditions.Elements(), []int{18, 19, 20, 21}) {
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
 	deltaSet.InsertBatch([]int{15, 19, 20}) // Add the deleted entires back to the set
 
-	if deltaSet.tombstones.Length() != 0 ||
+	if deltaSet.stagedRemovals.Length() != 0 ||
 		// !reflect.DeepEqual(deltaSet.committed.Elements(), []int{13, 15, 17}) ||
-		// !reflect.DeepEqual(deltaSet.tombstones.Elements(), []int{}) ||
-		!reflect.DeepEqual(deltaSet.stagedAdds.Elements(), []int{18, 19, 20, 21}) {
-		t.Error("failed to commit", deltaSet.stagedAdds.Elements())
+		// !reflect.DeepEqual(deltaSet.stagedRemovals.Elements(), []int{}) ||
+		!reflect.DeepEqual(deltaSet.stagedAdditions.Elements(), []int{18, 19, 20, 21}) {
+		t.Error("failed to commit", deltaSet.stagedAdditions.Elements())
 	}
 
 	deltaSet.Commit(nil)

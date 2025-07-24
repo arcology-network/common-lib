@@ -15,30 +15,32 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package deltaset
+package softdeltaset
 
 import (
 	"math"
 
 	"github.com/arcology-network/common-lib/common"
 	orderedset "github.com/arcology-network/common-lib/exp/orderedset"
+	"github.com/arcology-network/common-lib/exp/slice"
 )
 
 // SoftDeltaSet represents a mutable view over a base set, allowing staged additions and deletions.
 type SoftDeltaSet[K comparable] struct {
-	nilVal     K
-	committed  *orderedset.OrderedSet[K] // The stable, committed elements
-	stagedAdds *orderedset.OrderedSet[K] // New elements staged for addition
-	tombstones *TombstoneSet[K]
+	nilVal          K
+	committed       *orderedset.OrderedSet[K] // The stable, committed elements
+	stagedAdditions *orderedset.OrderedSet[K] // New elements staged for addition
+	stagedRemovals  *StagedRemovalset[K]
+	allDeleted      bool // If true, all elements are deleted, i.e. the set is empty.
 }
 
 // NewIndexedSlice creates a new instance of SoftDeltaSet with the specified page size, minimum number of pages, and pre-allocation size.
 func NewSoftDeltaSet[K comparable](nilVal K, preAlloc int, hasher func(K) [32]byte, keys ...K) *SoftDeltaSet[K] {
 	SoftDeltaSet := &SoftDeltaSet[K]{
-		nilVal:     nilVal,
-		committed:  orderedset.NewOrderedSet(nilVal, preAlloc, hasher),
-		stagedAdds: orderedset.NewOrderedSet(nilVal, preAlloc, hasher),
-		tombstones: NewTombstoneSet(nilVal, preAlloc, hasher, keys...),
+		nilVal:          nilVal,
+		committed:       orderedset.NewOrderedSet(nilVal, preAlloc, hasher),
+		stagedAdditions: orderedset.NewOrderedSet(nilVal, preAlloc, hasher),
+		stagedRemovals:  NewStagedRemovalset(nilVal, preAlloc, hasher, keys...),
 	}
 	SoftDeltaSet.InsertBatch(keys)
 	return SoftDeltaSet
@@ -47,23 +49,23 @@ func NewSoftDeltaSet[K comparable](nilVal K, preAlloc int, hasher func(K) [32]by
 func (*SoftDeltaSet[K]) New(
 	nilVal K,
 	committed *orderedset.OrderedSet[K],
-	stagedAdds *orderedset.OrderedSet[K],
-	tombstones *TombstoneSet[K]) *SoftDeltaSet[K] {
+	stagedAdditions *orderedset.OrderedSet[K],
+	stagedRemovals *StagedRemovalset[K]) *SoftDeltaSet[K] {
 
 	return &SoftDeltaSet[K]{
-		nilVal:     nilVal,
-		committed:  committed,
-		stagedAdds: stagedAdds,
-		tombstones: tombstones,
+		nilVal:          nilVal,
+		committed:       committed,
+		stagedAdditions: stagedAdditions,
+		stagedRemovals:  stagedRemovals,
 	}
 }
 
 func (*SoftDeltaSet[K]) NewFrom(other *SoftDeltaSet[K]) *SoftDeltaSet[K] {
 	return &SoftDeltaSet[K]{
-		nilVal:     other.GetNilVal(),
-		committed:  orderedset.NewFrom(other.committed),
-		stagedAdds: orderedset.NewFrom(other.stagedAdds),
-		tombstones: new(TombstoneSet[K]).NewFrom(other.tombstones),
+		nilVal:          other.GetNilVal(),
+		committed:       orderedset.NewFrom(other.committed),
+		stagedAdditions: orderedset.NewFrom(other.stagedAdditions),
+		stagedRemovals:  new(StagedRemovalset[K]).NewFrom(other.stagedRemovals),
 	}
 }
 
@@ -73,40 +75,40 @@ func (this *SoftDeltaSet[K]) mapTo(idx int) (*orderedset.OrderedSet[K], int) {
 		return nil, -1
 	}
 
-	// The index is in the stagedAdds  list
+	// The index is in the stagedAdditions  list
 	if idx >= this.committed.Length() {
-		return this.stagedAdds, idx - this.committed.Length()
+		return this.stagedAdditions, idx - this.committed.Length()
 	}
 	return this.committed, idx
 }
 
-// Reindex calculates the index of the element in the SoftDeltaSet by skipping the tombstones  elements.
+// Reindex calculates the index of the element in the SoftDeltaSet by skipping the stagedRemovals  elements.
 // func (this *SoftDeltaSet[K]) Reindex(idx int) (*orderedset.OrderedSet[K], int) {
 // 	// set, idx := this.mapTo(idx)
 
 // }
 
-// IsEmpty returns true if the SoftDeltaSet is empty, i.e. no committed, stagedAdds , or tombstones  elements.
+// IsEmpty returns true if the SoftDeltaSet is empty, i.e. no committed, stagedAdditions , or stagedRemovals  elements.
 func (this *SoftDeltaSet[K]) IsEmpty() bool {
-	return this.committed.Length() == 0 && this.stagedAdds.Length() == 0 && this.tombstones.Length() == 0
+	return this.committed.Length() == 0 && this.stagedAdditions.Length() == 0 && this.stagedRemovals.Length() == 0
 }
 
 func (this *SoftDeltaSet[K]) Committed() *orderedset.OrderedSet[K] { return this.committed }
-func (this *SoftDeltaSet[K]) Removed() *TombstoneSet[K]            { return this.tombstones }
-func (this *SoftDeltaSet[K]) Added() *orderedset.OrderedSet[K]     { return this.stagedAdds }
+func (this *SoftDeltaSet[K]) Removed() *StagedRemovalset[K]        { return this.stagedRemovals }
+func (this *SoftDeltaSet[K]) Added() *orderedset.OrderedSet[K]     { return this.stagedAdditions }
 
-func (this *SoftDeltaSet[K]) SizeRemoved() int { return int(this.tombstones.Length()) }
-func (this *SoftDeltaSet[K]) SizeAdded() int   { return this.stagedAdds.Length() }
+func (this *SoftDeltaSet[K]) SizeRemoved() int { return int(this.stagedRemovals.Length()) }
+func (this *SoftDeltaSet[K]) SizeAdded() int   { return this.stagedAdditions.Length() }
 
 func (this *SoftDeltaSet[K]) SetCommitted(v *orderedset.OrderedSet[K]) { this.committed = v }
-func (this *SoftDeltaSet[K]) SetRemoved(v *TombstoneSet[K])            { this.tombstones = v }
-func (this *SoftDeltaSet[K]) SetAdded(v *orderedset.OrderedSet[K])     { this.stagedAdds = v }
+func (this *SoftDeltaSet[K]) SetRemoved(v *StagedRemovalset[K])        { this.stagedRemovals = v }
+func (this *SoftDeltaSet[K]) SetAdded(v *orderedset.OrderedSet[K])     { this.stagedAdditions = v }
 
 // Elements returns the underlying slice of committed in the SoftDeltaSet,
-// Non-nil values are returned in the order they were inserted, equals to committed + stagedAdds  - tombstones.
+// Non-nil values are returned in the order they were inserted, equals to committed + stagedAdditions  - stagedRemovals.
 func (this *SoftDeltaSet[K]) Elements() []K {
 	elements := make([]K, 0, this.NonNilCount())
-	for i := 0; i < this.committed.Length()+this.stagedAdds.Length(); i++ {
+	for i := 0; i < this.committed.Length()+this.stagedAdditions.Length(); i++ {
 		if v, ok := this.GetByIndex(uint64(i)); ok {
 			elements = append(elements, v)
 		}
@@ -117,8 +119,8 @@ func (this *SoftDeltaSet[K]) Elements() []K {
 // Get Byte size of the SoftDeltaSet
 func (this *SoftDeltaSet[K]) Size(getter func(K) int) int {
 	return common.IfThenDo1st(this.committed != nil, func() int { return this.committed.Size(getter) }, 0) +
-		common.IfThenDo1st(this.stagedAdds != nil, func() int { return this.stagedAdds.Size(getter) }, 0) +
-		common.IfThenDo1st(this.tombstones != nil, func() int { return this.tombstones.Size(getter) }, 0)
+		common.IfThenDo1st(this.stagedAdditions != nil, func() int { return this.stagedAdditions.Size(getter) }, 0) +
+		common.IfThenDo1st(this.stagedRemovals != nil, func() int { return this.stagedRemovals.Size(getter) }, 0)
 }
 
 func (this *SoftDeltaSet[K]) Clear() {
@@ -127,43 +129,43 @@ func (this *SoftDeltaSet[K]) Clear() {
 
 // Debugging only
 func (this *SoftDeltaSet[K]) InsertCommitted(v []K) { this.committed.InsertBatch(v) }
-func (this *SoftDeltaSet[K]) InsertRemoved(v []K)   { this.tombstones.InsertBatch(v) }
-func (this *SoftDeltaSet[K]) InsertAdded(v []K)     { this.stagedAdds.InsertBatch(v) }
+func (this *SoftDeltaSet[K]) InsertRemoved(v []K)   { this.stagedRemovals.InsertBatch(v) }
+func (this *SoftDeltaSet[K]) InsertAdded(v []K)     { this.stagedAdditions.InsertBatch(v) }
 
 func (this *SoftDeltaSet[K]) GetNilVal() K  { return this.nilVal }
 func (this *SoftDeltaSet[K]) SetNilVal(v K) { this.nilVal = v }
 
 // IsDirty returns true if the SoftDeltaSet is up to date,
-// having no stagedAdds  or tombstones  elements.
+// having no stagedAdditions  or stagedRemovals  elements.
 func (this *SoftDeltaSet[K]) IsDirty() bool {
-	return this.tombstones.Length() != 0 || this.stagedAdds.Length() != 0
+	return this.stagedRemovals.Length() != 0 || this.stagedAdditions.Length() != 0
 }
 
-// Delta returns a new instance of SoftDeltaSet with the same stagedAdds  and tombstones  elements only.
+// Delta returns a new instance of SoftDeltaSet with the same stagedAdditions  and stagedRemovals elements only.
 func (this *SoftDeltaSet[K]) Delta() *SoftDeltaSet[K] {
 	return this.CloneDelta()
 }
 
-// SetDelta sets the stagedAdds  and tombstones  lists to the specified SoftDeltaSet.
+// SetDelta sets the stagedAdditions  and stagedRemovals  lists to the specified SoftDeltaSet.
 func (this *SoftDeltaSet[K]) SetDelta(delta *SoftDeltaSet[K]) {
-	this.stagedAdds = delta.stagedAdds
-	this.tombstones = delta.tombstones
+	this.stagedAdditions = delta.stagedAdditions
+	this.stagedRemovals = delta.stagedRemovals
 }
 
-// ResetDelta resets the stagedAdds  and tombstones  lists to empty.
+// ResetDelta resets the stagedAdditions  and stagedRemovals  lists to empty.
 func (this *SoftDeltaSet[K]) ResetDelta() {
-	this.stagedAdds.Clear()
-	this.tombstones.ClearFull()
+	this.stagedAdditions.Clear()
+	this.stagedRemovals.Clear()
 }
 
 // Length returns the number of elements in the SoftDeltaSet, including the NIL values.
 func (this *SoftDeltaSet[K]) Length() uint64 {
-	return uint64(this.committed.Length() + this.stagedAdds.Length())
+	return uint64(this.committed.Length() + this.stagedAdditions.Length())
 }
 
 // NonNilCount returns the number of NON-NIL elements in the SoftDeltaSet.
 func (this *SoftDeltaSet[K]) NonNilCount() uint64 {
-	return uint64(this.committed.Length() + this.stagedAdds.Length() - int(this.tombstones.Length()))
+	return uint64(this.committed.Length() + this.stagedAdditions.Length() - int(this.stagedRemovals.Length()))
 }
 
 // Insert inserts an element into the SoftDeltaSet and updates the index.
@@ -174,16 +176,15 @@ func (this *SoftDeltaSet[K]) InsertBatch(elems []K) *SoftDeltaSet[K] {
 	return this
 }
 
-func (this *SoftDeltaSet[K]) Insert(elem K) *SoftDeltaSet[K] {
-	if ok, _ := this.tombstones.Exists(elem); ok {
-		this.tombstones.Delete(elem) // Remove an existing element will take effect only when commit() is called.
-		return this
+func (this *SoftDeltaSet[K]) Insert(elem K) {
+	if ok, _ := this.stagedRemovals.Exists(elem); ok {
+		this.stagedRemovals.Delete(elem) // Remove an existing element will take effect only when commit() is called.
+		return
 	}
 
 	if ok, _ := this.committed.Exists(elem); !ok {
-		this.stagedAdds.Insert(elem) // Either in the stagedAdds  list or not.
+		this.stagedAdditions.Insert(elem) // Either in the stagedAdditions  list or not.
 	}
-	return this
 }
 
 // Insert an element into the Delta Set and updates the index.
@@ -195,14 +196,24 @@ func (this *SoftDeltaSet[K]) DeleteBatch(elems []K) *SoftDeltaSet[K] {
 }
 
 // Insert inserts an element into the Del taSet and updates the index.
-func (this *SoftDeltaSet[K]) Delete(elem K) *SoftDeltaSet[K] {
+func (this *SoftDeltaSet[K]) Delete(elem K) {
 	if ok, _ := this.committed.Exists(elem); ok {
-		this.tombstones.Insert(elem) // Remove an existing element will take effect only when commit() is called.
-	} else if ok, _ := this.stagedAdds.Exists(elem); ok {
-		this.tombstones.Insert(elem)
+		this.stagedRemovals.Insert(elem) // Remove an existing element will take effect only when commit() is called.
+	} else if ok, _ := this.stagedAdditions.Exists(elem); ok {
+		this.stagedRemovals.Insert(elem)
 	}
+}
 
-	return this
+func (this *SoftDeltaSet[K]) DeleteAll() {
+	this.stagedRemovals.SetCommitted(this.Committed())
+	this.stagedRemovals.SetAdded(this.stagedAdditions)
+	this.allDeleted = true
+}
+
+func (this *SoftDeltaSet[K]) DeleteByIndex(idx uint64) {
+	if k, _, _, ok := this.Search(idx); ok {
+		this.Delete(k)
+	}
 }
 
 // Clone returns a new instance of SoftDeltaSet with the same elements.
@@ -221,40 +232,34 @@ func (this *SoftDeltaSet[K]) Clone() *SoftDeltaSet[K] {
 }
 
 // CloneDelta returns a new instance of SoftDeltaSet with the
-// same stagedAdds  and tombstones  elements only.the committed list is not cloned.
+// same stagedAdditions  and stagedRemovals  elements only.the committed list is not cloned.
 func (this *SoftDeltaSet[K]) CloneDelta() *SoftDeltaSet[K] {
 	return &SoftDeltaSet[K]{
 		nilVal: this.nilVal,
 		// committed: orderedset.NewOrderedSet(this.nilVal, 0),
-		stagedAdds: this.stagedAdds.Clone(),
-		tombstones: this.tombstones.CloneFull(),
+		stagedAdditions: this.stagedAdditions.Clone(),
+		stagedRemovals:  this.stagedRemovals.CloneFull(),
 	}
 }
 
 // CloneDelta returns a new instance of SoftDeltaSet with the
-// same stagedAdds  and tombstones  elements only.the committed list is not cloned.
+// same stagedAdditions  and stagedRemovals  elements only.the committed list is not cloned.
 // func (this *SoftDeltaSet[K]) CloneDelta() *SoftDeltaSet[K] {
 // 	set := &SoftDeltaSet[K]{
 // 		nilVal:    this.nilVal,
 // 		committed: orderedset.NewOrderedSet(this.nilVal, 0),
-// 		stagedAdds :   this.stagedAdds .Clone(),
-// 		tombstones :   this.tombstones.Clone(),
+// 		stagedAdditions :   this.stagedAdditions .Clone(),
+// 		stagedRemovals :   this.stagedRemovals.Clone(),
 // 	}
 // 	return set
 // }
-
-func (this *SoftDeltaSet[K]) DeleteByIndex(idx uint64) {
-	if k, _, _, ok := this.Search(idx); ok {
-		this.Delete(k)
-	}
-}
 
 // GetByIndex returns the element at the specified index.
 // It does NOT check if the index is corresponding to a non-nil value.
 // If the value at the index is nil, the nil value is returned.
 func (this *SoftDeltaSet[K]) GetByIndex(idx uint64) (K, bool) {
 	if k, _, _, ok := this.Search(idx); ok {
-		if ok, _ := this.tombstones.Exists(k); !ok {
+		if ok, _ := this.stagedRemovals.Exists(k); !ok {
 			return k, true
 		}
 	}
@@ -269,9 +274,9 @@ func (this *SoftDeltaSet[K]) GetByIndex(idx uint64) (K, bool) {
 // 		return *new(K), -1, false
 // 	}
 
-// 	// This isn't efficient; it is better to search from the beginning or the min and max indices of the tombstones  list to
+// 	// This isn't efficient; it is better to search from the beginning or the min and max indices of the stagedRemovals  list to
 // 	// narrow down the search range. However, that requires some extra code to keep track of the corresponding indices of
-// 	// the keys in the tombstones  list.
+// 	// the keys in the stagedRemovals  list.
 // 	cnt := 0
 // 	for i := 0; i < int(this.Length()); i++ {
 // 		if K, ok := this.GetByIndex(uint64(i)); ok {
@@ -294,18 +299,18 @@ func (this *SoftDeltaSet[K]) GetNthNonNil(nth uint64) (K, int, bool) {
 
 	// removedElems := this.removed.Elements()
 	start := 0
-	tombstonesElems := this.tombstones.Elements()
-	// if this.Length() > uint64(len(tombstones Elems)) {
-	for _, k := range tombstonesElems {
+	stagedRemovalsElems := this.stagedRemovals.Elements()
+	// if this.Length() > uint64(len(stagedRemovals Elems)) {
+	for _, k := range stagedRemovalsElems {
 		if idx := this.IdxOf(k); idx <= uint64(nth) {
 			start++
 		}
 	}
 	// }
 
-	// This isn't efficient; it is better to search from the beginning or the min and max indices of the tombstones  list to
+	// This isn't efficient; it is better to search from the beginning or the min and max indices of the stagedRemovals  list to
 	// narrow down the search range. However, that requires some extra code to keep track of the corresponding indices of
-	// the keys in the tombstones  list.
+	// the keys in the stagedRemovals  list.
 	for i, cnt := start, 0; i < int(this.Length()); i++ {
 		if K, ok := this.GetByIndex(uint64(i)); ok {
 			if uint64(cnt) == nth+uint64(start) {
@@ -375,7 +380,7 @@ func (this *SoftDeltaSet[K]) IdxOf(k K) uint64 {
 func (this *SoftDeltaSet[K]) TryGetKey(idx uint64) (K, bool) {
 	k, _, _, ok := this.Search(idx)
 	if ok {
-		if ok, _ := this.tombstones.Exists(k); ok { // In the tombstones  set
+		if ok, _ := this.stagedRemovals.Exists(k); ok { // In the stagedRemovals  set
 			return this.nilVal, false
 		}
 		return k, true
@@ -385,15 +390,15 @@ func (this *SoftDeltaSet[K]) TryGetKey(idx uint64) (K, bool) {
 
 // Get returns the element at the specified index. If the index is out of range, the nil value is returned.
 func (this *SoftDeltaSet[K]) Exists(k K) (bool, int) {
-	if ok, _ := this.tombstones.Exists(k); ok {
-		return false, -1 // Has been tombstones  already
+	if ok, _ := this.stagedRemovals.Exists(k); ok {
+		return false, -1 // Has been stagedRemovals  already
 	}
 
 	if ok, v := this.committed.Exists(k); ok {
 		return ok, v
 	}
 
-	if ok, v := this.stagedAdds.Exists(k); ok {
+	if ok, v := this.stagedAdditions.Exists(k); ok {
 		return ok, v
 	}
 
@@ -401,56 +406,34 @@ func (this *SoftDeltaSet[K]) Exists(k K) (bool, int) {
 }
 
 func (this *SoftDeltaSet[K]) Commit(other []*SoftDeltaSet[K]) *SoftDeltaSet[K] {
-	// Merge stagedAdds from others
-	var stagedAddsBuffer []K
-	for _, o := range other {
-		stagedAddsBuffer = append(stagedAddsBuffer, append([]K(nil), o.stagedAdds.Elements()...)...)
-	}
-	stagedAddsBuffer = append(stagedAddsBuffer, append([]K(nil), this.stagedAdds.Elements()...)...) // deep copy
+	// Merge stagedAdditions  elements from all the delta sets
+	stagedAdditionsBuffer := make([]K, slice.CountDo(other, func(_ int, v **SoftDeltaSet[K]) int { return (*v).stagedAdditions.Length() })+this.stagedAdditions.Length())
+	slice.ConcateToBuffer(other, &stagedAdditionsBuffer, func(v *SoftDeltaSet[K]) []K { return v.stagedAdditions.Elements() })
+	copy(stagedAdditionsBuffer[len(stagedAdditionsBuffer)-this.stagedAdditions.Length():], this.stagedAdditions.Elements())
 
-	// Merge tombstones from others
-	var tombstonesBuffer []K
-	for _, o := range other {
-		tombstonesBuffer = append(tombstonesBuffer, append([]K(nil), o.tombstones.Elements()...)...)
-	}
-	tombstonesBuffer = append(tombstonesBuffer, append([]K(nil), this.tombstones.Elements()...)...) // deep copy
+	// Merge deleted elements from all the delta sets
+	stagedRemovalsBuffer := make([]K, slice.CountDo(other, func(_ int, v **SoftDeltaSet[K]) int {
+		return int((*v).stagedRemovals.Length())
+	})+int(this.stagedRemovals.Length()))
 
-	this.committed.Merge(stagedAddsBuffer)
-	this.committed.Sub(tombstonesBuffer)
-	this.ResetDelta()
+	slice.ConcateToBuffer(other, &stagedRemovalsBuffer, func(v *SoftDeltaSet[K]) []K { return v.stagedRemovals.Elements() })
+	copy(stagedRemovalsBuffer[len(stagedRemovalsBuffer)-int(this.stagedRemovals.Length()):], this.stagedRemovals.Elements())
+
+	this.committed.Merge(stagedAdditionsBuffer) // Merge the stagedAdditions  list to the committed list
+	this.committed.Sub(stagedRemovalsBuffer)    // Remove the stagedRemovals  list from the committed list
+	this.ResetDelta()                           // Reset the stagedAdditions  and stagedRemovals  lists to empty	// return this
 
 	return this
 }
 
-// func (this *SoftDeltaSet[K]) Commit(other []*SoftDeltaSet[K]) *SoftDeltaSet[K] {
-// 	// Merge stagedAdds  elements from all the delta sets
-// 	stagedAddsBuffer := make([]K, slice.CountDo(other, func(_ int, v **SoftDeltaSet[K]) int { return (*v).stagedAdds.Length() })+this.stagedAdds.Length())
-// 	slice.ConcateToBuffer(other, &stagedAddsBuffer, func(v *SoftDeltaSet[K]) []K { return v.stagedAdds.Elements() })
-// 	copy(stagedAddsBuffer[len(stagedAddsBuffer)-this.stagedAdds.Length():], this.stagedAdds.Elements())
-
-// 	// Merge deleted elements from all the delta sets
-// 	tombstonesBuffer := make([]K, slice.CountDo(other, func(_ int, v **SoftDeltaSet[K]) int {
-// 		return int((*v).tombstones.Length())
-// 	})+int(this.tombstones.Length()))
-
-// 	slice.ConcateToBuffer(other, &tombstonesBuffer, func(v *SoftDeltaSet[K]) []K { return v.tombstones.Elements() })
-// 	copy(tombstonesBuffer[len(tombstonesBuffer)-int(this.tombstones.Length()):], this.tombstones.Elements())
-
-// 	this.committed.Merge(stagedAddsBuffer) // Merge the stagedAdds  list to the committed list
-// 	this.committed.Sub(tombstonesBuffer)   // Remove the tombstones  list from the committed list
-// 	this.ResetDelta()                      // Reset the stagedAdds  and tombstones  lists to empty	// return this
-
-// 	return this
-// }
-
 func (this *SoftDeltaSet[K]) Equal(other *SoftDeltaSet[K]) bool {
 	return this.committed.Equal(other.committed) &&
-		this.stagedAdds.Equal(other.stagedAdds) &&
-		this.tombstones.Equal(&other.tombstones.DeltaSet)
+		this.stagedAdditions.Equal(other.stagedAdditions) &&
+		this.stagedRemovals.Equal(&other.stagedRemovals.DeltaSet)
 }
 
 func (this *SoftDeltaSet[K]) Print() {
 	this.committed.Print()
-	this.stagedAdds.Print()
-	this.tombstones.Print()
+	this.stagedAdditions.Print()
+	this.stagedRemovals.Print()
 }
