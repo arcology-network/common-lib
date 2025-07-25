@@ -85,6 +85,10 @@ func (String) Decode(buffer []byte) any {
 	return String(buffer)
 }
 
+func (String) DecodeTo(buf []byte) string {
+	return string(String(buf).Decode(buf).(String))
+}
+
 type Strings []string
 
 func (this Strings) Concate() string {

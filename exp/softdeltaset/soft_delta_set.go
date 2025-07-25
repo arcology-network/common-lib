@@ -34,14 +34,14 @@ type SoftDeltaSet[K comparable] struct {
 // NewIndexedSlice creates a new instance of SoftDeltaSet with the specified page size, minimum number of pages, and pre-allocation size.
 func NewSoftDeltaSet[K comparable](nilVal K, preAlloc int,
 	size func(K) int,
-	encodeToBuffer func(K, []byte) int,
+	encodeTo func(K, []byte) int,
 	decoder func([]byte) K,
 	hasher func(K) [32]byte,
 	keys ...K) *SoftDeltaSet[K] {
 	SoftDeltaSet := &SoftDeltaSet[K]{
-		committed:       orderedset.NewOrderedSet[K](nilVal, preAlloc, size, encodeToBuffer, decoder, hasher),
-		stagedAdditions: orderedset.NewOrderedSet[K](nilVal, preAlloc, size, encodeToBuffer, decoder, hasher),
-		stagedRemovals:  NewStagedRemovalSet[K](nilVal, preAlloc, size, encodeToBuffer, decoder, hasher, keys...),
+		committed:       orderedset.NewOrderedSet[K](nilVal, preAlloc, size, encodeTo, decoder, hasher),
+		stagedAdditions: orderedset.NewOrderedSet[K](nilVal, preAlloc, size, encodeTo, decoder, hasher),
+		stagedRemovals:  NewStagedRemovalSet[K](nilVal, preAlloc, size, encodeTo, decoder, hasher, keys...),
 	}
 	SoftDeltaSet.InsertBatch(keys)
 	return SoftDeltaSet

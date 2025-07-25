@@ -27,12 +27,8 @@ import (
 	"github.com/arcology-network/common-lib/common"
 )
 
-func sizer(k string) int                      { return len(k) }
-func encodeToBuffer(k string, buf []byte) int { return codec.String(k).EncodeTo(buf) }
-func decoder(buf []byte) string               { return string(codec.String(buf).Decode(buf).(codec.String)) }
-
 func TestSoftDeltaSliceBasic(t *testing.T) {
-	deltaSet := NewSoftDeltaSet("", 100, sizer, encodeToBuffer, decoder, nil)
+	deltaSet := NewSoftDeltaSet("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil)
 
 	if deltaSet.InsertBatch([]string{"11", "12", "13"}); !reflect.DeepEqual(deltaSet.committed.Elements(), []string{}) ||
 		!reflect.DeepEqual(deltaSet.stagedAdditions.Elements(), []string{"11", "12", "13"}) {
@@ -123,7 +119,7 @@ func TestSoftDeltaSliceBasic(t *testing.T) {
 }
 
 func TestSoftDeltaSliceAddThenDelete(t *testing.T) {
-	deltaSet := NewSoftDeltaSet[string]("", 100, sizer, encodeToBuffer, decoder, nil)
+	deltaSet := NewSoftDeltaSet[string]("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil)
 	deltaSet.InsertBatch([]string{"13", "15", "17"})
 	deltaSet.Commit(nil)
 
@@ -192,7 +188,7 @@ func TestSoftDeltaSliceAddThenDelete(t *testing.T) {
 }
 
 func TestCascadeSoftDeltaCommit(t *testing.T) {
-	deltaSet := NewSoftDeltaSet[string]("", 100, sizer, encodeToBuffer, decoder, nil)
+	deltaSet := NewSoftDeltaSet[string]("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil)
 	deltaSet.InsertBatch([]string{"13", "15", "17"})
 
 	deltaSet.InsertBatch([]string{"18", "19", "20", "21"}) // { "13", "15", "17"} + { "18", "19", "20", "21"}
@@ -206,7 +202,7 @@ func TestCascadeSoftDeltaCommit(t *testing.T) {
 }
 
 func TestCascadeSoftDeltaClone(t *testing.T) {
-	deltaSet := NewSoftDeltaSet[string]("", 100, sizer, encodeToBuffer, decoder, nil)
+	deltaSet := NewSoftDeltaSet[string]("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil)
 	deltaSet.InsertBatch([]string{"13", "15", "17"})
 	deltaSet.Commit(nil)
 
@@ -269,7 +265,7 @@ func TestCascadeSoftDeltaClone(t *testing.T) {
 }
 
 func TestSoftDeltaDeleteThenAddBack(t *testing.T) {
-	deltaSet := NewSoftDeltaSet[string]("", 100, sizer, encodeToBuffer, decoder, nil)
+	deltaSet := NewSoftDeltaSet[string]("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil)
 	deltaSet.InsertBatch([]string{"13", "15", "17"})
 	deltaSet.Commit(nil)
 
@@ -316,7 +312,7 @@ func TestSoftDeltaDeleteThenAddBack(t *testing.T) {
 }
 
 func TestDeleteAllThenAddBack(t *testing.T) {
-	deltaSet := NewSoftDeltaSet[string]("", 100, sizer, encodeToBuffer, decoder, nil)
+	deltaSet := NewSoftDeltaSet[string]("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil)
 	deltaSet.InsertBatch([]string{"13", "15", "17"})
 	deltaSet.Commit(nil) // The strings are in the committed set already
 
@@ -398,12 +394,12 @@ func TestDeleteAllThenAddBack(t *testing.T) {
 }
 
 func TestMultiSoftSetMerge(t *testing.T) {
-	deltaSet := NewSoftDeltaSet[string]("", 100, sizer, encodeToBuffer, decoder, nil)
+	deltaSet := NewSoftDeltaSet[string]("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil)
 	deltaSet.InsertBatch([]string{"13", "15", "17"})
 	deltaSet.Commit(nil)
 
-	_set0 := NewSoftDeltaSet[string]("", 100, sizer, encodeToBuffer, decoder, nil).InsertBatch([]string{"58", "59", "20", "51"}).DeleteBatch([]string{"13"})
-	_set1 := NewSoftDeltaSet[string]("", 100, sizer, encodeToBuffer, decoder, nil).InsertBatch([]string{"78", "59", "70", "71"}).DeleteBatch([]string{"15", "70"})
+	_set0 := NewSoftDeltaSet[string]("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil).InsertBatch([]string{"58", "59", "20", "51"}).DeleteBatch([]string{"13"})
+	_set1 := NewSoftDeltaSet[string]("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil).InsertBatch([]string{"78", "59", "70", "71"}).DeleteBatch([]string{"15", "70"})
 
 	// ("13", "15", "17") + ("58", "59", "20", "51") + ("78", "59", "70", "71") - ("13", "15", "70") = ("17", "58", "59", "20", "51", "78", "59", "71")
 	deltaSet.Commit([]*SoftDeltaSet[string]{_set0, _set1})
@@ -414,10 +410,10 @@ func TestMultiSoftSetMerge(t *testing.T) {
 }
 
 func TestMultiSoftSetMergeWithStagedRemovals(t *testing.T) {
-	_set0 := NewSoftDeltaSet[string]("", 100, sizer, encodeToBuffer, decoder, nil).InsertBatch([]string{"58", "59", "20", "51"}).DeleteBatch([]string{"13"})       // "13" will be ignored.
-	_set1 := NewSoftDeltaSet[string]("", 100, sizer, encodeToBuffer, decoder, nil).InsertBatch([]string{"78", "59", "70", "71"}).DeleteBatch([]string{"15", "70"}) // 15 will be ignored.
+	_set0 := NewSoftDeltaSet[string]("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil).InsertBatch([]string{"58", "59", "20", "51"}).DeleteBatch([]string{"13"})       // "13" will be ignored.
+	_set1 := NewSoftDeltaSet[string]("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil).InsertBatch([]string{"78", "59", "70", "71"}).DeleteBatch([]string{"15", "70"}) // 15 will be ignored.
 
-	deltaSet := NewSoftDeltaSet[string]("", 100, sizer, encodeToBuffer, decoder, nil)
+	deltaSet := NewSoftDeltaSet[string]("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil)
 	deltaSet.InsertBatch([]string{"13", "15", "17"})
 	deltaSet.Commit(nil)
 	deltaSet.Commit([]*SoftDeltaSet[string]{_set0, _set1})
@@ -444,7 +440,7 @@ func TestMultiSoftSetMergeWithStagedRemovals(t *testing.T) {
 }
 
 func TestSoftDeltaGetNthNonNil(t *testing.T) {
-	deltaSet := NewSoftDeltaSet[string]("", 100, sizer, encodeToBuffer, decoder, nil)
+	deltaSet := NewSoftDeltaSet[string]("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil)
 	deltaSet.InsertBatch([]string{"13", "15", "17"})
 
 	deltaSet.InsertBatch([]string{"18", "19", "20", "21"}) //  { "13", "15", "17"} +  { "18", "19", "20", "21"}
@@ -509,10 +505,10 @@ func TestSoftDeltaGetNthNonNil(t *testing.T) {
 }
 
 func TestSoftDeltaSetCodec(t *testing.T) {
-	_set0 := NewSoftDeltaSet("", 100, sizer, encodeToBuffer, decoder, nil).InsertBatch([]string{"58", "59", "20", "51"}).DeleteBatch([]string{"13"})       // "13" will be ignored.
-	_set1 := NewSoftDeltaSet("", 100, sizer, encodeToBuffer, decoder, nil).InsertBatch([]string{"78", "59", "70", "71"}).DeleteBatch([]string{"15", "70"}) // 15 will be ignored.
+	_set0 := NewSoftDeltaSet("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil).InsertBatch([]string{"58", "59", "20", "51"}).DeleteBatch([]string{"13"})       // "13" will be ignored.
+	_set1 := NewSoftDeltaSet("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil).InsertBatch([]string{"78", "59", "70", "71"}).DeleteBatch([]string{"15", "70"}) // 15 will be ignored.
 
-	deltaSet := NewSoftDeltaSet("", 100, sizer, encodeToBuffer, decoder, nil)
+	deltaSet := NewSoftDeltaSet("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil)
 	deltaSet.InsertBatch([]string{"13", "15", "17"})
 	deltaSet.Commit(nil)
 	deltaSet.Commit([]*SoftDeltaSet[string]{_set0, _set1})
@@ -534,8 +530,8 @@ func TestSoftDeltaSetCodec(t *testing.T) {
 	buffer2 := _set2.Encode()
 	buffer3 := _set3.Encode()
 
-	out2 := NewSoftDeltaSet("", 100, sizer, encodeToBuffer, decoder, nil).Decode(buffer2).(*SoftDeltaSet[string])
-	out3 := NewSoftDeltaSet("", 100, sizer, encodeToBuffer, decoder, nil).Decode(buffer3).(*SoftDeltaSet[string])
+	out2 := NewSoftDeltaSet("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil).Decode(buffer2).(*SoftDeltaSet[string])
+	out3 := NewSoftDeltaSet("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil).Decode(buffer3).(*SoftDeltaSet[string])
 
 	deltaSet.Commit([]*SoftDeltaSet[string]{out2, out3})
 	if !reflect.DeepEqual(deltaSet.committed.Elements(), []string{"15", "++++", "9999", "777", "888"}) {
@@ -548,7 +544,7 @@ func TestSoftDeltaSetCodec(t *testing.T) {
 // func decoder(buf []byte) string               { return string(codec.String(buf).Decode(buf).(codec.String)) }
 
 func BenchmarkDeltaSoftDeleteThenAddBack(t *testing.B) {
-	deltaSet := NewSoftDeltaSet("", 1000000, sizer, encodeToBuffer, decoder, nil)
+	deltaSet := NewSoftDeltaSet("", 1000000, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil)
 	randoms := make([]string, 1000000)
 	for i := 0; i < 1000000; i++ {
 		randoms[i] = fmt.Sprintf("%d", i) //rand.Int()
@@ -569,7 +565,7 @@ func BenchmarkDeltaSoftDeleteThenAddBack(t *testing.B) {
 }
 
 func BenchmarkSoftGetNthNonNil(b *testing.B) {
-	deltaSet := NewSoftDeltaSet[string]("", 100, sizer, encodeToBuffer, decoder, nil)
+	deltaSet := NewSoftDeltaSet[string]("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil)
 	deltaSet.InsertBatch([]string{"13", "15", "17"})
 
 	deltaSet.InsertBatch([]string{"18", "19", "20", "21"}) // { "13", "15", "17"} + { "18", "19", "20", "21"}

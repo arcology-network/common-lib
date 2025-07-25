@@ -19,10 +19,12 @@ package stringdeltaset
 
 import (
 	"testing"
+
+	"github.com/arcology-network/common-lib/codec"
 )
 
 func TestStagedRemovalSetCodec(t *testing.T) {
-	removalSet := NewStagedRemovalSet("", 100, sizer, encodeToBuffer, decoder, nil)
+	removalSet := NewStagedRemovalSet("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil)
 	removalSet.InsertBatch([]string{"13", "15", "17"})
 	removalSet.Commit(nil) // The strings are in the committed set already
 	removalSet.allDeleted = true
@@ -32,8 +34,8 @@ func TestStagedRemovalSetCodec(t *testing.T) {
 	removalSet.DeleteByIndex(4) // {"115"} is in the stagedRemovals set
 	removalSet.DeleteByIndex(5) // {"117"} is in the staged
 
-	buff := removalSet.Encode()                                                                                       // Encode the staged removal set
-	out := NewStagedRemovalSet("", 100, sizer, encodeToBuffer, decoder, nil).Decode(buff).(*StagedRemovalSet[string]) // Decode the staged removal set
+	buff := removalSet.Encode()                                                                                                                // Encode the staged removal set
+	out := NewStagedRemovalSet("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil).Decode(buff).(*StagedRemovalSet[string]) // Decode the staged removal set
 
 	// set2.Equal(removalSet) // Check if the decoded set is equal to the original
 	if !out.Equal(removalSet) {

@@ -368,11 +368,11 @@ func (this *DeltaSet[K]) Search(idx uint64) (*K, *orderedset.OrderedSet[K], int,
 	return v, set, mapped, true
 }
 
-func (this *DeltaSet[K]) KeyAt(idx uint64) (K, bool) {
+func (this *DeltaSet[K]) KeyAt(idx uint64) (*K, bool) {
 	if k, _, _, ok := this.Search(idx); ok {
-		return *k, true
+		return k, true
 	}
-	return *new(K), false
+	return nil, false
 }
 
 // Get the index of the element in the DeltaSet by key.
@@ -384,13 +384,13 @@ func (this *DeltaSet[K]) IdxOf(k K) uint64 {
 }
 
 // Get returns the element at the specified index.
-func (this *DeltaSet[K]) TryGetKey(idx uint64) (K, bool) {
+func (this *DeltaSet[K]) TryGetKey(idx uint64) (*K, bool) {
 	if k, _, _, ok := this.Search(idx); ok {
 		if ok, _ := this.stagedRemovals.Exists(*k); !ok { // Not In the stagedRemovals set, marked for deletion.
-			return *k, true
+			return k, true
 		}
 	}
-	return *new(K), false
+	return nil, false
 }
 
 // Get returns the element at the specified index. If the index is out of range, the nil value is returned.

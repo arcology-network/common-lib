@@ -174,19 +174,19 @@ func TestDeltaSliceAddThenDelete(t *testing.T) {
 		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
-	if v, ok := deltaSet.TryGetKey(0); !ok || v != 13 {
+	if v, ok := deltaSet.TryGetKey(0); !ok || *v != 13 {
 		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
-	if v, ok := deltaSet.TryGetKey(1); !ok || v != 17 {
+	if v, ok := deltaSet.TryGetKey(1); !ok || *v != 17 {
 		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
-	if v, ok := deltaSet.TryGetKey(2); !ok || v != 18 {
+	if v, ok := deltaSet.TryGetKey(2); !ok || *v != 18 {
 		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
-	if v, ok := deltaSet.TryGetKey(3); !ok || v != 21 {
+	if v, ok := deltaSet.TryGetKey(3); !ok || *v != 21 {
 		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 }
@@ -261,7 +261,7 @@ func TestCascadeDeltaClone(t *testing.T) {
 		t.Error("failed to commit", v) // Should not exist
 	}
 
-	if v, _ := deltaSet.TryGetKey(1); v != 17 {
+	if v, _ := deltaSet.TryGetKey(1); *v != 17 {
 		t.Error("failed to commit", v)
 	}
 }
