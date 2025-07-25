@@ -71,7 +71,7 @@ func (this Bytes20) Encode() []byte {
 	return this[:]
 }
 
-func (this Bytes20) EncodeToBuffer(buffer []byte) int {
+func (this Bytes20) EncodeTo(buffer []byte) int {
 	copy(buffer, this[:])
 	return len(this)
 }
@@ -95,7 +95,7 @@ func (this Bytes20) Hex() string {
 // func (this Bytes20) UUID(seed uint64) Bytes20 {
 // 	buffer := [BYTES20_LEN + 8]byte{}
 // 	copy(this[:], buffer[:])
-// 	Uint64(uint64(seed)).EncodeToBuffer(buffer[len(this):])
+// 	Uint64(uint64(seed)).EncodeTo(buffer[len(this):])
 // 	v := sha256.Sum256(buffer[:])
 
 // 	return v[:BYTES20_LEN]
@@ -115,7 +115,7 @@ func (this Byte20s) Encode() []byte {
 	return Byte20s(this).Flatten()
 }
 
-func (this Byte20s) EncodeToBuffer(buffer []byte) int {
+func (this Byte20s) EncodeTo(buffer []byte) int {
 	for i := 0; i < len(this); i++ {
 		copy(buffer[i*BYTES20_LEN:], this[i][:])
 	}
@@ -136,7 +136,7 @@ func (this Byte20s) Size() uint64 {
 
 func (this Byte20s) Flatten() []byte {
 	buffer := make([]byte, len(this)*BYTES20_LEN)
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 

@@ -51,11 +51,11 @@ func (Uint32) Size() uint64 {
 
 func (this Uint32) Encode() []byte {
 	buffer := make([]byte, UINT64_LEN)
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
-func (this Uint32) EncodeToBuffer(buffer []byte) int {
+func (this Uint32) EncodeTo(buffer []byte) int {
 	binary.LittleEndian.PutUint32(buffer, uint32(this))
 	return UINT64_LEN
 }
@@ -69,14 +69,14 @@ type Uint32s []uint32
 
 func (this Uint32s) Encode() []byte {
 	buffer := make([]byte, uint64(len(this)*UINT64_LEN))
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
-func (this Uint32s) EncodeToBuffer(buffer []byte) int {
+func (this Uint32s) EncodeTo(buffer []byte) int {
 	offset := 0
 	for i := range this {
-		offset += Uint32(this[i]).EncodeToBuffer(buffer[offset:])
+		offset += Uint32(this[i]).EncodeTo(buffer[offset:])
 	}
 	return len(this) * UINT64_LEN
 }

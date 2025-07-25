@@ -21,7 +21,7 @@ type Encodable interface {
 	Clone() interface{}
 	Size() uint64
 	Encode() []byte
-	EncodeToBuffer([]byte) int
+	EncodeTo([]byte) int
 	Decode([]byte) interface{}
 }
 
@@ -49,10 +49,10 @@ func (this Encodables) Sizes() []uint64 {
 
 func (this Encodables) FillHeader(buffer []byte) int {
 	lengths := this.Sizes()
-	Uint32(len(lengths)).EncodeToBuffer(buffer[UINT64_LEN*0:])
+	Uint32(len(lengths)).EncodeTo(buffer[UINT64_LEN*0:])
 	offset := uint64(0)
 	for i := 0; i < len(lengths); i++ {
-		Uint32(offset).EncodeToBuffer(buffer[UINT64_LEN*(i+1):])
+		Uint32(offset).EncodeTo(buffer[UINT64_LEN*(i+1):])
 		offset += uint64(lengths[i])
 	}
 	return (len(lengths) + 1) * UINT64_LEN
@@ -61,15 +61,15 @@ func (this Encodables) FillHeader(buffer []byte) int {
 func (this Encodables) Encode() []byte {
 	total := this.Size()
 	buffer := make([]byte, total)
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
-func (this Encodables) EncodeToBuffer(buffer []byte) int {
+func (this Encodables) EncodeTo(buffer []byte) int {
 	offset := this.FillHeader(buffer)
 	for i := 0; i < len(this); i++ {
 		// if selectors[i] {
-		offset += this[i].EncodeToBuffer(buffer[offset:])
+		offset += this[i].EncodeTo(buffer[offset:])
 		// }
 	}
 	return offset

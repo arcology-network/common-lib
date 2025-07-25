@@ -78,7 +78,7 @@ func (this Bytes) Clone() interface{} {
 	return Bytes(target)
 }
 
-func (this Bytes) EncodeToBuffer(buffer []byte) int {
+func (this Bytes) EncodeTo(buffer []byte) int {
 	copy(buffer, this)
 	return len(this)
 }
@@ -171,7 +171,7 @@ func (this Byteset) Hash(hasher func([]byte) []byte) []byte {
 func (this Byteset) Encode() []byte {
 	total := this.Size()
 	buffer := make([]byte, total)
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
@@ -187,16 +187,16 @@ func (this Byteset) FillHeader(buffer []byte) {
 		return
 	}
 
-	Uint64(len(this)).EncodeToBuffer(buffer)
+	Uint64(len(this)).EncodeTo(buffer)
 
 	offset := uint64(0)
 	for i := 0; i < len(this); i++ {
-		Uint64(offset).EncodeToBuffer(buffer[(i+1)*UINT64_LEN:])
+		Uint64(offset).EncodeTo(buffer[(i+1)*UINT64_LEN:])
 		offset += uint64(len(this[i]))
 	}
 }
 
-func (this Byteset) EncodeToBuffer(buffer []byte) int {
+func (this Byteset) EncodeTo(buffer []byte) int {
 	if len(buffer) == 0 {
 		return 0
 	}

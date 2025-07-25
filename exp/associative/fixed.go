@@ -70,7 +70,7 @@ type Bytesn[T ipArray] struct{}
 // 	return this[:]
 // }
 
-// func (this Bytesn[T]) EncodeToBuffer(buffer []byte) int {
+// func (this Bytesn[T]) EncodeTo(buffer []byte) int {
 // 	copy(buffer, this[:])
 // 	return len(this)
 // }
@@ -89,7 +89,7 @@ type Bytesn[T ipArray] struct{}
 // func (this Bytesn[T]) UUID(seed uint64) Bytesn[T] {
 // 	buffer := [HASH32_LEN + 8]byte{}
 // 	copy(this[:], buffer[:])
-// 	Uint64(uint64(seed)).EncodeToBuffer(buffer[len(this):])
+// 	Uint64(uint64(seed)).EncodeTo(buffer[len(this):])
 // 	return sha256.Sum256(buffer[:])
 // }
 
@@ -107,7 +107,7 @@ type Bytesn[T ipArray] struct{}
 // 	return Bytesn[T]s(this).Flatten()
 // }
 
-// func (this Bytesn[T]s) EncodeToBuffer(buffer []byte) int {
+// func (this Bytesn[T]s) EncodeTo(buffer []byte) int {
 // 	for i := 0; i < len(this); i++ {
 // 		copy(buffer[i*HASH32_LEN:], this[i][:])
 // 	}
@@ -132,7 +132,7 @@ type Bytesn[T ipArray] struct{}
 
 // func (this Bytesn[T]s) Flatten() []byte {
 // 	buffer := make([]byte, len(this)*HASH32_LEN)
-// 	this.EncodeToBuffer(buffer)
+// 	this.EncodeTo(buffer)
 // 	return buffer
 // }
 

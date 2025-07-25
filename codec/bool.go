@@ -47,11 +47,11 @@ func (this Bool) Size() uint64 {
 
 func (this Bool) Encode() []byte {
 	buffer := make([]byte, BOOL_LEN)
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
-func (this Bool) EncodeToBuffer(buffer []byte) int {
+func (this Bool) EncodeTo(buffer []byte) int {
 	buffer[0] = uint8(common.IfThen(bool(this), 1, 0))
 	return BOOL_LEN
 }
@@ -73,11 +73,11 @@ func (this Bools) Size() int {
 
 func (this Bools) Encode() []byte {
 	buffer := make([]byte, len(this))
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
-func (this Bools) EncodeToBuffer(buffer []byte) int {
+func (this Bools) EncodeTo(buffer []byte) int {
 	for i := range this {
 		if this[i] {
 			buffer[i] = 1

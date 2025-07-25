@@ -86,7 +86,7 @@ func (this Bytes4s) Encode() []byte {
 	return Bytes4s(this).Flatten()
 }
 
-func (this Bytes4s) EncodeToBuffer(buffer []byte) int {
+func (this Bytes4s) EncodeTo(buffer []byte) int {
 	for i := 0; i < len(this); i++ {
 		copy(buffer[i*BYTES4_LEN:], this[i][:])
 	}

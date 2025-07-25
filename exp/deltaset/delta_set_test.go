@@ -23,11 +23,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
 )
 
+func sizer(K int) int                      { return 8 }
+func encodeToBuffer(K int, buf []byte) int { return codec.Int64(K).EncodeTo(buf) }
+func decoder(buf []byte) int               { return int(codec.Int64(0).Decode(buf).(codec.Int64)) }
+
 func TestDeltaSliceBasic(t *testing.T) {
-	deltaSet := NewDeltaSet(-1, 100, nil)
+	deltaSet := NewDeltaSet(-1, 100, sizer, encodeToBuffer, decoder, nil)
 
 	if deltaSet.InsertBatch([]int{11, 12, 13}); !reflect.DeepEqual(deltaSet.committed.Elements(), []int{}) ||
 		!reflect.DeepEqual(deltaSet.stagedAdditions.Elements(), []int{11, 12, 13}) {
@@ -86,25 +91,25 @@ func TestDeltaSliceBasic(t *testing.T) {
 	// { 13, 15, 17} + { 18, 19, 20, 21}
 	deltaSet.InsertBatch([]int{18, 19, 20, 21})
 
-	if k, _, _, ok := deltaSet.Search(0); !ok || k != 13 {
+	if k, _, _, ok := deltaSet.Search(0); !ok || *k != 13 {
 		t.Error("failed to commit", k)
 	}
 
-	if k, _, _, ok := deltaSet.Search(1); !ok || k != 15 {
+	if k, _, _, ok := deltaSet.Search(1); !ok || *k != 15 {
 		t.Error("failed to commit", k)
 	}
 
-	if k, _, _, ok := deltaSet.Search(2); !ok || k != 17 {
+	if k, _, _, ok := deltaSet.Search(2); !ok || *k != 17 {
 		t.Error("failed to commit", k)
 	}
 
-	if k, _, _, ok := deltaSet.Search(3); !ok || k != 18 {
+	if k, _, _, ok := deltaSet.Search(3); !ok || *k != 18 {
 		t.Error("failed to commit", k)
 	}
-	if k, _, _, ok := deltaSet.Search(4); !ok || k != 19 {
+	if k, _, _, ok := deltaSet.Search(4); !ok || *k != 19 {
 		t.Error("failed to commit", k)
 	}
-	if k, _, _, ok := deltaSet.Search(5); !ok || k != 20 {
+	if k, _, _, ok := deltaSet.Search(5); !ok || *k != 20 {
 		t.Error("failed to commit", k)
 	}
 
@@ -118,7 +123,7 @@ func TestDeltaSliceBasic(t *testing.T) {
 }
 
 func TestDeltaSliceAddThenDelete(t *testing.T) {
-	deltaSet := NewDeltaSet(-1, 100, nil)
+	deltaSet := NewDeltaSet(-1, 100, sizer, encodeToBuffer, decoder, nil)
 	deltaSet.InsertBatch([]int{13, 15, 17})
 	deltaSet.Commit(nil)
 
@@ -187,7 +192,7 @@ func TestDeltaSliceAddThenDelete(t *testing.T) {
 }
 
 func TestCascadeDeltaCommit(t *testing.T) {
-	deltaSet := NewDeltaSet[int](-1, 100, nil)
+	deltaSet := NewDeltaSet[int](-1, 100, sizer, encodeToBuffer, decoder, nil)
 	deltaSet.InsertBatch([]int{13, 15, 17})
 
 	deltaSet.InsertBatch([]int{18, 19, 20, 21}) // { 13, 15, 17} + { 18, 19, 20, 21}
@@ -201,7 +206,7 @@ func TestCascadeDeltaCommit(t *testing.T) {
 }
 
 func TestCascadeDeltaClone(t *testing.T) {
-	deltaSet := NewDeltaSet[int](-1, 100, nil)
+	deltaSet := NewDeltaSet[int](-1, 100, sizer, encodeToBuffer, decoder, nil)
 	deltaSet.InsertBatch([]int{13, 15, 17})
 	deltaSet.Commit(nil)
 
@@ -262,7 +267,7 @@ func TestCascadeDeltaClone(t *testing.T) {
 }
 
 func TestDeltaDeleteThenAddBack(t *testing.T) {
-	deltaSet := NewDeltaSet(-1, 100, nil)
+	deltaSet := NewDeltaSet(-1, 100, sizer, encodeToBuffer, decoder, nil)
 	deltaSet.InsertBatch([]int{13, 15, 17})
 	deltaSet.Commit(nil)
 
@@ -302,14 +307,14 @@ func TestDeltaDeleteThenAddBack(t *testing.T) {
 		t.Error("failed to commit", v, deltaSet.NonNilCount())
 	}
 
-	v, ok = deltaSet.GetByIndex(5)
-	if ok || v != 0 || deltaSet.NonNilCount() != 5 {
-		t.Error("Should not exist", v, deltaSet.NonNilCount())
+	v2, ok := deltaSet.GetByIndex(5)
+	if ok || v2 != nil || deltaSet.NonNilCount() != 5 {
+		t.Error("Should not exist", v2, deltaSet.NonNilCount())
 	}
 }
 
 func TestMultiMerge(t *testing.T) {
-	deltaSet := NewDeltaSet(-1, 100, nil)
+	deltaSet := NewDeltaSet(-1, 100, sizer, encodeToBuffer, decoder, nil)
 	deltaSet.InsertBatch([]int{13, 15, 17})
 	deltaSet.Commit(nil)
 
@@ -317,8 +322,8 @@ func TestMultiMerge(t *testing.T) {
 		t.Error("failed to commit", deltaSet.committed.Elements())
 	}
 
-	_set0 := NewDeltaSet(-1, 100, nil).InsertBatch([]int{58, 59, 20, 51}).DeleteBatch([]int{13})
-	_set1 := NewDeltaSet(-1, 100, nil).InsertBatch([]int{78, 59, 70, 71}).DeleteBatch([]int{15, 70})
+	_set0 := NewDeltaSet(-1, 100, sizer, encodeToBuffer, decoder, nil).InsertBatch([]int{58, 59, 20, 51}).DeleteBatch([]int{13})
+	_set1 := NewDeltaSet(-1, 100, sizer, encodeToBuffer, decoder, nil).InsertBatch([]int{78, 59, 70, 71}).DeleteBatch([]int{15, 70})
 
 	// (13, 15, 17) + (58, 59, 20, 51) + (78, 59, 70, 71) - (13, 15, 70) = (17, 58, 59, 20, 51, 78, 59, 71)
 	deltaSet.Commit([]*DeltaSet[int]{_set0, _set1})
@@ -329,7 +334,7 @@ func TestMultiMerge(t *testing.T) {
 }
 
 func TestGetNthNonNil(t *testing.T) {
-	deltaSet := NewDeltaSet(0, 100, nil)
+	deltaSet := NewDeltaSet(0, 100, sizer, encodeToBuffer, decoder, nil)
 	deltaSet.InsertBatch([]int{13, 15, 17})
 
 	deltaSet.InsertBatch([]int{18, 19, 20, 21}) //  { 13, 15, 17} +  { 18, 19, 20, 21}
@@ -346,7 +351,7 @@ func TestGetNthNonNil(t *testing.T) {
 	}
 
 	// Check if the deleted entry is still accessible.
-	if k, ok := deltaSet.GetByIndex(1); k != deltaSet.nilVal || ok {
+	if k, ok := deltaSet.GetByIndex(1); ok || (k != nil && *k != 0) {
 		t.Error("A deleted entry shouldn't be available any more", k)
 	}
 
@@ -363,7 +368,7 @@ func TestGetNthNonNil(t *testing.T) {
 	}
 
 	// Check if the deleted entry is still accessible.
-	if k, ok := deltaSet.GetByIndex(4); k != deltaSet.nilVal || ok {
+	if k, ok := deltaSet.GetByIndex(4); ok || (k != nil && *k != 0) {
 		t.Error("A deleted entry shouldn't be available any more", k)
 	}
 
@@ -391,11 +396,28 @@ func TestGetNthNonNil(t *testing.T) {
 	if k, idx, ok := deltaSet.GetNthNonNil(4); k != 21 || idx != 4 || !ok {
 		t.Error("failed to commit", k)
 	}
+}
 
+func TestDeltaCodec(t *testing.T) {
+	deltaSet := NewDeltaSet(-1, 100, sizer, encodeToBuffer, decoder, nil)
+	deltaSet.InsertBatch([]int{13, 15, 17})
+	deltaSet.Commit(nil)
+	deltaSet.InsertBatch([]int{18, 19, 20, 21}) // { 13, 15, 17} + { 18, 19, 20, 21}
+
+	deltaSet.DeleteByIndex(1) //
+	deltaSet.DeleteByIndex(4) //
+	deltaSet.DeleteByIndex(5) // will remove {15, 19, 20}
+
+	buffer := deltaSet.Encode()
+
+	set2 := NewDeltaSet(-1, 100, sizer, encodeToBuffer, decoder, nil).Decode(buffer)
+	if !deltaSet.Equal(set2) {
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
+	}
 }
 
 func BenchmarkDeltaDeleteThenAddBack(t *testing.B) {
-	deltaSet := NewDeltaSet[int](-1, 1000000, nil)
+	deltaSet := NewDeltaSet[int](-1, 1000000, sizer, encodeToBuffer, decoder, nil)
 	randoms := make([]int, 1000000)
 	for i := 0; i < 1000000; i++ {
 		randoms[i] = i //rand.Int()
@@ -415,7 +437,7 @@ func BenchmarkDeltaDeleteThenAddBack(t *testing.B) {
 }
 
 func BenchmarkGetNthNonNil(b *testing.B) {
-	deltaSet := NewDeltaSet[int](-1, 100, nil)
+	deltaSet := NewDeltaSet(-1, 100, sizer, encodeToBuffer, decoder, nil)
 	deltaSet.InsertBatch([]int{13, 15, 17})
 
 	deltaSet.InsertBatch([]int{18, 19, 20, 21}) // { 13, 15, 17} + { 18, 19, 20, 21}

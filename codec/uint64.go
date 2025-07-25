@@ -53,11 +53,11 @@ func (Uint64) Size() uint64 {
 
 func (this Uint64) Encode() []byte {
 	buffer := make([]byte, UINT64_LEN)
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
-func (this Uint64) EncodeToBuffer(buffer []byte) int {
+func (this Uint64) EncodeTo(buffer []byte) int {
 	binary.LittleEndian.PutUint64(buffer, uint64(this))
 	return UINT64_LEN
 }
@@ -133,14 +133,14 @@ func (this Uint64s) Unique() []uint64 {
 
 func (this Uint64s) Encode() []byte {
 	buffer := make([]byte, len(this)*UINT64_LEN)
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
-func (this Uint64s) EncodeToBuffer(buffer []byte) int {
+func (this Uint64s) EncodeTo(buffer []byte) int {
 	offset := 0
 	for i := range this {
-		offset += Uint64(this[i]).EncodeToBuffer(buffer[offset:])
+		offset += Uint64(this[i]).EncodeTo(buffer[offset:])
 	}
 	return len(this) * UINT64_LEN
 }

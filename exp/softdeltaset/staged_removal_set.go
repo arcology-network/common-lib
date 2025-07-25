@@ -1,0 +1,86 @@
+/*
+ *   Copyright (c) 2025 Arcology Network
+
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package stringdeltaset
+
+import (
+	"github.com/arcology-network/common-lib/exp/deltaset"
+	orderedset "github.com/arcology-network/common-lib/exp/orderedset"
+)
+
+// DeltaSet represents a mutable view over a base set, allowing staged additions and deletions.
+type StagedRemovalSet[K comparable] struct {
+	deltaset.DeltaSet[K]
+	allDeleted bool // If true, all elements are deleted, i.e. the set is empty.
+}
+
+func NewStagedRemovalSet[K comparable](nilVal K, preAlloc int,
+	size func(K) int,
+	encodeToBuffer func(K, []byte) int,
+	decoder func([]byte) K,
+	hasher func(K) [32]byte,
+	keys ...K) *StagedRemovalSet[K] {
+	return &StagedRemovalSet[K]{
+		DeltaSet: *deltaset.NewDeltaSet[K](nilVal, preAlloc, size, encodeToBuffer, decoder, hasher, keys...),
+	}
+}
+
+func (this *StagedRemovalSet[K]) DeleteAll(
+	committed *orderedset.OrderedSet[K],
+	stagedAdditions *orderedset.OrderedSet[K]) {
+	this.SetCommitted(committed)
+	this.SetAdded(stagedAdditions.Clone())
+	this.Removed().Clear()
+	this.allDeleted = true
+}
+
+func (this *StagedRemovalSet[K]) CloneFull() *StagedRemovalSet[K] {
+	set := this.CloneDelta()
+	set.SetCommitted(this.Committed().Clone())
+	return set
+}
+
+// Clone returns a new instance with the shared shared committed set.
+func (this *StagedRemovalSet[K]) Clone() *StagedRemovalSet[K] {
+	this.DeltaSet.Clone()
+	return this
+}
+
+func (this *StagedRemovalSet[K]) CloneDelta() *StagedRemovalSet[K] {
+	return &StagedRemovalSet[K]{
+		DeltaSet: *this.DeltaSet.CloneDelta(),
+	}
+}
+
+func (this *StagedRemovalSet[K]) Length() uint64 {
+	return this.DeltaSet.NonNilCount()
+}
+
+func (this *StagedRemovalSet[K]) NewFrom(other *StagedRemovalSet[K]) *StagedRemovalSet[K] {
+	return &StagedRemovalSet[K]{
+		DeltaSet: *this.DeltaSet.NewFrom(&other.DeltaSet),
+	}
+}
+
+func (this *StagedRemovalSet[K]) Clear() {
+	this.ResetDelta()
+	this.Committed().Clear()
+}
+
+func (this *StagedRemovalSet[K]) Equal(other *StagedRemovalSet[K]) bool {
+	return this.allDeleted == other.allDeleted && this.DeltaSet.Equal(&other.DeltaSet)
+}

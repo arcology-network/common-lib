@@ -68,7 +68,7 @@ func (hashes Hash64s) Encode() []byte {
 	return Hash64s(hashes).Flatten()
 }
 
-func (this Hash64s) EncodeToBuffer(buffer []byte) int {
+func (this Hash64s) EncodeTo(buffer []byte) int {
 	for i := 0; i < len(this); i++ {
 		copy(buffer[i*HASH64_LEN:], this[i][:])
 	}

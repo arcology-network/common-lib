@@ -25,8 +25,17 @@ import (
 	mapi "github.com/arcology-network/common-lib/exp/map"
 )
 
+func size(s string) int { return len(s) }
+func encodeToBuffer(s string, buf []byte) int {
+	copy(buf, s)
+	return len(s)
+}
+func decoder(buf []byte) string {
+	return string(buf)
+}
+
 func TestIndexedSlice(t *testing.T) {
-	set := NewOrderedSet[string]("", 10, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5")
+	set := NewOrderedSet("", 10, size, encodeToBuffer, decoder, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5")
 	set.InsertBatch([]string{"11"})
 
 	if ok, _ := set.Exists("11"); !ok {
@@ -84,12 +93,12 @@ func TestIndexedSlice(t *testing.T) {
 		t.Error("Error: Key is not equal !")
 	}
 
-	set.Merge(NewOrderedSet[string]("", 10, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5").Elements())
+	set.Merge(NewOrderedSet("", 10, size, encodeToBuffer, decoder, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5").Elements())
 	if !reflect.DeepEqual(set.Elements(), []string{"111", "222", "1", "2", "5"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
 
-	set.Merge(NewOrderedSet[string]("", 10, func(str string) [32]byte { return [32]byte{} }, "111", "222", "1", "2", "6").Elements())
+	set.Merge(NewOrderedSet("", 10, size, encodeToBuffer, decoder, func(str string) [32]byte { return [32]byte{} }, "111", "222", "1", "2", "6").Elements())
 	if !reflect.DeepEqual(set.Elements(), []string{"111", "222", "1", "2", "5", "6"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
@@ -107,12 +116,12 @@ func TestIndexedSlice(t *testing.T) {
 		t.Error("Error: Key is not equal !")
 	}
 
-	set.Merge(NewOrderedSet[string]("", 10, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5").Elements())
+	set.Merge(NewOrderedSet("", 10, size, encodeToBuffer, decoder, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5").Elements())
 	if !reflect.DeepEqual(set.Elements(), []string{"1", "2", "5"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
 
-	set.Merge(NewOrderedSet[string]("", 10, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5").Elements())
+	set.Merge(NewOrderedSet("", 10, size, encodeToBuffer, decoder, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5").Elements())
 	if !reflect.DeepEqual(set.Elements(), []string{"1", "2", "5"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
@@ -137,7 +146,7 @@ func TestIndexedSlice(t *testing.T) {
 }
 
 func TestIndexedSliceDelet(t *testing.T) {
-	set := NewOrderedSet[string]("", 10, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5", "11", "12", "13")
+	set := NewOrderedSet("", 10, size, encodeToBuffer, decoder, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5", "11", "12", "13")
 	set.DeleteBatch([]string{"2", "11"})
 	if !reflect.DeepEqual(set.Elements(), []string{"1", "5", "12", "13"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
@@ -172,7 +181,21 @@ func TestIndexedSliceDelet(t *testing.T) {
 	if !reflect.DeepEqual(set.Elements(), []string{"5", "15", "13"}) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
+}
 
+func TestCodec(t *testing.T) {
+	set := NewOrderedSet("", 10, size, encodeToBuffer, decoder, func(str string) [32]byte { return [32]byte{} }, "1", "2", "5", "11", "12", "13")
+	set.DeleteBatch([]string{"2", "11"})
+	if !reflect.DeepEqual(set.Elements(), []string{"1", "5", "12", "13"}) {
+		t.Error("Error: Key is not equal !", set.Elements())
+	}
+	buff := set.Encode() // Encode the staged removal set
+
+	set2 := NewOrderedSet("", 10, size, encodeToBuffer, decoder, nil)
+	out := set2.Decode(buff).(*OrderedSet[string]) // Decode the staged removal set
+	if !reflect.DeepEqual(out.Elements(), []string{"1", "5", "12", "13"}) {
+		t.Error("Error: Key is not equal !", out.Elements())
+	}
 }
 
 func BenchmarkIndexedSliceDelete(t *testing.B) {
@@ -181,6 +204,6 @@ func BenchmarkIndexedSliceDelete(t *testing.B) {
 		elems[i] = fmt.Sprintf("%d", i) + "-111111111111111111111111111111111111111111111111111111111111"
 	}
 
-	set := NewOrderedSet("", 10, func(str string) [32]byte { return [32]byte{} }, elems[len(elems):]...)
+	set := NewOrderedSet("", 10, size, encodeToBuffer, decoder, func(str string) [32]byte { return [32]byte{} }, elems[len(elems):]...)
 	set.DeleteBatch(elems)
 }

@@ -32,29 +32,39 @@ type OrderedSet[K comparable] struct {
 	elements []K
 	dict     map[K]*int // Using a pointer to the index, so that it can be updated without having to reinsert the key.
 	nilValue K
-	hasher   func(K) [32]byte
+	Sizer    func(K) int
+	Encoder  func(K, []byte) int
+	Decoder  func([]byte) K
+	Hasher   func(K) [32]byte
 }
 
-// NewIndexedSlice creates a new instance of OrderedSet with the specified page size, minimum number of pages, and pre-allocation size.
+// NewIndexedSlice creates a new instance of OrderedSet with the specified page Size, minimum number of pages, and pre-allocation Size.
 func NewOrderedSet[K comparable](
 	nilValue K,
 	preAlloc int,
-	hasher func(K) [32]byte,
+	sizer func(K) int,
+	Encoder func(K, []byte) int,
+	Decoder func([]byte) K,
+	Hasher func(K) [32]byte,
 	vals ...K) *OrderedSet[K] {
 	set := &OrderedSet[K]{
 		dict:     make(map[K]*int),
 		elements: append(make([]K, 0, preAlloc+len(vals)), vals...),
 		nilValue: nilValue,
-		hasher:   hasher,
+		Sizer:    sizer,
+		Hasher:   Hasher,
+		Encoder:  Encoder,
+		Decoder:  Decoder,
 	}
 
 	return set.Init()
 }
 
 func NewFrom[K comparable](other *OrderedSet[K]) *OrderedSet[K] {
-	return NewOrderedSet(other.nilValue, 0, other.hasher)
+	return NewOrderedSet(other.nilValue, 0, other.Sizer, other.Encoder, other.Decoder, other.Hasher)
 }
 
+func (this *OrderedSet[K]) NilValue() K { return this.nilValue }
 func (this *OrderedSet[K]) Init() *OrderedSet[K] {
 	for i, idx := range this.elements {
 		this.dict[idx] = common.New(i)
@@ -62,16 +72,12 @@ func (this *OrderedSet[K]) Init() *OrderedSet[K] {
 	return this
 }
 
-func (this *OrderedSet[K]) Hasher() func(K) [32]byte { return this.hasher }
-func (this *OrderedSet[K]) Dict() map[K]*int         { return this.dict }
-func (this *OrderedSet[K]) Elements() []K            { return this.elements }
-func (this *OrderedSet[K]) Length() int              { return len(this.elements) }
+// func (this *OrderedSet[K]) Hasher() func(K) [32]byte { return this.Hasher }
+func (this *OrderedSet[K]) Dict() map[K]*int { return this.dict }
+func (this *OrderedSet[K]) Elements() []K    { return this.elements }
+func (this *OrderedSet[K]) Length() int      { return len(this.elements) }
 func (this *OrderedSet[K]) Clone() *OrderedSet[K] {
-	return NewOrderedSet(this.nilValue, len(this.elements), nil, this.elements...)
-}
-
-func (this *OrderedSet[K]) Size(getter func(K) int) int { // For encoding
-	return slice.Accumulate(this.elements, 0, func(acc int, k K) int { return acc + getter(k) })
+	return NewOrderedSet(this.nilValue, len(this.elements), this.Sizer, this.Encoder, this.Decoder, this.Hasher, this.elements...)
 }
 
 func (this *OrderedSet[K]) Merge(elements []K) *OrderedSet[K] {
@@ -141,8 +147,8 @@ func (this *OrderedSet[K]) KeyToIndex(k K) int {
 	return -1
 }
 
-func (this *OrderedSet[K]) IndexToKey(idx int) K {
-	return this.elements[idx]
+func (this *OrderedSet[K]) IndexToKey(idx int) *K {
+	return &this.elements[idx]
 }
 
 func (this *OrderedSet[K]) DeleteByIndex(indices ...int) {

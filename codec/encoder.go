@@ -31,9 +31,9 @@ func (Encoder) Size(args []any) uint64 {
 
 func (this Encoder) ToBuffer(buffer []byte, args []any) {
 	offset := uint64(0)
-	Uint32(len(args)).EncodeToBuffer(buffer)
+	Uint32(len(args)).EncodeTo(buffer)
 	for i := 0; i < len(args); i++ {
-		Uint32(offset).EncodeToBuffer(buffer[(i+1)*UINT64_LEN:]) // Fill header info
+		Uint32(offset).EncodeTo(buffer[(i+1)*UINT64_LEN:]) // Fill header info
 		if args[i] != nil {
 			offset += args[i].(Encodable).Size()
 		}
@@ -44,17 +44,17 @@ func (this Encoder) ToBuffer(buffer []byte, args []any) {
 	for i := 0; i < len(args); i++ {
 		if args[i] != nil {
 			end := headerSize + offset + args[i].(Encodable).Size()
-			args[i].(Encodable).EncodeToBuffer(buffer[headerSize+offset : end])
+			args[i].(Encodable).EncodeTo(buffer[headerSize+offset : end])
 			offset += args[i].(Encodable).Size()
 		}
 	}
 }
 
 func (Encoder) FillHeader(buffer []byte, lengths []uint64) int {
-	Uint32(len(lengths)).EncodeToBuffer(buffer[UINT64_LEN*0:])
+	Uint32(len(lengths)).EncodeTo(buffer[UINT64_LEN*0:])
 	offset := uint64(0)
 	for i := 0; i < len(lengths); i++ {
-		Uint32(offset).EncodeToBuffer(buffer[UINT64_LEN*(i+1):])
+		Uint32(offset).EncodeTo(buffer[UINT64_LEN*(i+1):])
 		offset += uint64(lengths[i])
 	}
 	return (len(lengths) + 1) * UINT64_LEN

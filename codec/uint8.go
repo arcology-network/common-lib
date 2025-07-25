@@ -56,7 +56,7 @@ func (v Uint8) Encode() []byte {
 	return buffer
 }
 
-func (v Uint8) EncodeToBuffer(buffer []byte) int {
+func (v Uint8) EncodeTo(buffer []byte) int {
 	buffer[0] = uint8(v)
 	return UINT8_LEN
 }
@@ -94,11 +94,11 @@ func (this Uint8s) Size() uint64 {
 
 func (this Uint8s) Encode() []byte {
 	buffer := make([]byte, len(this)*UINT8_LEN)
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
-func (this Uint8s) EncodeToBuffer(buffer []byte) int {
+func (this Uint8s) EncodeTo(buffer []byte) int {
 	for i := range this {
 		buffer[i] = uint8(this[i])
 	}

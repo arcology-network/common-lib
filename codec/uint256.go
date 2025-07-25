@@ -61,12 +61,12 @@ func (this *Uint256) Size() uint64 {
 
 func (this *Uint256) Encode() []byte {
 	buffer := make([]byte, this.Size())
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
-func (this *Uint256) EncodeToBuffer(buffer []byte) int {
-	return Uint64s((*uint256.Int)(this)[:]).EncodeToBuffer(buffer)
+func (this *Uint256) EncodeTo(buffer []byte) int {
+	return Uint64s((*uint256.Int)(this)[:]).EncodeTo(buffer)
 }
 
 func (this *Uint256) Decode(buffer []byte) any {

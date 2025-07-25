@@ -70,7 +70,7 @@ func (this String) Encode() []byte {
 	return this.ToBytes()
 }
 
-func (this String) EncodeToBuffer(buffer []byte) int {
+func (this String) EncodeTo(buffer []byte) int {
 	if len(this) > 0 {
 		copy(buffer, this.ToBytes())
 	}
@@ -100,7 +100,7 @@ func (this Strings) Sort() Strings {
 
 func (this Strings) Encode() []byte {
 	buffer := make([]byte, this.Size())
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
@@ -123,16 +123,16 @@ func (this Strings) FillHeader(buffer []byte) {
 	if len(this) == 0 {
 		return
 	}
-	Uint64(len(this)).EncodeToBuffer(buffer)
+	Uint64(len(this)).EncodeTo(buffer)
 
 	offset := 0
 	for i := 0; i < len(this); i++ {
-		Uint64(offset).EncodeToBuffer(buffer[UINT64_LEN*(i+1):])
+		Uint64(offset).EncodeTo(buffer[UINT64_LEN*(i+1):])
 		offset += len(this[i])
 	}
 }
 
-func (this Strings) EncodeToBuffer(buffer []byte) int {
+func (this Strings) EncodeTo(buffer []byte) int {
 	if len(buffer) == 0 {
 		return 0
 	}
@@ -242,11 +242,11 @@ func (this Stringset) Size() uint64 {
 func (this Stringset) Encode() []byte {
 	length := int(this.Size())
 	buffer := make([]byte, length)
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
-func (this Stringset) EncodeToBuffer(buffer []byte) int {
+func (this Stringset) EncodeTo(buffer []byte) int {
 	lengths := make([]uint64, len(this))
 	for i := 0; i < len(this); i++ {
 		lengths[i] = Strings(this[i]).Size()
@@ -254,7 +254,7 @@ func (this Stringset) EncodeToBuffer(buffer []byte) int {
 
 	offset := Encoder{}.FillHeader(buffer, lengths)
 	for i := 0; i < len(this); i++ {
-		offset += Strings(this[i]).EncodeToBuffer(buffer[offset:])
+		offset += Strings(this[i]).EncodeTo(buffer[offset:])
 	}
 	return offset
 }
