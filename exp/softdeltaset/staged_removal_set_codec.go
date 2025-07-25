@@ -15,7 +15,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package stringdeltaset
+package softdeltaset
 
 import (
 	"github.com/arcology-network/common-lib/codec"

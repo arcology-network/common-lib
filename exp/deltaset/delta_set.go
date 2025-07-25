@@ -237,18 +237,6 @@ func (this *DeltaSet[K]) CloneDelta() *DeltaSet[K] {
 	return set
 }
 
-// CloneDelta returns a new instance of DeltaSet with the
-// same stagedAdditions  and stagedRemovals  elements only.the committed list is not cloned.
-// func (this *DeltaSet[K]) CloneDelta() *DeltaSet[K] {
-// 	set := &DeltaSet[K]{
-// 		nilVal:    this.nilVal,
-// 		committed: orderedset.NewOrderedSet(this.nilVal, 0),
-// 		stagedAdditions :   this.stagedAdditions .Clone(),
-// 		stagedRemovals :   this.stagedRemovals.Clone(),
-// 	}
-// 	return set
-// }
-
 func (this *DeltaSet[K]) DeleteByIndex(idx uint64) {
 	if k, _, _, ok := this.Search(idx); ok {
 		this.Delete(*k)

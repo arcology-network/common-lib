@@ -15,42 +15,57 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package stringdeltaset
+package softdeltaset
 
 import (
 	"github.com/arcology-network/common-lib/codec"
+	"github.com/arcology-network/common-lib/common"
 	orderedset "github.com/arcology-network/common-lib/exp/orderedset"
 )
 
-func (this *SoftDeltaSet[K]) Size() int {
-	return 4*codec.UINT64_LEN +
-		this.committed.Size() +
-		this.stagedAdditions.Size() +
-		this.stagedRemovals.Size()
+func (this *DeltaSet[K]) Size() int {
+	// return 4*codec.UINT64_LEN +
+	// 	this.committed.Size() +
+	// 	this.stagedAdditions.Size() +
+	// 	this.stagedRemovals.Size()
+
+	return 4*codec.UINT64_LEN + common.IfThenDo1st(this.committed != nil, func() int { return this.committed.Size() }, 0) +
+		common.IfThenDo1st(this.stagedAdditions != nil, func() int { return this.stagedAdditions.Size() }, 0) +
+		common.IfThenDo1st(this.stagedRemovals != nil, func() int { return int(this.stagedRemovals.Size()) }, 0)
+
 }
 
-func (this *SoftDeltaSet[K]) EncodeTo(buffer []byte) int {
+func (this *DeltaSet[K]) EncodeTo(buffer []byte) int {
+	// Some sets may be empty to save space, so we only encode the sizes of non-empty sets.
 	offset := codec.Encoder{}.FillHeader(buffer,
 		[]uint64{
-			uint64(this.committed.Size()),
-			uint64(this.stagedAdditions.Size()),
-			uint64(this.stagedRemovals.Size()),
+			common.IfThenDo1st(this.committed != nil, func() uint64 { return uint64(this.committed.Size()) }, 0),
+			common.IfThenDo1st(this.stagedAdditions != nil, func() uint64 { return uint64(this.stagedAdditions.Size()) }, 0),
+			common.IfThenDo1st(this.stagedRemovals != nil, func() uint64 { return uint64(this.stagedRemovals.Size()) }, 0),
 		},
 	)
 
-	offset += this.committed.EncodeTo(buffer[offset:])       // allDeleted
-	offset += this.stagedAdditions.EncodeTo(buffer[offset:]) // stagedAdditions
-	offset += this.stagedRemovals.EncodeTo(buffer[offset:])  // stagedRemovals
+	offset += common.IfThenDo1st(this.committed != nil, func() int {
+		return this.committed.EncodeTo(buffer[offset:])
+	}, 0)
+
+	offset += common.IfThenDo1st(this.stagedAdditions != nil, func() int {
+		return this.stagedAdditions.EncodeTo(buffer[offset:])
+	}, 0)
+
+	offset += common.IfThenDo1st(this.stagedRemovals != nil, func() int {
+		return this.stagedRemovals.EncodeTo(buffer[offset:])
+	}, 0)
 	return offset
 }
 
-func (this *SoftDeltaSet[K]) Encode() []byte {
+func (this *DeltaSet[K]) Encode() []byte {
 	buffer := make([]byte, this.Size())
 	this.EncodeTo(buffer)
 	return buffer
 }
 
-func (this *SoftDeltaSet[K]) Decode(buffer []byte) any {
+func (this *DeltaSet[K]) Decode(buffer []byte) any {
 	fields := codec.Byteset{}.Decode(buffer).(codec.Byteset) // Decode header
 	this.committed = this.committed.Decode(fields[0]).(*orderedset.OrderedSet[K])
 	this.stagedAdditions = this.stagedAdditions.Decode(fields[1]).(*orderedset.OrderedSet[K])
@@ -58,7 +73,7 @@ func (this *SoftDeltaSet[K]) Decode(buffer []byte) any {
 	return this
 }
 
-// // func (this *SoftDeltaSet[string]) Print() {
+// // func (this *DeltaSet[string]) Print() {
 // // 	fmt.Println("TotalSize: ", this.TotalSize)
 // // 	fmt.Println("IsTransient: ", this.IsTransient)
 // // 	fmt.Println("Committed: ", codec.Strings(this.DeltaSet.Committed().Elements()).ToHex())
@@ -68,12 +83,12 @@ func (this *SoftDeltaSet[K]) Decode(buffer []byte) any {
 // // 	fmt.Println()
 // // }
 
-// func (this *SoftDeltaSet) StorageEncode(_ string) []byte {
+// func (this *DeltaSet) StorageEncode(_ string) []byte {
 // 	buffer, _ := rlp.EncodeToBytes(this.Encode())
 // 	return buffer
 // }
 
-// func (this *SoftDeltaSet) StorageDecode(_ string, buffer []byte) any {
+// func (this *DeltaSet) StorageDecode(_ string, buffer []byte) any {
 // 	var decoded []byte
 // 	rlp.DecodeBytes(buffer, &decoded)
 // 	return this.Decode(decoded)
