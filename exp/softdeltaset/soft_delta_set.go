@@ -39,9 +39,9 @@ func NewDeltaSet[K comparable](nilVal K, preAlloc int,
 	hasher func(K) [32]byte,
 	keys ...K) *DeltaSet[K] {
 	DeltaSet := &DeltaSet[K]{
-		committed:       orderedset.NewOrderedSet[K](nilVal, preAlloc, size, encodeTo, decoder, hasher),
-		stagedAdditions: orderedset.NewOrderedSet[K](nilVal, preAlloc, size, encodeTo, decoder, hasher),
-		stagedRemovals:  NewStagedRemovalSet[K](nilVal, preAlloc, size, encodeTo, decoder, hasher, keys...),
+		committed:       orderedset.NewOrderedSet(nilVal, preAlloc, size, encodeTo, decoder, hasher),
+		stagedAdditions: orderedset.NewOrderedSet(nilVal, preAlloc, size, encodeTo, decoder, hasher),
+		stagedRemovals:  NewStagedRemovalSet(nilVal, preAlloc, size, encodeTo, decoder, hasher, keys...),
 	}
 	DeltaSet.InsertBatch(keys)
 	return DeltaSet
@@ -191,15 +191,22 @@ func (this *DeltaSet[K]) DeleteBatch(elems []K) *DeltaSet[K] {
 // Insert inserts an element into the Delta Set and updates the index.
 func (this *DeltaSet[K]) Delete(elem K) {
 	if ok, _ := this.committed.Exists(elem); ok {
-		this.stagedRemovals.Insert(elem) // Remove an existing element will take effect only when commit() is called.
+		// Remove an existing element will take effect only when commit() is called.
+		this.stagedRemovals.Insert(elem)
 	} else if ok, _ := this.stagedAdditions.Exists(elem); ok {
 		this.stagedRemovals.Insert(elem)
 	}
 }
 
+// Add both committed and the added elements to the deletion list.
 func (this *DeltaSet[K]) DeleteAll() {
+	// Shallow copy is enough, because the Committed elements won't change.
+	// in the process.
 	this.stagedRemovals.SetCommitted(this.Committed())
-	this.stagedRemovals.SetAdded(this.stagedAdditions.Clone()) // No further changes to the stagedAdditions won't affect the stagedRemovals.
+
+	// No further changes to the stagedAdditions won't affect the stagedRemovals
+	// from this point on.
+	this.stagedRemovals.SetAdded(this.stagedAdditions.Clone())
 }
 
 func (this *DeltaSet[K]) DeleteByIndex(idx uint64) {

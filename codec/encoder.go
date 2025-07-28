@@ -22,12 +22,17 @@ import (
 	"math"
 )
 
+// Header Layout:
+// +--------------------+--------------------+--------------------+--------------------+
+// | NumSections (u32)  | Start[0] (u64)     | Start[1] (u64)     | Start[2] (u64)     |
+// +--------------------+--------------------+--------------------+--------------------+
+
 type Encoder struct{}
 
 func (Encoder) FillHeader(buffer []byte, lengths []uint64) int {
-	Uint32(len(lengths)).EncodeTo(buffer[UINT64_LEN*0:])
+	Uint32(len(lengths)).EncodeTo(buffer)
 	offset := uint64(0)
-	for i := 0; i < len(lengths); i++ {
+	for i := range lengths {
 		Uint32(offset).EncodeTo(buffer[UINT64_LEN*(i+1):])
 		offset += uint64(lengths[i])
 	}

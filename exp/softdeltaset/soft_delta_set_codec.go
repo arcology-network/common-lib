@@ -21,6 +21,7 @@ import (
 	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
 	orderedset "github.com/arcology-network/common-lib/exp/orderedset"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 func (this *DeltaSet[K]) Size() int {
@@ -70,6 +71,14 @@ func (this *DeltaSet[K]) Decode(buffer []byte) any {
 	this.committed = this.committed.Decode(fields[0]).(*orderedset.OrderedSet[K])
 	this.stagedAdditions = this.stagedAdditions.Decode(fields[1]).(*orderedset.OrderedSet[K])
 	this.stagedRemovals = this.stagedRemovals.Decode(fields[2]).(*StagedRemovalSet[K])
+
+	// When the allDeleted flag is set, it means that all elements in the committed set
+	// are considered deleted. But the stagedRemovals does not have the
+	// committed elements for saving space, so we need to set the committed elements
+	// to the stagedRemovals.
+	if this.stagedRemovals.allDeleted {
+		this.stagedRemovals.SetCommitted(this.committed) // Set the committed elements to the stagedRemovals.
+	}
 	return this
 }
 
@@ -83,13 +92,13 @@ func (this *DeltaSet[K]) Decode(buffer []byte) any {
 // // 	fmt.Println()
 // // }
 
-// func (this *DeltaSet) StorageEncode(_ string) []byte {
-// 	buffer, _ := rlp.EncodeToBytes(this.Encode())
-// 	return buffer
-// }
+func (this *DeltaSet[K]) StorageEncode(_ string) []byte {
+	buffer, _ := rlp.EncodeToBytes(this.Encode())
+	return buffer
+}
 
-// func (this *DeltaSet) StorageDecode(_ string, buffer []byte) any {
-// 	var decoded []byte
-// 	rlp.DecodeBytes(buffer, &decoded)
-// 	return this.Decode(decoded)
-// }
+func (this *DeltaSet[K]) StorageDecode(_ string, buffer []byte) any {
+	var decoded []byte
+	rlp.DecodeBytes(buffer, &decoded)
+	return this.Decode(decoded)
+}

@@ -27,8 +27,9 @@ func (this *OrderedSet[K]) Size() int {
 		return 0 // Header size only
 	}
 
-	return (len(this.elements)+1)*codec.UINT64_LEN +
+	size := (len(this.elements)+1)*codec.UINT64_LEN +
 		slice.Accumulate(this.elements, 0, func(_ int, k K) int { return this.Sizer(k) }) // Header size
+	return size
 }
 
 func (this *OrderedSet[K]) EncodeTo(buf []byte) int {

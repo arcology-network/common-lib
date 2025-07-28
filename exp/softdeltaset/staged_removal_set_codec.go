@@ -23,12 +23,36 @@ import (
 )
 
 func (this *StagedRemovalSet[K]) Size() int {
-	return 1 + this.DeltaSet.Size()
+	size := this.DeltaSet.Size()
+
+	// When allDeleted is true, we only encode the staged removals and the added set.
+	// We temporarily set the committed set to nil to avoid adding its size to the total size.
+	if this.allDeleted {
+		committed := this.DeltaSet.Committed()
+		this.DeltaSet.SetCommitted(nil)
+		size = this.DeltaSet.Size()
+		this.DeltaSet.SetCommitted(committed)
+	}
+	return size + 1
 }
 
+// The EncodeTo method encodes the staged removal set to the provided buffer.
+// Only the staged removals and the added set are encoded, the committed set is not encoded
+// to save space. The committed is something that the recipient already has.
 func (this *StagedRemovalSet[K]) EncodeTo(buffer []byte) int {
 	offset := codec.Bool(this.allDeleted).EncodeTo(buffer)
+	// Copy the committed set to avoid modifying the original.
+	committed := this.DeltaSet.Committed()
+
+	if this.allDeleted {
+		// Create a empty new OrderedSet to avoid encoding the committed set
+		// empty := orderedset.NewOrderedSet(committed.NilValue(), 0, committed.Sizer, committed.Encoder, committed.Decoder, nil)
+		this.DeltaSet.SetCommitted(nil)
+	}
+
+	// Restore the committed set to the DeltaSet. Since it may be used again later.
 	this.DeltaSet.EncodeTo(buffer[offset:])
+	this.DeltaSet.SetCommitted(committed)
 	return offset
 }
 

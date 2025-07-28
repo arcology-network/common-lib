@@ -355,13 +355,28 @@ func TestStringsetFlatten(t *testing.T) {
 }
 
 func TestStringsetCodec(t *testing.T) {
+	str0 := []string{"", ""}
+	str1 := []string{"abcdef", "zqwert"}
+
+	buffer := Stringset([][]string{str0, str1}).Encode()
+	out := Stringset{}.Decode(buffer).(Stringset)
+
+	if out[0][0] != "" ||
+		out[0][1] != "" ||
+		out[1][0] != "abcdef" ||
+		out[1][1] != "zqwert" {
+		t.Error("Mismatch !")
+	}
+}
+
+func TestStructCodec(t *testing.T) {
 	str0 := []string{"123456", "987654"}
 	str1 := []string{"abcdef", "zqwert"}
 
 	buffer := Stringset([][]string{str0, str1}).Encode()
 	out := Stringset{}.Decode(buffer).(Stringset)
 
-	if out[0][0] != "123456" ||
+	if out[0][0] != "" ||
 		out[0][1] != "987654" ||
 		out[1][0] != "abcdef" ||
 		out[1][1] != "zqwert" {

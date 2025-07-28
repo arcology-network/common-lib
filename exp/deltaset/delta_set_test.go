@@ -414,6 +414,12 @@ func TestDeltaCodec(t *testing.T) {
 	if !deltaSet.Equal(set2) {
 		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
+
+	buffer = deltaSet.Encode()
+	set2 = NewDeltaSet(-1, 100, sizer, encodeToBuffer, decoder, nil).Decode(buffer)
+	if !deltaSet.Equal(set2) {
+		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
+	}
 }
 
 func BenchmarkDeltaDeleteThenAddBack(t *testing.B) {

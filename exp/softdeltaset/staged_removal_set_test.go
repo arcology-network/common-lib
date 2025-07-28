@@ -27,7 +27,6 @@ func TestStagedRemovalSetCodec(t *testing.T) {
 	removalSet := NewStagedRemovalSet("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil)
 	removalSet.InsertBatch([]string{"13", "15", "17"})
 	removalSet.Commit(nil) // The strings are in the committed set already
-	removalSet.allDeleted = true
 
 	removalSet.InsertBatch([]string{"113", "115", "117"})
 	removalSet.DeleteByIndex(1) // {"15"} are in the stagedRemovals set
@@ -40,5 +39,30 @@ func TestStagedRemovalSetCodec(t *testing.T) {
 	// set2.Equal(removalSet) // Check if the decoded set is equal to the original
 	if !out.Equal(removalSet) {
 		t.Error("decoded set is not equal to the original")
+	}
+}
+
+func TestStagedRemovalSetCodecAllDeleted(t *testing.T) {
+	removalSet := NewStagedRemovalSet("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil)
+	removalSet.InsertBatch([]string{"13", "15", "17"})
+	removalSet.Commit(nil) // The strings are in the committed set already
+
+	removalSet.InsertBatch([]string{"113", "115", "117"})
+	removalSet.DeleteByIndex(1)  // {"15"} are in the stagedRemovals set
+	removalSet.DeleteByIndex(4)  // {"115"} is in the stagedRemovals set
+	removalSet.DeleteByIndex(5)  // {"117"} is in the staged
+	removalSet.allDeleted = true // {"13", "15", "17"} are in the stagedRemovals set,
+
+	buff := removalSet.Encode()                                                                                                                // Encode the staged removal set
+	out := NewStagedRemovalSet("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil).Decode(buff).(*StagedRemovalSet[string]) // Decode the staged removal set
+
+	if len(out.Committed().Elements()) != 0 {
+		t.Error("committed set should be empty, but it is not")
+	}
+	if !out.Added().Equal(removalSet.Added()) {
+		t.Error("added set should be equal, but it is not")
+	}
+	if !out.Removed().Equal(removalSet.Removed()) {
+		t.Error("removed set should be equal, but it is not")
 	}
 }

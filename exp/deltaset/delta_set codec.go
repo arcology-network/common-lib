@@ -19,26 +19,42 @@ package deltaset
 
 import (
 	"github.com/arcology-network/common-lib/codec"
+	"github.com/arcology-network/common-lib/common"
 	orderedset "github.com/arcology-network/common-lib/exp/orderedset"
 )
 
 func (this *DeltaSet[K]) Size() int {
 	return 4*codec.UINT64_LEN +
-		this.committed.Size() +
-		this.stagedAdditions.Size() +
-		this.stagedRemovals.Size()
+		common.IfThenDo1st(this.committed != nil, func() int { return this.committed.Size() }, 0) +
+		common.IfThenDo1st(this.stagedAdditions != nil, func() int { return this.stagedAdditions.Size() }, 0) +
+		common.IfThenDo1st(this.stagedRemovals != nil, func() int { return int(this.stagedRemovals.Size()) }, 0)
 }
 
-func (this *DeltaSet[K]) EncodeTo(buf []byte) int {
-	offset := codec.Encoder{}.FillHeader(buf, []uint64{
-		uint64(this.committed.Size()),
-		uint64(this.stagedAdditions.Size()),
-		uint64(this.stagedRemovals.Size()),
-	})
+func (this *DeltaSet[K]) EncodeTo(buffer []byte) int {
+	// Some sets may be empty to save space, so we only encode the sizes of non-empty sets.
+	a := common.IfThenDo1st(this.committed != nil, func() uint64 { return uint64(this.committed.Size()) }, 0)
+	b := common.IfThenDo1st(this.stagedAdditions != nil, func() uint64 { return uint64(this.stagedAdditions.Size()) }, 0)
+	c := common.IfThenDo1st(this.stagedRemovals != nil, func() uint64 { return uint64(this.stagedRemovals.Size()) }, 0)
 
-	offset += this.committed.EncodeTo(buf[offset:]) // allDeleted
-	offset += this.stagedAdditions.EncodeTo(buf[offset:])
-	offset += this.stagedRemovals.EncodeTo(buf[offset:])
+	offset := codec.Encoder{}.FillHeader(buffer,
+		[]uint64{
+			a,
+			b,
+			c,
+		},
+	)
+
+	offset += common.IfThenDo1st(this.committed != nil, func() int {
+		return this.committed.EncodeTo(buffer[offset:])
+	}, 0)
+
+	offset += common.IfThenDo1st(this.stagedAdditions != nil, func() int {
+		return this.stagedAdditions.EncodeTo(buffer[offset:])
+	}, 0)
+
+	offset += common.IfThenDo1st(this.stagedRemovals != nil, func() int {
+		return this.stagedRemovals.EncodeTo(buffer[offset:])
+	}, 0)
 	return offset
 }
 

@@ -36,6 +36,17 @@ func IsPath(path string) bool {
 	return len(path) > 0 && path[len(path)-1] == '/'
 }
 
+// IsWildcard checks if the given path ends with a forward slash.
+// It returns true if the path is not empty and ends with a forward slash, false otherwise.
+func IsWildcard(path string) bool {
+	return strings.HasSuffix(path, "/*")
+}
+
+// Trim WildcardSuffix removes the trailing wildcard suffix from the given path if it exists.
+func TrimWildcardSuffix(path string) string {
+	return strings.TrimRight(path, "*")
+}
+
 // GetParentPath returns the parent path of the given key.
 // If the key is empty or the root ("/"), it returns the key itself.
 // Otherwise, it returns the substring of the key up to the last occurrence of "/".
