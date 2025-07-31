@@ -22,7 +22,12 @@ import (
 	orderedset "github.com/arcology-network/common-lib/exp/orderedset"
 )
 
-// DeltaSet represents a mutable view over a base set, allowing staged additions and deletions.
+// DeltaSet represents a mutable view over a base set, allowing staged
+// additions and deletions. Its key difference from a regular DeltaSet
+// is that it has a flag to indicate if all elements are deleted. It is
+// especially useful working with a huge set where we may want to delete
+// the entire set without explicitly touching each element, which would
+// be a huge overhead.
 type StagedRemovalSet[K comparable] struct {
 	deltaset.DeltaSet[K]
 	allDeleted bool // If true, all elements are deleted, i.e. the set is empty.
