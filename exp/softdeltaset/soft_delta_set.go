@@ -134,6 +134,11 @@ func (this *DeltaSet[K]) IsDirty() bool {
 	return this.stagedRemovals.Length() != 0 || this.stagedAdditions.Length() != 0
 }
 
+// Only delete elements in the committed set. No additions.
+func (this *DeltaSet[K]) CommittedOnly() bool {
+	return this.stagedAdditions.Length() == 0
+}
+
 // Delta returns a new instance of DeltaSet with the same stagedAdditions  and stagedRemovals elements only.
 func (this *DeltaSet[K]) Delta() *DeltaSet[K] {
 	return this.CloneDelta()
