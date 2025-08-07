@@ -212,6 +212,7 @@ func (this *DeltaSet[K]) DeleteAll() {
 	// No further changes to the stagedAdditions won't affect the stagedRemovals
 	// from this point on.
 	this.stagedRemovals.SetAdded(this.stagedAdditions.Clone())
+	this.stagedRemovals.allDeleted = true
 }
 
 func (this *DeltaSet[K]) DeleteByIndex(idx uint64) {
@@ -221,17 +222,16 @@ func (this *DeltaSet[K]) DeleteByIndex(idx uint64) {
 }
 
 // Clone returns a new instance of DeltaSet with the same elements.
+// under no circumstances the committed should be deeply copied.
 func (this *DeltaSet[K]) CloneFull() *DeltaSet[K] {
-	set := this.CloneDelta()
-	set.committed = this.committed.Clone()
-	return set
+	return this.Clone()
 }
 
 // Clone returns a new instance with the
 // committed list shared original DeltaSet.
 func (this *DeltaSet[K]) Clone() *DeltaSet[K] {
 	set := this.CloneDelta()
-	set.committed = this.committed //.Clone()
+	set.committed = this.committed //Share the committed set.
 	return set
 }
 
@@ -245,7 +245,7 @@ func (this *DeltaSet[K]) CloneDelta() *DeltaSet[K] {
 			this.committed.Decoder,
 			nil),
 		stagedAdditions: this.stagedAdditions.Clone(),
-		stagedRemovals:  this.stagedRemovals.CloneFull(),
+		stagedRemovals:  this.stagedRemovals.Clone(),
 	}
 }
 

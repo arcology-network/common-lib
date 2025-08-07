@@ -68,6 +68,9 @@ func (this *StagedRemovalSet[K]) Decode(buffer []byte) any {
 	return this
 }
 
+// StorageEncode encodes the staged removal set to a byte slice for storage.
+// It uses RLP encoding to ensure compatibility with Ethereum storage.
+// It is different from the Encode method which is used for network transmission.
 func (this *StagedRemovalSet[K]) StorageEncode(_ string) []byte {
 	buffer, _ := rlp.EncodeToBytes(this.Encode())
 	return buffer
