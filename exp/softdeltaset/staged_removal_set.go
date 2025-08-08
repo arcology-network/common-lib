@@ -44,6 +44,8 @@ func NewStagedRemovalSet[K comparable](nilVal K, preAlloc int,
 	}
 }
 
+func (this *StagedRemovalSet[K]) AllDeleted() bool { return this.allDeleted }
+
 func (this *StagedRemovalSet[K]) DeleteAll(
 	committed *orderedset.OrderedSet[K],
 	stagedAdditions *orderedset.OrderedSet[K]) {
