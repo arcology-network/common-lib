@@ -154,12 +154,8 @@ func (this *DeltaSet[K]) SetDelta(delta *DeltaSet[K]) {
 
 // ResetDelta resets the stagedAdditions  and stagedRemovals  lists to empty.
 func (this *DeltaSet[K]) ResetDelta() {
-	if this.stagedAdditions.Length() > 0 {
-		this.stagedAdditions.Clear()
-	}
-	if this.stagedRemovals.Length() > 0 {
-		this.stagedRemovals.Clear()
-	}
+	this.stagedAdditions.Clear()
+	this.stagedRemovals.Clear()
 }
 
 // Length returns the number of elements in the DeltaSet, including the NIL values.

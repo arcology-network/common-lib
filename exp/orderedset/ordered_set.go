@@ -212,8 +212,10 @@ func (this *OrderedSet[K]) Exists(k K) (bool, int) {
 }
 
 func (this *OrderedSet[K]) Clear() {
-	clear(this.dict)
-	this.elements = this.elements[:0]
+	if len(this.dict) > 0 {
+		clear(this.dict)
+		this.elements = this.elements[:0]
+	}
 }
 
 // Debugging function to check if the dict is in sync with the slice.
