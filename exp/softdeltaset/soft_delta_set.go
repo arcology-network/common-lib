@@ -18,6 +18,7 @@
 package softdeltaset
 
 import (
+	"fmt"
 	"math"
 
 	orderedset "github.com/arcology-network/common-lib/exp/orderedset"
@@ -427,7 +428,12 @@ func (this *DeltaSet[K]) Equal(other *DeltaSet[K]) bool {
 }
 
 func (this *DeltaSet[K]) Print() {
+	fmt.Print("Committed: ")
 	this.committed.Print()
+
+	fmt.Print("Staged Added: ")
 	this.stagedAdditions.Print()
+
+	fmt.Print("Staged Removed: ")
 	this.stagedRemovals.Print()
 }
