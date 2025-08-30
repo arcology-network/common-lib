@@ -93,9 +93,17 @@ func (this *StagedRemovalSet[K]) NewFrom(other *StagedRemovalSet[K]) *StagedRemo
 	}
 }
 
+// For the staged removals, the committed set is always shared.
+// The committed set in the StagedRemovalSet is the committed set
+// of the original set. When committed set of the staged removal
+// set is not empty, it shares the same underlying data structure
+// with the original set. So, we need to create a new instance
+// of the committed set instead.
 func (this *StagedRemovalSet[K]) Clear() {
 	this.ResetDelta()
-	this.Committed().Clear()
+	if this.Committed().Length() > 0 {
+		this.SetCommitted(orderedset.NewFrom(this.Committed())) //  Shares the same underlying data, need a new copy.
+	}
 	this.allDeleted = false // Reset the allDeleted flag
 }
 
