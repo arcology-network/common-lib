@@ -43,19 +43,25 @@ func IsWildcard(path string) bool {
 }
 
 // Trim WildcardSuffix removes the trailing wildcard suffix from the given path if it exists.
-func TrimWildcardSuffix(path string) string {
-	return strings.TrimRight(path, "*")
+func TrimWildcardSuffix(path string) (string, string) {
+	left := strings.TrimRight(path, "*")
+	if left != path {
+		return left, path[len(left):]
+	}
+
+	left = strings.TrimRight(path, "[:]")
+	return left, path[len(left):]
 }
 
 // GetParentPath returns the parent path of the given key.
 // If the key is empty or the root ("/"), it returns the key itself.
 // Otherwise, it returns the substring of the key up to the last occurrence of "/".
-func GetParentPath(key string) string {
+func GetParentPath(key string) (string, string) {
 	if len(key) == 0 || key == "/" { //Root or empty
-		return key
+		return key, key
 	}
 	path := key[:strings.LastIndex(key[:len(key)-1], "/")+1]
-	return path
+	return path, key[len(path):]
 }
 
 // FileToLines reads the contents of the file with the given fileName and returns them as a slice of strings.

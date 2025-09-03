@@ -30,7 +30,8 @@ import (
 // be a huge overhead.
 type StagedRemovalSet[K comparable] struct {
 	deltaset.DeltaSet[K]
-	allDeleted bool // If true, all elements are deleted, i.e. the set is empty.
+	CommittedDeleted bool
+	AllDeleted       bool // If true, all elements are deleted, i.e. the set is empty.
 }
 
 func NewStagedRemovalSet[K comparable](nilVal K, preAlloc int,
@@ -44,15 +45,19 @@ func NewStagedRemovalSet[K comparable](nilVal K, preAlloc int,
 	}
 }
 
-func (this *StagedRemovalSet[K]) AllDeleted() bool { return this.allDeleted }
-
 func (this *StagedRemovalSet[K]) DeleteAll(
 	committed *orderedset.OrderedSet[K],
 	stagedAdditions *orderedset.OrderedSet[K]) {
 	this.SetCommitted(committed)
 	this.SetAdded(stagedAdditions.Clone())
 	this.Removed().Clear()
-	this.allDeleted = true
+	this.CommittedDeleted = true
+	this.AllDeleted = true
+}
+
+func (this *StagedRemovalSet[K]) DeleteCommitted(v *orderedset.OrderedSet[K]) {
+	this.SetCommitted(v)
+	this.CommittedDeleted = true
 }
 
 // For the staged removals, the committed set is always shared. This
@@ -73,7 +78,7 @@ func (this *StagedRemovalSet[K]) CloneFull() *StagedRemovalSet[K] {
 func (this *StagedRemovalSet[K]) Clone() *StagedRemovalSet[K] {
 	set := this.CloneDelta()
 	set.SetCommitted(this.Committed()) // Share the committed set.
-	set.allDeleted = this.allDeleted
+	set.AllDeleted = this.AllDeleted
 	return set
 }
 
@@ -104,9 +109,9 @@ func (this *StagedRemovalSet[K]) Clear() {
 	if this.Committed().Length() > 0 {
 		this.SetCommitted(orderedset.NewFrom(this.Committed())) //  Shares the same underlying data, need a new copy.
 	}
-	this.allDeleted = false // Reset the allDeleted flag
+	this.AllDeleted = false // Reset the AllDeleted flag
 }
 
 func (this *StagedRemovalSet[K]) Equal(other *StagedRemovalSet[K]) bool {
-	return this.allDeleted == other.allDeleted && this.DeltaSet.Equal(&other.DeltaSet)
+	return this.AllDeleted == other.AllDeleted && this.DeltaSet.Equal(&other.DeltaSet)
 }

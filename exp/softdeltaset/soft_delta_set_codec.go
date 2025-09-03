@@ -72,11 +72,11 @@ func (this *DeltaSet[K]) Decode(buffer []byte) any {
 	this.stagedAdditions = this.stagedAdditions.Decode(fields[1]).(*orderedset.OrderedSet[K])
 	this.stagedRemovals = this.stagedRemovals.Decode(fields[2]).(*StagedRemovalSet[K])
 
-	// When the allDeleted flag is set, it means that all elements in the committed set
+	// When the AllDeleted flag is set, it means that all elements in the committed set
 	// are considered deleted. But the stagedRemovals does not have the
 	// committed elements for saving space, so we need to set the committed elements
 	// to the stagedRemovals.
-	if this.stagedRemovals.allDeleted {
+	if this.stagedRemovals.AllDeleted {
 		this.stagedRemovals.SetCommitted(this.committed) // Set the committed elements to the stagedRemovals.
 	}
 	return this

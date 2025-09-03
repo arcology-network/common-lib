@@ -78,7 +78,20 @@ func (this *OrderedSet[K]) Dict() map[K]*int { return this.dict }
 func (this *OrderedSet[K]) Elements() []K    { return this.elements }
 func (this *OrderedSet[K]) Length() int      { return len(this.elements) }
 func (this *OrderedSet[K]) Clone() *OrderedSet[K] {
-	return NewOrderedSet(this.NilValue, len(this.elements), this.Sizer, this.Encoder, this.Decoder, this.Hasher, this.elements...)
+	// return NewOrderedSet(this.NilValue, len(this.elements), this.Sizer, this.Encoder, this.Decoder, this.Hasher, this.elements...)
+	return this.CopyRange(0, uint64(len(this.elements)))
+}
+
+func (this *OrderedSet[K]) CopyRange(begin, end uint64) *OrderedSet[K] {
+	return NewOrderedSet(
+		this.NilValue,
+		len(this.elements[begin:end]),
+		this.Sizer,
+		this.Encoder,
+		this.Decoder,
+		this.Hasher,
+		this.elements[begin:end]...,
+	)
 }
 
 func (this *OrderedSet[K]) Merge(elements []K) *OrderedSet[K] {
