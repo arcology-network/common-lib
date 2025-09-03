@@ -95,7 +95,7 @@ func (this *StagedRemovalSet[K]) NewFrom(other *StagedRemovalSet[K]) *StagedRemo
 
 func (this *StagedRemovalSet[K]) Clear() {
 	this.ResetDelta()
-	this.Committed().Clear()
+	this.SetCommitted(orderedset.NewFrom(this.Committed()))
 	this.allDeleted = false // Reset the allDeleted flag
 }
 
