@@ -31,7 +31,8 @@ import (
 type OrderedSet[K comparable] struct {
 	elements []K
 	dict     map[K]*int // Using a pointer to the index, so that it can be updated without having to reinsert the key.
-	nilValue K
+	PreAlloc int
+	NilValue K
 	Sizer    func(K) int
 	Encoder  func(K, []byte) int
 	Decoder  func([]byte) K
@@ -40,7 +41,7 @@ type OrderedSet[K comparable] struct {
 
 // NewIndexedSlice creates a new instance of OrderedSet with the specified page Size, minimum number of pages, and pre-allocation Size.
 func NewOrderedSet[K comparable](
-	nilValue K,
+	NilValue K,
 	preAlloc int,
 	sizer func(K) int,
 	Encoder func(K, []byte) int,
@@ -50,7 +51,8 @@ func NewOrderedSet[K comparable](
 	set := &OrderedSet[K]{
 		dict:     make(map[K]*int),
 		elements: append(make([]K, 0, preAlloc+len(vals)), vals...),
-		nilValue: nilValue,
+		PreAlloc: preAlloc,
+		NilValue: NilValue,
 		Sizer:    sizer,
 		Hasher:   Hasher,
 		Encoder:  Encoder,
@@ -61,10 +63,9 @@ func NewOrderedSet[K comparable](
 }
 
 func NewFrom[K comparable](other *OrderedSet[K]) *OrderedSet[K] {
-	return NewOrderedSet(other.nilValue, 0, other.Sizer, other.Encoder, other.Decoder, other.Hasher)
+	return NewOrderedSet(other.NilValue, 0, other.Sizer, other.Encoder, other.Decoder, other.Hasher)
 }
 
-func (this *OrderedSet[K]) NilValue() K { return this.nilValue }
 func (this *OrderedSet[K]) Init() *OrderedSet[K] {
 	for i, idx := range this.elements {
 		this.dict[idx] = common.New(i)
@@ -77,7 +78,20 @@ func (this *OrderedSet[K]) Dict() map[K]*int { return this.dict }
 func (this *OrderedSet[K]) Elements() []K    { return this.elements }
 func (this *OrderedSet[K]) Length() int      { return len(this.elements) }
 func (this *OrderedSet[K]) Clone() *OrderedSet[K] {
-	return NewOrderedSet(this.nilValue, len(this.elements), this.Sizer, this.Encoder, this.Decoder, this.Hasher, this.elements...)
+	// return NewOrderedSet(this.NilValue, len(this.elements), this.Sizer, this.Encoder, this.Decoder, this.Hasher, this.elements...)
+	return this.CopyRange(0, uint64(len(this.elements)))
+}
+
+func (this *OrderedSet[K]) CopyRange(begin, end uint64) *OrderedSet[K] {
+	return NewOrderedSet(
+		this.NilValue,
+		len(this.elements[begin:end]),
+		this.Sizer,
+		this.Encoder,
+		this.Decoder,
+		this.Hasher,
+		this.elements[begin:end]...,
+	)
 }
 
 func (this *OrderedSet[K]) Merge(elements []K) *OrderedSet[K] {
@@ -211,8 +225,10 @@ func (this *OrderedSet[K]) Exists(k K) (bool, int) {
 }
 
 func (this *OrderedSet[K]) Clear() {
-	clear(this.dict)
-	this.elements = this.elements[:0]
+	if len(this.dict) > 0 {
+		clear(this.dict)
+		this.elements = this.elements[:0]
+	}
 }
 
 // Debugging function to check if the dict is in sync with the slice.

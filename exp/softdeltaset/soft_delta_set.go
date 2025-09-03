@@ -18,6 +18,7 @@
 package softdeltaset
 
 import (
+	"fmt"
 	"math"
 
 	orderedset "github.com/arcology-network/common-lib/exp/orderedset"
@@ -204,15 +205,19 @@ func (this *DeltaSet[K]) Delete(elem K) {
 }
 
 // Add both committed and the added elements to the deletion list.
+// The return value indicates if some pending entries were involved.
+func (this *DeltaSet[K]) DeleteCommitted() { this.stagedRemovals.SetCommitted(this.Committed()) }
+func (this *DeltaSet[K]) DeleteAdded()     { this.stagedRemovals.SetAdded(this.stagedAdditions.Clone()) }
+
+// Add both committed and the added elements to the deletion list.
 func (this *DeltaSet[K]) DeleteAll() {
 	// Shallow copy is enough, because the Committed elements won't change.
-	// in the process.
 	this.stagedRemovals.SetCommitted(this.Committed())
 
 	// No further changes to the stagedAdditions won't affect the stagedRemovals
 	// from this point on.
 	this.stagedRemovals.SetAdded(this.stagedAdditions.Clone())
-	this.stagedRemovals.allDeleted = true
+	this.stagedRemovals.AllDeleted = true
 }
 
 func (this *DeltaSet[K]) DeleteByIndex(idx uint64) {
@@ -427,7 +432,12 @@ func (this *DeltaSet[K]) Equal(other *DeltaSet[K]) bool {
 }
 
 func (this *DeltaSet[K]) Print() {
+	fmt.Print("Committed: ")
 	this.committed.Print()
+
+	fmt.Print("Staged Added: ")
 	this.stagedAdditions.Print()
+
+	fmt.Print("Staged Removed: ")
 	this.stagedRemovals.Print()
 }
