@@ -29,11 +29,11 @@ const (
 
 type Bytes32 [HASH32_LEN]byte
 
-func (this *Bytes32) Get() interface{} {
+func (this *Bytes32) Get() any {
 	return *this
 }
 
-func (this *Bytes32) Set(v interface{}) {
+func (this *Bytes32) Set(v any) {
 	*this = v.(Bytes32)
 }
 
@@ -49,7 +49,7 @@ func (this Bytes32) Sum(offset uint64) uint64 {
 	return total
 }
 
-func (this Bytes32) Clone() interface{} {
+func (this Bytes32) Clone() any {
 	target := Bytes32{}
 	copy(target[:], this[:])
 	return target
@@ -59,12 +59,12 @@ func (this Bytes32) Encode() []byte {
 	return this[:]
 }
 
-func (this Bytes32) EncodeToBuffer(buffer []byte) int {
+func (this Bytes32) EncodeTo(buffer []byte) int {
 	copy(buffer, this[:])
 	return len(this)
 }
 
-func (this Bytes32) Decode(buffer []byte) interface{} {
+func (this Bytes32) Decode(buffer []byte) any {
 	copy(this[:], buffer)
 	return Bytes32(this)
 }
@@ -79,7 +79,7 @@ func (this Bytes32) Hex() string {
 func (this Bytes32) UUID(seed uint64) Bytes32 {
 	buffer := [HASH32_LEN + 8]byte{}
 	copy(this[:], buffer[:])
-	Uint64(uint64(seed)).EncodeToBuffer(buffer[len(this):])
+	Uint64(uint64(seed)).EncodeTo(buffer[len(this):])
 	return sha256.Sum256(buffer[:])
 }
 
@@ -97,14 +97,14 @@ func (this Bytes32s) Encode() []byte {
 	return Bytes32s(this).Flatten()
 }
 
-func (this Bytes32s) EncodeToBuffer(buffer []byte) int {
+func (this Bytes32s) EncodeTo(buffer []byte) int {
 	for i := 0; i < len(this); i++ {
 		copy(buffer[i*HASH32_LEN:], this[i][:])
 	}
 	return len(this) * HASH32_LEN
 }
 
-func (this Bytes32s) Decode(buffer []byte) interface{} {
+func (this Bytes32s) Decode(buffer []byte) any {
 	if len(buffer) == 0 {
 		return this
 	}
@@ -122,7 +122,7 @@ func (this Bytes32s) Size() uint64 {
 
 func (this Bytes32s) Flatten() []byte {
 	buffer := make([]byte, len(this)*HASH32_LEN)
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 

@@ -18,8 +18,10 @@
 package codec
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"unsafe"
 
 	ethCommon "github.com/ethereum/go-ethereum/common"
@@ -76,7 +78,7 @@ func (this Bytes) Clone() interface{} {
 	return Bytes(target)
 }
 
-func (this Bytes) EncodeToBuffer(buffer []byte) int {
+func (this Bytes) EncodeTo(buffer []byte) int {
 	copy(buffer, this)
 	return len(this)
 }
@@ -142,14 +144,34 @@ func (this Byteset) Flatten() []byte {
 	return buffer
 }
 
+func (this Byteset) Equal(other Byteset) bool {
+	if len(this) != len(other) {
+		return false
+	}
+
+	for i := range this {
+		if len(this[i]) != len(other[i]) {
+			return false
+		}
+		if !bytes.Equal(this[i], other[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func (this Byteset) Checksum() ethCommon.Hash {
 	return sha256.Sum256(this.Flatten())
+}
+
+func (this Byteset) Hash(hasher func([]byte) []byte) []byte {
+	return hasher(this.Flatten())
 }
 
 func (this Byteset) Encode() []byte {
 	total := this.Size()
 	buffer := make([]byte, total)
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
@@ -165,16 +187,16 @@ func (this Byteset) FillHeader(buffer []byte) {
 		return
 	}
 
-	Uint64(len(this)).EncodeToBuffer(buffer)
+	Uint64(len(this)).EncodeTo(buffer)
 
 	offset := uint64(0)
 	for i := 0; i < len(this); i++ {
-		Uint64(offset).EncodeToBuffer(buffer[(i+1)*UINT64_LEN:])
+		Uint64(offset).EncodeTo(buffer[(i+1)*UINT64_LEN:])
 		offset += uint64(len(this[i]))
 	}
 }
 
-func (this Byteset) EncodeToBuffer(buffer []byte) int {
+func (this Byteset) EncodeTo(buffer []byte) int {
 	if len(buffer) == 0 {
 		return 0
 	}
@@ -210,6 +232,13 @@ func (this Byteset) Decode(buffer []byte) interface{} {
 		prev = next
 	}
 	return Byteset(this)
+}
+
+func (this Byteset) Print() {
+	for i, b := range this {
+		fmt.Printf("Byteset[%d]: %s\n", i, b)
+	}
+	fmt.Println()
 }
 
 type Bytegroup [][][]byte

@@ -29,12 +29,24 @@ func Min[T ~int8 | ~int32 | ~int | ~int64 | ~uint8 | ~uint32 | ~uint64 | ~float6
 	return b
 }
 
+func MinIf[T any](a, b T, less func(T, T) bool) T {
+	if less(a, b) {
+		return a
+	}
+	return b
+}
+
 // Max returns the maximum value between two values of type T.
 func Max[T ~int8 | ~int32 | ~int | ~int64 | ~uint8 | ~uint32 | ~uint64 | ~float64](a, b T) T {
 	if a > b {
 		return a
 	}
 	return b
+}
+
+// IsBetween checks if a value is within the range defined by min and max, inclusive.
+func IsBetween[T ~int8 | ~int32 | ~int | ~int64 | ~uint8 | ~uint32 | ~uint64 | ~float64](value, min, max T) bool {
+	return value >= min && value <= max
 }
 
 // Remainder calculates the remainder of dividing the total sum of the ASCII values of the characters in the key by numShards.

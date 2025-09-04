@@ -19,7 +19,6 @@ package codec
 
 import (
 	"bytes"
-	"math"
 
 	ethCommon "github.com/ethereum/go-ethereum/common"
 )
@@ -38,26 +37,17 @@ func NewHash8(v byte) Hash8 {
 	return hash8
 }
 
-func (Hash8) FromSlice(v []byte) Hash8 {
-	hash8 := [HASH8_LEN]byte{}
-	length := math.Min(float64(HASH8_LEN), float64(len(v)))
-	for i := 0; i < int(length); i++ {
-		hash8[i] = v[i]
-	}
-	return hash8
-}
-
-func (this Hash8) Clone() interface{} {
+func (this Hash8) Clone() any {
 	target := Hash8{}
 	copy(target[:], this[:])
 	return target
 }
 
-func (this *Hash8) Get() interface{} {
+func (this *Hash8) Get() any {
 	return *this
 }
 
-func (this *Hash8) Set(v interface{}) {
+func (this *Hash8) Set(v any) {
 	*this = v.(Hash8)
 }
 
@@ -83,7 +73,7 @@ func (hash Hash8) Encode() []byte {
 	return hash[:]
 }
 
-func (this Hash8) Decode(buffer []byte) interface{} {
+func (this Hash8) Decode(buffer []byte) any {
 	if len(buffer) == 0 {
 		return this
 	}
@@ -98,7 +88,7 @@ func (hashes Hash8s) Encode() []byte {
 	return Hash8s(hashes).Flatten()
 }
 
-func (hashes Hash8s) Decode(data []byte) interface{} {
+func (hashes Hash8s) Decode(data []byte) any {
 	hashes = make([]ethCommon.Hash, len(data)/HASH8_LEN)
 	for i := 0; i < len(hashes); i++ {
 		copy(hashes[i][:], data[i*HASH8_LEN:(i+1)*HASH8_LEN])

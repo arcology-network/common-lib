@@ -32,18 +32,18 @@ const (
 
 type Uint64 uint64
 
-func (this *Uint64) Clone() interface{} {
+func (this *Uint64) Clone() any {
 	if this == nil {
 		return this
 	}
 	return common.New(*this)
 }
 
-func (this *Uint64) Get() interface{} {
+func (this *Uint64) Get() any {
 	return *this
 }
 
-func (this *Uint64) Set(v interface{}) {
+func (this *Uint64) Set(v any) {
 	*this = v.(Uint64)
 }
 
@@ -53,16 +53,16 @@ func (Uint64) Size() uint64 {
 
 func (this Uint64) Encode() []byte {
 	buffer := make([]byte, UINT64_LEN)
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
-func (this Uint64) EncodeToBuffer(buffer []byte) int {
+func (this Uint64) EncodeTo(buffer []byte) int {
 	binary.LittleEndian.PutUint64(buffer, uint64(this))
 	return UINT64_LEN
 }
 
-func (this Uint64) Decode(data []byte) interface{} {
+func (this Uint64) Decode(data []byte) any {
 	if len(data) == 0 {
 		return this
 	}
@@ -81,11 +81,11 @@ func (v Uint64) ToInt64() int64 {
 
 type Uint64s []uint64
 
-func (this Uint64s) Get() interface{} {
+func (this Uint64s) Get() any {
 	return this.Sum()
 }
 
-func (this Uint64s) Set(v interface{}) {
+func (this Uint64s) Set(v any) {
 	this = append(this, v.(uint64))
 }
 
@@ -133,19 +133,19 @@ func (this Uint64s) Unique() []uint64 {
 
 func (this Uint64s) Encode() []byte {
 	buffer := make([]byte, len(this)*UINT64_LEN)
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
-func (this Uint64s) EncodeToBuffer(buffer []byte) int {
+func (this Uint64s) EncodeTo(buffer []byte) int {
 	offset := 0
 	for i := range this {
-		offset += Uint64(this[i]).EncodeToBuffer(buffer[offset:])
+		offset += Uint64(this[i]).EncodeTo(buffer[offset:])
 	}
 	return len(this) * UINT64_LEN
 }
 
-func (this Uint64s) Decode(buffer []byte) interface{} {
+func (this Uint64s) Decode(buffer []byte) any {
 	if len(buffer) == 0 {
 		return this
 	}

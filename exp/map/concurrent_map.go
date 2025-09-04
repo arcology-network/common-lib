@@ -22,6 +22,7 @@ package mapi
 
 import (
 	"crypto/sha256"
+	"fmt"
 	"sort"
 	"sync"
 
@@ -417,13 +418,13 @@ func (this *ConcurrentMap[K, V]) KVs(less ...func(k0, k1 K) bool) ([]K, []V) {
 			return less[0](keys[i], keys[j])
 		})
 	}
-	return keys, common.FilterFirst(this.BatchGet(keys))
+	return keys, common.FilterFirst(this.BatchGet(keys)).([]V)
 }
 
 func (this *ConcurrentMap[K, V]) Checksum(less func(K, K) bool, encoders func(K, V) ([]byte, []byte)) [32]byte {
 	keys, values := this.KVs(less)
 	kBytes, vBytes := make([][]byte, len(keys)), make([][]byte, len(values))
-	for i, _ := range values {
+	for i := range values {
 		kBytes[i], vBytes[i] = encoders(keys[i], values[i])
 	}
 
@@ -432,4 +433,10 @@ func (this *ConcurrentMap[K, V]) Checksum(less func(K, K) bool, encoders func(K,
 	return sha256.Sum256(append(kSum[:], vSum[:]...))
 }
 
-func (this *ConcurrentMap[K, V]) Print() {}
+func (this *ConcurrentMap[K, V]) Print(toString func(K, V) string) {
+	slice.Foreach(this.shards, func(i int, shard *map[K]V) {
+		for k, v := range *shard {
+			fmt.Println("Shard", i, toString(k, v))
+		}
+	})
+}

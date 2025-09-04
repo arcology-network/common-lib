@@ -27,16 +27,23 @@ import (
 )
 
 type StandardMessage struct {
-	ID     uint64
-	TxHash [32]byte
-	Native *evmcore.Message
-	Source uint8
+	ID         uint64
+	TxHash     [32]byte
+	Native     *evmcore.Message
+	Source     uint8
+	PrepaidGas uint64 // Gas required for the deferred TX if it has one. Set by the scheduler only. Multiprocessor won't touch it.
+	IsDeferred bool   // If the message is deferred execution.
+}
+
+// AddrAndSignature return the address and the first 4 bytes of the signature of the message.
+func (this *StandardMessage) AddrAndSignature() string {
+	length := min(4, len(this.Native.Data))
+	return this.Native.To.String() + string(this.Native.Data[:length])
 }
 
 type StandardMessages []*StandardMessage
 
 func (this StandardMessages) SortByFee() {
-	// this.Native.
 	sort.SliceStable(
 		this,
 		func(i, j int) bool {

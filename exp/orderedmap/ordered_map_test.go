@@ -18,6 +18,7 @@
 package orderedmap
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 	"testing"
@@ -25,8 +26,8 @@ import (
 	"github.com/arcology-network/common-lib/exp/slice"
 )
 
-func TestIndexedSlice(t *testing.T) {
-	set := NewOrderedMap[string, int, *[]int](
+func TestIndexedSliceInt(t *testing.T) {
+	set := NewOrderedMap(
 		nil,
 		10,
 		func(key string, v int) *[]int {
@@ -80,4 +81,22 @@ func TestIndexedSlice(t *testing.T) {
 	i := sort.Search(len(a), func(i int) bool { return a[i] >= x })
 	slice.Insert(&a, i, x)
 	fmt.Println(a)
+}
+
+func TestIndexedSliceBytes(t *testing.T) {
+	set := NewOrderedMap(
+		nil,
+		10,
+		func(key string, v []byte) *[][]byte {
+			return &[][]byte{v}
+		},
+		func(key string, value []byte, newValue **[][]byte) {
+			**newValue = append(**newValue, value)
+		})
+
+	set.Insert([]string{"11"}, [][]byte{{11}})
+	set.Insert([]string{"11"}, [][]byte{{22}})
+	if v, ok := set.Get("11"); !ok || len(*v) != 2 || bytes.Equal((*v)[0], []byte("11")) || bytes.Equal((*v)[1], []byte("22")) {
+		t.Error("Error: Key is not equal !")
+	}
 }

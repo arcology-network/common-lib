@@ -17,10 +17,10 @@
 
 package codec
 
-func Clone(v interface{}) interface{} {
+func Clone(v any) any {
 	if v != nil {
-		// type Cloneable interface{ Clone() interface{} }
-		return v.(interface{ Clone() interface{} }).Clone()
+		// type Cloneable interface{ Clone() any }
+		return v.(interface{ Clone() any }).Clone()
 	}
 	return v
 }

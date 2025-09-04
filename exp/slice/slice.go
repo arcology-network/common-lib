@@ -229,7 +229,7 @@ func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, i
 // Foreach applies a function to each element in a slice.
 // It modifies the original slice and returns the modified slice.
 func Foreach[T any](values []T, do func(idx int, v *T)) {
-	for i := 0; i < len(values); i++ {
+	for i := range values {
 		do(i, &values[i])
 	}
 }
@@ -318,6 +318,30 @@ func InsertIf[T any](values *[]T, newv T, condition func(int, T) bool) {
 		}
 	}
 	*values = append(*values, newv)
+}
+
+// ReplaceIf replaces elements in a slice with a new value based on a given condition.
+func Replace[T comparable](values []T, newv T) int {
+	totalReplaced := 0
+	for i := range values {
+		if values[i] == newv {
+			values[i] = newv
+			totalReplaced++
+		}
+	}
+	return totalReplaced
+}
+
+// ReplaceIf replaces elements in a slice that satisfy a given condition with a new value.
+func ReplaceIf[T any](values []T, newv T, condition func(int, T) bool) int {
+	totalReplaced := 0
+	for i, v := range values {
+		if condition(i, v) {
+			values[i] = newv
+			totalReplaced++
+		}
+	}
+	return totalReplaced
 }
 
 // Insert inserts a value at a specific position in a slice.
@@ -426,6 +450,28 @@ func Unique[T comparable](src []T, less func(lhv, rhv T) bool) []T {
 	var uniqueElems []T
 	DoUnique(src, less, func(offset int) { uniqueElems = src[:current+1] })
 	return uniqueElems
+}
+
+// Unique removes duplicate elements from a slice of comparable types.
+// It modifies the original slice and returns the modified slice.
+func UniqueIf[T any](src []T, equal func(lhv, rhv T) bool) []T {
+	if len(src) <= 1 {
+		return src
+	}
+
+	i := 0
+	for i < len(src) {
+		j := i + 1
+		for j < len(src) {
+			if equal(src[i], src[j]) {
+				RemoveAt(&src, j)
+			} else {
+				j++
+			}
+		}
+		i++
+	}
+	return src
 }
 
 // DoUnique removes duplicate elements from a slice of comparable types and applies a function to the modified slice.

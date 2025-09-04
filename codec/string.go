@@ -40,7 +40,7 @@ type String string
 // 	return (*string)(unsafe.Pointer(b))
 // }
 
-func (this String) Clone() interface{} {
+func (this String) Clone() any {
 	b := make([]byte, len(this))
 	copy(b, this)
 	return String(*(*string)(unsafe.Pointer(&b)))
@@ -70,7 +70,7 @@ func (this String) Encode() []byte {
 	return this.ToBytes()
 }
 
-func (this String) EncodeToBuffer(buffer []byte) int {
+func (this String) EncodeTo(buffer []byte) int {
 	if len(this) > 0 {
 		copy(buffer, this.ToBytes())
 	}
@@ -81,8 +81,12 @@ func (this String) Size() uint64 {
 	return uint64(len(this))
 }
 
-func (String) Decode(buffer []byte) interface{} {
+func (String) Decode(buffer []byte) any {
 	return String(buffer)
+}
+
+func (String) DecodeTo(buf []byte) string {
+	return string(String(buf).Decode(buf).(String))
 }
 
 type Strings []string
@@ -100,7 +104,7 @@ func (this Strings) Sort() Strings {
 
 func (this Strings) Encode() []byte {
 	buffer := make([]byte, this.Size())
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
@@ -123,16 +127,16 @@ func (this Strings) FillHeader(buffer []byte) {
 	if len(this) == 0 {
 		return
 	}
-	Uint64(len(this)).EncodeToBuffer(buffer)
+	Uint64(len(this)).EncodeTo(buffer)
 
 	offset := 0
 	for i := 0; i < len(this); i++ {
-		Uint64(offset).EncodeToBuffer(buffer[UINT64_LEN*(i+1):])
+		Uint64(offset).EncodeTo(buffer[UINT64_LEN*(i+1):])
 		offset += len(this[i])
 	}
 }
 
-func (this Strings) EncodeToBuffer(buffer []byte) int {
+func (this Strings) EncodeTo(buffer []byte) int {
 	if len(buffer) == 0 {
 		return 0
 	}
@@ -146,7 +150,7 @@ func (this Strings) EncodeToBuffer(buffer []byte) int {
 	return int(offset)
 }
 
-func (this Strings) Decode(bytes []byte) interface{} {
+func (this Strings) Decode(bytes []byte) any {
 	if len(bytes) == 0 {
 		return Strings{}
 	}
@@ -168,7 +172,7 @@ func (Strings) singleThreadDecode(fields [][]byte) []string {
 
 func (Strings) multiThreadDecode(fields [][]byte) []string {
 	this := make([]string, len(fields))
-	worker := func(start, end, index int, args ...interface{}) {
+	worker := func(start, end, index int, args ...any) {
 		for i := start; i < end; i++ {
 			this[i] = string(String("").Decode(fields[i]).(String))
 		}
@@ -185,7 +189,7 @@ func (this Strings) Flatten() []byte {
 	}
 
 	buffer := make([]byte, positions[len(positions)-1])
-	worker := func(start, end, index int, args ...interface{}) {
+	worker := func(start, end, index int, args ...any) {
 		for i := start; i < end; i++ {
 			copy(buffer[positions[i]:positions[i+1]], []byte(this[i]))
 		}
@@ -196,7 +200,7 @@ func (this Strings) Flatten() []byte {
 
 func (this Strings) Clone() Strings {
 	nStrings := make([]string, len(this))
-	worker := func(start, end, index int, args ...interface{}) {
+	worker := func(start, end, index int, args ...any) {
 		for i := start; i < end; i++ {
 			nStrings[i] = string(String(this[i]).Clone().(String))
 		}
@@ -242,11 +246,11 @@ func (this Stringset) Size() uint64 {
 func (this Stringset) Encode() []byte {
 	length := int(this.Size())
 	buffer := make([]byte, length)
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
-func (this Stringset) EncodeToBuffer(buffer []byte) int {
+func (this Stringset) EncodeTo(buffer []byte) int {
 	lengths := make([]uint64, len(this))
 	for i := 0; i < len(this); i++ {
 		lengths[i] = Strings(this[i]).Size()
@@ -254,12 +258,12 @@ func (this Stringset) EncodeToBuffer(buffer []byte) int {
 
 	offset := Encoder{}.FillHeader(buffer, lengths)
 	for i := 0; i < len(this); i++ {
-		offset += Strings(this[i]).EncodeToBuffer(buffer[offset:])
+		offset += Strings(this[i]).EncodeTo(buffer[offset:])
 	}
 	return offset
 }
 
-func (this Stringset) Decode(buffer []byte) interface{} {
+func (this Stringset) Decode(buffer []byte) any {
 	if len(buffer) == 0 {
 		return this
 	}
@@ -281,7 +285,7 @@ func (this Stringset) Flatten() []string {
 	}
 
 	buffer := make([]string, positions[len(positions)-1])
-	worker := func(start, end, index int, args ...interface{}) {
+	worker := func(start, end, index int, args ...any) {
 		for i := start; i < end; i++ {
 			copy(buffer[positions[i]:positions[i+1]], (this[i]))
 		}

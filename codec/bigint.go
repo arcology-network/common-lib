@@ -37,14 +37,14 @@ func (this *Bigint) Size() uint64 {
 
 func (this *Bigint) Encode() []byte {
 	buffer := make([]byte, this.Size())
-	this.EncodeToBuffer(buffer)
+	this.EncodeTo(buffer)
 	return buffer
 }
 
-func (this *Bigint) EncodeToBuffer(buffer []byte) int {
+func (this *Bigint) EncodeTo(buffer []byte) int {
 	flag := (*big.Int)(this).Cmp(big.NewInt(0)) >= 0
 
-	Bool(flag).EncodeToBuffer(buffer)
+	Bool(flag).EncodeTo(buffer)
 	val := (big.Int)(*this)
 	val.FillBytes(buffer[1 : val.BitLen()+1])
 	return (val.BitLen() + 1)

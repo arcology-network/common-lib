@@ -15,9 +15,10 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package deltaset
+package softdeltaset
 
 import (
+	"fmt"
 	"math"
 
 	orderedset "github.com/arcology-network/common-lib/exp/orderedset"
@@ -28,31 +29,30 @@ import (
 type DeltaSet[K comparable] struct {
 	committed       *orderedset.OrderedSet[K] // The stable, committed elements
 	stagedAdditions *orderedset.OrderedSet[K] // New elements staged for addition
-	stagedRemovals  *orderedset.OrderedSet[K] // Elements marked for deletion
+	stagedRemovals  *StagedRemovalSet[K]
 }
 
 // NewIndexedSlice creates a new instance of DeltaSet with the specified page size, minimum number of pages, and pre-allocation size.
 func NewDeltaSet[K comparable](nilVal K, preAlloc int,
-	sizer func(K) int,
-	encodeToBuffer func(K, []byte) int,
+	size func(K) int,
+	encodeTo func(K, []byte) int,
 	decoder func([]byte) K,
 	hasher func(K) [32]byte,
 	keys ...K) *DeltaSet[K] {
-	deltaSet := &DeltaSet[K]{
-		// nilVal:          nilVal,
-		committed:       orderedset.NewOrderedSet(nilVal, preAlloc, sizer, encodeToBuffer, decoder, hasher),
-		stagedAdditions: orderedset.NewOrderedSet(nilVal, preAlloc, sizer, encodeToBuffer, decoder, hasher),
-		stagedRemovals:  orderedset.NewOrderedSet(nilVal, preAlloc, sizer, encodeToBuffer, decoder, hasher),
+	DeltaSet := &DeltaSet[K]{
+		committed:       orderedset.NewOrderedSet(nilVal, preAlloc, size, encodeTo, decoder, hasher),
+		stagedAdditions: orderedset.NewOrderedSet(nilVal, preAlloc, size, encodeTo, decoder, hasher),
+		stagedRemovals:  NewStagedRemovalSet(nilVal, preAlloc, size, encodeTo, decoder, hasher, keys...),
 	}
-	deltaSet.InsertBatch(keys)
-	return deltaSet
+	DeltaSet.InsertBatch(keys)
+	return DeltaSet
 }
 
 func (*DeltaSet[K]) New(
-	nilVal K,
+	// nilVal K,
 	committed *orderedset.OrderedSet[K],
 	stagedAdditions *orderedset.OrderedSet[K],
-	stagedRemovals *orderedset.OrderedSet[K]) *DeltaSet[K] {
+	stagedRemovals *StagedRemovalSet[K]) *DeltaSet[K] {
 
 	return &DeltaSet[K]{
 		// nilVal:          nilVal,
@@ -64,10 +64,9 @@ func (*DeltaSet[K]) New(
 
 func (*DeltaSet[K]) NewFrom(other *DeltaSet[K]) *DeltaSet[K] {
 	return &DeltaSet[K]{
-		// nilVal:          other.GetNilVal(),
 		committed:       orderedset.NewFrom(other.committed),
 		stagedAdditions: orderedset.NewFrom(other.stagedAdditions),
-		stagedRemovals:  orderedset.NewFrom(other.stagedRemovals),
+		stagedRemovals:  new(StagedRemovalSet[K]).NewFrom(other.stagedRemovals),
 	}
 }
 
@@ -95,16 +94,20 @@ func (this *DeltaSet[K]) IsEmpty() bool {
 	return this.committed.Length() == 0 && this.stagedAdditions.Length() == 0 && this.stagedRemovals.Length() == 0
 }
 
+func (this *DeltaSet[K]) Clear() { this.ResetDelta() }
+
 func (this *DeltaSet[K]) Committed() *orderedset.OrderedSet[K] { return this.committed }
-func (this *DeltaSet[K]) Removed() *orderedset.OrderedSet[K]   { return this.stagedRemovals }
+func (this *DeltaSet[K]) Removed() *StagedRemovalSet[K]        { return this.stagedRemovals }
 func (this *DeltaSet[K]) Added() *orderedset.OrderedSet[K]     { return this.stagedAdditions }
 
-func (this *DeltaSet[K]) SizeRemoved() int { return this.stagedRemovals.Length() }
+func (this *DeltaSet[K]) SizeRemoved() int { return int(this.stagedRemovals.Length()) }
 func (this *DeltaSet[K]) SizeAdded() int   { return this.stagedAdditions.Length() }
 
 func (this *DeltaSet[K]) SetCommitted(v *orderedset.OrderedSet[K]) { this.committed = v }
-func (this *DeltaSet[K]) SetRemoved(v *orderedset.OrderedSet[K])   { this.stagedRemovals = v }
-func (this *DeltaSet[K]) SetAdded(v *orderedset.OrderedSet[K])     { this.stagedAdditions = v }
+func (this *DeltaSet[K]) SetRemoved(v *StagedRemovalSet[K])        { this.stagedRemovals = v }
+func (this *DeltaSet[K]) SetAdded(v *orderedset.OrderedSet[K]) {
+	this.stagedAdditions = v
+}
 
 // Elements returns the underlying slice of committed in the DeltaSet,
 // Non-nil values are returned in the order they were inserted, equals to committed + stagedAdditions  - stagedRemovals.
@@ -118,21 +121,12 @@ func (this *DeltaSet[K]) Elements() []K {
 	return elements
 }
 
-// Get Byte size of the DeltaSet
-// func (this *DeltaSet[K]) Size() int {
-// 	return common.IfThenDo1st(this.committed != nil, func() int { return this.committed.Size() }, 0) +
-// 		common.IfThenDo1st(this.stagedAdditions != nil, func() int { return this.stagedAdditions.Size() }, 0) +
-// 		common.IfThenDo1st(this.stagedRemovals != nil, func() int { return this.stagedRemovals.Size() }, 0)
-// }
-
-func (this *DeltaSet[K]) Clear() { this.ResetDelta() }
-
 // Debugging only
 func (this *DeltaSet[K]) InsertCommitted(v []K) { this.committed.InsertBatch(v) }
 func (this *DeltaSet[K]) InsertRemoved(v []K)   { this.stagedRemovals.InsertBatch(v) }
 func (this *DeltaSet[K]) InsertAdded(v []K)     { this.stagedAdditions.InsertBatch(v) }
 
-// func (this *DeltaSet[K]) GetNilVal() K  { return this.nilVal }
+// func (this *DeltaSet[K]) GetNilVal() K  { return nil }
 // func (this *DeltaSet[K]) SetNilVal(v K) { this.nilVal = v }
 
 // IsDirty returns true if the DeltaSet is up to date,
@@ -141,7 +135,12 @@ func (this *DeltaSet[K]) IsDirty() bool {
 	return this.stagedRemovals.Length() != 0 || this.stagedAdditions.Length() != 0
 }
 
-// Delta returns a new instance of DeltaSet with the same stagedAdditions  and stagedRemovals  elements only.
+// Only delete elements in the committed set. No additions.
+func (this *DeltaSet[K]) CommittedOnly() bool {
+	return this.stagedAdditions.Length() == 0
+}
+
+// Delta returns a new instance of DeltaSet with the same stagedAdditions  and stagedRemovals elements only.
 func (this *DeltaSet[K]) Delta() *DeltaSet[K] {
 	return this.CloneDelta()
 }
@@ -165,7 +164,7 @@ func (this *DeltaSet[K]) Length() uint64 {
 
 // NonNilCount returns the number of NON-NIL elements in the DeltaSet.
 func (this *DeltaSet[K]) NonNilCount() uint64 {
-	return uint64(this.committed.Length() + this.stagedAdditions.Length() - this.stagedRemovals.Length())
+	return uint64(this.committed.Length() + this.stagedAdditions.Length() - int(this.stagedRemovals.Length()))
 }
 
 // Insert inserts an element into the DeltaSet and updates the index.
@@ -176,16 +175,15 @@ func (this *DeltaSet[K]) InsertBatch(elems []K) *DeltaSet[K] {
 	return this
 }
 
-func (this *DeltaSet[K]) Insert(elem K) any {
+func (this *DeltaSet[K]) Insert(elem K) {
 	if ok, _ := this.stagedRemovals.Exists(elem); ok {
 		this.stagedRemovals.Delete(elem) // Remove an existing element will take effect only when commit() is called.
-		return this
+		return
 	}
 
 	if ok, _ := this.committed.Exists(elem); !ok {
 		this.stagedAdditions.Insert(elem) // Either in the stagedAdditions  list or not.
 	}
-	return this
 }
 
 // Insert an element into the Delta Set and updates the index.
@@ -196,36 +194,56 @@ func (this *DeltaSet[K]) DeleteBatch(elems []K) *DeltaSet[K] {
 	return this
 }
 
-// Insert inserts an element into the Del taSet and updates the index.
-func (this *DeltaSet[K]) Delete(elem K) any {
+// Insert inserts an element into the Delta Set and updates the index.
+func (this *DeltaSet[K]) Delete(elem K) {
 	if ok, _ := this.committed.Exists(elem); ok {
-		this.stagedRemovals.Insert(elem) // Remove an existing element will take effect only when commit() is called.
+		// Remove an existing element will take effect only when commit() is called.
+		this.stagedRemovals.Insert(elem)
 	} else if ok, _ := this.stagedAdditions.Exists(elem); ok {
 		this.stagedRemovals.Insert(elem)
 	}
+}
 
-	return this
+// Add both committed and the added elements to the deletion list.
+// The return value indicates if some pending entries were involved.
+func (this *DeltaSet[K]) DeleteCommitted() { this.stagedRemovals.SetCommitted(this.Committed()) }
+func (this *DeltaSet[K]) DeleteAdded()     { this.stagedRemovals.SetAdded(this.stagedAdditions.Clone()) }
+
+// Add both committed and the added elements to the deletion list.
+func (this *DeltaSet[K]) DeleteAll() {
+	// Shallow copy is enough, because the Committed elements won't change.
+	this.stagedRemovals.SetCommitted(this.Committed())
+
+	// No further changes to the stagedAdditions won't affect the stagedRemovals
+	// from this point on.
+	this.stagedRemovals.SetAdded(this.stagedAdditions.Clone())
+	this.stagedRemovals.AllDeleted = true
+}
+
+func (this *DeltaSet[K]) DeleteByIndex(idx uint64) {
+	if k, _, _, ok := this.Search(idx); ok {
+		this.Delete(*k)
+	}
 }
 
 // Clone returns a new instance of DeltaSet with the same elements.
+// under no circumstances the committed should be deeply copied.
 func (this *DeltaSet[K]) CloneFull() *DeltaSet[K] {
-	set := this.CloneDelta()
-	set.committed = this.committed.Clone()
-	return set
+	return this.Clone()
 }
 
-// Clone returns a new instance with the shared shared committed set.
+// Clone returns a new instance with the
+// committed list shared original DeltaSet.
 func (this *DeltaSet[K]) Clone() *DeltaSet[K] {
 	set := this.CloneDelta()
-	set.committed = this.committed //.Clone()
+	set.committed = this.committed //Share the committed set.
 	return set
 }
 
 // CloneDelta returns a new instance of DeltaSet with the
 // same stagedAdditions  and stagedRemovals  elements only.the committed list is not cloned.
 func (this *DeltaSet[K]) CloneDelta() *DeltaSet[K] {
-	set := &DeltaSet[K]{
-		// nilVal: this.nilVal,
+	return &DeltaSet[K]{
 		committed: orderedset.NewOrderedSet(*new(K), 0,
 			this.committed.Sizer,
 			this.committed.Encoder,
@@ -233,13 +251,6 @@ func (this *DeltaSet[K]) CloneDelta() *DeltaSet[K] {
 			nil),
 		stagedAdditions: this.stagedAdditions.Clone(),
 		stagedRemovals:  this.stagedRemovals.Clone(),
-	}
-	return set
-}
-
-func (this *DeltaSet[K]) DeleteByIndex(idx uint64) {
-	if k, _, _, ok := this.Search(idx); ok {
-		this.Delete(*k)
 	}
 }
 
@@ -257,10 +268,10 @@ func (this *DeltaSet[K]) GetByIndex(idx uint64) (*K, bool) {
 
 // NthNonNil returns the nth non-nil value from the DeltaSet.
 // The nth non-nil value isn't necessarily the nth value in the DeltaSet, but the nth non-nil value.
-// func (this *DeltaSet[K]) GetNthNonNil(nth uint64) (K, int, bool) {
+// func (this *DeltaSet[K]) GetNthNonNil(nth uint64) ([K], int, bool) {
 // 	// If the nth value is out of range, no need to search. The nil value is returned.
 // 	if nth >= this.NonNilCount() {
-// 		return *new(K), -1, false
+// 		return *new([K]), -1, false
 // 	}
 
 // 	// This isn't efficient; it is better to search from the beginning or the min and max indices of the stagedRemovals  list to
@@ -268,27 +279,28 @@ func (this *DeltaSet[K]) GetByIndex(idx uint64) (*K, bool) {
 // 	// the keys in the stagedRemovals  list.
 // 	cnt := 0
 // 	for i := 0; i < int(this.Length()); i++ {
-// 		if K, ok := this.GetByIndex(uint64(i)); ok {
+// 		if [K], ok := this.GetByIndex(uint64(i)); ok {
 // 			if uint64(cnt) == nth {
-// 				return K, i, true
+// 				return [K], i, true
 // 			}
 // 			cnt++
 // 		}
 // 	}
-// 	return *new(K), -1, false
+// 	return *new([K]), -1, false
 // }
 
 // NthNonNil returns the nth non-nil value from the DeltaSet.
 // The nth non-nil value isn't necessarily the nth value in the DeltaSet, but the nth non-nil value.
-func (this *DeltaSet[K]) GetNthNonNil(nth uint64) (K, int, bool) {
+func (this *DeltaSet[K]) GetNthNonNil(nth uint64) (*K, int, bool) {
 	// If the nth value is out of range, no need to search. The nil value is returned.
 	if nth >= this.NonNilCount() {
-		return *new(K), -1, false
+		return nil, -1, false
 	}
 
+	// removedElems := this.removed.Elements()
 	start := 0
 	stagedRemovalsElems := this.stagedRemovals.Elements()
-	// if this.Length() > uint64(len(stagedRemovalsElems)) {
+	// if this.Length() > uint64(len(stagedRemovals Elems)) {
 	for _, k := range stagedRemovalsElems {
 		if idx := this.IdxOf(k); idx <= uint64(nth) {
 			start++
@@ -296,54 +308,51 @@ func (this *DeltaSet[K]) GetNthNonNil(nth uint64) (K, int, bool) {
 	}
 	// }
 
-	// This isn't efficient; it is better to search from the beginning or the min and max indices of the removed list to
+	// This isn't efficient; it is better to search from the beginning or the min and max indices of the stagedRemovals  list to
 	// narrow down the search range. However, that requires some extra code to keep track of the corresponding indices of
-	// the keys in the removed list.
+	// the keys in the stagedRemovals  list.
 	for i, cnt := start, 0; i < int(this.Length()); i++ {
 		if K, ok := this.GetByIndex(uint64(i)); ok {
 			if uint64(cnt) == nth+uint64(start) {
-				return *K, i, true
+				return K, i, true
 			}
 			cnt++
 		}
 	}
 
-	return *new(K), -1, false
+	return nil, -1, false
 }
 
 // Back get the last non-nil value from the DeltaSet.
 // The last non-nil value isn't necessarily the last value in the DeltaSet, but the last non-nil value.
-func (this *DeltaSet[K]) Last() (K, bool) {
+func (this *DeltaSet[K]) Last() (*K, bool) {
 	if this.NonNilCount() == 0 {
-		return *new(K), false
+		return nil, false
 	}
 
 	for i := int(this.Length() - 1); i >= 0; i-- {
 		if k, ok := this.GetByIndex(uint64(i)); ok {
-			return *k, true
+			return k, true
 		}
 	}
-	return *new(K), false
+	return nil, false
 }
 
-func (this *DeltaSet[K]) Back() (K, bool) {
+func (this *DeltaSet[K]) Back() (*K, bool) {
 	if this.NonNilCount() == 0 {
-		return *new(K), false
+		return nil, false
 	}
-
-	if k, ok := this.GetByIndex(uint64(this.Length() - 1)); ok {
-		return *k, true
-	}
-	return *new(K), false
+	return this.GetByIndex(uint64(this.Length() - 1))
 }
 
 // Return then remove the last non-nil value from the DeltaSet.
-func (this *DeltaSet[K]) PopLast() (K, bool) {
-	k, ok := this.Last() // Get the last non-nil value
-	if ok {
-		this.Delete(k) // Re
+func (this *DeltaSet[K]) PopLast() (*K, bool) {
+	// Get the last non-nil value
+	if k, ok := this.Last(); ok {
+		this.Delete(*k) // Remove the last non-nil value
+		return k, true
 	}
-	return k, ok
+	return nil, false
 }
 
 // Search returns the element at the specified index and the set it is in.
@@ -352,15 +361,12 @@ func (this *DeltaSet[K]) Search(idx uint64) (*K, *orderedset.OrderedSet[K], int,
 	if mapped < 0 {
 		return nil, nil, -1, false
 	}
-	v := set.IndexToKey(mapped)
-	return v, set, mapped, true
+	return set.IndexToKey(mapped), set, mapped, true
 }
 
 func (this *DeltaSet[K]) KeyAt(idx uint64) (*K, bool) {
-	if k, _, _, ok := this.Search(idx); ok {
-		return k, true
-	}
-	return nil, false
+	k, _, _, ok := this.Search(idx)
+	return k, ok
 }
 
 // Get the index of the element in the DeltaSet by key.
@@ -374,7 +380,7 @@ func (this *DeltaSet[K]) IdxOf(k K) uint64 {
 // Get returns the element at the specified index.
 func (this *DeltaSet[K]) TryGetKey(idx uint64) (*K, bool) {
 	if k, _, _, ok := this.Search(idx); ok {
-		if ok, _ := this.stagedRemovals.Exists(*k); !ok { // Not In the stagedRemovals set, marked for deletion.
+		if ok, _ := this.stagedRemovals.Exists(*k); !ok { // In the stagedRemovals  set
 			return k, true
 		}
 	}
@@ -405,9 +411,12 @@ func (this *DeltaSet[K]) Commit(other []*DeltaSet[K]) *DeltaSet[K] {
 	copy(stagedAdditionsBuffer[len(stagedAdditionsBuffer)-this.stagedAdditions.Length():], this.stagedAdditions.Elements())
 
 	// Merge deleted elements from all the delta sets
-	stagedRemovalsBuffer := make([]K, slice.CountDo(other, func(_ int, v **DeltaSet[K]) int { return (*v).stagedRemovals.Length() })+this.stagedRemovals.Length())
+	stagedRemovalsBuffer := make([]K, slice.CountDo(other, func(_ int, v **DeltaSet[K]) int {
+		return int((*v).stagedRemovals.Length())
+	})+int(this.stagedRemovals.Length()))
+
 	slice.ConcateToBuffer(other, &stagedRemovalsBuffer, func(v *DeltaSet[K]) []K { return v.stagedRemovals.Elements() })
-	copy(stagedRemovalsBuffer[len(stagedRemovalsBuffer)-this.stagedRemovals.Length():], this.stagedRemovals.Elements())
+	copy(stagedRemovalsBuffer[len(stagedRemovalsBuffer)-int(this.stagedRemovals.Length()):], this.stagedRemovals.Elements())
 
 	this.committed.Merge(stagedAdditionsBuffer) // Merge the stagedAdditions  list to the committed list
 	this.committed.Sub(stagedRemovalsBuffer)    // Remove the stagedRemovals  list from the committed list
@@ -423,7 +432,12 @@ func (this *DeltaSet[K]) Equal(other *DeltaSet[K]) bool {
 }
 
 func (this *DeltaSet[K]) Print() {
+	fmt.Print("Committed: ")
 	this.committed.Print()
+
+	fmt.Print("Staged Added: ")
 	this.stagedAdditions.Print()
+
+	fmt.Print("Staged Removed: ")
 	this.stagedRemovals.Print()
 }

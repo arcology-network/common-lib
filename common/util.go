@@ -110,7 +110,7 @@ func Transpose(slice [][]string) [][]string {
 	return result
 }
 
-func GobEncode(x interface{}) ([]byte, error) {
+func GobEncode(x any) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(x)
@@ -121,7 +121,7 @@ func GobEncode(x interface{}) ([]byte, error) {
 	return retData, nil
 }
 
-func GobDecode(data []byte, x interface{}) error {
+func GobDecode(data []byte, x any) error {
 	bufTo := bytes.NewBuffer(data)
 	dec := gob.NewDecoder(bufTo)
 	err := dec.Decode(x)
@@ -131,7 +131,15 @@ func GobDecode(data []byte, x interface{}) error {
 	return nil
 }
 
-// func UniqueIf[T comparable](strs *[]T, equal func(interface{}, interface{}) bool) []T {
+func Hex2int(c byte) int {
+	if c >= 'a' {
+		return int(c-'a') + 10
+	} else {
+		return int(c - '0')
+	}
+}
+
+// func UniqueIf[T comparable](strs *[]T, equal func(any, any) bool) []T {
 // 	dict := make(map[T]bool)
 // 	for i := 0; i < len(*strs); i++ {
 // 		dict[(*strs)[i]] = true
