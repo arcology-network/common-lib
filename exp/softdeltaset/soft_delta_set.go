@@ -213,11 +213,12 @@ func (this *DeltaSet[K]) DeleteAdded()     { this.stagedRemovals.SetAdded(this.s
 func (this *DeltaSet[K]) DeleteAll() {
 	// Shallow copy is enough, because the Committed elements won't change.
 	this.stagedRemovals.SetCommitted(this.Committed())
+	this.stagedRemovals.CommittedDeleted = true
 
 	// No further changes to the stagedAdditions won't affect the stagedRemovals
 	// from this point on.
 	this.stagedRemovals.SetAdded(this.stagedAdditions.Clone())
-	this.stagedRemovals.AllDeleted = true
+	this.stagedRemovals.StagedAddedDeleted = true
 }
 
 func (this *DeltaSet[K]) DeleteByIndex(idx uint64) {

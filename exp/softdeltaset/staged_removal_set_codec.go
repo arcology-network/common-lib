@@ -25,27 +25,27 @@ import (
 func (this *StagedRemovalSet[K]) Size() int {
 	size := this.DeltaSet.Size()
 
-	// When AllDeleted is true, we only encode the staged removals and the added set.
+	// When StagedAddedDeleted is true, we only encode the staged removals and the added set.
 	// We temporarily set the committed set to nil to avoid adding its size to the total size.
 
-	if this.CommittedDeleted || this.AllDeleted {
+	if this.CommittedDeleted {
 		committed := this.DeltaSet.Committed()
 		this.DeltaSet.SetCommitted(nil)
 		size = this.DeltaSet.Size()
 		this.DeltaSet.SetCommitted(committed)
 	}
-	return size + 1
+	return size + 1 + 1 // 1 byte for the StagedAddedDeleted flag, 1 byte for the CommittedDeleted flag
 }
 
 // The EncodeTo method encodes the staged removal set to the provided buffer.
 // Only the staged removals and the added set are encoded, the committed set is not encoded
 // to save space. The committed is something that the recipient already has.
 func (this *StagedRemovalSet[K]) EncodeTo(buffer []byte) int {
-	offset := codec.Bool(this.AllDeleted).EncodeTo(buffer)
-	// Copy the committed set to avoid modifying the original.
-	committed := this.DeltaSet.Committed()
+	offset := codec.Bool(this.StagedAddedDeleted).EncodeTo(buffer)
+	offset += codec.Bool(this.CommittedDeleted).EncodeTo(buffer[offset:])
 
-	if this.AllDeleted {
+	tempCopy := this.DeltaSet.Committed() // Copy the committed.
+	if this.CommittedDeleted {
 		// Create a empty new OrderedSet to avoid encoding the committed set
 		// empty := orderedset.NewOrderedSet(committed.NilValue(), 0, committed.Sizer, committed.Encoder, committed.Decoder, nil)
 		this.DeltaSet.SetCommitted(nil)
@@ -53,7 +53,7 @@ func (this *StagedRemovalSet[K]) EncodeTo(buffer []byte) int {
 
 	// Restore the committed set to the DeltaSet. Since it may be used again later.
 	this.DeltaSet.EncodeTo(buffer[offset:])
-	this.DeltaSet.SetCommitted(committed)
+	this.DeltaSet.SetCommitted(tempCopy)
 	return offset
 }
 
@@ -64,8 +64,10 @@ func (this *StagedRemovalSet[K]) Encode() []byte {
 }
 
 func (this *StagedRemovalSet[K]) Decode(buffer []byte) any {
-	this.AllDeleted = bool(codec.Bool(this.AllDeleted).Decode(buffer).(codec.Bool))
-	this.DeltaSet.Decode(buffer[1:]) // Skip the header
+	this.StagedAddedDeleted = bool(codec.Bool(this.StagedAddedDeleted).Decode(buffer).(codec.Bool))
+	this.CommittedDeleted = bool(codec.Bool(this.CommittedDeleted).Decode(buffer[1:]).(codec.Bool))
+	this.DeltaSet.Decode(buffer[2:]) // Skip the header
+
 	return this
 }
 

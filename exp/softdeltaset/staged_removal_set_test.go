@@ -48,16 +48,16 @@ func TestStagedRemovalSetCodecAllDeleted(t *testing.T) {
 	removalSet.Commit(nil) // The strings are in the committed set already
 
 	removalSet.InsertBatch([]string{"113", "115", "117"})
-	removalSet.DeleteByIndex(1)  // {"15"} are in the stagedRemovals set
-	removalSet.DeleteByIndex(4)  // {"115"} is in the stagedRemovals set
-	removalSet.DeleteByIndex(5)  // {"117"} is in the staged
-	removalSet.AllDeleted = true // {"13", "15", "17"} are in the stagedRemovals set,
+	removalSet.DeleteByIndex(1)        // {"15"} are in the stagedRemovals set
+	removalSet.DeleteByIndex(4)        // {"115"} is in the stagedRemovals set
+	removalSet.DeleteByIndex(5)        // {"117"} is in the staged
+	removalSet.CommittedDeleted = true // {"13", "15", "17"} are in the stagedRemovals set,
 
 	buff := removalSet.Encode()                                                                                                                // Encode the staged removal set
 	out := NewStagedRemovalSet("", 100, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil).Decode(buff).(*StagedRemovalSet[string]) // Decode the staged removal set
 
 	if len(out.Committed().Elements()) != 0 {
-		t.Error("committed set should be empty, but it is not")
+		t.Error("committed set should be empty, but it is not", out.Committed().Elements())
 	}
 	if !out.Added().Equal(removalSet.Added()) {
 		t.Error("added set should be equal, but it is not")
