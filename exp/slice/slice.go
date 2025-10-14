@@ -220,8 +220,8 @@ func MoveIf[T any](values *[]T, condition func(int, T) bool) []T {
 
 // Accumulate applies a function to each element in a slice and returns the accumulated result.
 func Accumulate[T any, T1 constraints.Integer | constraints.Float](values []T, initialV T1, do func(i int, v T) T1) T1 {
-	for i := 0; i < len(values); i++ {
-		initialV += do(i, (values)[i])
+	for i := range values {
+		initialV += do(i, values[i])
 	}
 	return initialV
 }
@@ -234,24 +234,14 @@ func Foreach[T any](values []T, do func(idx int, v *T)) {
 	}
 }
 
-// ParallelForeach applies a function to each element in a slice in parallel using multiple threads.
 func ParallelForeach[T any](values []T, nThds int, do func(int, *T)) {
-	processor := func(start, end, index int, args ...interface{}) {
+	processor := func(start, end, index int, args ...any) {
 		for i := start; i < end; i++ {
 			do(i, &values[i])
 		}
 	}
 	common.ParallelWorker(len(values), nThds, processor)
 }
-
-// Append applies a function to each element in a slice and returns a new slice with the results.
-// func Append[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
-// 	vec := make([]T1, len(values))
-// 	for i := 0; i < len(values); i++ {
-// 		vec[i] = do(i, values[i])
-// 	}
-// 	return vec
-// }
 
 // // ParallelAppend applies a function to each index in a slice in parallel using multiple threads
 // // and returns a new slice with the results.
@@ -269,7 +259,7 @@ func ParallelForeach[T any](values []T, nThds int, do func(int, *T)) {
 // Transform applies a function to each element in a slice and returns a new slice with the results.
 func Transform[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
 	vec := make([]T1, len(values))
-	for i := 0; i < len(values); i++ {
+	for i := range values {
 		vec[i] = do(i, values[i])
 	}
 	return vec
@@ -278,7 +268,7 @@ func Transform[T any, T1 any](values []T, do func(i int, v T) T1) []T1 {
 // TransformIf applies a function to each element that satisfies a given condition in a slice and returns a new slice with the results.
 func TransformIf[T any, T1 any](values []T, do func(i int, v T) (bool, T1)) []T1 {
 	vec := make([]T1, 0, len(values))
-	for i := 0; i < len(values); i++ {
+	for i := range values {
 		if ok, v := do(i, values[i]); ok {
 			vec = append(vec, v)
 		}
@@ -290,7 +280,7 @@ func TransformIf[T any, T1 any](values []T, do func(i int, v T) (bool, T1)) []T1
 // and returns a new slice with the results.
 func ParallelTransform[T any, T1 any](values []T, numThd int, do func(i int, v T) T1) []T1 {
 	appended := make([]T1, len(values))
-	worker := func(start, end, index int, args ...interface{}) {
+	worker := func(start, end, index int, args ...any) {
 		for i := start; i < end; i++ {
 			appended[i] = do(i, values[i])
 		}
@@ -440,7 +430,7 @@ func Unique[T comparable](src []T, less func(lhv, rhv T) bool) []T {
 	})
 
 	current := 0
-	for i := 0; i < len(src); i++ {
+	for i := range src {
 		if src[current] != (src)[i] {
 			src[current+1] = (src)[i]
 			current++
@@ -481,7 +471,7 @@ func DoUnique[T comparable](nums []T, less func(lhv, rhv T) bool, do func(int)) 
 	})
 
 	current := 0
-	for i := 0; i < len(nums); i++ {
+	for i := range nums {
 		if nums[current] != (nums)[i] {
 			nums[current+1] = (nums)[i]
 			current++
@@ -587,6 +577,32 @@ func CloneIf[T any](src []T, condition func(v T) bool, fun ...func(T) T) []T {
 
 // Concate concatenates multiple slices into a single slice.
 // It applies a getter function to each element in the input slice and concatenates the results.
+
+// ParallelForeach applies a function to each element in a slice in parallel using multiple threads.
+
+// Append applies a function to each element in a slice and returns a new slice with the results.
+func ConcateIf[T any, T1 any](condition func(i int, v T) (bool, T1), valueSet ...T) []T1 {
+	vec := make([]T1, 0, len(valueSet))
+	for i := range valueSet {
+		if flag, v := condition(i, valueSet[i]); flag {
+			vec = append(vec, v)
+		}
+	}
+	return vec
+}
+
+func ConcateNonEmpty[T any](notEmpty func([]T) bool, valueSet ...[]T) []T {
+	vec := make([]T, 0, len(valueSet))
+	for i := range valueSet {
+		if notEmpty(valueSet[i]) {
+			vec = append(vec, valueSet[i]...)
+		}
+	}
+	return vec
+}
+
+// Concate concatenates multiple slices into a single slice.
+// It applies a getter function to each element in the input slice and concatenates the results.
 func Concate[T0, T1 any](array []T0, getter func(T0) []T1) []T1 {
 	// buffer := make([][]T1, len(array))
 	// for i := 0; i < len(array); i++ {
@@ -601,7 +617,7 @@ func Concate[T0, T1 any](array []T0, getter func(T0) []T1) []T1 {
 // It then applies a getter function to each element in the input slice and concatenates the results.
 func ConcateDo[T0, T1 any](array []T0, sizer func(T0) uint64, getter func(T0) []T1) []T1 {
 	totalSize := uint64(0)
-	for i := 0; i < len(array); i++ {
+	for i := range array {
 		totalSize += sizer(array[i])
 	}
 
@@ -616,9 +632,9 @@ func ConcateDo[T0, T1 any](array []T0, sizer func(T0) uint64, getter func(T0) []
 // ConcateToBuffer concatenates multiple slices into a buffer slice.
 // It applies a getter function to each element in the input slice and concatenates the results to the buffer slice.
 func ConcateToBuffer[T0, T1 any](array []T0, buffer *[]T1, getter func(T0) []T1) {
-	positions := 0
+	offset := 0
 	for i := range array {
-		positions += copy((*buffer)[positions:], getter(array[i]))
+		offset += copy((*buffer)[offset:], getter(array[i]))
 	}
 }
 
@@ -630,9 +646,28 @@ func Flatten[T any](src [][]T) []T {
 	}
 
 	buffer := make([]T, totalSize)
-	positions := 0
+	offset := 0
 	for i := range src {
-		positions += copy(buffer[positions:], src[i])
+		offset += copy(buffer[offset:], src[i])
+	}
+	return buffer
+}
+
+// Append applies a function to each element in a slice and returns a new slice with the results.
+func FlattenIf[T any](condition func(i int, v []T) bool, valueSet ...[]T) []T {
+	totalSize := 0
+	for i, vec := range valueSet {
+		if ok := condition(i, vec); ok {
+			totalSize = totalSize + len(vec)
+		}
+	}
+
+	buffer := make([]T, totalSize)
+	offset := 0
+	for i := range valueSet {
+		if ok := condition(i, valueSet[i]); ok {
+			offset += copy(buffer[offset:], valueSet[i])
+		}
 	}
 	return buffer
 }
@@ -711,7 +746,7 @@ func Exclude[T comparable](source []T, toRemove []T) []T {
 func To[T0, T1 any](src []T0) []T1 {
 	target := make([]T1, len(src))
 	for i := range src {
-		target[i] = (interface{}((src[i]))).(T1)
+		target[i] = (any((src[i]))).(T1)
 	}
 	return target
 }

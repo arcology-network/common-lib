@@ -38,18 +38,18 @@ func IfFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, new func(k K
 	}
 }
 
-func ParalleIfFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, threads int, new func(k K) V) {
-	found := slice.ParallelTransform(keys, threads, func(_ int, k K) bool {
-		_, ok := source[k]
-		return ok
-	})
+// func ParalleIfFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, threads int, new func(k K) V) {
+// 	found := slice.ParallelTransform(keys, threads, func(_ int, k K) bool {
+// 		_, ok := source[k]
+// 		return ok
+// 	})
 
-	for i := range found {
-		if found[i] {
-			source[keys[i]] = new(keys[i])
-		}
-	}
-}
+// 	for i := range found {
+// 		if found[i] {
+// 			source[keys[i]] = new(keys[i])
+// 		}
+// 	}
+// }
 
 func IfNotFoundDo[M ~map[K]V, K comparable, V any, T any](source M, keys []T, getter func(T) K, do func(K) V) {
 	for _, k := range keys {
@@ -60,18 +60,18 @@ func IfNotFoundDo[M ~map[K]V, K comparable, V any, T any](source M, keys []T, ge
 	}
 }
 
-func ParallelIfNotFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, threads int, do func(k K) V) {
-	found := slice.ParallelTransform(keys, threads, func(_ int, k K) bool {
-		_, ok := source[k]
-		return ok
-	})
+// func ParallelIfNotFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, threads int, do func(k K) V) {
+// 	found := slice.ParallelTransform(keys, threads, func(_ int, k K) bool {
+// 		_, ok := source[k]
+// 		return ok
+// 	})
 
-	for i := range found {
-		if !found[i] {
-			source[keys[i]] = do(keys[i])
-		}
-	}
-}
+// 	for i := range found {
+// 		if !found[i] {
+// 			source[keys[i]] = do(keys[i])
+// 		}
+// 	}
+// }
 
 // RemoveIf removes key-value pairs from a map based on a condition.
 func RemoveIf[M ~map[K]V, K comparable, V any](source M, condition func(k K, v V) bool) {
@@ -159,6 +159,14 @@ func Insert[K comparable, T, V any](mp map[K]V, source []T, getter func(i int, t
 		mp[k] = v
 	}
 	return mp
+}
+
+// Insert inserts key-value pairs from an array into a map.
+func GroupBy[K comparable, T, V any](mp map[K]V, source []T, getter func(i int, t T, lookup map[K]V) (K, V)) {
+	for i, src := range source {
+		k, v := getter(i, src, mp)
+		mp[k] = v
+	}
 }
 
 // Keys returns a slice containing all the keys of a map.

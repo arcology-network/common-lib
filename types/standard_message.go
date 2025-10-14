@@ -71,9 +71,9 @@ func (this StandardMessages) Encode() ([]byte, error) {
 		return []byte{}, nil
 	}
 	data := make([][]byte, len(this))
-	worker := func(start, end, idx int, args ...interface{}) {
-		this := args[0].([]interface{})[0].(StandardMessages)
-		data := args[0].([]interface{})[1].([][]byte)
+	worker := func(start, end, idx int, args ...any) {
+		this := args[0].([]any)[0].(StandardMessages)
+		data := args[0].([]any)[1].([][]byte)
 
 		for i := start; i < end; i++ {
 			encodedMsg := []byte{}
@@ -98,9 +98,9 @@ func (this *StandardMessages) Decode(data []byte) ([]*StandardMessage, error) {
 	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
 	msgs := make([]*StandardMessage, len(fields))
 
-	worker := func(start, end, idx int, args ...interface{}) {
-		data := args[0].([]interface{})[0].([][]byte)
-		messages := args[0].([]interface{})[1].([]*StandardMessage)
+	worker := func(start, end, idx int, args ...any) {
+		data := args[0].([]any)[0].([][]byte)
+		messages := args[0].([]any)[1].([]*StandardMessage)
 
 		for i := start; i < end; i++ {
 			standredMessage := new(StandardMessage)

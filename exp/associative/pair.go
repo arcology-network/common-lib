@@ -36,6 +36,12 @@ func (this *Pairs[T0, T1]) Slice() *[]*Pair[T0, T1] {
 	return (*[]*Pair[T0, T1])(this)
 }
 
+func (this *Pairs[T0, T1]) Length() int { return len(*this) }
+func (this *Pairs[T0, T1]) Append(other *Pair[T0, T1]) *Pairs[T0, T1] {
+	*this = append(*this, other)
+	return this
+}
+
 // Firsts extracts the first elements from an array of pairs and returns a new slice.
 func (this Pairs[T0, T1]) Firsts() []T0 {
 	return slice.ParallelTransform(this, 4, func(i int, pair *Pair[T0, T1]) T0 {

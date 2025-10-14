@@ -437,7 +437,16 @@ func TestUniqueInteger(t *testing.T) {
 	for i := 0; i < len(nums); i++ {
 		m[nums[i]] = true
 	}
-	common.MapKeys(m)
+	// mapi.Keys(m)
+
+	// keys := make([]K, len(m))
+	// i := 0
+	// for k := range m {
+	// 	keys[i] = k
+	// 	i++
+	// }
+	// return keys
+
 	fmt.Println("UniqueMap: ", len(nums), "in ", time.Now().Sub(t0))
 }
 

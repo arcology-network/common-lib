@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/arcology-network/common-lib/codec"
-	"github.com/arcology-network/common-lib/common"
 )
 
 func TestMapKeys(t *testing.T) {
@@ -29,7 +28,7 @@ func TestMapKeys(t *testing.T) {
 	_map[11] = 99
 	_map[21] = 25
 
-	keys := common.MapKeys(_map)
+	keys := Keys(_map)
 	if len(keys) != 2 || (keys[0] != 11 && keys[0] != 21) {
 		t.Error("Error: Not equal")
 	}
@@ -46,7 +45,7 @@ func TestMapValues(t *testing.T) {
 	_map[11] = 99
 	_map[21] = 25
 
-	keys := common.MapValues(_map)
+	keys := Values(_map)
 	sort.Ints(keys)
 	if keys[0] != 25 || keys[1] != 99 {
 		t.Error("Error: Not equal")
@@ -61,13 +60,13 @@ func TestMapMoveIf(t *testing.T) {
 		"4": false,
 	}
 
-	common.MapRemoveIf(m, func(k string, _ bool) bool { return k == "1" })
+	RemoveIf(m, func(k string, _ bool) bool { return k == "1" })
 	if len(m) != 3 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	target := map[string]bool{}
-	common.MapMoveIf(m, target, func(k string, _ bool) bool { return k == "2" })
+	MoveIf(m, target, func(k string, _ bool) bool { return k == "2" })
 	if len(m) != 2 || len(target) != 1 {
 		t.Error("Error: Failed to remove nil values !")
 	}
@@ -91,15 +90,15 @@ func TestMapGenerics(t *testing.T) {
 		t.Error("Error: Failed to set nil values !")
 	}
 
-	ParallelIfNotFoundDo(m, []string{"6"}, 2, func(k string) bool { return true })
-	if len(m) != 6 {
-		t.Error("Error: Failed to set nil values !")
-	}
+	// ParallelIfNotFoundDo(m, []string{"6"}, 2, func(k string) bool { return true })
+	// if len(m) != 6 {
+	// 	t.Error("Error: Failed to set nil values !")
+	// }
 
-	ParalleIfFoundDo(m, []string{"6"}, 2, func(k string) bool { return false })
-	if m["6"] {
-		t.Error("Error: Failed to set nil values !")
-	}
+	// ParalleIfFoundDo(m, []string{"6"}, 2, func(k string) bool { return false })
+	// if m["6"] {
+	// 	t.Error("Error: Failed to set nil values !")
+	// }
 
 	m1 := map[string]bool{
 		"1": true,
@@ -188,5 +187,45 @@ func TestMapMaxMinGenerics(t *testing.T) {
 
 	if k, v := FindValue(m3, func(v0, v1 int) bool { return v0 > v1 }); k != "2" || v != 90 {
 		t.Error("Error: Failed to get the max !", k, v)
+	}
+}
+
+func TestFromSlice(t *testing.T) {
+	s := []string{"1", "1", "2", "2", "3", "3", "4", "5"}
+
+	lookup := make(map[string][]string)
+	setter := func(s string) map[string][]string {
+		if _, ok := lookup[s]; !ok {
+			lookup[s] = []string{}
+		}
+		lookup[s] = append(lookup[s], s)
+		return lookup
+	}
+
+	m := FromSlice(s, setter)
+	if len(m) != 5 {
+		t.Error("Error: Failed to create map from slice !")
+	}
+}
+
+func TestInsert(t *testing.T) {
+	source := []string{"1", "1", "2", "2", "3"}
+	lookup := make(map[string][]string)
+	setter := func(i int, s string, lookup map[string][]string) (string, []string) {
+		v, ok := lookup[s]
+		if !ok {
+			return s, []string{s}
+		}
+		return s, append(v, s)
+	}
+
+	GroupBy(lookup, source, setter)
+	if len(lookup) != 3 {
+		t.Error("Error: Failed to insert values into map !")
+	}
+	if len(lookup["1"]) != 2 || lookup["1"][0] != "1" || lookup["1"][1] != "1" ||
+		len(lookup["2"]) != 2 || lookup["2"][0] != "2" || lookup["2"][1] != "2" ||
+		len(lookup["3"]) != 1 || lookup["3"][0] != "3" {
+		t.Error("Error: Failed to insert values into map !")
 	}
 }
