@@ -71,6 +71,10 @@ func (this Uint64) Decode(data []byte) any {
 	return Uint64(this)
 }
 
+func (v Uint64) FromBytes(buffer []byte) Uint64 {
+	return v.Decode(buffer).(Uint64)
+}
+
 func (v Uint64) Checksum() [32]byte {
 	return sha256.Sum256(v.Encode())
 }
