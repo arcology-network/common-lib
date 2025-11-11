@@ -26,44 +26,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arcology-network/common-lib/tools"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/crypto"
 )
-
-func TestStandardMessageEncodingAndDeconing(t *testing.T) {
-	to := ethCommon.BytesToAddress(crypto.Keccak256([]byte("1"))[:])
-
-	ethMsg_serial_0 := core.NewMessage(ethCommon.Address{}, &to, 1, big.NewInt(int64(1)), 100, big.NewInt(int64(8)), []byte{1, 2, 3}, nil, false)
-	ethMsg_serial_1 := core.NewMessage(ethCommon.Address{}, &to, 3, big.NewInt(int64(100)), 200, big.NewInt(int64(9)), []byte{4, 5, 6}, nil, false)
-	hash1 := tools.RlpHash(ethMsg_serial_0)
-	hash2 := tools.RlpHash(ethMsg_serial_1)
-	stdMsgs := []*StandardTransaction{
-		{Source: 0, NativeMessage: &ethMsg_serial_0, TxHash: hash1},
-		{Source: 1, NativeMessage: &ethMsg_serial_1, TxHash: hash2},
-	}
-	standardMessages := StandardTransactions(stdMsgs)
-	data, err := standardMessages.Encode()
-	if err != nil {
-		fmt.Printf("StandardMessages encode err=%v\n", err)
-		return
-	}
-	fmt.Printf("StandardMessages encode result=%v\n", data)
-
-	standardMessages2 := new(StandardTransactions)
-
-	standardMessagesResult, err := standardMessages2.Decode(data)
-
-	if err != nil {
-		fmt.Printf("StandardMessages dncode err=%v\n", err)
-		return
-	}
-	for _, v := range standardMessagesResult {
-		fmt.Printf("StandardMessages dncode result=%v,Native=%v\n", v, v.NativeMessage)
-	}
-
-}
 
 func TestStandardMessageSortingByFee(t *testing.T) {
 	to := ethCommon.BytesToAddress(crypto.Keccak256([]byte("1"))[:])
