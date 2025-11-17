@@ -133,7 +133,7 @@ func (this *ConcurrentMap[K, V]) delete(shard uint64, key K) {
 // Set associates the specified value with the specified key in the ConcurrentMap.
 // If the value is nil, the key-value pair is deleted from the map.
 // It returns an error if the shard ID is out of range.
-func (this *ConcurrentMap[K, V]) Set(key K, v V, args ...interface{}) {
+func (this *ConcurrentMap[K, V]) Set(key K, v V, args ...any) {
 	shardID := this.Hash(key)
 	if shardID >= uint64(len(this.shards)) {
 		return

@@ -939,6 +939,8 @@ func Dereference[T any](array []*T) []T {
 	return Transform(array, func(i int, v *T) T { return *v })
 }
 
+// Find the extreme value in a slice based on a comparison function
+// could be used to find min or max value
 func Extreme[T0 any](array []T0, compare func(T0, T0) bool) (int, T0) {
 	if len(array) == 0 {
 		return -1, *new(T0)
@@ -1007,4 +1009,13 @@ func MaxIf[T0 any, T1 constraints.Float | constraints.Integer](array []T0, fun f
 	}
 	idx, _ := Max(vals)
 	return idx, array[idx]
+}
+
+// TrimTrail removes trailing elements from a slice that are equal to a specified value.
+func TrimTrail[T comparable](s []T, zero T) []T {
+	i := len(s) - 1
+	for i >= 0 && s[i] == zero {
+		i--
+	}
+	return s[:i+1]
 }

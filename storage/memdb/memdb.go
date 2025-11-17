@@ -18,21 +18,33 @@
 package memdb
 
 import (
-	ccmap "github.com/arcology-network/common-lib/container/map"
+	ccmap "github.com/arcology-network/common-lib/exp/map"
 )
 
 type MemoryDB struct {
-	db *ccmap.ConcurrentMap
+	// db *ccmap.ConcurrentMap
+	db *ccmap.ConcurrentMap[string, any]
 }
 
 func NewMemoryDB() *MemoryDB {
 	return &MemoryDB{
-		db: ccmap.NewConcurrentMap(),
+		db: ccmap.NewConcurrentMap(
+			16,
+			func(v any) bool { return v == nil },
+			func(k string) uint64 {
+				var hash uint64
+				for i := 0; i < len(k); i++ {
+					hash += uint64(k[i])
+				}
+				return hash % 16
+			},
+		),
 	}
 }
 
 func (this *MemoryDB) Set(key string, v []byte) error {
-	return this.db.Set(key, v)
+	this.db.Set(key, v)
+	return nil
 }
 
 func (this *MemoryDB) Get(key string) ([]byte, error) {
@@ -44,7 +56,7 @@ func (this *MemoryDB) Get(key string) ([]byte, error) {
 }
 
 func (this *MemoryDB) BatchGet(keys []string) ([][]byte, error) {
-	values := this.db.BatchGet(keys)
+	values, _ := this.db.BatchGet(keys)
 	byteset := make([][]byte, len(keys))
 	for i, v := range values {
 		if v != nil {
