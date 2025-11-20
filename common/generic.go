@@ -134,6 +134,8 @@ func TrimLeft[T comparable](s []T, cutset T) []T {
 	for i := 0; i < len(s); i++ {
 		if s[i] != cutset {
 			return s[i:]
+		} else if i == len(s)-1 {
+			return []T{}
 		}
 	}
 	return s
@@ -143,6 +145,8 @@ func TrimRight[T comparable](s []T, cutset T) []T {
 	for i := len(s) - 1; i >= 0; i-- {
 		if s[i] != cutset {
 			return s[:i+1]
+		} else if i == 0 {
+			return []T{}
 		}
 	}
 	return s[:0]
