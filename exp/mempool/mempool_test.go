@@ -36,15 +36,15 @@ func TestPagedIntArray(t *testing.T) {
 		return &i
 	}, func(v *int) {})
 
-	if *pool.New() != 1 {
-		t.Error("Error: Wrong value")
-	}
-
-	if *pool.New() != 2 {
-		t.Error("Error: Wrong value")
-	}
-
 	if *pool.New() != 3 {
+		t.Error("Error: Wrong value")
+	}
+
+	if *pool.New() != 4 {
+		t.Error("Error: Wrong value")
+	}
+
+	if *pool.New() != 5 {
 		t.Error("Error: Wrong value")
 	}
 }
@@ -66,15 +66,15 @@ func TestPagedSliceCustomTypes(t *testing.T) {
 		}
 	}, func(v *CustomType) {})
 
-	if pool.New().a != 1 {
-		t.Error("Error: Wrong value")
-	}
-
-	if pool.New().a != 2 {
-		t.Error("Error: Wrong value")
-	}
-
 	if pool.New().a != 3 {
+		t.Error("Error: Wrong value")
+	}
+
+	if pool.New().a != 4 {
+		t.Error("Error: Wrong value")
+	}
+
+	if pool.New().a != 5 {
 		t.Error("Error: Wrong value")
 	}
 	pool.Reset()
@@ -88,11 +88,11 @@ func TestPagedSliceCustomTypes(t *testing.T) {
 			e: "hello" + fmt.Sprint(i),
 		}
 	}
-	if v := pool.New().a; v != 1 {
+	if v := pool.New().a; v != 99 {
 		t.Error("Error: Wrong value", v)
 	}
 
-	if pool.New().a != 2 {
+	if pool.New().a != 99 {
 		t.Error("Error: Wrong value")
 	}
 

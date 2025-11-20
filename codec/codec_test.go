@@ -376,7 +376,7 @@ func TestStructCodec(t *testing.T) {
 	buffer := Stringset([][]string{str0, str1}).Encode()
 	out := Stringset{}.Decode(buffer).(Stringset)
 
-	if out[0][0] != "" ||
+	if out[0][0] != "123456" ||
 		out[0][1] != "987654" ||
 		out[1][0] != "abcdef" ||
 		out[1][1] != "zqwert" {
