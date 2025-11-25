@@ -92,11 +92,11 @@ func EitherEqualsTo[T any](lhv interface{}, rhv T, equal func(v interface{}) boo
 	return rhv
 }
 
-// FilterFirst returns the first element of a pair.
-func FilterFirst(v ...any) any { return v[0] }
+// Filter returns the first element of a pair.
+func First(v ...any) any { return v[0] }
 
-// FilterSecond returns the second element of a pair.
-func FilterSecond[T0, T1 any](v0 T0, v1 T1) T1 { return v1 }
+// Second returns the second element of a pair.
+func Second[T0, T1 any](v0 T0, v1 T1) T1 { return v1 }
 
 // IsType checks if the given value is of the specified type.
 // It returns true if the value is of the specified type, otherwise false.
@@ -131,12 +131,12 @@ func Swap[T any](lhv, rhv *T) {
 }
 
 func TrimLeft[T comparable](s []T, cutset T) []T {
-	for i := 0; i < len(s); i++ {
+	for i := range s {
 		if s[i] != cutset {
 			return s[i:]
 		}
 	}
-	return s
+	return nil
 }
 
 func TrimRight[T comparable](s []T, cutset T) []T {
@@ -145,5 +145,5 @@ func TrimRight[T comparable](s []T, cutset T) []T {
 			return s[:i+1]
 		}
 	}
-	return s[:0]
+	return nil
 }

@@ -151,11 +151,11 @@ func TestSoftDeltaSliceAddThenDelete(t *testing.T) {
 		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
-	if common.FilterFirst(deltaSet.Exists("13")).(bool) || common.FilterFirst(deltaSet.Exists("17")).(bool) || common.FilterFirst(deltaSet.Exists("25")).(bool) {
+	if common.First(deltaSet.Exists("13")).(bool) || common.First(deltaSet.Exists("17")).(bool) || common.First(deltaSet.Exists("25")).(bool) {
 		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
-	if !common.FilterFirst(deltaSet.Exists("18")).(bool) || !common.FilterFirst(deltaSet.Exists("21")).(bool) {
+	if !common.First(deltaSet.Exists("18")).(bool) || !common.First(deltaSet.Exists("21")).(bool) {
 		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
@@ -166,7 +166,7 @@ func TestSoftDeltaSliceAddThenDelete(t *testing.T) {
 		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
-	if !common.FilterFirst(deltaSet.Exists("13")).(bool) {
+	if !common.First(deltaSet.Exists("13")).(bool) {
 		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
@@ -247,11 +247,11 @@ func TestCascadeSoftDeltaClone(t *testing.T) {
 	}
 
 	deltaSet.DeleteBatch([]string{"13"})
-	if common.FilterFirst(deltaSet.Exists("13")).(bool) {
+	if common.First(deltaSet.Exists("13")).(bool) {
 		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
-	if !common.FilterFirst(set2.Exists("13")).(bool) {
+	if !common.First(set2.Exists("13")).(bool) {
 		t.Error("failed to commit", deltaSet.stagedRemovals.Elements())
 	}
 
@@ -324,13 +324,13 @@ func TestDeleteAllThenAddBack(t *testing.T) {
 
 	deltaSet.DeleteAll() // This will move the stagedRemovals to committed set
 
-	if common.FilterFirst(deltaSet.Exists("13")).(bool) ||
-		common.FilterFirst(deltaSet.Exists("17")).(bool) ||
-		common.FilterFirst(deltaSet.Exists("15")).(bool) ||
-		common.FilterFirst(deltaSet.Exists("18")).(bool) ||
-		common.FilterFirst(deltaSet.Exists("19")).(bool) ||
-		common.FilterFirst(deltaSet.Exists("20")).(bool) ||
-		common.FilterFirst(deltaSet.Exists("21")).(bool) {
+	if common.First(deltaSet.Exists("13")).(bool) ||
+		common.First(deltaSet.Exists("17")).(bool) ||
+		common.First(deltaSet.Exists("15")).(bool) ||
+		common.First(deltaSet.Exists("18")).(bool) ||
+		common.First(deltaSet.Exists("19")).(bool) ||
+		common.First(deltaSet.Exists("20")).(bool) ||
+		common.First(deltaSet.Exists("21")).(bool) {
 		t.Error("18 or 21 should not exist after DeleteAll", deltaSet.stagedRemovals.Elements())
 	}
 
@@ -367,7 +367,7 @@ func TestDeleteAllThenAddBack(t *testing.T) {
 		t.Error("failed to commit", deltaSet.stagedRemovals)
 	}
 
-	if common.FilterFirst(deltaSet.Exists("13")).(bool) {
+	if common.First(deltaSet.Exists("13")).(bool) {
 		t.Error("failed to commit", deltaSet.Elements())
 	}
 

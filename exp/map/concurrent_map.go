@@ -418,7 +418,7 @@ func (this *ConcurrentMap[K, V]) KVs(less ...func(k0, k1 K) bool) ([]K, []V) {
 			return less[0](keys[i], keys[j])
 		})
 	}
-	return keys, common.FilterFirst(this.BatchGet(keys)).([]V)
+	return keys, common.First(this.BatchGet(keys)).([]V)
 }
 
 func (this *ConcurrentMap[K, V]) Checksum(less func(K, K) bool, encoders func(K, V) ([]byte, []byte)) [32]byte {
