@@ -4,7 +4,7 @@ go 1.22
 
 replace github.com/arcology-network/arcology-network/btree => ../btree/
 
-replace github.com/ethereum/go-ethereum v1.13.1 => ../concurrent-evm/
+replace github.com/ethereum/go-ethereum v1.13.1 => github.com/arcology-network/concurrent-evm v0.0.0-20250714082425-8009ff40403f
 
 // replace github.com/emirpasic/gods/v2 => ../v2/
 
@@ -18,11 +18,12 @@ require (
 )
 
 require (
-	github.com/cespare/xxhash/v2 v2.2.0
+	github.com/cespare/xxhash v1.1.0
 	github.com/emirpasic/gods/v2 v2.0.0-alpha
 	github.com/google/btree v1.1.2
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-memdb v1.3.4
+	github.com/shirou/gopsutil v3.21.11+incompatible
 )
 
 require (
@@ -34,7 +35,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.10.0 // indirect
 	github.com/btcsuite/btcd v0.20.1-beta // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
-	github.com/cespare/xxhash v1.1.0 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cockroachdb/errors v1.11.1 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/pebble v0.0.0-20231208175357-58bdc725addc // indirect
@@ -76,7 +77,6 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
-	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/supranational/blst v0.3.11 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tklauser/go-sysconf v0.3.13 // indirect
