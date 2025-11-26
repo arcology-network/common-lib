@@ -1,20 +1,19 @@
 /*
- *   Copyright (c) 2024 Arcology Network
+*   Copyright (c) 2024 Arcology Network
 
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+*   This program is free software: you can redistribute it and/or modify
+*   it under the terms of the GNU General Public License as published by
+*   the Free Software Foundation, either version 3 of the License, or
+*   (at your option) any later version.
 
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+*   This program is distributed in the hope that it will be useful,
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*   GNU General Public License for more details.
 
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*   You should have received a copy of the GNU General Public License
+*   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package badgerdb
 
 import (
@@ -25,7 +24,6 @@ import (
 	"path"
 	"sync"
 
-	"github.com/arcology-network/common-lib/codec"
 	common "github.com/arcology-network/common-lib/common"
 	slice "github.com/arcology-network/common-lib/exp/slice"
 )
@@ -83,13 +81,26 @@ func (this *ParaBadgerDB) BatchGet(keys []string) (values [][]byte, err error) {
 	errors := make([]error, len(categorized))
 	valueSet := make([][][]byte, len(categorized))
 	finder := func(start, end, index int, args ...interface{}) {
-		this.shardLocks[start].RLock()
-		defer this.shardLocks[start].RUnlock() // Using start is correct, as start + 1 == end
-
-		valueSet[start], errors[start] = this.impls[start].BatchGet(categorized[start])
+		for index = start; index < end; index++ {
+			this.shardLocks[index].RLock()
+			defer this.shardLocks[index].RUnlock() // Using start is correct, as start + 1 == end
+			valueSet[index], errors[index] = this.impls[index].BatchGet(categorized[index])
+		}
 	}
 	common.ParallelWorker(len(categorized), len(categorized), finder)
-	return codec.Bytegroup(valueSet).Flatten(), errors[0]
+
+	mp := map[string][]byte{}
+	for i := range categorized {
+		for k := range categorized[i] {
+			mp[categorized[i][k]] = valueSet[i][k]
+		}
+	}
+	results := make([][]byte, len(keys))
+	for i := range keys {
+		results[i] = mp[keys[i]]
+	}
+
+	return results, errors[0]
 }
 
 func (this *ParaBadgerDB) BatchSet(keys []string, values [][]byte) error {

@@ -29,23 +29,32 @@ func TestParaBadgerDBFunctions(t *testing.T) {
 	os.RemoveAll(TEST_ROOT_PATH)
 
 	db := NewParaBadgerDB("./badger-test/", common.Remainder)
-	db.BatchSet([]string{
-		"a01",
-		"a02",
-		"a03",
-		"b01",
-		"c03",
-		"d01",
-	}, [][]byte{
+
+	data := [][]byte{
 		{1, 2, 3},
 		{4, 5, 6},
 		{7, 8, 9},
 		{10, 11, 12},
 		{13, 14, 15},
 		{16, 17, 18},
-	})
+	}
+	keys := []string{
+		"a01",
+		"a02",
+		"a03",
+		"b01",
+		"c03",
+		"d01",
+	}
 
-	values, _ := db.BatchGet([]string{
+	db.BatchSet(keys, data)
+
+	values, err := db.BatchGet(keys)
+	if err != nil {
+		t.Error(err)
+	}
+
+	values, _ = db.BatchGet([]string{
 		"a01",
 		"b01",
 		"c03",
@@ -62,7 +71,7 @@ func TestParaBadgerDBFunctions(t *testing.T) {
 		t.Error("Get Failed")
 	}
 
-	keys, values, _ := db.Query("a", nil)
+	keys, values, _ = db.Query("a", nil)
 	t.Log(keys)
 	t.Log(values)
 	os.RemoveAll("./badger-test/")
