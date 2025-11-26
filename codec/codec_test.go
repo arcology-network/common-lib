@@ -289,39 +289,6 @@ func TestConcatenateStrings(t *testing.T) {
 	}
 }
 
-func TestEncoderUint32(t *testing.T) {
-	// n1 := Uint32(999999)
-	// buffer := make([]byte, Encoder{}.Size([]interface{}{n1, n1}))
-	// Encoder{}.ToBuffer(buffer, []interface{}{n1, n1})
-
-	// fields := [][]byte(Byteset{}.Decode(buffer).(Byteset))
-	// if n1 != Uint32(0).Decode(fields[0]) ||
-	// 	n1 != Uint32(0).Decode(fields[1]) {
-	// 	t.Error("Mismatch !")
-	// }
-}
-
-func TestEncoderBigint(t *testing.T) {
-	// v := big.NewInt(-999999)
-	// n1 := Bigint(*v)
-
-	// v0 := big.NewInt(11)
-	// n2 := Bigint(*v0)
-
-	// buffer := make([]byte, Encoder{}.Size([]interface{}{&n1, &n2}))
-	// Encoder{}.ToBuffer(buffer, []interface{}{&n1, &n2})
-
-	// fields := [][]byte(Byteset{}.Decode(buffer).(Byteset))
-	// lft := (*big.Int)((&Bigint{}).Decode(fields[0]).(*Bigint))
-	// rgt := (*big.Int)((&Bigint{}).Decode(fields[1]).(*Bigint))
-
-	// buf := n1.Encode()
-	// fmt.Print(buf)
-	// if v.Cmp(lft) != 0 || v0.Cmp(rgt) != 0 {
-	// 	t.Error("Mismatch !")
-	// }
-}
-
 func TestEncoderBigintAndNil(t *testing.T) {
 	v := big.NewInt(-999999)
 	n1 := Bigint(*v)
@@ -376,7 +343,7 @@ func TestStructCodec(t *testing.T) {
 	buffer := Stringset([][]string{str0, str1}).Encode()
 	out := Stringset{}.Decode(buffer).(Stringset)
 
-	if out[0][0] != "" ||
+	if out[0][0] != "123456" ||
 		out[0][1] != "987654" ||
 		out[1][0] != "abcdef" ||
 		out[1][1] != "zqwert" {
