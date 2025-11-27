@@ -154,7 +154,7 @@ func (this *StateCell) CopyTo(writable any) {
 	writeCache := writable.(interface {
 		Read(uint64, string, any) (any, any, uint64)
 		Write(uint64, string, any, ...any) (int64, error)
-		FindForRead(uint64, string, any, func(*StateCell)) (any, *StateCell, bool)
+		LookupForRead(uint64, string, any, func(*StateCell)) (any, *StateCell, bool)
 	})
 
 	if this.writes == 0 && this.deltaWrites == 0 {
@@ -163,7 +163,7 @@ func (this *StateCell) CopyTo(writable any) {
 		writeCache.Write(this.tx, *this.GetPath(), this.value)
 	}
 
-	_, univ, _ := writeCache.FindForRead(this.tx, *this.GetPath(), nil, nil)
+	_, univ, _ := writeCache.LookupForRead(this.tx, *this.GetPath(), nil, nil)
 	if this == univ {
 		return
 	}
