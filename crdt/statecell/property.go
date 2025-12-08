@@ -44,7 +44,7 @@ type Property struct {
 	isBlockBound        bool // If true, it is not persisted to the storage.
 	isCommitted         bool // If the key exists in the source, which can be a cache or a storage.
 	isDeleted           bool // If the value is deleted. Without this the conflict detection will mixed deletes up with normal wirtes whose values are removed for serialization speed.
-	IsInConflict        bool // This is for the conflict detection module
+	HasConflictWith     bool // This is for the conflict detection module
 
 	reclaimFunc func(any)
 }

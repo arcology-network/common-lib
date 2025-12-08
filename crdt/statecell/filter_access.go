@@ -38,7 +38,7 @@ func (this IPAccess) From(v *StateCell) *StateCell {
 		return v
 	}
 
-	value := v.Value().(crdtcommon.Type)
+	value := v.Value().(crdtcommon.CRDT)
 
 	return v.New(
 		&v.Property,
@@ -67,7 +67,7 @@ func (this ITAccess) From(v *StateCell) *StateCell {
 		return value
 	}
 
-	typed := value.Value().(crdtcommon.Type)
+	typed := value.Value().(crdtcommon.CRDT)
 	delta, sign := typed.Delta()
 	min, max := typed.Limits()
 	newv := typed.New(
@@ -76,7 +76,7 @@ func (this ITAccess) From(v *StateCell) *StateCell {
 		sign,
 		min,
 		max,
-	).(crdtcommon.Type)
+	).(crdtcommon.CRDT)
 
 	if typed.IsCommutative() && typed.IsNumeric() { // For the accumulator, commutative u64 & U256
 		newv.SetValue(typed.Value())

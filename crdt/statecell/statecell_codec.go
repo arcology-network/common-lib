@@ -39,14 +39,14 @@ func (this *StateCell) Sizes() []uint64 {
 	return []uint64{
 		this.HeaderSize(),
 		this.Property.Size(),
-		this.value.(crdtcommon.Type).Size(),
+		this.value.(crdtcommon.CRDT).Size(),
 	}
 }
 
 func (this *StateCell) Size() uint64 {
 	return this.HeaderSize() +
 		this.Property.Size() +
-		common.IfThenDo1st(this.value != nil, func() uint64 { return this.value.(crdtcommon.Type).Size() }, 0)
+		common.IfThenDo1st(this.value != nil, func() uint64 { return this.value.(crdtcommon.CRDT).Size() }, 0)
 }
 
 func (this *StateCell) FillHeader(buffer []byte) int {
@@ -54,7 +54,7 @@ func (this *StateCell) FillHeader(buffer []byte) int {
 		buffer,
 		[]uint64{
 			this.Property.Size(),
-			common.IfThenDo1st(this.value != nil, func() uint64 { return this.value.(crdtcommon.Type).Size() }, 0),
+			common.IfThenDo1st(this.value != nil, func() uint64 { return this.value.(crdtcommon.CRDT).Size() }, 0),
 		},
 	)
 }
@@ -64,7 +64,7 @@ func (this *StateCell) EncodeTo(buffer []byte) int {
 
 	offset += this.Property.EncodeTo(buffer[offset:])
 	offset += common.IfThenDo1st(this.value != nil, func() int {
-		return codec.Bytes(this.value.(crdtcommon.Type).Encode()).EncodeTo(buffer[offset:])
+		return codec.Bytes(this.value.(crdtcommon.CRDT).Encode()).EncodeTo(buffer[offset:])
 	}, 0)
 
 	return offset
@@ -86,12 +86,12 @@ func (this *StateCell) GetEncoded() []byte {
 		return []byte{}
 	}
 
-	if this.Value().(crdtcommon.Type).IsCommutative() {
-		return this.value.(crdtcommon.Type).Value().(codec.Encodable).Encode()
+	if this.Value().(crdtcommon.CRDT).IsCommutative() {
+		return this.value.(crdtcommon.CRDT).Value().(codec.Encodable).Encode()
 	}
 
 	if len(this.buf) > 0 {
-		return this.value.(crdtcommon.Type).Value().(codec.Encodable).Encode()
+		return this.value.(crdtcommon.CRDT).Value().(codec.Encodable).Encode()
 	}
 	return this.buf
 }

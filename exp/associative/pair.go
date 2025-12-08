@@ -24,12 +24,23 @@ type Pair[T0, T1 any] struct {
 	Second T1
 }
 
+func NewPair[T0, T1 any](first T0, second T1) *Pair[T0, T1] {
+	return &Pair[T0, T1]{
+		First:  first,
+		Second: second,
+	}
+}
+
 // // Firsts extracts the first elements from an array of pairs and returns a new slice.
 // func (this *Pairs[T0, T1]) Swap() *[]*Pair[T0, T1] {
 // 	return (*[]*Pair[T0, T1])(this)
 // }
 
 type Pairs[T0, T1 any] []*Pair[T0, T1]
+
+func NewPairs[T0, T1 any](elems []*Pair[T0, T1]) *Pairs[T0, T1] {
+	return (*Pairs[T0, T1])(&elems)
+}
 
 // Firsts extracts the first elements from an array of pairs and returns a new slice.
 func (this *Pairs[T0, T1]) Slice() *[]*Pair[T0, T1] {

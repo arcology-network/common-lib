@@ -31,7 +31,7 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-type Type struct {
+type CRDT struct {
 	value Uint64
 	delta String
 }

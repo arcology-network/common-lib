@@ -36,10 +36,10 @@ type Uint64 struct {
 	max   uint64
 }
 
-func NewUnboundedUint64() crdtcommon.Type         { return &Uint64{min: 0, max: math.MaxUint64} }
-func NewUint64Delta(delta uint64) crdtcommon.Type { return &Uint64{delta: delta} }
+func NewUnboundedUint64() crdtcommon.CRDT         { return &Uint64{min: 0, max: math.MaxUint64} }
+func NewUint64Delta(delta uint64) crdtcommon.CRDT { return &Uint64{delta: delta} }
 
-func NewBoundedUint64(min, max uint64) crdtcommon.Type {
+func NewBoundedUint64(min, max uint64) crdtcommon.CRDT {
 	if max >= min {
 		return &Uint64{min: min, max: max}
 	}
@@ -107,7 +107,7 @@ func (this *Uint64) Set(v any, source any) (any, uint32, uint32, uint32, error) 
 	return this, 0, 0, 1, nil
 }
 
-func (this *Uint64) ApplyDelta(typedVals []crdtcommon.Type) (crdtcommon.Type, int, error) {
+func (this *Uint64) ApplyDelta(typedVals []crdtcommon.CRDT) (crdtcommon.CRDT, int, error) {
 	for i, v := range typedVals {
 
 		if this == nil && v != nil { // New value

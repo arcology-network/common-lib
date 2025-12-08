@@ -17,7 +17,7 @@
 
 package common
 
-type Type interface { // value type
+type CRDT interface { // value type
 	TypeID() uint8
 	Equal(any) bool
 	Clone() any
@@ -41,7 +41,7 @@ type Type interface { // value type
 	Get() (any, uint32, uint32) // Value, reads and writes, no deltawrites.
 	Set(any, any) (any, uint32, uint32, uint32, error)
 	CopyTo(any) (any, uint32, uint32, uint32) // Only a function to generate the right access counts, when assigning the value.
-	ApplyDelta([]Type) (Type, int, error)
+	ApplyDelta([]CRDT) (CRDT, int, error)
 	IsDeletable(any, any) bool
 
 	MemSize() uint64 // Size in memory
@@ -52,9 +52,6 @@ type Type interface { // value type
 	EncodeTo([]byte) int
 	Decode([]byte) any
 
-	// Storage encoding related methods
-	// StorageEncode(string) []byte
-	// StorageDecode(string, []byte) any
 	Preload(string, any)
 
 	// Auxiliary methods
@@ -71,11 +68,12 @@ type Writer[T any] interface {
 	Name() string
 }
 
+// ReadOnlyStore defines the interface for a read-only storage source.
 type ReadOnlyStore interface {
 	IfExists(string) bool                 // Check if the key exists in the source, which can be a cache or a storage.
-	ReadStorage(string, any) (any, error) // Get from persistent storage.
-	Retrieve(string, any) (any, error)
+	ReadStorage(string, any) (any, error) // Get from persistent storage directly.
+	Retrieve(string, any) (any, error)    // Get from cache or persistent storage, with cache lookup first.
 	Preload([]byte) any
 }
 
-type Hasher func(Type) []byte
+type Hasher func(CRDT) []byte

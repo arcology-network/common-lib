@@ -136,7 +136,7 @@ func (this *Int64) isUnderflow(delta int64) bool {
 		(this.min > delta || flag)
 }
 
-func (this *Int64) ApplyDelta(typedVals []crdtcommon.Type) (crdtcommon.Type, int, error) {
+func (this *Int64) ApplyDelta(typedVals []crdtcommon.CRDT) (crdtcommon.CRDT, int, error) {
 	for i, v := range typedVals {
 		if this == nil && v != nil { // New value
 			this = v.(*Int64)

@@ -72,7 +72,7 @@ func (this *String) Set(value any, source any) (any, uint32, uint32, uint32, err
 	return this, 0, 1, 0, nil
 }
 
-func (this *String) ApplyDelta(typedVals []intf.Type) (intf.Type, int, error) {
+func (this *String) ApplyDelta(typedVals []intf.CRDT) (intf.CRDT, int, error) {
 	for _, v := range typedVals {
 		if this == nil && v != nil { // New value
 			this = v.(*String)

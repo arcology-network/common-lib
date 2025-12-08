@@ -31,7 +31,7 @@ type Bytes struct {
 	value       codec.Bytes
 }
 
-func NewBytes(v []byte) crdtcommon.Type {
+func NewBytes(v []byte) crdtcommon.CRDT {
 	b := make([]byte, len(v))
 	copy(b, v)
 	return &Bytes{
@@ -99,7 +99,7 @@ func (this *Bytes) Set(value any, _ any) (any, uint32, uint32, uint32, error) {
 	return this, 0, 1, 0, nil
 }
 
-func (this *Bytes) ApplyDelta(typedVals []crdtcommon.Type) (crdtcommon.Type, int, error) {
+func (this *Bytes) ApplyDelta(typedVals []crdtcommon.CRDT) (crdtcommon.CRDT, int, error) {
 	for _, v := range typedVals {
 
 		if this == nil && v != nil { // New value

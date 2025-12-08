@@ -64,24 +64,24 @@ func (this StateCells) Keys() []string {
 	return keys
 }
 
-func (this StateCells) Values() []crdtcommon.Type {
-	vals := make([]crdtcommon.Type, len(this))
+func (this StateCells) Values() []crdtcommon.CRDT {
+	vals := make([]crdtcommon.CRDT, len(this))
 	for i, v := range this {
-		vals[i] = v.Value().(crdtcommon.Type)
+		vals[i] = v.Value().(crdtcommon.CRDT)
 	}
 	return vals
 }
 
-func (this StateCells) KVs() ([]string, []crdtcommon.Type) {
+func (this StateCells) KVs() ([]string, []crdtcommon.CRDT) {
 	keys := make([]string, len(this))
-	vals := make([]crdtcommon.Type, len(this))
+	vals := make([]crdtcommon.CRDT, len(this))
 	for i, v := range this {
 		keys[i] = *v.GetPath()
 		if v.Value() == nil {
 			vals[i] = nil
 			continue
 		}
-		vals[i] = v.Value().(crdtcommon.Type)
+		vals[i] = v.Value().(crdtcommon.CRDT)
 	}
 	return keys, vals
 }

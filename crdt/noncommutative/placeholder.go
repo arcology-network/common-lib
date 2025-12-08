@@ -24,7 +24,7 @@ import (
 // Placeholder is a type that does not hold any value and is used as a placeholder in Archology's storage system.
 type Placeholder struct{}
 
-func NewPlaceholder(any) crdtcommon.Type { return &Placeholder{} }
+func NewPlaceholder(any) crdtcommon.CRDT { return &Placeholder{} }
 
 func (this *Placeholder) MemSize() uint64                            { return 0 }
 func (this *Placeholder) IsDeletable(_, _ any) bool                  { return true } // If the input has the same type as this, return true
@@ -58,7 +58,7 @@ func (this *Placeholder) Set(value any, _ any) (any, uint32, uint32, uint32, err
 	return this, 0, 1, 0, nil
 }
 
-func (this *Placeholder) ApplyDelta(typedVals []crdtcommon.Type) (crdtcommon.Type, int, error) {
+func (this *Placeholder) ApplyDelta(typedVals []crdtcommon.CRDT) (crdtcommon.CRDT, int, error) {
 	return this, 0, nil
 }
 

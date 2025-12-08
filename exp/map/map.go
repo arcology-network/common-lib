@@ -100,12 +100,23 @@ func Merge[M ~map[K]V, K comparable, V any](from, to M) M {
 	return from
 }
 
-// Sub substracts the key-value pairs from one map into another map.
-func Sub[M ~map[K]V, K comparable, V any](from, to M) M {
-	for k := range to {
+// Sub removes the key-value pairs in the 'to' map from the 'removals' map.
+func Sub[M ~map[K]V, K comparable, V any](from, removals M) M {
+	for k := range removals {
 		delete(from, k)
 	}
 	return from
+}
+
+// Difference returns a new map containing the key-value pairs that are in 'first' but not in 'second'.
+func Diff[M ~map[K]V, K comparable, V any](first, second M) M {
+	out := make(M)
+	for k, v := range first {
+		if _, ok := second[k]; !ok {
+			out[k] = v
+		}
+	}
+	return out
 }
 
 // EqualIf compares two maps for equality based on a custom equality function for values.
@@ -180,6 +191,27 @@ func Keys[M ~map[K]V, K comparable, V any](m M) []K {
 	return keys
 }
 
+// Keys returns a slice containing all the keys of a map.
+func FindKey[M ~map[K]V, K comparable, V any](m M, less func(K, K) bool) (K, V) {
+	var mink K
+	var minv V
+	var init bool
+	for k, v := range m {
+		if !init {
+			mink = k
+			minv = v
+			init = true
+			continue
+		}
+
+		if less(k, mink) {
+			mink = k
+			minv = v
+		}
+	}
+	return mink, minv
+}
+
 // Values returns a slice containing all the values of a map.
 func KeysToBuffer[M ~map[K]V, K comparable, V any](m M, buffer *[]K) []K {
 	i := 0
@@ -240,27 +272,6 @@ func ContainsAny[M ~map[K]V, K comparable, V any](m M, keys []K) bool {
 		}
 	}
 	return false
-}
-
-// Keys returns a slice containing all the keys of a map.
-func FindKey[M ~map[K]V, K comparable, V any](m M, less func(K, K) bool) (K, V) {
-	var mink K
-	var minv V
-	var init bool
-	for k, v := range m {
-		if !init {
-			mink = k
-			minv = v
-			init = true
-			continue
-		}
-
-		if less(k, mink) {
-			mink = k
-			minv = v
-		}
-	}
-	return mink, minv
 }
 
 // // Keys returns a slice containing all the keys of a map.

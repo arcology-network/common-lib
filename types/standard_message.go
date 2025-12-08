@@ -23,6 +23,7 @@ import (
 
 	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
+	evmcommon "github.com/ethereum/go-ethereum/common"
 	evmcore "github.com/ethereum/go-ethereum/core"
 )
 
@@ -36,9 +37,23 @@ type StandardMessage struct {
 }
 
 // AddrAndSignature return the address and the first 4 bytes of the signature of the message.
-func (this *StandardMessage) AddrAndSignature() string {
-	length := min(4, len(this.Native.Data))
-	return this.Native.To.String() + string(this.Native.Data[:length])
+// func (this *StandardMessage) AddrAndSignature() string {
+// 	length := min(4, len(this.Native.Data))
+// 	return this.Native.To.String() + string(this.Native.Data[:length])
+// }
+
+// Extract the address and selector from the standard message.
+func (this *StandardMessage) GetAddressAndSelector() (evmcommon.Address, [4]byte) {
+	var toAddr evmcommon.Address
+	if (*this.Native).To != nil {
+		toAddr = *this.Native.To
+	}
+
+	var selector [4]byte
+	if len(this.Native.Data) != 0 {
+		copy(selector[:], this.Native.Data[:4])
+	}
+	return toAddr, selector
 }
 
 type StandardMessages []*StandardMessage

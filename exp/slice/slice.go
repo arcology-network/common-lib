@@ -726,6 +726,29 @@ func SortBy1st[T0 any, T1 any](first []T0, second []T1, compare func(T0, T0) boo
 	}
 }
 
+// SortBy1st sorts two slices based on the values in the first slice.
+// It modifies both slices and sorts them in ascending order based on the values in the first slice.
+func SortBy[T0 any, T1 constraints.Ordered](first []T0, getter func(T0) T1) []T0 {
+	array := make([]struct {
+		First  T0
+		Second T1
+	}, len(first))
+
+	for i := range array {
+		array[i].First = first[i]
+		array[i].Second = getter(first[i])
+	}
+	sort.SliceStable(array, func(i, j int) bool {
+		return array[i].Second < array[j].Second
+	})
+
+	sorted := make([]T0, len(array))
+	for i := range array {
+		sorted[i] = array[i].First
+	}
+	return sorted
+}
+
 // Exclude removes elements from a slice that are present in another slice.
 // It modifies the original slice and returns the modified slice.
 func Exclude[T comparable](source []T, toRemove []T) []T {
@@ -939,7 +962,7 @@ func Dereference[T any](array []*T) []T {
 	return Transform(array, func(i int, v *T) T { return *v })
 }
 
-// Find the extreme value in a slice based on a comparison function
+// LoadOrCreate the extreme value in a slice based on a comparison function
 // could be used to find min or max value
 func Extreme[T0 any](array []T0, compare func(T0, T0) bool) (int, T0) {
 	if len(array) == 0 {
@@ -957,7 +980,7 @@ func Extreme[T0 any](array []T0, compare func(T0, T0) bool) (int, T0) {
 	return idx, minv
 }
 
-// Find the minimum value in a slice
+// LoadOrCreate the minimum value in a slice
 func Min[T constraints.Float | constraints.Integer](array []T) (int, T) {
 	if len(array) == 0 {
 		return -1, 0
@@ -974,7 +997,7 @@ func Min[T constraints.Float | constraints.Integer](array []T) (int, T) {
 	return idx, minv
 }
 
-// Find the minimum value in a slice with a condition
+// LoadOrCreate the minimum value in a slice with a condition
 func MinIf[T0 any, T1 constraints.Float | constraints.Integer](array []T0, fun func(T0) T1) (int, T0) {
 	vals := make([]T1, len(array))
 	for i, v := range array {
@@ -984,7 +1007,7 @@ func MinIf[T0 any, T1 constraints.Float | constraints.Integer](array []T0, fun f
 	return idx, array[idx]
 }
 
-// Find the maximum value in a slice
+// LoadOrCreate the maximum value in a slice
 func Max[T constraints.Float | constraints.Integer](array []T) (int, T) {
 	if len(array) == 0 {
 		return -1, 0
@@ -1001,7 +1024,7 @@ func Max[T constraints.Float | constraints.Integer](array []T) (int, T) {
 	return idx, maxv
 }
 
-// Find the maximum value in a slice with a condition
+// LoadOrCreate the maximum value in a slice with a condition
 func MaxIf[T0 any, T1 constraints.Float | constraints.Integer](array []T0, fun func(T0) T1) (int, T0) {
 	vals := make([]T1, len(array))
 	for i, v := range array {

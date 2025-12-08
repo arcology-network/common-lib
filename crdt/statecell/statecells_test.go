@@ -121,11 +121,11 @@ func TestUnivaluesCodeMeta(t *testing.T) {
 	// in.writes = 2
 	// in.deltaWrites = 3
 
-	inKeys, _, _ := in.Value().(crdtcommon.Type).Get()
+	inKeys, _, _ := in.Value().(crdtcommon.CRDT).Get()
 
 	bytes := in.Encode()
 	out := (&StateCell{}).Decode(bytes).(*StateCell)
-	outSet, _, _ := out.Value().(crdtcommon.Type).Get()
+	outSet, _, _ := out.Value().(crdtcommon.CRDT).Get()
 
 	if !slice.EqualSet(inKeys.(*softdeltaset.DeltaSet[string]).Elements(), outSet.(*softdeltaset.DeltaSet[string]).Elements()) {
 		t.Error("Error")

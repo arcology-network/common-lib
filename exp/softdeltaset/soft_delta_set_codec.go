@@ -88,7 +88,7 @@ func (this *DeltaSet[K]) Decode(buffer []byte) any {
 // // 	fmt.Println("Committed: ", codec.Strings(this.DeltaSet.Committed().Elements()).ToHex())
 // // 	fmt.Println("Updated  ", codec.Strings(this.DeltaSet.Added().Elements()).ToHex())
 // // 	fmt.Println("Removed: ", codec.Strings(this.DeltaSet.Removed().Elements()).ToHex())
-// // 	fmt.Println("Type: ", codec.Strings(this.DeltaSet.Removed().Elements()).ToHex())
+// // 	fmt.Println("CRDT: ", codec.Strings(this.DeltaSet.Removed().Elements()).ToHex())
 // // 	fmt.Println()
 // // }
 

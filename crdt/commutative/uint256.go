@@ -46,7 +46,7 @@ type U256 struct {
 	deltaPositive bool
 }
 
-func NewBoundedU256(min, max *uint256.Int) crdtcommon.Type {
+func NewBoundedU256(min, max *uint256.Int) crdtcommon.CRDT {
 	v := NewUnboundedU256().(*U256)
 	if max.Cmp(min) >= 0 { // The max limit has to be greater than the lower one
 		v.min = *min
@@ -55,7 +55,7 @@ func NewBoundedU256(min, max *uint256.Int) crdtcommon.Type {
 	return v
 }
 
-func NewBoundedU256FromU64(min, max uint64) crdtcommon.Type {
+func NewBoundedU256FromU64(min, max uint64) crdtcommon.CRDT {
 	v := NewUnboundedU256().(*U256)
 	if max >= min { // The max limit has to be greater than the lower one
 		v.min = *uint256.NewInt(min)
@@ -64,7 +64,7 @@ func NewBoundedU256FromU64(min, max uint64) crdtcommon.Type {
 	return v
 }
 
-func NewBoundedU256FromBigInt(min *big.Int, max *big.Int) crdtcommon.Type {
+func NewBoundedU256FromBigInt(min *big.Int, max *big.Int) crdtcommon.CRDT {
 	v := NewUnboundedU256().(*U256)
 	v.min.SetFromBig(min)
 	v.max.SetFromBig(max)
@@ -75,7 +75,7 @@ func NewBoundedU256FromBigInt(min *big.Int, max *big.Int) crdtcommon.Type {
 	return v
 }
 
-func NewUnboundedU256() crdtcommon.Type {
+func NewUnboundedU256() crdtcommon.CRDT {
 	return &U256{
 		value:         *uint256.NewInt(0),
 		delta:         *uint256.NewInt(0),
@@ -85,14 +85,14 @@ func NewUnboundedU256() crdtcommon.Type {
 	}
 }
 
-func NewU256Delta(delta *uint256.Int, deltaPositive bool) crdtcommon.Type {
+func NewU256Delta(delta *uint256.Int, deltaPositive bool) crdtcommon.CRDT {
 	return &U256{
 		delta:         (*delta),
 		deltaPositive: deltaPositive,
 	}
 }
 
-func NewBoundedU256Delta(min, max *uint256.Int, delta *uint256.Int, deltaPositive bool) crdtcommon.Type {
+func NewBoundedU256Delta(min, max *uint256.Int, delta *uint256.Int, deltaPositive bool) crdtcommon.CRDT {
 	v := &U256{
 		delta:         (*delta),
 		deltaPositive: deltaPositive,
@@ -103,7 +103,7 @@ func NewBoundedU256Delta(min, max *uint256.Int, delta *uint256.Int, deltaPositiv
 	return v
 }
 
-func NewU256DeltaFromU64(delta uint64, deltaPositive bool) crdtcommon.Type {
+func NewU256DeltaFromU64(delta uint64, deltaPositive bool) crdtcommon.CRDT {
 	return &U256{
 		delta:         *uint256.NewInt(delta),
 		deltaPositive: deltaPositive,
@@ -267,7 +267,7 @@ func (this *U256) Set(newDelta any, source any) (any, uint32, uint32, uint32, er
 	return this, 0, 0, 1, errors.New("Error: Value out of range")
 }
 
-func (this *U256) ApplyDelta(typedVals []crdtcommon.Type) (crdtcommon.Type, int, error) {
+func (this *U256) ApplyDelta(typedVals []crdtcommon.CRDT) (crdtcommon.CRDT, int, error) {
 	for i, v := range typedVals {
 
 		if this == nil && v != nil { // New value

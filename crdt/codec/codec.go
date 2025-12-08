@@ -33,8 +33,8 @@ func (Codec) Encode(_ string, value any) []byte {
 		return []byte{} // Deletion
 	}
 
-	encoded := value.(crdtcommon.Type).Encode()
-	encoded = append(encoded, value.(crdtcommon.Type).TypeID())
+	encoded := value.(crdtcommon.CRDT).Encode()
+	encoded = append(encoded, value.(crdtcommon.CRDT).TypeID())
 	return encoded
 }
 

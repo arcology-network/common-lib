@@ -42,7 +42,7 @@ type Path struct {
 	TotalSize uint64 // The size of the elements under the path in bytes.
 }
 
-func NewPath(newPaths ...string) crdtcommon.Type {
+func NewPath(newPaths ...string) crdtcommon.CRDT {
 	this := &Path{
 		ElemType: 0,
 		DeltaSet: softdeltaset.NewDeltaSet("", 10, codec.Sizer, codec.EncodeTo, new(codec.String).DecodeTo, nil, newPaths...),
@@ -114,13 +114,14 @@ func (this *Path) SetDelta(v any, _ bool) { this.DeltaSet.SetDelta(v.(*softdelta
 func (this *Path) SetDeltaSign(v any)     {}
 
 func (this *Path) Preload(k string, source any) {
+	store := source.(crdtcommon.ReadOnlyStore)
 	if this.preloaded != nil { // Already preloaded
 		return
 	}
 
-	store := source.(interface {
-		Retrieve(string, any) (any, error)
-	})
+	// store := source.(interface {
+	// 	Retrieve(string, any) (any, error)
+	// })
 
 	if v, err := store.Retrieve(k, new(Path)); v != nil && err == nil && v.(*Path).Committed().Length() > 0 {
 		this.preloaded = v.(*Path).Committed()
@@ -167,7 +168,7 @@ func Swap[T any](lhv, rhv *T) {
 }
 
 // ApplyDelta applies all the deltas from the non-conflicting transitions to the original value and returns the new value.
-func (this *Path) ApplyDelta(typedVals []crdtcommon.Type) (crdtcommon.Type, int, error) {
+func (this *Path) ApplyDelta(typedVals []crdtcommon.CRDT) (crdtcommon.CRDT, int, error) {
 	if idx, _ := slice.FindFirst(typedVals, nil); idx >= 0 {
 		return nil, 1, nil //This is a deletion and when this is true, the number of write operations is 1.
 	}
@@ -177,14 +178,14 @@ func (this *Path) ApplyDelta(typedVals []crdtcommon.Type) (crdtcommon.Type, int,
 	if this.preloaded != nil {
 		this.DeltaSet.SetCommitted(this.preloaded) // Set the preloaded value to the isCommitted value so the delta set can be applied on.
 	} else {
-		if idx, v := slice.FindFirstIf(typedVals, func(_ int, v crdtcommon.Type) bool { return v.(*Path).preloaded != nil }); idx >= 0 {
+		if idx, v := slice.FindFirstIf(typedVals, func(_ int, v crdtcommon.CRDT) bool { return v.(*Path).preloaded != nil }); idx >= 0 {
 			common.Swap(&this.preloaded, &(*v).(*Path).preloaded)
 			this.DeltaSet.SetCommitted(this.preloaded)
 		}
 		// If no ones has the preloaded value, then this is a new path, no preloaded value
 	}
 
-	deltaSets := slice.Transform(typedVals, func(_ int, v crdtcommon.Type) *softdeltaset.DeltaSet[string] { return v.(*Path).DeltaSet })
+	deltaSets := slice.Transform(typedVals, func(_ int, v crdtcommon.CRDT) *softdeltaset.DeltaSet[string] { return v.(*Path).DeltaSet })
 	this.Commit(deltaSets) // Apply the delta sets to the isCommitted value，including its own delta set.
 	return this, len(typedVals), nil
 }

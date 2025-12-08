@@ -45,21 +45,21 @@ func (this IPTransition) From(v *StateCell) *StateCell {
 		return nil
 	}
 
-	typed := v.Value().(crdtcommon.Type)
+	typed := v.Value().(crdtcommon.CRDT)
 	delta, sign := typed.Delta()
 
 	min, max := typed.Limits()
 	vtyped := typed.New(
-		common.IfThen(!v.Value().(crdtcommon.Type).IsCommutative() || common.IsType[*commutative.Path](v.Value()),
+		common.IfThen(!v.Value().(crdtcommon.CRDT).IsCommutative() || common.IsType[*commutative.Path](v.Value()),
 			nil,
-			v.Value().(crdtcommon.Type).Value()), // Keep Non-path commutative variables (u256, u64) only
+			v.Value().(crdtcommon.CRDT).Value()), // Keep Non-path commutative variables (u256, u64) only
 		delta,
 		sign,
 		min,
 		max,
 	)
 
-	vt := vtyped.(crdtcommon.Type)
+	vt := vtyped.(crdtcommon.CRDT)
 	return v.New(
 		&v.Property,
 		vt,
@@ -93,7 +93,7 @@ func (this ITTransition) From(v *StateCell) *StateCell {
 		return unival
 	}
 
-	typed := unival.Value().(crdtcommon.Type) // Get the typed value from the unival
+	typed := unival.Value().(crdtcommon.CRDT) // Get the typed value from the unival
 	delta, sign := typed.CloneDelta()
 	typed.SetDelta(delta, sign)
 	// typedNew := typed.New(
@@ -102,7 +102,7 @@ func (this ITTransition) From(v *StateCell) *StateCell {
 	// 	typed.DeltaSign(),
 	// 	typed.Min(),
 	// 	typed.Max(),
-	// ).(crdtcommon.Type)
+	// ).(crdtcommon.CRDT)
 
 	// typedNew.SetDelta(codec.Clone(typedNew.Delta()))
 	// converted.SetValue(typed) // Reuse the univalue wrapper
