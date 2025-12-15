@@ -22,14 +22,14 @@ import (
 	crdtcommon "github.com/arcology-network/common-lib/crdt/common"
 )
 
-// IPAccess is purely for inter-process communication, the valuee get copied in
+// InterProcAccess is purely for inter-process communication, the valuee get copied in
 // the process of serialization anyway.
-type IPAccess struct {
+type InterProcAccess struct {
 	*StateCell
 	Err error
 }
 
-func (this IPAccess) From(v *StateCell) *StateCell {
+func (this InterProcAccess) From(v *StateCell) *StateCell {
 	if this.Err != nil || v.IfSkipConflictCheck() || v.PathLookupOnly() {
 		return nil
 	}
@@ -47,17 +47,17 @@ func (this IPAccess) From(v *StateCell) *StateCell {
 	)
 }
 
-// ITAccess is used to filter out the fields that are not needed in inter-thread
+// InterThreadAccess is used to filter out the fields that are not needed in inter-thread
 // transitions to save time spent on encoding and decoding.
 
-// The biggest difference between ITAccess and IPAccess is that ITAccess needs to
-// make a deep copy of the value, while IPAccess does not. Because IPAccess is purely
+// The biggest difference between InterThreadAccess and InterProcAccess is that InterThreadAccess needs to
+// make a deep copy of the value, while InterProcAccess does not. Because InterProcAccess is purely
 // for inter-process communication, the valu get copied in the process of serialization anyway.
 
-type ITAccess struct{ IPAccess }
+type InterThreadAccess struct{ InterProcAccess }
 
-func (this ITAccess) From(v *StateCell) *StateCell {
-	value := this.IPAccess.From(v)
+func (this InterThreadAccess) From(v *StateCell) *StateCell {
+	value := this.InterProcAccess.From(v)
 	// converted := common.IfThenDo1st(value != nil, func() *StateCell { return value.(*StateCell) }, nil)
 	if value == nil {
 		return nil

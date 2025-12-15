@@ -23,14 +23,14 @@ import (
 	"github.com/arcology-network/common-lib/crdt/commutative"
 )
 
-// IPTransition stands for intra-process transition. It is used to filter out the fields that are not needed in inter-thread transitions to save
+// InterProcTransition stands for intra-process transition. It is used to filter out the fields that are not needed in inter-thread transitions to save
 // time spent on encoding and decoding.
-type IPTransition struct {
+type InterProcTransition struct {
 	*StateCell
 	Err error
 }
 
-func (this IPTransition) From(v *StateCell) *StateCell {
+func (this InterProcTransition) From(v *StateCell) *StateCell {
 	if v == nil ||
 		v.IsReadOnly() ||
 		(v.Value() == nil && !v.IsCommitted()) { // Deletion of an non-existing entry or a read-only entry
@@ -69,13 +69,13 @@ func (this IPTransition) From(v *StateCell) *StateCell {
 
 // ITT stands for inter-thread transition. It is used to filter out the fields that are not needed in inter-thread transitions to save
 // time spent on encoding and decoding, which is only needed in inter-process scenarios.
-type ITTransition struct {
-	IPTransition
+type InterThreadTransition struct {
+	InterProcTransition
 	Err error
 }
 
-func (this ITTransition) From(v *StateCell) *StateCell {
-	unival := IPTransition{Err: this.Err}.From(v)
+func (this InterThreadTransition) From(v *StateCell) *StateCell {
+	unival := InterProcTransition{Err: this.Err}.From(v)
 
 	// if unival == nil { // Entry deletion
 	// 	return unival

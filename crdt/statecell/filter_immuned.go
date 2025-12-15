@@ -76,19 +76,19 @@ func (this *TransactionNormalizer) insertGasTransition(balanceTransition *StateC
 	return gasTransition
 }
 
-func (this *TransactionNormalizer) Normalize(rawStateAccesses []*StateCell) []*StateCell {
-	if len(rawStateAccesses) == 0 {
-		return rawStateAccesses
+func (this *TransactionNormalizer) Normalize(RawStateRecords []*StateCell) []*StateCell {
+	if len(RawStateRecords) == 0 {
+		return RawStateRecords
 	}
 
 	// The sender isn't the coinbase.
-	ImmunedGas := this.NormalizeGas(rawStateAccesses)
-	ImmunedNonce := this.NormalizeNonce(rawStateAccesses)
+	ImmunedGas := this.NormalizeGas(RawStateRecords)
+	ImmunedNonce := this.NormalizeNonce(RawStateRecords)
 
 	return append(ImmunedGas, ImmunedNonce...)
 }
 
-func (this *TransactionNormalizer) NormalizeGas(rawStateAccesses []*StateCell) []*StateCell {
+func (this *TransactionNormalizer) NormalizeGas(RawStateRecords []*StateCell) []*StateCell {
 	if this.msg.Native.From == this.Coinbase {
 		return nil
 	}
@@ -96,14 +96,14 @@ func (this *TransactionNormalizer) NormalizeGas(rawStateAccesses []*StateCell) [
 	Immuned := []*StateCell{}
 
 	senderString := hex.EncodeToString(this.msg.Native.From[:])
-	_, senderBalance := slice.FindFirstIf(rawStateAccesses, func(_ int, v *StateCell) bool { //It includes the gas fee and possible transfers.
+	_, senderBalance := slice.FindFirstIf(RawStateRecords, func(_ int, v *StateCell) bool { //It includes the gas fee and possible transfers.
 		return v != nil &&
 			strings.HasSuffix(*v.GetPath(), "/balance") &&
 			strings.Contains(*v.GetPath(), senderString)
 	})
 
 	coinbaseString := hex.EncodeToString(this.Coinbase[:])
-	_, coinbaseBalance := slice.FindFirstIf(rawStateAccesses, func(_ int, v *StateCell) bool {
+	_, coinbaseBalance := slice.FindFirstIf(RawStateRecords, func(_ int, v *StateCell) bool {
 		return v != nil &&
 			strings.HasSuffix(*v.GetPath(), "/balance") &&
 			strings.Contains(*v.GetPath(), coinbaseString)
@@ -136,11 +136,11 @@ func (this *TransactionNormalizer) NormalizeGas(rawStateAccesses []*StateCell) [
 // concurrency control, the nonce transition is flagged with SkipConflictCheck = true so
 // that it bypasses conflict validation and is always included in the final commit set.
 //
-// If the sender's nonce update is not present in rawStateAccesses (e.g., non-standard
+// If the sender's nonce update is not present in RawStateRecords (e.g., non-standard
 // system transactions or partial receipts), this function returns an empty slice.
-func (this *TransactionNormalizer) NormalizeNonce(rawStateAccesses []*StateCell) []*StateCell {
+func (this *TransactionNormalizer) NormalizeNonce(RawStateRecords []*StateCell) []*StateCell {
 	Immuned := []*StateCell{}
-	_, senderNonce := slice.FindFirstIf(rawStateAccesses, func(_ int, v *StateCell) bool {
+	_, senderNonce := slice.FindFirstIf(RawStateRecords, func(_ int, v *StateCell) bool {
 		return strings.Contains(*v.GetPath(), "/nonce") && strings.Contains(*v.GetPath(), hex.EncodeToString(this.msg.Native.From[:]))
 	})
 

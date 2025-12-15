@@ -309,7 +309,7 @@ func (this *StateCell) PrecheckAttributes(other *StateCell) {
 	}
 
 	if other.writes == 0 && other.deltaWrites == 0 {
-		panic("Error: Value type mismatched!") // Read only variable should never be here.
+		panic("Error: Read only entries should never be here, check the transition filtering logic!!!") // Read only variable should never be here.
 	}
 
 	if this.GetTx() != other.GetTx() &&

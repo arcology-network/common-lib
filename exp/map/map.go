@@ -215,7 +215,7 @@ func FindKey[M ~map[K]V, K comparable, V any](m M, less func(K, K) bool) (K, V) 
 // Values returns a slice containing all the values of a map.
 func KeysToBuffer[M ~map[K]V, K comparable, V any](m M, buffer *[]K) []K {
 	i := 0
-	for k, _ := range m {
+	for k := range m {
 		(*buffer)[i] = k
 		i++
 	}
@@ -272,6 +272,16 @@ func ContainsAny[M ~map[K]V, K comparable, V any](m M, keys []K) bool {
 		}
 	}
 	return false
+}
+
+// Keys returns a slice containing all the keys of a map.
+func Append[M ~map[K][]V, K comparable, V any](m M, key K, val V) bool {
+	if _, ok := m[key]; ok {
+		m[key] = append(m[key], val)
+		return true // already exists
+	}
+	m[key] = []V{val}
+	return false // newly added
 }
 
 // // Keys returns a slice containing all the keys of a map.
