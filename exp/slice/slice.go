@@ -71,7 +71,7 @@ func Reverse[T any](values *[]T) []T {
 // Fill fills a slice with a given value.
 // It modifies the original slice and returns the filled slice.
 func Fill[T any](values []T, v T) []T {
-	for i := 0; i < len(values); i++ {
+	for i := range values {
 		(values)[i] = v
 	}
 	return values
@@ -102,69 +102,6 @@ func Move[T comparable](values *[]T) []T {
 	ret := *values
 	*values = (*values)[:0]
 	return ret
-}
-
-// Remove removes all occurrences of a target value from a slice.
-// It modifies the original slice and returns the modified slice.
-func Remove[T comparable](values *[]T, target T) []T {
-	pos := 0
-	for i := 0; i < len(*values); i++ {
-		if target == (*values)[i] {
-			pos = i
-			break
-		}
-	}
-
-	for i := pos; i < len(*values); i++ {
-		if target != (*values)[i] {
-			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
-			pos++
-		}
-	}
-	(*values) = (*values)[:pos]
-	return (*values)
-}
-
-// RemoveAt removes an element at a specific position from a slice.
-// It modifies the original slice and returns the modified slice.
-func RemoveAt[T any](values *[]T, pos int) []T {
-	for i := pos; i < len(*values)-1; i++ {
-		(*values)[i] = (*values)[i+1]
-	}
-	(*values) = (*values)[:len((*values))-1]
-	return (*values)
-}
-
-// SetByIndices applies a setter function to elements in a slice at specified indices.
-// It modifies the original slice and returns the modified slice.
-func SetByIndices[T0 any, T1 constraints.Integer](source []T0, indices []T1, setter func(T0) T0) []T0 {
-	for _, idx := range indices {
-		(source)[idx] = setter((source)[idx])
-	}
-	return source
-}
-
-// RemoveIf removes all elements from a slice that satisfy a given condition.
-// It modifies the original slice and returns the modified slice.
-func RemoveIf[T any](values *[]T, condition func(int, T) bool) []T {
-	if len(*values) == 0 {
-		return *values
-	}
-
-	if len(*values) == 1 && condition(0, (*values)[0]) {
-		(*values) = (*values)[:0]
-		return *values
-	}
-
-	MoveIf(values, condition)
-	return *values
-}
-
-// RemoveIf removes all elements from a slice that satisfy a given condition.
-// It modifies the original slice and returns the modified slice.
-func RemoveBothIf[T0, T1 any](values *[]T0, others *[]T1, condition func(int, T0, T1) bool) ([]T0, []T1) {
-	MoveBothIf(values, others, condition)
-	return *values, *others
 }
 
 // MoveIf moves all elements from a slice that satisfy a given condition to a new slice.
@@ -216,6 +153,69 @@ func MoveIf[T any](values *[]T, condition func(int, T) bool) []T {
 	moved := (*values)[pos:]
 	(*values) = (*values)[:pos]
 	return moved
+}
+
+// Remove removes all occurrences of a target value from a slice.
+// It modifies the original slice and returns the modified slice.
+func Remove[T comparable](values *[]T, target T) []T {
+	pos := 0
+	for i := 0; i < len(*values); i++ {
+		if target == (*values)[i] {
+			pos = i
+			break
+		}
+	}
+
+	for i := pos; i < len(*values); i++ {
+		if target != (*values)[i] {
+			(*values)[pos], (*values)[i] = (*values)[i], (*values)[pos]
+			pos++
+		}
+	}
+	(*values) = (*values)[:pos]
+	return (*values)
+}
+
+// RemoveAt removes an element at a specific position from a slice.
+// It modifies the original slice and returns the modified slice.
+func RemoveAt[T any](values *[]T, pos int) []T {
+	for i := pos; i < len(*values)-1; i++ {
+		(*values)[i] = (*values)[i+1]
+	}
+	(*values) = (*values)[:len((*values))-1]
+	return (*values)
+}
+
+// RemoveIf removes all elements from a slice that satisfy a given condition.
+// It modifies the original slice and returns the modified slice.
+func RemoveIf[T any](values *[]T, condition func(int, T) bool) []T {
+	if len(*values) == 0 {
+		return *values
+	}
+
+	if len(*values) == 1 && condition(0, (*values)[0]) {
+		(*values) = (*values)[:0]
+		return *values
+	}
+
+	MoveIf(values, condition)
+	return *values
+}
+
+// RemoveIf removes all elements from a slice that satisfy a given condition.
+// It modifies the original slice and returns the modified slice.
+func RemoveBothIf[T0, T1 any](values *[]T0, others *[]T1, condition func(int, T0, T1) bool) ([]T0, []T1) {
+	MoveBothIf(values, others, condition)
+	return *values, *others
+}
+
+// SetByIndices applies a setter function to elements in a slice at specified indices.
+// It modifies the original slice and returns the modified slice.
+func SetByIndices[T0 any, T1 constraints.Integer](source []T0, indices []T1, setter func(T0) T0) []T0 {
+	for _, idx := range indices {
+		(source)[idx] = setter((source)[idx])
+	}
+	return source
 }
 
 // Accumulate applies a function to each element in a slice and returns the accumulated result.
@@ -375,7 +375,7 @@ func Resize[T any](values *[]T, newSize int) []T {
 // CopyIf copies elements from a slice to a new slice based on a given condition.
 func CopyIf[T any](values []T, condition func(_ int, v T) bool) []T {
 	copied := make([]T, 0, len(values))
-	for i := 0; i < len(values); i++ {
+	for i := range values {
 		if condition(i, values[i]) {
 			copied = append(copied, values[i])
 		}
@@ -384,10 +384,10 @@ func CopyIf[T any](values []T, condition func(_ int, v T) bool) []T {
 }
 
 // CopyIfDo copies elements from a slice to a new slice based on a given condition and applies a function to each copied element.
-func CopyIfDo[T0, T1 any](values []T0, condition func(T0) bool, do func(T0) T1) []T1 {
+func CopyIfDo[T0, T1 any](values []T0, pred func(T0) bool, do func(T0) T1) []T1 {
 	copied := make([]T1, 0, len(values))
-	for i := 0; i < len(values); i++ {
-		if condition(values[i]) {
+	for i := range values {
+		if pred(values[i]) {
 			copied = append(copied, do(values[i]))
 		}
 	}
@@ -507,9 +507,9 @@ func FindFirst[T comparable](values []T, v T) (int, *T) {
 }
 
 // FindFirstIf finds the first element in a slice that satisfies a given condition and returns its index and a pointer to the element
-func FindFirstIf[T any](values []T, condition func(_ int, v T) bool) (int, *T) {
-	for i := 0; i < len(values); i++ {
-		if condition(i, values[i]) {
+func FindFirstIf[T any](values []T, pred func(_ int, v T) bool) (int, *T) {
+	for i := range values {
+		if pred(i, values[i]) {
 			return i, &(values)[i]
 		}
 	}
@@ -527,9 +527,9 @@ func FindLast[T comparable](values *[]T, v T) (int, *T) {
 }
 
 // FindLastIf finds the last element in a slice that satisfies a given condition and returns its index and a pointer to the element.
-func FindLastIf[T any](values []T, condition func(_ int, v T) bool) (int, *T) {
+func FindLastIf[T any](values []T, pred func(_ int, v T) bool) (int, *T) {
 	for i := len(values) - 1; i >= 0; i-- {
-		if condition(i, (values)[i]) {
+		if pred(i, (values)[i]) {
 			return i, &(values)[i]
 		}
 	}
@@ -561,10 +561,10 @@ func Clone[T any](src []T, fun ...func(T) T) []T {
 }
 
 // CloneIf creates a copy of a slice based on a given condition and returns the copied slice.
-func CloneIf[T any](src []T, condition func(v T) bool, fun ...func(T) T) []T {
+func CloneIf[T any](src []T, pred func(v T) bool, fun ...func(T) T) []T {
 	dst := make([]T, 0, len(src))
 	for i := range src {
-		if condition(src[i]) {
+		if pred(src[i]) {
 			if len(fun) > 0 {
 				dst = append(dst, fun[0](src[i]))
 				continue
@@ -581,25 +581,25 @@ func CloneIf[T any](src []T, condition func(v T) bool, fun ...func(T) T) []T {
 // ParallelForeach applies a function to each element in a slice in parallel using multiple threads.
 
 // Append applies a function to each element in a slice and returns a new slice with the results.
-func ConcateIf[T any, T1 any](condition func(i int, v T) (bool, T1), valueSet ...T) []T1 {
+func ConcateIf[T any, T1 any](pred func(i int, v T) (bool, T1), valueSet ...T) []T1 {
 	vec := make([]T1, 0, len(valueSet))
 	for i := range valueSet {
-		if flag, v := condition(i, valueSet[i]); flag {
+		if flag, v := pred(i, valueSet[i]); flag {
 			vec = append(vec, v)
 		}
 	}
 	return vec
 }
 
-func ConcateNonEmpty[T any](notEmpty func([]T) bool, valueSet ...[]T) []T {
-	vec := make([]T, 0, len(valueSet))
-	for i := range valueSet {
-		if notEmpty(valueSet[i]) {
-			vec = append(vec, valueSet[i]...)
-		}
-	}
-	return vec
-}
+// func ConcateNonEmpty[T any](notEmpty func([]T) bool, valueSet ...[]T) []T {
+// 	vec := make([]T, 0, len(valueSet))
+// 	for i := range valueSet {
+// 		if notEmpty(valueSet[i]) {
+// 			vec = append(vec, valueSet[i]...)
+// 		}
+// 	}
+// 	return vec
+// }
 
 // Concate concatenates multiple slices into a single slice.
 // It applies a getter function to each element in the input slice and concatenates the results.
@@ -654,10 +654,10 @@ func Flatten[T any](src [][]T) []T {
 }
 
 // Append applies a function to each element in a slice and returns a new slice with the results.
-func FlattenIf[T any](condition func(i int, v []T) bool, valueSet ...[]T) []T {
+func FlattenIf[T any](pred func(i int, v []T) bool, valueSet ...[]T) []T {
 	totalSize := 0
 	for i, vec := range valueSet {
-		if ok := condition(i, vec); ok {
+		if ok := pred(i, vec); ok {
 			totalSize = totalSize + len(vec)
 		}
 	}
@@ -665,7 +665,7 @@ func FlattenIf[T any](condition func(i int, v []T) bool, valueSet ...[]T) []T {
 	buffer := make([]T, totalSize)
 	offset := 0
 	for i := range valueSet {
-		if ok := condition(i, valueSet[i]); ok {
+		if ok := pred(i, valueSet[i]); ok {
 			offset += copy(buffer[offset:], valueSet[i])
 		}
 	}
@@ -795,10 +795,10 @@ func Count[T comparable](values []T, target T) uint64 {
 }
 
 // Count counts the number of occurrences of a value in a slice.
-func CountIf[T0 any](values []T0, condition func(int, *T0) bool) uint64 {
+func CountIf[T0 any](values []T0, pred func(int, *T0) bool) uint64 {
 	total := uint64(0)
-	for i := 0; i < len(values); i++ {
-		if condition(i, &values[i]) {
+	for i := range values {
+		if pred(i, &values[i]) {
 			total++
 		}
 	}
@@ -808,7 +808,7 @@ func CountIf[T0 any](values []T0, condition func(int, *T0) bool) uint64 {
 // Count counts the number of occurrences of a value in a slice.
 func CountDo[T0 any, T1 constraints.Integer](values []T0, getter func(int, *T0) T1) T1 {
 	total := T1(0)
-	for i := 0; i < len(values); i++ {
+	for i := range values {
 		total += getter(i, &values[i]) // Call the
 	}
 	return total
@@ -816,7 +816,7 @@ func CountDo[T0 any, T1 constraints.Integer](values []T0, getter func(int, *T0) 
 
 // Equal checks if two slices have the same elements, but the order of the elements doesn't matter.
 // It returns true if the slices are equal; otherwise, it returns false.
-func EqualSet[T comparable](lhv []T, rhv []T) bool {
+func ContentEquivalent[T comparable](lhv []T, rhv []T) bool {
 	if len(lhv) != len(rhv) {
 		return false
 	}
@@ -849,7 +849,7 @@ func EqualSet[T comparable](lhv []T, rhv []T) bool {
 	return true
 }
 
-func EqualSetIf[T any](lhv []T, rhv []T, equal func(T, T) bool) bool {
+func ContentEquivalentIf[T any](lhv []T, rhv []T, equal func(T, T) bool) bool {
 	if len(lhv) != len(rhv) {
 		return false
 	}
@@ -896,18 +896,18 @@ func SelectN[T any](vals [][]T, n int) []T {
 // It takes an array and a getter function that returns a pointer to the key for each element.
 // It returns two slices, one containing the unique keys and the other containing the groups of elements
 // that have the same key.
-func GroupBy[T0 any, T1 comparable](array []T0, getter func(int, T0) *T1, reserved ...int) ([]T1, [][]T0) {
+func GroupBy[T0 any, K comparable](array []T0, getter func(int, T0) *K, reserved ...int) ([]K, [][]T0) {
 	if len(array) == 1 {
-		return []T1{*getter(0, array[0])}, [][]T0{array}
+		return []K{*getter(0, array[0])}, [][]T0{array}
 	}
 
 	length := len(reserved)
 	if len(reserved) > 0 {
 		length = reserved[0]
 	}
-	inkeys := ParallelTransform(array, 4, func(i int, v T0) *T1 { return getter(i, v) })
+	inkeys := ParallelTransform(array, 4, func(i int, v T0) *K { return getter(i, v) })
 
-	dict := make(map[T1]*[]T0)
+	dict := make(map[K]*[]T0)
 	for i, v := range array {
 		if key := inkeys[i]; key != nil {
 			vec := dict[*key]
@@ -919,7 +919,7 @@ func GroupBy[T0 any, T1 comparable](array []T0, getter func(int, T0) *T1, reserv
 		}
 	}
 	// fmt.Println("range array:", len(array), "in ", time.Since(t0))
-	keys := make([]T1, len(dict))
+	keys := make([]K, len(dict))
 	values := make([][]T0, len(dict))
 	i := 0
 	for k, v := range dict {

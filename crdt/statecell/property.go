@@ -20,7 +20,7 @@ package statecell
 import (
 	"unsafe"
 
-	"github.com/arcology-network/common-lib/common"
+	// "github.com/arcology-network/common-lib/common"
 	"github.com/cespare/xxhash"
 )
 
@@ -28,7 +28,8 @@ type Property struct {
 	vType         uint8
 	tx            uint64  // Transaction ID
 	generation    uint64  // Generation ID
-	sequence      uint64  // Sequence ID
+	sequence      uint64  // Job Sequence ID
+	callee        uint64  // Callee Sequence ID (4 bytes from To, 4 bytes from Selector)
 	path          *string // Key
 	pathBytes     []byte  // for fast path comparison in sorin
 	keyHash       uint64  // keyHash of the key, for faster comparison
@@ -83,15 +84,15 @@ func (this *Property) Reset() {
 	this.reclaimFunc = nil
 }
 
-func (this *Property) Merge(other *Property) bool {
-	this.reads += other.reads
-	this.writes += other.writes
-	this.deltaWrites += other.deltaWrites
-	this.gasUsed += other.gasUsed
-	this.sizeInStorage = common.Max(this.sizeInStorage, other.sizeInStorage)
-	this.ifSkipConflictCheck = this.ifSkipConflictCheck || other.ifSkipConflictCheck
-	return this.keyHash == other.keyHash
-}
+// func (this *Property) Merge(other *Property) bool {
+// 	this.reads += other.reads
+// 	this.writes += other.writes
+// 	this.deltaWrites += other.deltaWrites
+// 	this.gasUsed += other.gasUsed
+// 	this.sizeInStorage = common.Max(this.sizeInStorage, other.sizeInStorage)
+// 	this.ifSkipConflictCheck = this.ifSkipConflictCheck || other.ifSkipConflictCheck
+// 	return this.keyHash == other.keyHash
+// }
 
 func (this *Property) IsBlockBound() bool              { return this.isBlockBound } // If true, it is not persisted to the storage.
 func (this *Property) SetBlockBound(isBlockBound bool) { this.isBlockBound = isBlockBound }
@@ -115,6 +116,9 @@ func (this *Property) GetSequence() uint64   { return this.sequence }
 
 func (this *Property) SetGeneration(id uint64) { this.generation = id }
 func (this *Property) SetSequence(id uint64)   { this.sequence = id }
+
+func (this *Property) SetCallee(id uint64) { this.callee = id }
+func (this *Property) GetCallee() uint64   { return this.callee }
 
 func (this *Property) GetPath() *string     { return this.path }
 func (this *Property) SetPath(path *string) { this.path = path }
@@ -151,6 +155,7 @@ func (this *Property) Equal(other *Property) bool {
 		this.tx == other.tx &&
 		this.generation == other.generation &&
 		this.sequence == other.sequence &&
+		this.callee == other.callee &&
 		this.keyHash == other.keyHash && // compare the key hashes first for faster comparison.
 		*this.path == *other.path &&
 		this.reads == other.reads &&
@@ -166,6 +171,7 @@ func (this *Property) Clone() Property {
 		tx:            this.tx,
 		generation:    this.generation,
 		sequence:      this.sequence,
+		callee:        this.callee,
 		path:          this.path,
 		keyHash:       this.keyHash,
 		reads:         this.reads,

@@ -43,30 +43,30 @@ func (this StateCells) Sizes() []int {
 }
 
 func (this StateCells) Encode(selector ...any) []byte {
-	lengths := make([]uint64, len(this))
-	if len(lengths) == 0 {
+	if len(this) == 0 {
 		return []byte{}
 	}
 
-	slice.ParallelForeach(this, 6, func(i int, _ **StateCell) {
-		if this[i] != nil {
-			lengths[i] = this[i].Size()
-		}
-	})
-
 	offsets := make([]uint64, len(this)+1)
-	for i := 0; i < len(lengths); i++ {
-		offsets[i+1] = offsets[i] + lengths[i]
+	for i := range this {
+		offsets[i+1] = offsets[i] + this[i].Size()
 	}
 
 	headerLen := uint64((len(this) + 1) * codec.UINT64_LEN)
 	buffer := make([]byte, headerLen+offsets[len(offsets)-1])
 	codec.Uint32(len(this)).EncodeTo(buffer)
 
-	slice.ParallelForeach(this, 6, func(i int, _ **StateCell) {
-		codec.Uint32(offsets[i]).EncodeTo(buffer[(i+1)*codec.UINT64_LEN:])
-		this[i].EncodeTo(buffer[headerLen+offsets[i]:])
-	})
+	if len(this) > 2048 {
+		slice.ParallelForeach(this, 4, func(i int, _ **StateCell) {
+			codec.Uint32(offsets[i]).EncodeTo(buffer[(i+1)*codec.UINT64_LEN:])
+			this[i].EncodeTo(buffer[headerLen+offsets[i]:])
+		})
+	} else {
+		for i, v := range this {
+			codec.Uint32(offsets[i]).EncodeTo(buffer[(i+1)*codec.UINT64_LEN:])
+			v.EncodeTo(buffer[headerLen+offsets[i]:])
+		}
+	}
 	return buffer
 }
 

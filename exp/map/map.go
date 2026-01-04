@@ -191,25 +191,36 @@ func Keys[M ~map[K]V, K comparable, V any](m M) []K {
 	return keys
 }
 
-// Keys returns a slice containing all the keys of a map.
-func FindKey[M ~map[K]V, K comparable, V any](m M, less func(K, K) bool) (K, V) {
+// Min returns the key-value pair with the minimal key according to less().
+func Min[M ~map[K]V, K comparable, V any](
+	m M,
+	less func(K, K) bool,
+) (K, V, bool) {
 	var mink K
 	var minv V
 	var init bool
+
 	for k, v := range m {
 		if !init {
-			mink = k
-			minv = v
+			mink, minv = k, v
 			init = true
 			continue
 		}
-
 		if less(k, mink) {
-			mink = k
-			minv = v
+			mink, minv = k, v
 		}
 	}
-	return mink, minv
+	return mink, minv, init
+}
+
+// Max returns the key-value pair with the maximal key according to less().
+func Max[M ~map[K]V, K comparable, V any](
+	m M,
+	less func(K, K) bool,
+) (K, V, bool) {
+	return Min(m, func(a, b K) bool {
+		return less(b, a)
+	})
 }
 
 // Values returns a slice containing all the values of a map.
@@ -275,34 +286,17 @@ func ContainsAny[M ~map[K]V, K comparable, V any](m M, keys []K) bool {
 }
 
 // Keys returns a slice containing all the keys of a map.
-func Append[M ~map[K][]V, K comparable, V any](m M, key K, val V) bool {
-	if _, ok := m[key]; ok {
-		m[key] = append(m[key], val)
+func AppendToSlice[M ~map[K][]V, K comparable, V any](
+	m M,
+	key K,
+	val V) bool {
+	if arr, ok := m[key]; ok {
+		m[key] = append(arr, val)
 		return true // already exists
 	}
 	m[key] = []V{val}
 	return false // newly added
 }
-
-// // Keys returns a slice containing all the keys of a map.
-// func MaxKey[M ~map[K]V, K comparable, V any](m M, greater func(K, K) bool) (K, V) {
-// 	var maxk K
-// 	var maxv V
-// 	var init bool
-// 	for k, v := range m {
-// 		if !init {
-// 			maxk = k
-// 			maxv = v
-// 			init = true
-// 			continue
-// 		}
-
-// 		if greater(k, maxk) {
-// 			maxk, maxv = k, v
-// 		}
-// 	}
-// 	return maxk, maxv
-// }
 
 func FindValue[M ~map[K]V, K comparable, V any](m M, less func(V, V) bool) (K, V) {
 	var mink K

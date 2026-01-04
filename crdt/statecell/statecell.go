@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	"github.com/arcology-network/common-lib/common"
-	intf "github.com/arcology-network/common-lib/crdt/common"
+	crdtcommon "github.com/arcology-network/common-lib/crdt/common"
 	"github.com/arcology-network/common-lib/crdt/noncommutative"
 	"github.com/arcology-network/common-lib/exp/slice"
 	"github.com/cespare/xxhash"
@@ -46,7 +46,7 @@ func NewStateCell(tx uint64, key string, reads, writes uint32, deltaWrites uint3
 
 	univ := &StateCell{
 		Property{
-			vType:         common.IfThenDo1st(T != nil, func() uint8 { return T.(intf.CRDT).TypeID() }, uint8(reflect.Invalid)),
+			vType:         common.IfThenDo1st(T != nil, func() uint8 { return T.(crdtcommon.CRDT).TypeID() }, uint8(reflect.Invalid)),
 			tx:            tx,
 			path:          &key,
 			keyHash:       xxhash.Sum64String(key),
@@ -70,7 +70,7 @@ func (this *StateCell) Init(tx uint64, key string, reads, writes, deltaWrites ui
 		v = noncommutative.NewBytes(v.([]byte))
 	}
 
-	this.vType = common.IfThenDo1st(v != nil, func() uint8 { return v.(intf.CRDT).TypeID() }, uint8(reflect.Invalid))
+	this.vType = common.IfThenDo1st(v != nil, func() uint8 { return v.(crdtcommon.CRDT).TypeID() }, uint8(reflect.Invalid))
 	this.tx = tx
 	this.path = &key
 	this.keyHash = xxhash.Sum64String(key)
@@ -130,7 +130,7 @@ func (this *StateCell) Do(tx uint64, path string, doer any) any {
 
 func (this *StateCell) Get(tx uint64, path string, source any) any {
 	if this.value != nil {
-		tempV, r, w := this.value.(intf.CRDT).Get() //RW: Affiliated reads and writes
+		tempV, r, w := this.value.(crdtcommon.CRDT).Get() //RW: Affiliated reads and writes
 		this.reads += r
 
 		// The whole copy mechansim is designed to avoid interference with maximum performance,
@@ -184,8 +184,8 @@ func (this *StateCell) Set(tx uint64, path string, newV any, inCache bool, impor
 
 	// Write a new value
 	if this.value == nil {
-		this.vType = newV.(intf.CRDT).TypeID()
-		v, r, w, dw := newV.(intf.CRDT).CopyTo(newV)
+		this.vType = newV.(crdtcommon.CRDT).TypeID()
+		v, r, w, dw := newV.(crdtcommon.CRDT).CopyTo(newV)
 		this.value = v
 		this.writes += w
 		this.reads += r
@@ -197,7 +197,7 @@ func (this *StateCell) Set(tx uint64, path string, newV any, inCache bool, impor
 
 	//Update an existing value. For a path a delete operation will
 	// remove all its sub paths, but not the path itself.
-	oldV := this.value.(intf.CRDT)
+	oldV := this.value.(crdtcommon.CRDT)
 	v, r, w, dw, err := oldV.Set(newV, []any{path, *this.path, tx, importer}) // Update the current value
 	this.value = v
 	this.writes += w
@@ -206,7 +206,7 @@ func (this *StateCell) Set(tx uint64, path string, newV any, inCache bool, impor
 
 	//Delete an existing value. Not Every value can be deleted by itself, some only can be delete by its parent
 	// that is why we need to check first.
-	if newV == nil && this.Value().(intf.CRDT).IsDeletable(*this.GetPath(), path) { // Delete the entry but keep the access record.
+	if newV == nil && this.Value().(crdtcommon.CRDT).IsDeletable(*this.GetPath(), path) { // Delete the entry but keep the access record.
 		this.vType = uint8(reflect.Invalid)
 		this.value = newV // Delete the value
 		this.writes++
@@ -223,7 +223,7 @@ func (this *StateCell) MakeDeepCopy(newV any) {
 	// typedV == nil, this is a delete operation, so we don't need to make a deep copy.
 	// In cascading write cache, the values' access info will stripped off, so it wouldn't introduce interference.
 	if this.writes == 0 && this.deltaWrites == 0 && this.value != nil { // Make a deep copy if has't done so
-		this.value = this.value.(intf.CRDT).Clone()
+		this.value = this.value.(crdtcommon.CRDT).Clone()
 	}
 }
 
@@ -239,16 +239,16 @@ func (this *StateCell) ApplyDelta(vec []*StateCell) error {
 	}
 
 	// Apply transitions
-	typedVals := slice.Transform(vec, func(_ int, v *StateCell) intf.CRDT {
+	typedVals := slice.Transform(vec, func(_ int, v *StateCell) crdtcommon.CRDT {
 		if v.Value() != nil {
-			return v.Value().(intf.CRDT)
+			return v.Value().(crdtcommon.CRDT)
 		}
 		return nil
 	})
 
 	var err error
 	if this.Value() != nil {
-		if this.value, _, err = this.Value().(intf.CRDT).ApplyDelta(typedVals); err != nil {
+		if this.value, _, err = this.Value().(crdtcommon.CRDT).ApplyDelta(typedVals); err != nil {
 			return err
 		}
 	}
@@ -283,7 +283,7 @@ func (this *StateCell) IsNilInitOnly() bool {
 	return this.reads == 0 &&
 		!this.isDeleted &&
 		this.Value() != nil &&
-		this.Value().(intf.CRDT).IsCommutative() // Must be commutative
+		this.Value().(crdtcommon.CRDT).IsCommutative() // Must be commutative
 }
 
 // Commutative write is no longer treated as a conflict with read.
@@ -293,11 +293,11 @@ func (this *StateCell) IsCumulativeWriteOnly(other *StateCell) bool {
 		return false
 	}
 
-	min, max := this.Value().(intf.CRDT).Limits()
-	otherMin, otherMax := other.Value().(intf.CRDT).Limits()
+	min, max := this.Value().(crdtcommon.CRDT).Limits()
+	otherMin, otherMax := other.Value().(crdtcommon.CRDT).Limits()
 	return this.reads == 0 &&
-		this.Value().(intf.CRDT).IsCommutative() &&
-		this.Value().(intf.CRDT).IsNumeric() &&
+		this.Value().(crdtcommon.CRDT).IsCommutative() &&
+		this.Value().(crdtcommon.CRDT).IsNumeric() &&
 		min == otherMin &&
 		max == otherMax &&
 		this.Reads() == 0
@@ -315,7 +315,7 @@ func (this *StateCell) PrecheckAttributes(other *StateCell) {
 	if this.GetTx() != other.GetTx() &&
 		this.isCommitted &&
 		this.Value() != nil &&
-		this.Value().(intf.CRDT).IsCommutative() &&
+		this.Value().(crdtcommon.CRDT).IsCommutative() &&
 		this.Reads() > 0 &&
 		this.IsDeltaWriteOnly() == other.IsDeltaWriteOnly() {
 		this.Print()
@@ -336,7 +336,7 @@ func (this *StateCell) PrecheckAttributes(other *StateCell) {
 func (this *StateCell) Clone() any {
 	v := &StateCell{
 		this.Property.Clone(),
-		common.IfThenDo1st(this.value != nil, func() any { return this.value.(intf.CRDT).Clone() }, this.value),
+		common.IfThenDo1st(this.value != nil, func() any { return this.value.(crdtcommon.CRDT).Clone() }, this.value),
 		slice.Clone(this.buf),
 	}
 	return v
@@ -388,7 +388,7 @@ func (this *StateCell) Print() {
 	}
 
 	fmt.Print(spaces+"path: ", *this.path, "      ")
-	common.IfThenDo(this.value != nil, func() { this.value.(intf.CRDT).Print() }, func() { fmt.Print("nil") })
+	common.IfThenDo(this.value != nil, func() { this.value.(crdtcommon.CRDT).Print() }, func() { fmt.Print("nil") })
 	fmt.Println()
 }
 
@@ -401,7 +401,7 @@ func (this *StateCell) Equal(other *StateCell) bool {
 		return false
 	}
 
-	vFlag := this.value.(intf.CRDT).Equal(other.Value().(intf.CRDT))
+	vFlag := this.value.(crdtcommon.CRDT).Equal(other.Value().(crdtcommon.CRDT))
 	return this.tx == other.GetTx() &&
 		*this.path == *other.GetPath() &&
 		this.reads == other.Reads() &&

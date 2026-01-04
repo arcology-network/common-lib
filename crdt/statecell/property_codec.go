@@ -32,7 +32,7 @@ func (this *Property) Encode() []byte {
 }
 
 func (this *Property) HeaderSize() uint64 {
-	return uint64(16 * codec.UINT64_LEN)
+	return uint64(17 * codec.UINT64_LEN)
 }
 
 func (this *Property) Size() uint64 {
@@ -41,6 +41,7 @@ func (this *Property) Size() uint64 {
 		uint64(8) + // codec.Uint64(uint64(this.tx)).Size() +
 		uint64(8) + // codec.Uint64(this.generation).Size() +
 		uint64(8) + // codec.Uint64(this.sequence).Size() +
+		uint64(8) + // Callee ID
 		uint64(len(*this.path)) + // codec.String(*this.path).Size() +
 		uint64(8) + // codec.Uint64(this.keyHash).Size() +
 		uint64(8) + // codec.Uint64(this.reads).Size() +
@@ -62,6 +63,7 @@ func (this *Property) FillHeader(buffer []byte) int {
 			codec.Uint64(this.tx).Size(),
 			codec.Uint64(this.generation).Size(),
 			codec.Uint64(this.sequence).Size(),
+			codec.Uint64(this.callee).Size(),
 			codec.String(*this.path).Size(),
 			codec.Uint64(this.keyHash).Size(),
 			codec.Uint64(this.reads).Size(),
@@ -83,6 +85,7 @@ func (this *Property) EncodeTo(buffer []byte) int {
 	offset += codec.Uint64(this.tx).EncodeTo(buffer[offset:])
 	offset += codec.Uint64(this.generation).EncodeTo(buffer[offset:])
 	offset += codec.Uint64(this.sequence).EncodeTo(buffer[offset:])
+	offset += codec.Uint64(this.callee).EncodeTo(buffer[offset:])
 	offset += codec.String(*this.path).EncodeTo(buffer[offset:])
 	offset += codec.Uint64(this.keyHash).EncodeTo(buffer[offset:])
 	offset += codec.Uint64(this.reads).EncodeTo(buffer[offset:])
@@ -108,18 +111,19 @@ func (this *Property) Decode(buffer []byte) any {
 	this.tx = uint64(codec.Uint64(0).Decode(fields[1]).(codec.Uint64))
 	this.generation = uint64(codec.Uint64(0).Decode(fields[2]).(codec.Uint64))
 	this.sequence = uint64(codec.Uint64(0).Decode(fields[3]).(codec.Uint64))
-	key := string(codec.String("").Decode(bytes.Clone(fields[4])).(codec.String))
+	this.callee = uint64(codec.Uint64(0).Decode(fields[4]).(codec.Uint64))
+	key := string(codec.String("").Decode(bytes.Clone(fields[5])).(codec.String))
 	this.path = &key
-	this.keyHash = uint64(codec.Uint64(0).Decode(fields[5]).(codec.Uint64))
-	this.reads = uint32(codec.Uint64(1).Decode(fields[6]).(codec.Uint64))
-	this.writes = uint32(codec.Uint64(1).Decode(fields[7]).(codec.Uint64))
-	this.deltaWrites = uint32(new(codec.Uint64).Decode(fields[8]).(codec.Uint64))
-	this.gasUsed = uint64(new(codec.Uint64).Decode(fields[9]).(codec.Uint64))
-	this.isDeleted = bool(codec.Bool(false).Decode(fields[10]).(codec.Bool))
-	this.isCommitted = bool(codec.Bool(false).Decode(fields[11]).(codec.Bool))
-	this.ifSkipConflictCheck = bool(codec.Bool(true).Decode(fields[12]).(codec.Bool))
-	this.sizeInStorage = uint64(new(codec.Uint64).Decode(fields[13]).(codec.Uint64))
-	this.msg = string(codec.String("").Decode(bytes.Clone(fields[14])).(codec.String))
+	this.keyHash = uint64(codec.Uint64(0).Decode(fields[6]).(codec.Uint64))
+	this.reads = uint32(codec.Uint64(1).Decode(fields[7]).(codec.Uint64))
+	this.writes = uint32(codec.Uint64(1).Decode(fields[8]).(codec.Uint64))
+	this.deltaWrites = uint32(new(codec.Uint64).Decode(fields[9]).(codec.Uint64))
+	this.gasUsed = uint64(new(codec.Uint64).Decode(fields[10]).(codec.Uint64))
+	this.isDeleted = bool(codec.Bool(false).Decode(fields[11]).(codec.Bool))
+	this.isCommitted = bool(codec.Bool(false).Decode(fields[12]).(codec.Bool))
+	this.ifSkipConflictCheck = bool(codec.Bool(true).Decode(fields[13]).(codec.Bool))
+	this.sizeInStorage = uint64(new(codec.Uint64).Decode(fields[14]).(codec.Uint64))
+	this.msg = string(codec.String("").Decode(bytes.Clone(fields[15])).(codec.String))
 
 	this.pathBytes = unsafe.Slice(unsafe.StringData(*this.path), len(*this.path))
 	return this
@@ -140,6 +144,7 @@ func (this *Property) GobDecode(data []byte) error {
 	this.tx = v.tx
 	this.generation = v.generation
 	this.sequence = v.sequence
+	this.callee = v.callee
 	this.reads = v.reads
 	this.writes = v.writes
 	this.deltaWrites = v.deltaWrites

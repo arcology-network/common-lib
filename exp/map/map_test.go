@@ -229,3 +229,86 @@ func TestInsert(t *testing.T) {
 		t.Error("Error: Failed to insert values into map !")
 	}
 }
+
+func TestAppendNewKey(t *testing.T) {
+	m := make(map[string][]int)
+
+	exists := AppendToSlice(m, "a", 1)
+
+	if exists {
+		t.Fatalf("expected exists=false for new key")
+	}
+	if len(m) != 1 {
+		t.Fatalf("expected map size 1, got %d", len(m))
+	}
+	if got := m["a"]; len(got) != 1 || got[0] != 1 {
+		t.Fatalf("unexpected value: %#v", got)
+	}
+}
+
+func TestAppendExistingKey(t *testing.T) {
+	m := map[string][]int{
+		"a": {1, 2},
+	}
+
+	exists := AppendToSlice(m, "a", 3)
+
+	if !exists {
+		t.Fatalf("expected exists=true for existing key")
+	}
+	if got := m["a"]; len(got) != 3 || got[2] != 3 {
+		t.Fatalf("unexpected value: %#v", got)
+	}
+}
+
+func TestAppendMultipleAppends(t *testing.T) {
+	m := make(map[string][]int)
+
+	AppendToSlice(m, "a", 1)
+	AppendToSlice(m, "a", 2)
+	AppendToSlice(m, "a", 3)
+
+	got := m["a"]
+	want := []int{1, 2, 3}
+
+	if len(got) != len(want) {
+		t.Fatalf("length mismatch: got %d want %d", len(got), len(want))
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("at %d: got %d want %d", i, got[i], want[i])
+		}
+	}
+}
+
+func TestAppendNilSliceBehavior(t *testing.T) {
+	m := map[string][]int{
+		"a": nil,
+	}
+
+	exists := AppendToSlice(m, "a", 42)
+
+	if !exists {
+		t.Fatalf("expected exists=true for nil slice key")
+	}
+	if got := m["a"]; len(got) != 1 || got[0] != 42 {
+		t.Fatalf("unexpected value: %#v", got)
+	}
+}
+
+func TestAppendGenericType(t *testing.T) {
+	type V struct {
+		X int
+	}
+
+	m := make(map[int][]V)
+
+	exists := AppendToSlice(m, 10, V{X: 99})
+
+	if exists {
+		t.Fatalf("expected exists=false")
+	}
+	if got := m[10]; len(got) != 1 || got[0].X != 99 {
+		t.Fatalf("unexpected value: %#v", got)
+	}
+}

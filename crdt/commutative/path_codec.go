@@ -32,7 +32,7 @@ func (this *Path) HeaderSize() uint64 {
 
 func (this *Path) Size() uint64 {
 	return this.HeaderSize() +
-		8 + // TotalSize
+		8 + // Total data members of the struct + 1
 		1 + // isBlockBound
 		uint64(this.DeltaSet.Size()) +
 		1 // 1 byte for element type ID
