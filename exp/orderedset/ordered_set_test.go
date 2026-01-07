@@ -152,12 +152,12 @@ func TestIndexedSliceDelet(t *testing.T) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
 
-	k, v := mapi.FindValue(set.dict, func(v0 *int, v1 *int) bool { return *v0 < *v1 })
+	k, v, _ := mapi.ExtremeByValue(set.dict, func(v0 *int, v1 *int) bool { return *v0 < *v1 })
 	if len(set.dict) != 4 || *v != 0 || k != "1" {
 		t.Error("Error: Key is not equal !", set.dict)
 	}
 
-	k, v = mapi.FindValue(set.dict, func(v0 *int, v1 *int) bool { return *v0 > *v1 })
+	k, v, _ = mapi.ExtremeByValue(set.dict, func(v0 *int, v1 *int) bool { return *v0 > *v1 })
 	if len(set.dict) != 4 || *v != 3 || k != "13" {
 		t.Error("Error: Key is not equal !", set.dict)
 	}
@@ -167,12 +167,12 @@ func TestIndexedSliceDelet(t *testing.T) {
 		t.Error("Error: Key is not equal !", set.Elements())
 	}
 
-	k, v = mapi.FindValue(set.dict, func(v0 *int, v1 *int) bool { return *v0 < *v1 })
+	k, v, _ = mapi.ExtremeByValue(set.dict, func(v0 *int, v1 *int) bool { return *v0 < *v1 })
 	if len(set.dict) != 3 || *v != 0 || k != "5" {
 		t.Error("Error: Key is not equal !", set.dict)
 	}
 
-	k, v = mapi.FindValue(set.dict, func(v0 *int, v1 *int) bool { return *v0 > *v1 })
+	k, v, _ = mapi.ExtremeByValue(set.dict, func(v0 *int, v1 *int) bool { return *v0 > *v1 })
 	if len(set.dict) != 3 || *v != 2 || k != "13" {
 		t.Error("Error: Key is not equal !", set.dict)
 	}

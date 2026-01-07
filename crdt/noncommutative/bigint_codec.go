@@ -49,14 +49,6 @@ func (this *Bigint) Decode(buffer []byte) any {
 	return this
 }
 
-// func (this *Bigint) Encode() []byte {
-// 	return this.Encode()
-// }
-
-// func (this *Bigint) DecodeCompact(bytes []byte) any {
-// 	return this.Decode(bytes)
-// }
-
 func (this *Bigint) StorageEncode(_ string) []byte {
 	buffer, _ := rlp.EncodeToBytes((*big.Int)(this))
 	return buffer

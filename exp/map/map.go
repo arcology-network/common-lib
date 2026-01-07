@@ -191,36 +191,46 @@ func Keys[M ~map[K]V, K comparable, V any](m M) []K {
 	return keys
 }
 
-// Min returns the key-value pair with the minimal key according to less().
-func Min[M ~map[K]V, K comparable, V any](
+// ExtremeByKey returns the key-value pair with the minimal key according to less().
+func ExtremeByKey[M ~map[K]V, K comparable, V any](
 	m M,
 	less func(K, K) bool,
 ) (K, V, bool) {
-	var mink K
-	var minv V
-	var init bool
+	var key K
+	var val V
+	var ok bool
 
 	for k, v := range m {
-		if !init {
-			mink, minv = k, v
-			init = true
+		if !ok {
+			key, val = k, v
+			ok = true
 			continue
 		}
-		if less(k, mink) {
+		if less(k, key) {
+			key, val = k, v
+		}
+	}
+	return key, val, ok
+}
+
+// ExtremeByValue returns the key-value pair with the minimal value according to less().
+func ExtremeByValue[M ~map[K]V, K comparable, V any](m M, less func(V, V) bool) (K, V, bool) {
+	var mink K
+	var minv V
+	var ok bool
+	for k, v := range m {
+		if !ok {
+			mink = k
+			minv = v
+			ok = true
+			continue
+		}
+
+		if less(v, minv) {
 			mink, minv = k, v
 		}
 	}
-	return mink, minv, init
-}
-
-// Max returns the key-value pair with the maximal key according to less().
-func Max[M ~map[K]V, K comparable, V any](
-	m M,
-	less func(K, K) bool,
-) (K, V, bool) {
-	return Min(m, func(a, b K) bool {
-		return less(b, a)
-	})
+	return mink, minv, ok
 }
 
 // Values returns a slice containing all the values of a map.
@@ -296,25 +306,6 @@ func AppendToSlice[M ~map[K][]V, K comparable, V any](
 	}
 	m[key] = []V{val}
 	return false // newly added
-}
-
-func FindValue[M ~map[K]V, K comparable, V any](m M, less func(V, V) bool) (K, V) {
-	var mink K
-	var minv V
-	var init bool
-	for k, v := range m {
-		if !init {
-			mink = k
-			minv = v
-			init = true
-			continue
-		}
-
-		if less(v, minv) {
-			mink, minv = k, v
-		}
-	}
-	return mink, minv
 }
 
 // // Keys returns a slice containing all the keys of a map.

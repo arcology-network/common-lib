@@ -109,20 +109,6 @@ func ToType[T0, T1 any](v T0) T1 {
 	return interface{}(v).(T1)
 }
 
-// Equal checks if two values are equal.
-// It returns true if the values are equal; otherwise, it returns false.
-func Equal[T comparable](lhv, rhv *T, wildcard func(*T) bool) bool {
-	return (lhv == rhv) ||
-		((lhv != nil) && (rhv != nil) && (*lhv == *rhv)) ||
-		((lhv == nil && wildcard(rhv)) || (rhv == nil && wildcard(lhv)))
-}
-
-// EqualIf checks if two values are equal based on a given equality function.
-// It returns true if the values are equal; otherwise, it returns false.
-func EqualIf[T any](lhv, rhv *T, equal func(*T, *T) bool, wildcard func(*T) bool) bool {
-	return (lhv == rhv) || ((lhv != nil) && (rhv != nil) && equal(lhv, rhv)) || ((lhv == nil && wildcard(rhv)) || (rhv == nil && wildcard(lhv)))
-}
-
 // Swap swaps two values.
 func Swap[T any](lhv, rhv *T) {
 	v := *lhv
