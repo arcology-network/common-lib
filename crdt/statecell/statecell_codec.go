@@ -36,13 +36,15 @@ func (this *StateCell) HeaderSize() uint64 {
 }
 
 func (this *StateCell) Sizes() []uint64 {
+	vsize := this.value.(crdtcommon.CRDT).Size()
 	return []uint64{
 		this.HeaderSize(),
 		this.Property.Size(),
-		this.value.(crdtcommon.CRDT).Size(),
+		vsize,
 	}
 }
 
+// Total size in bytes for serialization
 func (this *StateCell) Size() uint64 {
 	return this.HeaderSize() +
 		this.Property.Size() +

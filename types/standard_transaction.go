@@ -19,7 +19,6 @@ package types
 
 import (
 	"bytes"
-	"math/big"
 	"math/rand"
 	"sort"
 
@@ -28,7 +27,6 @@ import (
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	evmTypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
 )
 
 const (
@@ -292,31 +290,3 @@ func (this *StandardTransactions) Decode(data []byte) ([]*StandardTransaction, e
 
 	return msgs, nil
 }
-
-//---------------------------------------------------
-
-func EntrySignature(m core.Message) string {
-	if len(m.Data) >= 4 {
-		return string(m.Data[:4])
-	}
-	return ""
-}
-func MsgEncode(m *core.Message) ([]byte, error) {
-	return rlp.EncodeToBytes(m)
-}
-func MsgDecode(data []byte) (*core.Message, error) {
-	m := core.Message{}
-	return &m, rlp.DecodeBytes(data, &m)
-}
-
-func TxEncode(tx *evmTypes.Transaction) ([]byte, error) {
-	return tx.MarshalBinary()
-}
-func TxDecode(data []byte) (*evmTypes.Transaction, error) {
-	tx := evmTypes.Transaction{}
-	return &tx, tx.UnmarshalBinary(data)
-}
-
-func MsgFee(m *core.Message) *big.Int {
-	return big.NewInt(0).Mul(big.NewInt(int64(m.GasLimit)), m.GasPrice)
-} // Max fee possible

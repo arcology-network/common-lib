@@ -25,10 +25,13 @@ import (
 )
 
 type Property struct {
+	// Fieldes for the conflict detection module to keep track of the relationship between different transactions.
+	GenerationID  uint64 // Generation ID
+	JobSequenceID uint64 // Job Sequence ID in the generation.
+	JobID         uint64 // Job ID in the sequence.
+
 	vType         uint8
 	tx            uint64  // Transaction ID
-	generation    uint64  // Generation ID
-	sequence      uint64  // Job Sequence ID
 	callee        uint64  // Callee Sequence ID (4 bytes from To, 4 bytes from Selector)
 	path          *string // Key
 	pathBytes     []byte  // for fast path comparison in sorin
@@ -72,8 +75,9 @@ func (this *Property) Reset() {
 	this.sizeInStorage = 0
 	this.ifSkipConflictCheck = false
 	this.tx = 0
-	this.generation = 0
-	this.sequence = 0
+	this.GenerationID = 0
+	this.JobSequenceID = 0
+	this.JobID = 0
 	this.path = nil
 	this.keyHash = 0
 	this.reads = 0
@@ -111,11 +115,14 @@ func (this *Property) SkipConflictCheck(v bool)  { this.ifSkipConflictCheck = v 
 func (this *Property) GetTx() uint64     { return this.tx }
 func (this *Property) SetTx(txId uint64) { this.tx = txId }
 
-func (this *Property) GetGeneration() uint64 { return this.generation }
-func (this *Property) GetSequence() uint64   { return this.sequence }
+// func (this *Property) GetGeneration() uint64   { return this.generation }
+// func (this *Property) SetGeneration(id uint64) { this.generation = id }
 
-func (this *Property) SetGeneration(id uint64) { this.generation = id }
-func (this *Property) SetSequence(id uint64)   { this.sequence = id }
+// func (this *Property) GetSequence() uint64   { return this.sequence }
+// func (this *Property) SetSequence(id uint64) { this.sequence = id }
+
+// func (this *Property) GetJob() uint32   { return this.job }
+// func (this *Property) SetJob(id uint32) { this.job = id }
 
 func (this *Property) SetCallee(id uint64) { this.callee = id }
 func (this *Property) GetCallee() uint64   { return this.callee }
@@ -153,8 +160,9 @@ func (this *Property) IsCommiitted(key string, source any) bool {
 func (this *Property) Equal(other *Property) bool {
 	return this.vType == other.vType &&
 		this.tx == other.tx &&
-		this.generation == other.generation &&
-		this.sequence == other.sequence &&
+		this.GenerationID == other.GenerationID &&
+		this.JobSequenceID == other.JobSequenceID &&
+		this.JobID == other.JobID &&
 		this.callee == other.callee &&
 		this.keyHash == other.keyHash && // compare the key hashes first for faster comparison.
 		*this.path == *other.path &&
@@ -169,8 +177,9 @@ func (this *Property) Clone() Property {
 	return Property{
 		vType:         this.vType,
 		tx:            this.tx,
-		generation:    this.generation,
-		sequence:      this.sequence,
+		GenerationID:  this.GenerationID,
+		JobSequenceID: this.JobSequenceID,
+		JobID:         this.JobID,
 		callee:        this.callee,
 		path:          this.path,
 		keyHash:       this.keyHash,

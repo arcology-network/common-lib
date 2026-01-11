@@ -38,11 +38,11 @@ func (*Bytes) LessAsUint64(first, second []byte) bool {
 		*(*uint64)(unsafe.Pointer((*[8]byte)(unsafe.Pointer(&second))))
 }
 
-func (this *Bytes) Get() interface{} {
+func (this *Bytes) Get() any {
 	return *this
 }
 
-func (this *Bytes) Set(v interface{}) {
+func (this *Bytes) Set(v any) {
 	*this = v.(Bytes)
 }
 
@@ -68,7 +68,7 @@ func (this Bytes) Size() uint64 {
 	return uint64(len(this))
 }
 
-func (this Bytes) Clone() interface{} {
+func (this Bytes) Clone() any {
 	if this == nil {
 		return this
 	}
@@ -83,7 +83,7 @@ func (this Bytes) EncodeTo(buffer []byte) int {
 	return len(this)
 }
 
-func (this Bytes) Decode(buffer []byte) interface{} {
+func (this Bytes) Decode(buffer []byte) any {
 	if len(buffer) == 0 {
 		return this
 	}
@@ -96,7 +96,7 @@ func (this Bytes) ToString() string {
 
 type Byteset [][]byte
 
-func (this Byteset) Clone() interface{} {
+func (this Byteset) Clone() any {
 	if this == nil {
 		return this
 	}
@@ -210,7 +210,7 @@ func (this Byteset) EncodeTo(buffer []byte) int {
 	return int(offset)
 }
 
-func (this Byteset) Decode(buffer []byte) interface{} {
+func (this Byteset) Decode(buffer []byte) any {
 	if len(buffer) == 0 {
 		return Byteset{}
 	}

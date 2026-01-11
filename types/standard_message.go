@@ -56,6 +56,10 @@ func (this *StandardMessage) GetAddressAndSelector() (evmcommon.Address, [4]byte
 	return toAddr, selector
 }
 
+func (this *StandardMessage) ToView() *MessageView {
+	return NewMessageView(this)
+}
+
 type StandardMessages []*StandardMessage
 
 func (this StandardMessages) SortByFee() {

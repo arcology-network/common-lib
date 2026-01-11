@@ -139,10 +139,6 @@ func (this StateCells) Sort() StateCells {
 		if this[i].tx != this[j].tx {
 			return this[i].tx < this[j].tx
 		}
-
-		if this[i].sequence != this[j].sequence {
-			return this[i].sequence < this[j].sequence
-		}
 		return (this[i]).Less(this[j])
 	}
 

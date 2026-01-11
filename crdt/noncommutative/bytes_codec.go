@@ -19,32 +19,22 @@ package noncommutative
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/binary"
-	"fmt"
-
-	codec "github.com/arcology-network/common-lib/codec"
 )
 
 func (this *Bytes) HeaderSize() uint64 {
-	return 3 * codec.UINT64_LEN
+	return 0
 }
-
 func (this *Bytes) Size() uint64 {
 	return this.HeaderSize() + this.MemSize()
 }
-
 func (this *Bytes) Encode() []byte {
-	byteset := [][]byte{
-		codec.Bool(this.placeholder).Encode(),
-		this.value,
-	}
-	return codec.Byteset(byteset).Encode()
+	return append([]byte{BYTES}, (*this)...)
 }
 
 func (this *Bytes) EncodeTo(buffer []byte) int {
-	offset := codec.Bool(this.placeholder).EncodeTo(buffer)
-	return offset + codec.Bytes(this.value).EncodeTo(buffer[offset:])
+	buffer[0] = BYTES
+	copy(buffer[1:], *this)
+	return 1 + len(*this)
 }
 
 func (this *Bytes) Decode(buffer []byte) any {
@@ -52,26 +42,8 @@ func (this *Bytes) Decode(buffer []byte) any {
 		return this
 	}
 
-	fields := codec.Byteset{}.Decode(buffer).(codec.Byteset)
-	return &Bytes{
-		placeholder: bool(codec.Bool(true).Decode(fields[0]).(codec.Bool)),
-		value:       bytes.Clone(fields[1]),
-	}
-}
-
-func (this *Bytes) Reset() {}
-
-func (this *Bytes) Hash() [32]byte { return sha256.Sum256(this.Encode()) }
-
-func (this *Bytes) ShortHash() (uint64, bool) {
-	v := uint64(0)
-	binary.LittleEndian.PutUint64(this.value[:min(8, len(this.value))], v)
-	return v, len(this.value) <= 8
-}
-
-func (this *Bytes) Print() {
-	fmt.Println(*this)
-	fmt.Println()
+	*this = (Bytes(bytes.Clone(buffer[1:])))
+	return this
 }
 
 // func (this *Bytes) StorageEncode(key string) []byte {

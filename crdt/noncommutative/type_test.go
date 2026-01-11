@@ -94,6 +94,23 @@ func TestUint64Codec(t *testing.T) {
 	}
 }
 
+func TestByte(t *testing.T) {
+	v2 := slice.New[byte](32, 11)
+	bs := Bytes(v2)
+	encoded := bs.Encode()
+	buf := (&Bytes{}).Decode(encoded).(*Bytes)
+	if !bytes.Equal(v2, *buf) {
+		fmt.Println("Error: Missmatched")
+	}
+
+	v2 = []byte{}
+	bs = Bytes(v2)
+	encoded = bs.Encode()
+	buf = (&Bytes{}).Decode(encoded).(*Bytes)
+	if !bytes.Equal(v2, *buf) {
+		fmt.Println("Error: Missmatched")
+	}
+}
 
 func TestByteRlp(t *testing.T) {
 	v2 := slice.New[byte](32, 11)

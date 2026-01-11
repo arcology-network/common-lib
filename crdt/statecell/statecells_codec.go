@@ -42,9 +42,9 @@ func (this StateCells) Sizes() []int {
 	return sizes
 }
 
-func (this StateCells) Encode(selector ...any) []byte {
+func (this StateCells) EncodeTo(buffer []byte) {
 	if len(this) == 0 {
-		return []byte{}
+		return
 	}
 
 	offsets := make([]uint64, len(this)+1)
@@ -53,7 +53,7 @@ func (this StateCells) Encode(selector ...any) []byte {
 	}
 
 	headerLen := uint64((len(this) + 1) * codec.UINT64_LEN)
-	buffer := make([]byte, headerLen+offsets[len(offsets)-1])
+	// buffer := make([]byte, headerLen+offsets[len(offsets)-1])
 	codec.Uint32(len(this)).EncodeTo(buffer)
 
 	if len(this) > 2048 {
@@ -67,6 +67,15 @@ func (this StateCells) Encode(selector ...any) []byte {
 			v.EncodeTo(buffer[headerLen+offsets[i]:])
 		}
 	}
+}
+
+func (this StateCells) Encode(selector ...any) []byte {
+	if len(this) == 0 {
+		return []byte{}
+	}
+
+	buffer := make([]byte, this.Size())
+	this.EncodeTo(buffer)
 	return buffer
 }
 
@@ -101,27 +110,6 @@ func (StateCells) DecodeWithMempool(bytes []byte, get func() *StateCell, put fun
 	return StateCells(univalues)
 }
 
-// func (StateCells) DecodeV2(bytesset [][]byte, get func() any, put func(any)) StateCells {
-// 	univalues := make([]*StateCells, len(bytesset))
-// 	for i := range bytesset {
-// 		v := get().(*StateCells)
-// 		v.reclaimFunc = put
-// 		v.Decode(bytesset[i])
-// 		univalues[i] = v
-// 	}
-// 	return StateCells(univalues)
-// }
-
-func (this StateCells) GobEncode() ([]byte, error) {
-	return this.Encode(), nil
-}
-
-func (this *StateCells) GobDecode(data []byte) error {
-	v := this.Decode(data)
-	*this = v.(StateCells)
-	return nil
-}
-
 // Print the univalues if the satisfied the existing condition
 func (this StateCells) Print(condition ...func(v *StateCell) bool) {
 	sorted := slice.Clone(this)
@@ -147,4 +135,14 @@ func (this StateCells) PrintUnsorted() {
 		v.Print()
 	}
 	fmt.Println(" --------------------  ")
+}
+
+func (this StateCells) GobEncode() ([]byte, error) {
+	return this.Encode(), nil
+}
+
+func (this *StateCells) GobDecode(data []byte) error {
+	v := this.Decode(data)
+	*this = v.(StateCells)
+	return nil
 }

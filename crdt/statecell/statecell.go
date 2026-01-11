@@ -372,22 +372,23 @@ func (this *StateCell) Checksum() [32]byte {
 }
 
 func (this *StateCell) Print() {
-	spaces := " " //fmt.Sprintf("%"+strconv.Itoa(len(strings.Split(*this.path, "/"))*1)+"v", " ")
-	fmt.Print(spaces+"tx: ", this.tx)
-	fmt.Print(spaces+"sequence: ", this.sequence)
-	fmt.Print(spaces+"reads: ", this.reads)
-	fmt.Print(spaces+"writes: ", this.writes)
-	fmt.Print(spaces+"DeltaWrites: ", this.deltaWrites)
-	fmt.Print(spaces+"ifSkipConflictCheck: ", this.ifSkipConflictCheck)
-	fmt.Print(spaces+"isBlockBound: ", this.isBlockBound)
-	fmt.Print(spaces+"isCommitted: ", this.isCommitted)
+	fmt.Print(" "+"tx: ", this.tx)
+	fmt.Print(" "+"Generation: ", this.GenerationID)
+	fmt.Print(" "+"sequence: ", this.JobSequenceID)
+	fmt.Print(" "+"JobID: ", this.JobID)
+	fmt.Print(" "+"reads: ", this.reads)
+	fmt.Print(" "+"writes: ", this.writes)
+	fmt.Print(" "+"DeltaWrites: ", this.deltaWrites)
+	fmt.Print(" "+"ifSkipConflictCheck: ", this.ifSkipConflictCheck)
+	fmt.Print(" "+"isBlockBound: ", this.isBlockBound)
+	fmt.Print(" "+"isCommitted: ", this.isCommitted)
 
 	path := *this.path
 	if index := strings.Index(path, "container/"); index != -1 {
 		path = path[:index] + "container/" + hex.EncodeToString([]byte(path[index:]))
 	}
 
-	fmt.Print(spaces+"path: ", *this.path, "      ")
+	fmt.Print(" "+"path: ", *this.path, "      ")
 	common.IfThenDo(this.value != nil, func() { this.value.(crdtcommon.CRDT).Print() }, func() { fmt.Print("nil") })
 	fmt.Println()
 }
@@ -402,6 +403,10 @@ func (this *StateCell) Equal(other *StateCell) bool {
 	}
 
 	vFlag := this.value.(crdtcommon.CRDT).Equal(other.Value().(crdtcommon.CRDT))
+	if !vFlag {
+		return false
+	}
+
 	return this.tx == other.GetTx() &&
 		*this.path == *other.GetPath() &&
 		this.reads == other.Reads() &&
