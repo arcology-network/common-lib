@@ -19,8 +19,10 @@ package codec
 
 import (
 	"bytes"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 )
 
 const (
@@ -47,6 +49,18 @@ func (this Bytes32) Sum(offset uint64) uint64 {
 		total += uint64((this)[j])
 	}
 	return total
+}
+
+func (Bytes32) Random() [32]byte {
+	hash := [32]byte{}
+	// Fill each 32-byte array with random data
+	_, err := rand.Read(hash[:])
+	if err != nil {
+		// In a real system, handle this error properly.
+		// For a demo, a panic is common if entropy fails.
+		panic(fmt.Sprintf("critical error: system entropy source failed: %v", err))
+	}
+	return hash
 }
 
 func (this Bytes32) Clone() any {
@@ -136,4 +150,19 @@ func (this Bytes32s) Less(i, j int) bool {
 
 func (this Bytes32s) Swap(i, j int) {
 	this[i], this[j] = this[j], this[i]
+}
+
+func (Bytes32s) Random(numHashes int) [][32]byte {
+	hashes := make([][32]byte, numHashes)
+
+	for i := range numHashes {
+		// Fill each 32-byte array with random data
+		_, err := rand.Read(hashes[i][:])
+		if err != nil {
+			// In a real system, handle this error properly.
+			// For a demo, a panic is common if entropy fails.
+			panic(fmt.Sprintf("critical error: system entropy source failed: %v", err))
+		}
+	}
+	return hashes
 }
