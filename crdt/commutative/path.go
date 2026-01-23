@@ -197,7 +197,7 @@ func (this *Path) Set(value any, source any) (any, uint32, uint32, uint32, error
 	containerRoot := source.([]any)[1].(string)
 	tx := source.([]any)[2].(uint64)
 	cache := source.([]any)[3].(interface {
-		Write(uint64, string, any, ...any) (int64, error)
+		Write(uint64, string, crdtcommon.CRDT, ...any) (int64, error)
 		IfExists(string) bool
 		GetIfCached(string) (any, bool)
 	})
@@ -247,7 +247,7 @@ func (this *Path) Set(value any, source any) (any, uint32, uint32, uint32, error
 
 func (this *Path) deleteInPath(tx uint64, parentPath string, elems []string, do func(), source any) (any, uint32, uint32, uint32, error) {
 	writeCache := source.(interface {
-		Write(uint64, string, any, ...any) (int64, error)
+		Write(uint64, string, crdtcommon.CRDT, ...any) (int64, error)
 		IfExists(string) bool
 		GetIfCached(string) (any, bool)
 	})

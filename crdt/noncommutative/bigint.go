@@ -30,7 +30,7 @@ import (
 
 type Bigint big.Int
 
-func NewBigint(v int64) any {
+func NewBigint(v int64) crdtcommon.CRDT {
 	var value big.Int
 	value.SetInt64(v)
 	this := Bigint(value)

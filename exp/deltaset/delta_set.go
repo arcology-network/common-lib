@@ -49,13 +49,11 @@ func NewDeltaSet[K comparable](nilVal K, preAlloc int,
 }
 
 func (*DeltaSet[K]) New(
-	nilVal K,
 	committed *orderedset.OrderedSet[K],
 	stagedAdditions *orderedset.OrderedSet[K],
 	stagedRemovals *orderedset.OrderedSet[K]) *DeltaSet[K] {
 
 	return &DeltaSet[K]{
-		// nilVal:          nilVal,
 		committed:       committed,
 		stagedAdditions: stagedAdditions,
 		stagedRemovals:  stagedRemovals,

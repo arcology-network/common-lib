@@ -152,15 +152,20 @@ func (this *StateCell) Get(tx uint64, path string, source any) any {
 
 func (this *StateCell) CopyTo(writable any) {
 	writeCache := writable.(interface {
-		Read(uint64, string, any) (any, any, uint64)
-		Write(uint64, string, any, ...any) (int64, error)
-		LookupForRead(uint64, string, any, func(*StateCell)) (any, *StateCell, bool)
+		Read(uint64, string, crdtcommon.CRDT) (any, any, uint64)
+		Write(uint64, string, crdtcommon.CRDT, ...any) (int64, error)
+		LookupForRead(uint64, string, crdtcommon.CRDT, func(*StateCell)) (any, *StateCell, bool)
 	})
 
+	var v crdtcommon.CRDT
+	if this.value != nil {
+		v = this.value.(crdtcommon.CRDT)
+	}
+
 	if this.writes == 0 && this.deltaWrites == 0 {
-		writeCache.Read(this.tx, *this.GetPath(), this.value)
+		writeCache.Read(this.tx, *this.GetPath(), v)
 	} else {
-		writeCache.Write(this.tx, *this.GetPath(), this.value)
+		writeCache.Write(this.tx, *this.GetPath(), v)
 	}
 
 	_, univ, _ := writeCache.LookupForRead(this.tx, *this.GetPath(), nil, nil)
