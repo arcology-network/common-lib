@@ -28,10 +28,10 @@ const (
 )
 
 type InclusiveList struct {
-	HashList      []ethCommon.Hash
-	Successful    []bool
-	Mode          byte
-	GenerationIdx uint32
+	HashList          []ethCommon.Hash
+	Successful        []bool
+	Mode              byte
+	NextGenerationIdx uint32
 }
 
 func (il *InclusiveList) CopyListAddHeight(height, round uint64) *InclusiveList {
@@ -77,7 +77,7 @@ func (il *InclusiveList) GobEncode() ([]byte, error) {
 	data := [][]byte{
 		Hashes(hashArray).Encode(),
 		codec.Bools(il.Successful).Encode(),
-		codec.Uint32(il.GenerationIdx).Encode(),
+		codec.Uint32(il.NextGenerationIdx).Encode(),
 	}
 	return codec.Byteset(data).Encode(), nil
 }
@@ -85,7 +85,7 @@ func (il *InclusiveList) GobDecode(data []byte) error {
 	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
 	arrs := Hashes([]ethCommon.Hash{}).Decode(fields[0])
 	il.Successful = codec.Bools(il.Successful).Decode(fields[1]).(codec.Bools)
-	il.GenerationIdx = uint32(codec.Uint32(il.GenerationIdx).Decode(fields[2]).(codec.Uint32))
+	il.NextGenerationIdx = uint32(codec.Uint32(il.NextGenerationIdx).Decode(fields[2]).(codec.Uint32))
 	il.HashList = arrs
 	return nil
 }
