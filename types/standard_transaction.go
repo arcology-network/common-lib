@@ -61,9 +61,9 @@ type StandardTransaction struct {
 }
 
 type StdTransactionPack struct {
-	Txs        StandardTransactions
-	Src        TxSource
-	TxHashChan chan ethCommon.Hash
+	Txs       StandardTransactions
+	Src       TxSource
+	RequestID string
 }
 
 func (stdp *StdTransactionPack) GobEncode() ([]byte, error) {

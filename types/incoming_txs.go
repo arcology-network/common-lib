@@ -51,6 +51,7 @@ func (src TxSource) IsForWaitingList() bool {
 }
 
 type IncomingTxs struct {
-	Txs [][]byte
-	Src TxSource
+	Txs       [][]byte
+	Src       TxSource
+	RequestID string
 }
