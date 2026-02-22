@@ -298,7 +298,7 @@ func (this *StateCell) IsCumulativeWriteOnly(other *StateCell) bool {
 		return false
 	}
 
-	min, max := this.Value().(crdtcommon.CRDT).Limits()
+	min, max := this.Value().(crdtcommon.CRDT).Limits()	
 	otherMin, otherMax := other.Value().(crdtcommon.CRDT).Limits()
 	return this.reads == 0 &&
 		this.Value().(crdtcommon.CRDT).IsCommutative() &&

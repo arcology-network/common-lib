@@ -23,18 +23,23 @@ import (
 	"github.com/arcology-network/common-lib/codec"
 )
 
-// MessageView provides a concise representation of a standard message,
+// TransactionView provides a concise representation of a standard Tx,
 // capturing essential details such as sender, recipient, function selector, and gas price.
-type MessageView struct {
+// It is mainly used for conflict detection and resolution in concurrent transaction processing.
+type TransactionView struct {
+	Hash     [32]byte // Transaction Hash
+	ID       uint64   // Transaction ID
 	From     [20]byte
 	To       [20]byte
 	Selector [4]byte
 	GasPrice *big.Int
 }
 
-func NewMessageView(msg *StandardMessage) *MessageView {
+func NewTransactionView(msg *StandardMessage) *TransactionView {
 	to, selector := msg.GetAddressAndSelector()
-	return &MessageView{
+	return &TransactionView{
+		Hash:     msg.TxHash,
+		ID:       msg.ID,
 		From:     msg.Native.From,
 		To:       to,
 		Selector: selector,
@@ -42,25 +47,29 @@ func NewMessageView(msg *StandardMessage) *MessageView {
 	}
 }
 
-func (this *MessageView) Size() int {
-	return 20 + 20 + 4 + this.GasPrice.BitLen()/8 + 1
+func (this *TransactionView) Size() int {
+	return 32 + 8 + 20 + 20 + 4 + this.GasPrice.BitLen()/8 + 1
 }
 
-func (this *MessageView) Encode() ([]byte, error) {
-	buffer := make([]byte, 20+20+4+this.GasPrice.BitLen()/8+1)
+func (this *TransactionView) Encode() ([]byte, error) {
+	buffer := make([]byte, 32+8+20+20+4+this.GasPrice.BitLen()/8+1)
 
-	offset := codec.Bytes20(this.From).EncodeTo(buffer)
+	offset := codec.Bytes32(this.Hash).EncodeTo(buffer)
+	offset += codec.Uint64(this.ID).EncodeTo(buffer[offset:])
+	offset += codec.Bytes20(this.From).EncodeTo(buffer[offset:])
 	offset += codec.Bytes20(this.To).EncodeTo(buffer[offset:])
 	offset += codec.Bytes4(this.Selector).EncodeTo(buffer[offset:])
-	gasPriceBytes := this.GasPrice.Bytes()
-	offset += codec.Bytes(gasPriceBytes).EncodeTo(buffer[offset:])
+	// gasPriceBytes := this.GasPrice.Bytes()
+	offset += codec.Bytes(this.GasPrice.Bytes()).EncodeTo(buffer[offset:])
 	return buffer[:offset], nil
 }
 
-func (this *MessageView) Decode(data []byte) any {
-	copy(this.From[:], data[0:20])
-	copy(this.To[:], data[20:40])
-	copy(this.Selector[:], data[40:44])
-	this.GasPrice = new(big.Int).SetBytes(data[44:])
+func (this *TransactionView) Decode(data []byte) any {
+	copy(this.Hash[:], data[0:32])
+	this.ID = uint64(codec.Uint64(0).Decode(data[32:40]).(codec.Uint64))
+	copy(this.From[:], data[40:60])
+	copy(this.To[:], data[60:80])
+	copy(this.Selector[:], data[80:84])
+	this.GasPrice = new(big.Int).SetBytes(data[84:])
 	return this
 }

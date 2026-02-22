@@ -17,6 +17,8 @@
 
 package common
 
+import "fmt"
+
 func Reference[T any](v T) *T   { return &v }
 func Dereference[T any](v *T) T { return *v }
 
@@ -105,8 +107,13 @@ func IsType[T any](v interface{}) bool {
 	return ok
 }
 
-func ToType[T0, T1 any](v T0) T1 {
-	return interface{}(v).(T1)
+func As[T any](v any) (T, error) {
+	val, ok := v.(T)
+	if ok {
+		return val, nil
+	}
+	var zero T
+	return zero, fmt.Errorf("unexpected type %T", v)
 }
 
 // Swap swaps two values.

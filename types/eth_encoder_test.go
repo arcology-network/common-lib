@@ -47,7 +47,19 @@ func TestEncodeExecutionResultRoundTrip(t *testing.T) {
 func TestEncodeExecutionResultWithErrorField(t *testing.T) {
 	original := &core.ExecutionResult{Err: errors.New("encode failure")}
 
-	if _, err := EncodeExecutionResult(original); err == nil {
-		t.Fatalf("EncodeExecutionResult expected error when Err is non-nil")
+	payload, err := EncodeExecutionResult(original)
+	if err != nil {
+		t.Fatalf("EncodeExecutionResult returned error: %v", err)
+	}
+
+	decoded, err := DecodeExecutionResult(payload)
+	if err != nil {
+		t.Fatalf("DecodeExecutionResult returned error: %v", err)
+	}
+	if decoded.Err == nil {
+		t.Fatalf("Err field expected non-nil")
+	}
+	if decoded.Err.Error() != original.Err.Error() {
+		t.Fatalf("Err mismatch: got %q want %q", decoded.Err.Error(), original.Err.Error())
 	}
 }

@@ -28,12 +28,12 @@ import (
 )
 
 type StandardMessage struct {
-	ID         uint64   // Tx ID
-	TxHash     [32]byte // TX hash
-	Native     *evmcore.Message
-	Source     uint8
-	PrepaidGas uint64 // Gas required for the deferred TX if it has one. Set by the scheduler only. Multiprocessor won't touch it.
-	IsDeferred bool   // If the message is deferred execution.
+	ID     uint64   // Tx ID
+	TxHash [32]byte // TX hash
+	Native *evmcore.Message
+	Source uint8
+	// PrepaidGas uint64 // Gas required for the deferred TX if it has one. Set by the scheduler only. Multiprocessor won't touch it.
+	// IsDeferred bool // If the message is deferred execution.
 }
 
 // AddrAndSignature return the address and the first 4 bytes of the signature of the message.
@@ -56,8 +56,8 @@ func (this *StandardMessage) GetAddressAndSelector() (evmcommon.Address, [4]byte
 	return toAddr, selector
 }
 
-func (this *StandardMessage) ToView() *MessageView {
-	return NewMessageView(this)
+func (this *StandardMessage) ToView() *TransactionView {
+	return NewTransactionView(this)
 }
 
 type StandardMessages []*StandardMessage
@@ -104,7 +104,7 @@ func (this StandardMessages) Encode() ([]byte, error) {
 				codec.Uint64(this[i].ID).Encode(),
 				this[i].TxHash[:],
 				encodedMsg,
-				[]byte{this[i].Source},
+				{this[i].Source},
 			}
 			data[i] = codec.Byteset(tmpData).Encode()
 		}

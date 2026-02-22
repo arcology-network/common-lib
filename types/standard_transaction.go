@@ -69,7 +69,7 @@ func (stdp *StdTransactionPack) GobEncode() ([]byte, error) {
 	if err != nil {
 		panic("StandardMessages encode failed")
 	}
-	data := [][]byte{
+	data := [][]byte{ 
 		txsData,
 		[]byte(stdp.Src),
 	}

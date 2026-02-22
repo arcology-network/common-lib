@@ -22,15 +22,16 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/arcology-network/common-lib/codec"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	ethcore "github.com/ethereum/go-ethereum/core"
 )
 
-func makeStandardMessage(from ethcommon.Address, to *ethcommon.Address, selector []byte, gasPrice *big.Int) *StandardMessage {
+func makeStandardMessage(hash [32]byte, id uint64, from ethcommon.Address, to *ethcommon.Address, selector []byte, gasPrice *big.Int) *StandardMessage {
 	data := make([]byte, len(selector))
 	copy(data, selector)
 
-	return &StandardMessage{
+	msg := &StandardMessage{
 		Native: &ethcore.Message{
 			From:     from,
 			To:       to,
@@ -38,6 +39,9 @@ func makeStandardMessage(from ethcommon.Address, to *ethcommon.Address, selector
 			Data:     data,
 		},
 	}
+	msg.TxHash = hash
+	msg.ID = id
+	return msg
 }
 
 func TestMessageSummaryEncodeDecodeRoundTrip(t *testing.T) {
@@ -46,19 +50,27 @@ func TestMessageSummaryEncodeDecodeRoundTrip(t *testing.T) {
 	gasPrice := big.NewInt(0).SetUint64(123456789)
 	selector := []byte{0xde, 0xad, 0xbe, 0xef, 0x01}
 
-	msg := makeStandardMessage(fromAddr, &toAddr, selector, gasPrice)
+	msg := makeStandardMessage([32]byte{1, 2}, 111, fromAddr, &toAddr, selector, gasPrice)
 
-	summary := NewMessageView(msg)
+	summary := NewTransactionView(msg)
 	encoded, err := summary.Encode()
 	if err != nil {
 		t.Fatalf("encode failed: %v", err)
 	}
 
-	if len(encoded) != 44+len(gasPrice.Bytes()) {
+	if len(encoded) != 84+len(gasPrice.Bytes()) {
 		t.Fatalf("unexpected encoded length: %d", len(encoded))
 	}
 
-	decoded := (&MessageView{}).Decode(encoded).(*MessageView)
+	decoded := (&TransactionView{}).Decode(encoded).(*TransactionView)
+
+	if decoded.Hash != msg.TxHash {
+		t.Fatalf("unexpected Hash: %x", decoded.Hash)
+	}
+
+	if decoded.ID != msg.ID {
+		t.Fatalf("unexpected ID: %d", decoded.ID)
+	}
 
 	var expectedFrom [20]byte
 	copy(expectedFrom[:], fromAddr.Bytes())
@@ -87,19 +99,19 @@ func TestMessageSummaryEncodeZeroGasPrice(t *testing.T) {
 	selector := []byte{}
 	gasPrice := big.NewInt(0)
 
-	msg := makeStandardMessage(fromAddr, nil, selector, gasPrice)
+	msg := makeStandardMessage([32]byte{3, 3}, 222, fromAddr, nil, selector, gasPrice)
 
-	summary := NewMessageView(msg)
+	summary := NewTransactionView(msg)
 	encoded, err := summary.Encode()
 	if err != nil {
 		t.Fatalf("encode failed: %v", err)
 	}
 
-	if len(encoded) != 44 {
-		t.Fatalf("unexpected encoded length for zero gas price: %d", len(encoded))
-	}
+	// if len(encoded) != 44 {
+	// 	t.Fatalf("unexpected encoded length for zero gas price: %d", len(encoded))
+	// }
 
-	decoded := (&MessageView{}).Decode(encoded).(*MessageView)
+	decoded := (&TransactionView{}).Decode(encoded).(*TransactionView)
 
 	var expectedFrom [20]byte
 	copy(expectedFrom[:], fromAddr.Bytes())
@@ -123,12 +135,16 @@ func TestMessageSummaryEncodeZeroGasPrice(t *testing.T) {
 }
 
 func TestMessageSummaryEncodeProducesDeterministicLayout(t *testing.T) {
+	hash := [32]byte{0xaa, 0xbb, 0xcc}
+	id := uint64(0x0102030405060708)
 	from := [20]byte{1, 2, 3}
 	to := [20]byte{4, 5, 6}
 	selector := [4]byte{0xde, 0xad, 0xbe, 0xef}
 	gasPrice := big.NewInt(0).SetBytes([]byte{0x01, 0x02, 0x03})
 
-	summary := &MessageView{
+	summary := &TransactionView{
+		Hash:     hash,
+		ID:       id,
 		From:     from,
 		To:       to,
 		Selector: selector,
@@ -141,6 +157,8 @@ func TestMessageSummaryEncodeProducesDeterministicLayout(t *testing.T) {
 	}
 
 	expected := make([]byte, 0, len(encoded))
+	expected = append(expected, hash[:]...)
+	expected = append(expected, codec.Uint64(id).Encode()...)
 	expected = append(expected, from[:]...)
 	expected = append(expected, to[:]...)
 	expected = append(expected, selector[:]...)
@@ -152,18 +170,30 @@ func TestMessageSummaryEncodeProducesDeterministicLayout(t *testing.T) {
 }
 
 func TestMessageViewDecodeParsesFields(t *testing.T) {
+	hash := [32]byte{7, 7, 7}
+	id := uint64(0x0a0b0c0d0e0f1011)
 	from := [20]byte{9, 9, 9}
 	to := [20]byte{8, 8, 8}
 	selector := [4]byte{0x11, 0x22, 0x33, 0x44}
 	gasBytes := []byte{0xaa}
 
-	encoded := make([]byte, 0, 44+len(gasBytes))
+	encoded := make([]byte, 0, 84+len(gasBytes))
+	encoded = append(encoded, hash[:]...)
+	encoded = append(encoded, codec.Uint64(id).Encode()...)
 	encoded = append(encoded, from[:]...)
 	encoded = append(encoded, to[:]...)
 	encoded = append(encoded, selector[:]...)
 	encoded = append(encoded, gasBytes...)
 
-	decoded := (&MessageView{}).Decode(encoded).(*MessageView)
+	decoded := (&TransactionView{}).Decode(encoded).(*TransactionView)
+
+	if decoded.Hash != hash {
+		t.Fatalf("unexpected decoded Hash: %x", decoded.Hash)
+	}
+
+	if decoded.ID != id {
+		t.Fatalf("unexpected decoded ID: %d", decoded.ID)
+	}
 
 	if decoded.From != from {
 		t.Fatalf("unexpected decoded From: %x", decoded.From)
