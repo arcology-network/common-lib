@@ -437,7 +437,16 @@ func TestUniqueInteger(t *testing.T) {
 	for i := 0; i < len(nums); i++ {
 		m[nums[i]] = true
 	}
-	common.MapKeys(m)
+	// mapi.Keys(m)
+
+	// keys := make([]K, len(m))
+	// i := 0
+	// for k := range m {
+	// 	keys[i] = k
+	// 	i++
+	// }
+	// return keys
+
 	fmt.Println("UniqueMap: ", len(nums), "in ", time.Now().Sub(t0))
 }
 
@@ -562,33 +571,33 @@ func TestEqual(t *testing.T) {
 	array0 := []int{1, 2, 3}
 	array1 := []int{1, 2, 3}
 
-	if !EqualSet(array0, array1) {
+	if !ContentEquivalent(array0, array1) {
 		t.Error("Error: Not equal")
 	}
 
 	array0 = []int{}
 	array1 = []int{}
-	if !EqualSet(array0, array1) {
+	if !ContentEquivalent(array0, array1) {
 		t.Error("Error: Not equal")
 	}
 
 	array0 = []int{1, 1, 2, 3}
 	array1 = []int{1, 2, 3}
-	if EqualSet(array0, array1) {
+	if ContentEquivalent(array0, array1) {
 		t.Error("Error: Not equal")
 	}
 
 	array0 = []int{1, 1, 3}
 	array1 = []int{1, 2, 3}
-	if EqualSet(array0, array1) {
+	if ContentEquivalent(array0, array1) {
 		t.Error("Error: Not equal")
 	}
 
-	if EqualSet(array0, nil) {
+	if ContentEquivalent(array0, nil) {
 		t.Error("Error: Not equal")
 	}
 
-	if EqualSet(nil, array0) {
+	if ContentEquivalent(nil, array0) {
 		t.Error("Error: Not equal")
 	}
 }
@@ -664,37 +673,37 @@ func TestInsert(t *testing.T) {
 	src := []int{4, 2, 6, 3, 1}
 
 	Insert(&src, 1, int(10))
-	if !EqualSet(src, []int{4, 10, 2, 6, 3, 1}) {
+	if !ContentEquivalent(src, []int{4, 10, 2, 6, 3, 1}) {
 		t.Error("Expected: ", "{4, 10, 2, 6, 3, 1}", "actual: ", src)
 	}
 
 	Insert(&src, 0, int(10))
-	if !EqualSet(src, []int{10, 4, 10, 2, 6, 3, 1}) {
+	if !ContentEquivalent(src, []int{10, 4, 10, 2, 6, 3, 1}) {
 		t.Error("Expected: ", "{10, 4, 10, 2, 6, 3, 1}", "actual: ", src)
 	}
 
 	Insert(&src, 7, int(11))
-	if !EqualSet(src, []int{10, 4, 10, 2, 6, 3, 1, 11}) {
+	if !ContentEquivalent(src, []int{10, 4, 10, 2, 6, 3, 1, 11}) {
 		t.Error("Expected: ", "{10, 4, 10, 2, 6, 3, 1, 11}", "actual: ", src)
 	}
 
 	Insert(&src, 9, int(11))
-	if !EqualSet(src, []int{10, 4, 10, 2, 6, 3, 1, 11}) {
+	if !ContentEquivalent(src, []int{10, 4, 10, 2, 6, 3, 1, 11}) {
 		t.Error("Expected: ", "{10, 4, 10, 2, 6, 3, 1, 11}", "actual: ", src)
 	}
 
 	InsertIf(&src, int(12), func(int, int) bool { return false })
-	if !EqualSet(src, []int{10, 4, 10, 2, 6, 3, 1, 11, 12}) {
+	if !ContentEquivalent(src, []int{10, 4, 10, 2, 6, 3, 1, 11, 12}) {
 		t.Error("Expected: ", "{10, 4, 10, 2, 6, 3, 1, 11, 12}", "actual: ", src)
 	}
 
 	InsertIf(&src, int(12), func(_ int, v int) bool { return v >= 2 })
-	if !EqualSet(src, []int{12, 10, 4, 10, 2, 6, 3, 1, 11, 12}) {
+	if !ContentEquivalent(src, []int{12, 10, 4, 10, 2, 6, 3, 1, 11, 12}) {
 		t.Error("Expected: ", "{12, 10, 4, 10, 2, 6, 3, 1, 11}", "actual: ", src)
 	}
 
 	InsertIf(&src, int(31), func(_ int, v int) bool { return v == 3 })
-	if !EqualSet(src, []int{12, 10, 4, 10, 2, 6, 3, 31, 1, 11, 12}) {
+	if !ContentEquivalent(src, []int{12, 10, 4, 10, 2, 6, 3, 31, 1, 11, 12}) {
 		t.Error("Expected: ", "{12, 10, 4, 10, 2, 6, 3, 1, 11}", "actual: ", src)
 	}
 }

@@ -81,6 +81,7 @@ func (il *InclusiveList) GobEncode() ([]byte, error) {
 	}
 	return codec.Byteset(data).Encode(), nil
 }
+
 func (il *InclusiveList) GobDecode(data []byte) error {
 	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
 	arrs := Hashes([]ethCommon.Hash{}).Decode(fields[0])

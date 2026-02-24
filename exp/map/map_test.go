@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/arcology-network/common-lib/codec"
-	"github.com/arcology-network/common-lib/common"
 )
 
 func TestMapKeys(t *testing.T) {
@@ -29,7 +28,7 @@ func TestMapKeys(t *testing.T) {
 	_map[11] = 99
 	_map[21] = 25
 
-	keys := common.MapKeys(_map)
+	keys := Keys(_map)
 	if len(keys) != 2 || (keys[0] != 11 && keys[0] != 21) {
 		t.Error("Error: Not equal")
 	}
@@ -46,7 +45,7 @@ func TestMapValues(t *testing.T) {
 	_map[11] = 99
 	_map[21] = 25
 
-	keys := common.MapValues(_map)
+	keys := Values(_map)
 	sort.Ints(keys)
 	if keys[0] != 25 || keys[1] != 99 {
 		t.Error("Error: Not equal")
@@ -61,13 +60,13 @@ func TestMapMoveIf(t *testing.T) {
 		"4": false,
 	}
 
-	common.MapRemoveIf(m, func(k string, _ bool) bool { return k == "1" })
+	RemoveIf(m, func(k string, _ bool) bool { return k == "1" })
 	if len(m) != 3 {
 		t.Error("Error: Failed to remove nil values !")
 	}
 
 	target := map[string]bool{}
-	common.MapMoveIf(m, target, func(k string, _ bool) bool { return k == "2" })
+	MoveIf(m, target, func(k string, _ bool) bool { return k == "2" })
 	if len(m) != 2 || len(target) != 1 {
 		t.Error("Error: Failed to remove nil values !")
 	}
@@ -91,15 +90,15 @@ func TestMapGenerics(t *testing.T) {
 		t.Error("Error: Failed to set nil values !")
 	}
 
-	ParallelIfNotFoundDo(m, []string{"6"}, 2, func(k string) bool { return true })
-	if len(m) != 6 {
-		t.Error("Error: Failed to set nil values !")
-	}
+	// ParallelIfNotFoundDo(m, []string{"6"}, 2, func(k string) bool { return true })
+	// if len(m) != 6 {
+	// 	t.Error("Error: Failed to set nil values !")
+	// }
 
-	ParalleIfFoundDo(m, []string{"6"}, 2, func(k string) bool { return false })
-	if m["6"] {
-		t.Error("Error: Failed to set nil values !")
-	}
+	// ParalleIfFoundDo(m, []string{"6"}, 2, func(k string) bool { return false })
+	// if m["6"] {
+	// 	t.Error("Error: Failed to set nil values !")
+	// }
 
 	m1 := map[string]bool{
 		"1": true,
@@ -148,19 +147,19 @@ func TestMapGenerics(t *testing.T) {
 		"2": 90,
 	}
 
-	if k, v := FindKey(m3, func(k0, k1 string) bool { return k0 > k1 }); k != "4" || v != 12 {
+	if k, v, _ := ExtremeByKey(m3, func(k0, k1 string) bool { return k0 > k1 }); k != "4" || v != 12 {
 		t.Error("Error: Failed to get the max !", k, v)
 	}
 
-	if k, v := FindKey(m3, func(k0, k1 string) bool { return k0 < k1 }); k != "1" || v != 89 {
+	if k, v, _ := ExtremeByKey(m3, func(k0, k1 string) bool { return k0 < k1 }); k != "1" || v != 89 {
 		t.Error("Error: Failed to get the max !", k, v)
 	}
 
-	if k, v := FindValue(m3, func(k0, k1 int) bool { return k0 < k1 }); k != "3" || v != 8 {
+	if k, v, _ := ExtremeByValue(m3, func(k0, k1 int) bool { return k0 < k1 }); k != "3" || v != 8 {
 		t.Error("Error: Failed to get the max !", k, v)
 	}
 
-	if k, v := FindValue(m3, func(k0, k1 int) bool { return k0 > k1 }); k != "2" || v != 90 {
+	if k, v, _ := ExtremeByValue(m3, func(k0, k1 int) bool { return k0 > k1 }); k != "2" || v != 90 {
 		t.Error("Error: Failed to get the max !", k, v)
 	}
 
@@ -174,19 +173,142 @@ func TestMapMaxMinGenerics(t *testing.T) {
 		"2": 90,
 	}
 
-	if k, v := FindKey(m3, func(k0, k1 string) bool { return k0 < k1 }); k != "1" || v != 89 {
+	if k, v, _ := ExtremeByKey(m3, func(k0, k1 string) bool { return k0 < k1 }); k != "1" || v != 89 {
 		t.Error("Error: Failed to get the max !", k, v)
 	}
 
-	if k, v := FindKey(m3, func(k0, k1 string) bool { return k0 > k1 }); k != "4" || v != 12 {
+	if k, v, _ := ExtremeByKey(m3, func(k0, k1 string) bool { return k0 > k1 }); k != "4" || v != 12 {
 		t.Error("Error: Failed to get the max !", k, v)
 	}
 
-	if k, v := FindValue(m3, func(v0, v1 int) bool { return v0 < v1 }); k != "3" || v != 8 {
+	if k, v, _ := ExtremeByValue(m3, func(v0, v1 int) bool { return v0 < v1 }); k != "3" || v != 8 {
 		t.Error("Error: Failed to get the max !", k, v)
 	}
 
-	if k, v := FindValue(m3, func(v0, v1 int) bool { return v0 > v1 }); k != "2" || v != 90 {
+	if k, v, _ := ExtremeByValue(m3, func(v0, v1 int) bool { return v0 > v1 }); k != "2" || v != 90 {
 		t.Error("Error: Failed to get the max !", k, v)
+	}
+}
+
+func TestFromSlice(t *testing.T) {
+	s := []string{"1", "1", "2", "2", "3", "3", "4", "5"}
+
+	lookup := make(map[string][]string)
+	setter := func(s string) map[string][]string {
+		if _, ok := lookup[s]; !ok {
+			lookup[s] = []string{}
+		}
+		lookup[s] = append(lookup[s], s)
+		return lookup
+	}
+
+	m := FromSlice(s, setter)
+	if len(m) != 5 {
+		t.Error("Error: Failed to create map from slice !")
+	}
+}
+
+func TestInsert(t *testing.T) {
+	source := []string{"1", "1", "2", "2", "3"}
+	lookup := make(map[string][]string)
+	setter := func(i int, s string, lookup map[string][]string) (string, []string) {
+		v, ok := lookup[s]
+		if !ok {
+			return s, []string{s}
+		}
+		return s, append(v, s)
+	}
+
+	GroupBy(lookup, source, setter)
+	if len(lookup) != 3 {
+		t.Error("Error: Failed to insert values into map !")
+	}
+	if len(lookup["1"]) != 2 || lookup["1"][0] != "1" || lookup["1"][1] != "1" ||
+		len(lookup["2"]) != 2 || lookup["2"][0] != "2" || lookup["2"][1] != "2" ||
+		len(lookup["3"]) != 1 || lookup["3"][0] != "3" {
+		t.Error("Error: Failed to insert values into map !")
+	}
+}
+
+func TestAppendNewKey(t *testing.T) {
+	m := make(map[string][]int)
+
+	exists := AppendToSlice(m, "a", 1)
+
+	if exists {
+		t.Fatalf("expected exists=false for new key")
+	}
+	if len(m) != 1 {
+		t.Fatalf("expected map size 1, got %d", len(m))
+	}
+	if got := m["a"]; len(got) != 1 || got[0] != 1 {
+		t.Fatalf("unexpected value: %#v", got)
+	}
+}
+
+func TestAppendExistingKey(t *testing.T) {
+	m := map[string][]int{
+		"a": {1, 2},
+	}
+
+	exists := AppendToSlice(m, "a", 3)
+
+	if !exists {
+		t.Fatalf("expected exists=true for existing key")
+	}
+	if got := m["a"]; len(got) != 3 || got[2] != 3 {
+		t.Fatalf("unexpected value: %#v", got)
+	}
+}
+
+func TestAppendMultipleAppends(t *testing.T) {
+	m := make(map[string][]int)
+
+	AppendToSlice(m, "a", 1)
+	AppendToSlice(m, "a", 2)
+	AppendToSlice(m, "a", 3)
+
+	got := m["a"]
+	want := []int{1, 2, 3}
+
+	if len(got) != len(want) {
+		t.Fatalf("length mismatch: got %d want %d", len(got), len(want))
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("at %d: got %d want %d", i, got[i], want[i])
+		}
+	}
+}
+
+func TestAppendNilSliceBehavior(t *testing.T) {
+	m := map[string][]int{
+		"a": nil,
+	}
+
+	exists := AppendToSlice(m, "a", 42)
+
+	if !exists {
+		t.Fatalf("expected exists=true for nil slice key")
+	}
+	if got := m["a"]; len(got) != 1 || got[0] != 42 {
+		t.Fatalf("unexpected value: %#v", got)
+	}
+}
+
+func TestAppendGenericType(t *testing.T) {
+	type V struct {
+		X int
+	}
+
+	m := make(map[int][]V)
+
+	exists := AppendToSlice(m, 10, V{X: 99})
+
+	if exists {
+		t.Fatalf("expected exists=false")
+	}
+	if got := m[10]; len(got) != 1 || got[0].X != 99 {
+		t.Fatalf("unexpected value: %#v", got)
 	}
 }

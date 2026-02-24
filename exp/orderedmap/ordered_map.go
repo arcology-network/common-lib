@@ -18,6 +18,7 @@
 package orderedmap
 
 import (
+	"math"
 	"reflect"
 	"runtime"
 
@@ -32,9 +33,9 @@ type OrderedMap[K comparable, T, V any] struct {
 	dict     map[K]*int
 	keys     []K
 	values   []V
-	init     func(K, T) V
-	setter   func(K, T, *V)
-	nilValue V
+	init     func(K, T) V   // What to do when a new key is inserted
+	setter   func(K, T, *V) // What to do when an existing key is updated
+	nilValue V              // The nil value to return when a key is not found
 }
 
 // NewIndexedSlice creates a new instance of OrderedMap with the specified page size, minimum number of pages, and pre-allocation size.
@@ -69,7 +70,7 @@ func (this *OrderedMap[K, T, V]) KVs() ([]K, []V)  { return this.keys, this.valu
 func (this *OrderedMap[K, T, V]) Length() int      { return len(this.values) }
 
 func (this *OrderedMap[K, T, V]) Clone() *OrderedMap[K, T, V] {
-	cloned := NewOrderedMap[K, T, V](this.nilValue, len(this.values), this.init, this.setter)
+	cloned := NewOrderedMap(this.nilValue, len(this.values), this.init, this.setter)
 	cloned.keys = slice.Clone(this.keys)
 	cloned.values = slice.Clone(this.values)
 	return cloned.Init()
@@ -85,6 +86,17 @@ func (this *OrderedMap[K, T, V]) ParallelForeachDo(do func(K, *V)) { // For enco
 	slice.ParallelForeach(this.keys, runtime.NumCPU(), func(i int, k *K) {
 		do(*k, &(this.values[i]))
 	})
+}
+
+// Directly copy keys and values into the OrderedMap.
+func (this *OrderedMap[K, T, V]) CopyFrom(keys []K, vals []V) *OrderedMap[K, T, V] {
+	this.keys = append(this.keys, keys...)
+	this.values = append(this.values, vals...)
+	initLength := len(this.dict)
+	for i := initLength; i < len(this.keys)+initLength; i++ {
+		this.dict[this.keys[i]] = &i
+	}
+	return this
 }
 
 // Insert inserts an element into the OrderedMap and updates the dict with the specified key.
@@ -104,23 +116,26 @@ func (this *OrderedMap[K, T, V]) InsertDo(vals []T, getter func(int, T) K) *Orde
 	return this
 }
 
-func (this *OrderedMap[K, T, V]) Set(k K, v T) {
+func (this *OrderedMap[K, T, V]) Set(k K, rawv T) (V, uint64) {
 	idx, ok := this.dict[k]
 	if !ok { // New entries
-		this.values = append(this.values, this.init(k, v))
+		this.values = append(this.values, this.init(k, rawv))
 		this.keys = append(this.keys, k)
-		length := len(this.values) - 1
-		this.dict[k] = &length
-		return
+		idx := len(this.values) - 1
+		this.dict[k] = &idx
+		return this.values[idx], uint64(idx)
 	}
-	this.setter(k, v, &this.values[*idx])
+
+	// Update existing entries
+	this.setter(k, rawv, &this.values[*idx])
+	return this.values[*idx], uint64(*idx)
 }
 
-func (this *OrderedMap[K, T, V]) Get(k K) (V, bool) {
+func (this *OrderedMap[K, T, V]) Get(k K) (V, uint64, bool) {
 	if idx, ok := this.dict[k]; ok {
-		return this.values[*idx], ok
+		return this.values[*idx], uint64(*idx), ok
 	}
-	return this.nilValue, false
+	return this.nilValue, math.MaxUint64, false
 }
 
 func (this *OrderedMap[K, T, V]) At(idx int) (K, V) {

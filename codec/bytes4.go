@@ -63,6 +63,11 @@ func (hash Bytes4) Encode() []byte {
 	return hash[:]
 }
 
+func (this Bytes4) EncodeTo(buffer []byte) int {
+	copy(buffer[:], this[:])
+	return len(this)
+}
+
 func (this Bytes4) Decode(buffer []byte) any {
 	if len(buffer) == 0 {
 		return this
@@ -87,7 +92,7 @@ func (this Bytes4s) Encode() []byte {
 }
 
 func (this Bytes4s) EncodeTo(buffer []byte) int {
-	for i := 0; i < len(this); i++ {
+	for i := range this {
 		copy(buffer[i*BYTES4_LEN:], this[i][:])
 	}
 	return len(this) * BYTES4_LEN

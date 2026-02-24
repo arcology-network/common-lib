@@ -30,7 +30,7 @@ import (
 )
 
 func TestCcmapBasic(t *testing.T) {
-	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return v == -1 }, func(k string) uint64 {
+	ccmap := NewConcurrentMap(8, func(v int) bool { return v == -1 }, func(k string) uint64 {
 		return uint64(slice.Sum[byte, int]([]byte(k)))
 	})
 
@@ -100,7 +100,7 @@ func TestCcmapBasic(t *testing.T) {
 }
 
 func TestCcmapEmptyKeys(t *testing.T) {
-	ccmap := NewConcurrentMap[string, int](8, func(v int) bool { return v == -1 }, func(k string) uint64 {
+	ccmap := NewConcurrentMap(8, func(v int) bool { return v == -1 }, func(k string) uint64 {
 		return uint64(slice.Sum[byte, int]([]byte(k)))
 	})
 
@@ -143,7 +143,7 @@ func TestCcmapBatchModeAllEntries(t *testing.T) {
 	}
 
 	ccmap.BatchSet(keys, values)
-	outValues := common.FilterFirst(ccmap.BatchGet(keys))
+	outValues := common.First(ccmap.BatchGet(keys))
 
 	if !reflect.DeepEqual(outValues, values) {
 		t.Error("Error: Entries don't match")

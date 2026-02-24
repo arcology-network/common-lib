@@ -19,7 +19,9 @@ package codec
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
+	"math"
 	"math/big"
 	"math/rand"
 	"reflect"
@@ -31,7 +33,7 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-type Type struct {
+type CRDT struct {
 	value Uint64
 	delta String
 }
@@ -44,6 +46,131 @@ func TestUint8(t *testing.T) {
 
 	if (in) != (out) {
 		t.Error("Uint8 Mismatched !")
+	}
+}
+
+func TestEncodeSupportedTypes(t *testing.T) {
+	arr16 := [16]byte{}
+	for i := range arr16 {
+		arr16[i] = byte(i + 1)
+	}
+
+	arr20 := [20]byte{}
+	for i := range arr20 {
+		arr20[i] = byte(i + 17)
+	}
+
+	arr32 := [32]byte{}
+	for i := range arr32 {
+		arr32[i] = byte(i + 37)
+	}
+
+	intVal := int64(-42)
+	uintVal := uint64(123456789)
+	float32Val := float32(3.25)
+	float64Val := -7.5
+	errVal := fmt.Errorf("encode failure")
+
+	encoded := Encode(
+		"hello",
+		[]byte{0xAA, 0xBB, 0xCC},
+		arr16,
+		arr20,
+		arr32,
+		intVal,
+		uintVal,
+		float32Val,
+		float64Val,
+		true,
+		errVal,
+	)
+
+	expected := make([]byte, 0, len(encoded))
+	expected = append(expected, []byte("hello")...)
+	expected = append(expected, []byte{0xAA, 0xBB, 0xCC}...)
+	expected = append(expected, arr16[:]...)
+	expected = append(expected, arr20[:]...)
+	expected = append(expected, arr32[:]...)
+
+	intBuf := [INT64_LEN]byte{}
+	binary.LittleEndian.PutUint64(intBuf[:], uint64(intVal))
+	expected = append(expected, intBuf[:]...)
+
+	uintBuf := [UINT64_LEN]byte{}
+	binary.LittleEndian.PutUint64(uintBuf[:], uintVal)
+	expected = append(expected, uintBuf[:]...)
+
+	float32Buf := [4]byte{}
+	binary.LittleEndian.PutUint32(float32Buf[:], math.Float32bits(float32Val))
+	expected = append(expected, float32Buf[:]...)
+
+	float64Buf := [8]byte{}
+	binary.LittleEndian.PutUint64(float64Buf[:], math.Float64bits(float64Val))
+	expected = append(expected, float64Buf[:]...)
+
+	expected = append(expected, byte(1))
+	expected = append(expected, []byte(errVal.Error())...)
+
+	if !bytes.Equal(encoded, expected) {
+		t.Fatalf("Encode did not match expected bytes")
+	}
+}
+
+func TestEncodeUnsupportedType(t *testing.T) {
+	type unsupported struct {
+		value int
+	}
+
+	encoded := Encode(unsupported{value: 42})
+	if len(encoded) != 0 {
+		t.Fatalf("Encode should ignore unsupported types, got length %d", len(encoded))
+	}
+}
+
+func TestEncodeToSequentialWrites(t *testing.T) {
+	buf := make([]byte, INT64_LEN+UINT64_LEN+BOOL_LEN)
+	offset := 0
+
+	offset += EncodeTo(int64(-1), buf[offset:])
+	if offset != INT64_LEN {
+		t.Fatalf("unexpected int64 length: %d", offset)
+	}
+
+	offset += EncodeTo(uint64(99), buf[offset:])
+	if offset != INT64_LEN+UINT64_LEN {
+		t.Fatalf("unexpected uint64 offset: %d", offset)
+	}
+
+	offset += EncodeTo(false, buf[offset:])
+	if offset != len(buf) {
+		t.Fatalf("unexpected final offset: %d", offset)
+	}
+
+	decodedInt := Int64(0).Decode(buf[:INT64_LEN]).(Int64)
+	if decodedInt != Int64(-1) {
+		t.Fatalf("unexpected int64 decode: %d", decodedInt)
+	}
+
+	decodedUint := Uint64(0).Decode(buf[INT64_LEN : INT64_LEN+UINT64_LEN]).(Uint64)
+	if decodedUint != Uint64(99) {
+		t.Fatalf("unexpected uint64 decode: %d", decodedUint)
+	}
+
+	decodedBool := Bool(false).Decode(buf[INT64_LEN+UINT64_LEN:]).(Bool)
+	if decodedBool {
+		t.Fatalf("expected false bool decode")
+	}
+}
+
+func TestEncodeToUnsupportedType(t *testing.T) {
+	buf := []byte{0xCD}
+	written := EncodeTo(struct{}{}, buf)
+	if written != 0 {
+		t.Fatalf("expected 0 bytes written, got %d", written)
+	}
+
+	if buf[0] != 0xCD {
+		t.Fatalf("buffer modified for unsupported type: 0x%x", buf[0])
 	}
 }
 
@@ -287,39 +414,6 @@ func TestConcatenateStrings(t *testing.T) {
 	if !bytes.Equal(buf.Bytes(), buffer) {
 		t.Error("Mismatch !")
 	}
-}
-
-func TestEncoderUint32(t *testing.T) {
-	// n1 := Uint32(999999)
-	// buffer := make([]byte, Encoder{}.Size([]interface{}{n1, n1}))
-	// Encoder{}.ToBuffer(buffer, []interface{}{n1, n1})
-
-	// fields := [][]byte(Byteset{}.Decode(buffer).(Byteset))
-	// if n1 != Uint32(0).Decode(fields[0]) ||
-	// 	n1 != Uint32(0).Decode(fields[1]) {
-	// 	t.Error("Mismatch !")
-	// }
-}
-
-func TestEncoderBigint(t *testing.T) {
-	// v := big.NewInt(-999999)
-	// n1 := Bigint(*v)
-
-	// v0 := big.NewInt(11)
-	// n2 := Bigint(*v0)
-
-	// buffer := make([]byte, Encoder{}.Size([]interface{}{&n1, &n2}))
-	// Encoder{}.ToBuffer(buffer, []interface{}{&n1, &n2})
-
-	// fields := [][]byte(Byteset{}.Decode(buffer).(Byteset))
-	// lft := (*big.Int)((&Bigint{}).Decode(fields[0]).(*Bigint))
-	// rgt := (*big.Int)((&Bigint{}).Decode(fields[1]).(*Bigint))
-
-	// buf := n1.Encode()
-	// fmt.Print(buf)
-	// if v.Cmp(lft) != 0 || v0.Cmp(rgt) != 0 {
-	// 	t.Error("Mismatch !")
-	// }
 }
 
 func TestEncoderBigintAndNil(t *testing.T) {

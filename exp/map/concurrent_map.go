@@ -133,7 +133,7 @@ func (this *ConcurrentMap[K, V]) delete(shard uint64, key K) {
 // Set associates the specified value with the specified key in the ConcurrentMap.
 // If the value is nil, the key-value pair is deleted from the map.
 // It returns an error if the shard ID is out of range.
-func (this *ConcurrentMap[K, V]) Set(key K, v V, args ...interface{}) {
+func (this *ConcurrentMap[K, V]) Set(key K, v V, args ...any) {
 	shardID := this.Hash(key)
 	if shardID >= uint64(len(this.shards)) {
 		return
@@ -258,7 +258,7 @@ func (this *ConcurrentMap[K, V]) Keys() []K {
 	defer this.globalLock.RUnlock()
 
 	keySet := slice.ParallelTransform(this.shards, 8, func(i int, m map[K]V) []K {
-		return common.MapKeys(m)
+		return Keys(m)
 	})
 	return slice.Flatten(keySet)
 }
@@ -268,7 +268,7 @@ func (this *ConcurrentMap[K, V]) Values() []V {
 	defer this.globalLock.RUnlock()
 
 	valSet := slice.ParallelTransform(this.shards, 8, func(i int, m map[K]V) []V {
-		return common.MapValues(m)
+		return Values(m)
 	})
 	return slice.Flatten(valSet)
 }
@@ -296,7 +296,7 @@ func (this *ConcurrentMap[K, V]) Traverse(processor func(K, *V)) {
 	defer this.globalLock.RUnlock()
 
 	slice.ParallelForeach(this.shards, 8, func(i int, shard *map[K]V) {
-		common.MapForeach(*shard, func(k K, v *V) {
+		Foreach(*shard, func(k K, v *V) {
 			processor(k, v)
 		})
 	})
@@ -418,7 +418,7 @@ func (this *ConcurrentMap[K, V]) KVs(less ...func(k0, k1 K) bool) ([]K, []V) {
 			return less[0](keys[i], keys[j])
 		})
 	}
-	return keys, common.FilterFirst(this.BatchGet(keys)).([]V)
+	return keys, common.First(this.BatchGet(keys)).([]V)
 }
 
 func (this *ConcurrentMap[K, V]) Checksum(less func(K, K) bool, encoders func(K, V) ([]byte, []byte)) [32]byte {

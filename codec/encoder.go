@@ -45,6 +45,16 @@ func Sizer[T any](t T) int {
 		return len(v)
 	case []byte:
 		return len(v)
+	case [16]byte:
+		return 16
+	case [20]byte:
+		return 20
+	case [32]byte:
+		return 32
+	case [64]byte:
+		return 64
+	case error:
+		return len(v.Error())
 	case int64:
 		return INT64_LEN
 	case uint64:
@@ -69,12 +79,36 @@ func Sizer[T any](t T) int {
 		return 0
 	}
 }
+
+func Encode(vals ...any) []byte {
+	totalSize := 0
+	for i := range vals {
+		totalSize += Sizer(vals[i])
+	}
+
+	offsets := 0
+	buffer := make([]byte, totalSize)
+	for _, v := range vals {
+		offsets += EncodeTo(v, buffer[offsets:])
+	}
+	return buffer
+}
+
 func EncodeTo[T any](t T, buf []byte) int {
 	switch v := any(t).(type) {
 	case string:
 		return String(v).EncodeTo(buf)
 	case []byte:
 		return Bytes(v).EncodeTo(buf)
+	case [32]byte:
+		copy(buf, v[:])
+		return 32
+	case [20]byte:
+		copy(buf, v[:])
+		return 20
+	case [16]byte:
+		copy(buf, v[:])
+		return 16
 	case int64:
 		return Int64(v).EncodeTo(buf)
 	case uint64:
@@ -100,6 +134,10 @@ func EncodeTo[T any](t T, buf []byte) int {
 		return Int64(v).EncodeTo(buf)
 	case Int64s:
 		return Int64s(v).EncodeTo(buf)
+	case error:
+		bytesv := []byte(v.Error())
+		copy(buf, bytesv)
+		return len(bytesv)
 	case Encodable:
 		return v.EncodeTo(buf)
 	default:

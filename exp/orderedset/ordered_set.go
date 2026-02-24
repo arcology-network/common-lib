@@ -235,7 +235,7 @@ func (this *OrderedSet[K]) Clear() {
 func (this *OrderedSet[K]) IsDirty() bool { return len(this.elements) != len(this.dict) }
 
 func (this *OrderedSet[K]) Equal(other *OrderedSet[K]) bool {
-	return slice.EqualSet(this.elements, other.elements) && mapi.EqualIf(this.dict, other.dict, func(v0 *int, v1 *int) bool { return *v0 == *v1 })
+	return slice.ContentEquivalent(this.elements, other.elements) && mapi.EqualIf(this.dict, other.dict, func(v0 *int, v1 *int) bool { return *v0 == *v1 })
 }
 
 // Count the number of elements BEFORE the specified key, not including the key itself.

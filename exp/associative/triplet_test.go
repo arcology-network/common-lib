@@ -28,7 +28,7 @@ func TestTriplets(t *testing.T) {
 
 	_0, _1, _2 := triplets.Split()
 	thirds := triplets.Thirds()
-	if !slice.EqualSet(_0, triplets.Firsts()) || !slice.EqualSet(_1, triplets.Seconds()) || !slice.EqualSet(_2, thirds) {
+	if !slice.ContentEquivalent(_0, triplets.Firsts()) || !slice.ContentEquivalent(_1, triplets.Seconds()) || !slice.ContentEquivalent(_2, thirds) {
 		t.Error("Error: Values are not equal !")
 	}
 }

@@ -23,22 +23,41 @@ import (
 
 	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
+	evmcommon "github.com/ethereum/go-ethereum/common"
 	evmcore "github.com/ethereum/go-ethereum/core"
 )
 
 type StandardMessage struct {
-	ID         uint64
-	TxHash     [32]byte
-	Native     *evmcore.Message
-	Source     uint8
-	PrepaidGas uint64 // Gas required for the deferred TX if it has one. Set by the scheduler only. Multiprocessor won't touch it.
-	IsDeferred bool   // If the message is deferred execution.
+	ID     uint64   // Tx ID
+	TxHash [32]byte // TX hash
+	Native *evmcore.Message
+	Source uint8
+	// PrepaidGas uint64 // Gas required for the deferred TX if it has one. Set by the scheduler only. Multiprocessor won't touch it.
+	// IsDeferred bool // If the message is deferred execution.
 }
 
 // AddrAndSignature return the address and the first 4 bytes of the signature of the message.
-func (this *StandardMessage) AddrAndSignature() string {
-	length := min(4, len(this.Native.Data))
-	return this.Native.To.String() + string(this.Native.Data[:length])
+// func (this *StandardMessage) AddrAndSignature() string {
+// 	length := min(4, len(this.Native.Data))
+// 	return this.Native.To.String() + string(this.Native.Data[:length])
+// }
+
+// Extract the address and selector from the standard message.
+func (this *StandardMessage) GetAddressAndSelector() (evmcommon.Address, [4]byte) {
+	var toAddr evmcommon.Address
+	if (*this.Native).To != nil {
+		toAddr = *this.Native.To
+	}
+
+	var selector [4]byte
+	if len(this.Native.Data) != 0 {
+		copy(selector[:], this.Native.Data[:4])
+	}
+	return toAddr, selector
+}
+
+func (this *StandardMessage) ToView() *TransactionView {
+	return NewTransactionView(this)
 }
 
 type StandardMessages []*StandardMessage
@@ -71,9 +90,9 @@ func (this StandardMessages) Encode() ([]byte, error) {
 		return []byte{}, nil
 	}
 	data := make([][]byte, len(this))
-	worker := func(start, end, idx int, args ...interface{}) {
-		this := args[0].([]interface{})[0].(StandardMessages)
-		data := args[0].([]interface{})[1].([][]byte)
+	worker := func(start, end, idx int, args ...any) {
+		this := args[0].([]any)[0].(StandardMessages)
+		data := args[0].([]any)[1].([][]byte)
 
 		for i := start; i < end; i++ {
 			encodedMsg := []byte{}
@@ -85,7 +104,7 @@ func (this StandardMessages) Encode() ([]byte, error) {
 				codec.Uint64(this[i].ID).Encode(),
 				this[i].TxHash[:],
 				encodedMsg,
-				[]byte{this[i].Source},
+				{this[i].Source},
 			}
 			data[i] = codec.Byteset(tmpData).Encode()
 		}
@@ -98,9 +117,9 @@ func (this *StandardMessages) Decode(data []byte) ([]*StandardMessage, error) {
 	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
 	msgs := make([]*StandardMessage, len(fields))
 
-	worker := func(start, end, idx int, args ...interface{}) {
-		data := args[0].([]interface{})[0].([][]byte)
-		messages := args[0].([]interface{})[1].([]*StandardMessage)
+	worker := func(start, end, idx int, args ...any) {
+		data := args[0].([]any)[0].([][]byte)
+		messages := args[0].([]any)[1].([]*StandardMessage)
 
 		for i := start; i < end; i++ {
 			standredMessage := new(StandardMessage)

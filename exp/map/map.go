@@ -38,18 +38,18 @@ func IfFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, new func(k K
 	}
 }
 
-func ParalleIfFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, threads int, new func(k K) V) {
-	found := slice.ParallelTransform(keys, threads, func(_ int, k K) bool {
-		_, ok := source[k]
-		return ok
-	})
+// func ParalleIfFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, threads int, new func(k K) V) {
+// 	found := slice.ParallelTransform(keys, threads, func(_ int, k K) bool {
+// 		_, ok := source[k]
+// 		return ok
+// 	})
 
-	for i := range found {
-		if found[i] {
-			source[keys[i]] = new(keys[i])
-		}
-	}
-}
+// 	for i := range found {
+// 		if found[i] {
+// 			source[keys[i]] = new(keys[i])
+// 		}
+// 	}
+// }
 
 func IfNotFoundDo[M ~map[K]V, K comparable, V any, T any](source M, keys []T, getter func(T) K, do func(K) V) {
 	for _, k := range keys {
@@ -60,18 +60,18 @@ func IfNotFoundDo[M ~map[K]V, K comparable, V any, T any](source M, keys []T, ge
 	}
 }
 
-func ParallelIfNotFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, threads int, do func(k K) V) {
-	found := slice.ParallelTransform(keys, threads, func(_ int, k K) bool {
-		_, ok := source[k]
-		return ok
-	})
+// func ParallelIfNotFoundDo[M ~map[K]V, K comparable, V any](source M, keys []K, threads int, do func(k K) V) {
+// 	found := slice.ParallelTransform(keys, threads, func(_ int, k K) bool {
+// 		_, ok := source[k]
+// 		return ok
+// 	})
 
-	for i := range found {
-		if !found[i] {
-			source[keys[i]] = do(keys[i])
-		}
-	}
-}
+// 	for i := range found {
+// 		if !found[i] {
+// 			source[keys[i]] = do(keys[i])
+// 		}
+// 	}
+// }
 
 // RemoveIf removes key-value pairs from a map based on a condition.
 func RemoveIf[M ~map[K]V, K comparable, V any](source M, condition func(k K, v V) bool) {
@@ -100,12 +100,23 @@ func Merge[M ~map[K]V, K comparable, V any](from, to M) M {
 	return from
 }
 
-// Sub substracts the key-value pairs from one map into another map.
-func Sub[M ~map[K]V, K comparable, V any](from, to M) M {
-	for k := range to {
+// Sub removes the key-value pairs in the 'to' map from the 'removals' map.
+func Sub[M ~map[K]V, K comparable, V any](from, removals M) M {
+	for k := range removals {
 		delete(from, k)
 	}
 	return from
+}
+
+// Difference returns a new map containing the key-value pairs that are in 'first' but not in 'second'.
+func Diff[M ~map[K]V, K comparable, V any](first, second M) M {
+	out := make(M)
+	for k, v := range first {
+		if _, ok := second[k]; !ok {
+			out[k] = v
+		}
+	}
+	return out
 }
 
 // EqualIf compares two maps for equality based on a custom equality function for values.
@@ -161,6 +172,14 @@ func Insert[K comparable, T, V any](mp map[K]V, source []T, getter func(i int, t
 	return mp
 }
 
+// Insert inserts key-value pairs from an array into a map.
+func GroupBy[K comparable, T, V any](mp map[K]V, source []T, getter func(i int, t T, lookup map[K]V) (K, V)) {
+	for i, src := range source {
+		k, v := getter(i, src, mp)
+		mp[k] = v
+	}
+}
+
 // Keys returns a slice containing all the keys of a map.
 func Keys[M ~map[K]V, K comparable, V any](m M) []K {
 	keys := make([]K, len(m))
@@ -172,10 +191,52 @@ func Keys[M ~map[K]V, K comparable, V any](m M) []K {
 	return keys
 }
 
+// ExtremeByKey returns the key-value pair with the minimal key according to less().
+func ExtremeByKey[M ~map[K]V, K comparable, V any](
+	m M,
+	less func(K, K) bool,
+) (K, V, bool) {
+	var key K
+	var val V
+	var ok bool
+
+	for k, v := range m {
+		if !ok {
+			key, val = k, v
+			ok = true
+			continue
+		}
+		if less(k, key) {
+			key, val = k, v
+		}
+	}
+	return key, val, ok
+}
+
+// ExtremeByValue returns the key-value pair with the minimal value according to less().
+func ExtremeByValue[M ~map[K]V, K comparable, V any](m M, less func(V, V) bool) (K, V, bool) {
+	var mink K
+	var minv V
+	var ok bool
+	for k, v := range m {
+		if !ok {
+			mink = k
+			minv = v
+			ok = true
+			continue
+		}
+
+		if less(v, minv) {
+			mink, minv = k, v
+		}
+	}
+	return mink, minv, ok
+}
+
 // Values returns a slice containing all the values of a map.
 func KeysToBuffer[M ~map[K]V, K comparable, V any](m M, buffer *[]K) []K {
 	i := 0
-	for k, _ := range m {
+	for k := range m {
 		(*buffer)[i] = k
 		i++
 	}
@@ -235,63 +296,16 @@ func ContainsAny[M ~map[K]V, K comparable, V any](m M, keys []K) bool {
 }
 
 // Keys returns a slice containing all the keys of a map.
-func FindKey[M ~map[K]V, K comparable, V any](m M, less func(K, K) bool) (K, V) {
-	var mink K
-	var minv V
-	var init bool
-	for k, v := range m {
-		if !init {
-			mink = k
-			minv = v
-			init = true
-			continue
-		}
-
-		if less(k, mink) {
-			mink = k
-			minv = v
-		}
+func AppendToSlice[M ~map[K][]V, K comparable, V any](
+	m M,
+	key K,
+	val V) bool {
+	if arr, ok := m[key]; ok {
+		m[key] = append(arr, val)
+		return true // already exists
 	}
-	return mink, minv
-}
-
-// // Keys returns a slice containing all the keys of a map.
-// func MaxKey[M ~map[K]V, K comparable, V any](m M, greater func(K, K) bool) (K, V) {
-// 	var maxk K
-// 	var maxv V
-// 	var init bool
-// 	for k, v := range m {
-// 		if !init {
-// 			maxk = k
-// 			maxv = v
-// 			init = true
-// 			continue
-// 		}
-
-// 		if greater(k, maxk) {
-// 			maxk, maxv = k, v
-// 		}
-// 	}
-// 	return maxk, maxv
-// }
-
-func FindValue[M ~map[K]V, K comparable, V any](m M, less func(V, V) bool) (K, V) {
-	var mink K
-	var minv V
-	var init bool
-	for k, v := range m {
-		if !init {
-			mink = k
-			minv = v
-			init = true
-			continue
-		}
-
-		if less(v, minv) {
-			mink, minv = k, v
-		}
-	}
-	return mink, minv
+	m[key] = []V{val}
+	return false // newly added
 }
 
 // // Keys returns a slice containing all the keys of a map.

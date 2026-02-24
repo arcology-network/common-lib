@@ -105,7 +105,7 @@ func NewFileDB(rootPath string, shards uint32, depth uint8) (*FileDB, error) {
 	return fileDB, err
 }
 
-func (this *FileDB) Type() uint8 {
+func (this *FileDB) CRDT() uint8 {
 	return intf.PERSISTENT_DB
 }
 

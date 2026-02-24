@@ -28,8 +28,8 @@ import (
 type Mempool[T any] struct {
 	new      func() T
 	resetter func(T)
-	parent   interface{}   // Parent Mempool
-	children []interface{} // Child Mempools
+	parent   any   // Parent Mempool
+	children []any // Child Mempools
 	pool     *indexedslice.PagedSlice[T]
 	counter  int
 	lock     sync.Mutex
@@ -41,7 +41,7 @@ func NewMempool[T any](perPage, numPages int, new func() T, resetter func(T)) *M
 		new:      new,
 		resetter: resetter,
 		parent:   nil,
-		children: []interface{}{},
+		children: []any{},
 		pool:     indexedslice.NewPagedSlice[T](perPage, numPages, perPage*numPages),
 		counter:  0,
 	}

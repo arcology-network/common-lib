@@ -59,6 +59,12 @@ func TestTrimLeft(t *testing.T) {
 	if len(result) != 0 {
 		t.Errorf("TrimLeft failed: expected empty slice, got %d elements", len(result))
 	}
+
+	s = []int{}
+	result = TrimLeft(s, 0)
+	if len(result) != 0 {
+		t.Errorf("TrimLeft failed: expected empty slice, got %d elements", len(result))
+	}
 }
 
 func TestTrimRight(t *testing.T) {
@@ -79,5 +85,29 @@ func TestTrimRight(t *testing.T) {
 	result2 := TrimRight(s2, 0)
 	if len(result2) != len(s2) {
 		t.Errorf("TrimRight failed: expected length %d, got %d", len(s2), len(result2))
+	}
+
+	s = []int{1, 2}
+	result = TrimLeft(s, 0)
+	if len(result) != 2 {
+		t.Errorf("TrimLeft failed: expected empty slice, got %d elements", len(result))
+	}
+
+	s = []int{0, 0}
+	result = TrimLeft(s, 0)
+	if len(result) != 0 {
+		t.Errorf("TrimLeft failed: expected empty slice, got %d elements", len(result))
+	}
+
+	s = []int{0}
+	result = TrimLeft(s, 0)
+	if len(result) != 0 {
+		t.Errorf("TrimLeft failed: expected empty slice, got %d elements", len(result))
+	}
+
+	s = []int{}
+	result = TrimLeft(s, 0)
+	if len(result) != 0 {
+		t.Errorf("TrimLeft failed: expected empty slice, got %d elements", len(result))
 	}
 }

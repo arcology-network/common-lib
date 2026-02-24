@@ -39,13 +39,13 @@ func TestIndexedSliceInt(t *testing.T) {
 
 	set.Insert([]string{"11"}, []int{11})
 	set.Insert([]string{"11"}, []int{22})
-	if v, ok := set.Get("11"); !ok || len(*v) != 2 || (*v)[0] != 11 || (*v)[1] != 22 {
+	if v, _, ok := set.Get("11"); !ok || len(*v) != 2 || (*v)[0] != 11 || (*v)[1] != 22 {
 		t.Error("Error: Key is not equal !")
 	}
 
 	set.Insert([]string{"33"}, []int{33})
 	set.Insert([]string{"33"}, []int{66})
-	if v, ok := set.Get("33"); !ok || len(*v) != 2 || (*v)[0] != 33 || (*v)[1] != 66 {
+	if v, _, ok := set.Get("33"); !ok || len(*v) != 2 || (*v)[0] != 33 || (*v)[1] != 66 {
 		t.Error("Error: Key is not equal !")
 	}
 
@@ -68,11 +68,11 @@ func TestIndexedSliceInt(t *testing.T) {
 		})
 	})
 
-	if v, ok := set.Get("11"); !ok || len(*v) != 2 || (*v)[0] != 22 || (*v)[1] != 44 {
+	if v, _, ok := set.Get("11"); !ok || len(*v) != 2 || (*v)[0] != 22 || (*v)[1] != 44 {
 		t.Error("Error: Key is not equal !")
 	}
 
-	if v, ok := set.Get("33"); !ok || len(*v) != 2 || (*v)[0] != 66 || (*v)[1] != 132 {
+	if v, _, ok := set.Get("33"); !ok || len(*v) != 2 || (*v)[0] != 66 || (*v)[1] != 132 {
 		t.Error("Error: Key is not equal !")
 	}
 
@@ -96,7 +96,7 @@ func TestIndexedSliceBytes(t *testing.T) {
 
 	set.Insert([]string{"11"}, [][]byte{{11}})
 	set.Insert([]string{"11"}, [][]byte{{22}})
-	if v, ok := set.Get("11"); !ok || len(*v) != 2 || bytes.Equal((*v)[0], []byte("11")) || bytes.Equal((*v)[1], []byte("22")) {
+	if v, _, ok := set.Get("11"); !ok || len(*v) != 2 || bytes.Equal((*v)[0], []byte("11")) || bytes.Equal((*v)[1], []byte("22")) {
 		t.Error("Error: Key is not equal !")
 	}
 }

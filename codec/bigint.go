@@ -23,7 +23,7 @@ import (
 
 type Bigint big.Int
 
-func (this *Bigint) Clone() interface{} {
+func (this *Bigint) Clone() any {
 	if this == nil {
 		return this
 	}
@@ -50,7 +50,7 @@ func (this *Bigint) EncodeTo(buffer []byte) int {
 	return (val.BitLen() + 1)
 }
 
-func (this *Bigint) Decode(buffer []byte) interface{} {
+func (this *Bigint) Decode(buffer []byte) any {
 	if len(buffer) > 0 {
 		v := new(big.Int)
 		*this = *(*Bigint)(v.SetBytes(buffer[1:]))

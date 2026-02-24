@@ -18,6 +18,7 @@ require (
 )
 
 require (
+	github.com/cespare/xxhash v1.1.0
 	github.com/emirpasic/gods/v2 v2.0.0-alpha
 	github.com/google/btree v1.1.2
 	github.com/google/uuid v1.3.0

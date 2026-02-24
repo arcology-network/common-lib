@@ -19,6 +19,8 @@ package common
 
 import (
 	"math"
+	"math/big"
+	"reflect"
 )
 
 // Min returns the minimum value between two values of type T.
@@ -73,4 +75,191 @@ func IsHex(bytes []byte) bool {
 		}
 	}
 	return true
+}
+
+// Equal checks if two values are equal.
+// It returns true if the values are equal; otherwise, it returns false.
+func Equal[T comparable](lhv, rhv *T, pred func(*T) bool) bool {
+	return (lhv == rhv) ||
+		((lhv != nil) && (rhv != nil) && (*lhv == *rhv)) ||
+		((lhv == nil && pred(rhv)) || (rhv == nil && pred(lhv)))
+}
+
+// EqualIf checks if two values are equal based on a given equality function.
+// It returns true if the values are equal; otherwise, it returns false.
+func EqualIf[T any](lhv, rhv *T, equal func(*T, *T) bool, wildcard func(*T) bool) bool {
+	return (lhv == rhv) || ((lhv != nil) && (rhv != nil) && equal(lhv, rhv)) || ((lhv == nil && wildcard(rhv)) || (rhv == nil && wildcard(lhv)))
+}
+
+func NumericEqual(got, want any) bool {
+	switch g := got.(type) {
+
+	case nil:
+		return want == nil
+
+	// ---------- big.Int ----------
+	case *big.Int:
+		switch w := want.(type) {
+		case *big.Int:
+			return g.Cmp(w) == 0
+		case big.Int:
+			return g.Cmp(&w) == 0
+		}
+
+	case big.Int:
+		switch w := want.(type) {
+		case *big.Int:
+			return g.Cmp(w) == 0
+		case big.Int:
+			return g.Cmp(&w) == 0
+		}
+
+	// ---------- signed integers ----------
+	case int:
+		w, ok := want.(int)
+		return ok && g == w
+	case *int:
+		w, ok := want.(*int)
+		return ok && w != nil && *g == *w
+
+	case int8:
+		w, ok := want.(int8)
+		return ok && g == w
+	case *int8:
+		w, ok := want.(*int8)
+		return ok && w != nil && *g == *w
+
+	case int16:
+		w, ok := want.(int16)
+		return ok && g == w
+	case *int16:
+		w, ok := want.(*int16)
+		return ok && w != nil && *g == *w
+
+	case int32:
+		w, ok := want.(int32)
+		return ok && g == w
+	case *int32:
+		w, ok := want.(*int32)
+		return ok && w != nil && *g == *w
+
+	case int64:
+		w, ok := want.(int64)
+		return ok && g == w
+	case *int64:
+		w, ok := want.(*int64)
+		return ok && w != nil && *g == *w
+
+	// ---------- unsigned integers ----------
+	case uint:
+		w, ok := want.(uint)
+		return ok && g == w
+	case *uint:
+		w, ok := want.(*uint)
+		return ok && w != nil && *g == *w
+
+	case uint8:
+		w, ok := want.(uint8)
+		return ok && g == w
+	case *uint8:
+		w, ok := want.(*uint8)
+		return ok && w != nil && *g == *w
+
+	case uint16:
+		w, ok := want.(uint16)
+		return ok && g == w
+	case *uint16:
+		w, ok := want.(*uint16)
+		return ok && w != nil && *g == *w
+
+	case uint32:
+		w, ok := want.(uint32)
+		return ok && g == w
+	case *uint32:
+		w, ok := want.(*uint32)
+		return ok && w != nil && *g == *w
+
+	case uint64:
+		w, ok := want.(uint64)
+		return ok && g == w
+	case *uint64:
+		w, ok := want.(*uint64)
+		return ok && w != nil && *g == *w
+
+	// ---------- floats ----------
+	case float32:
+		w, ok := want.(float32)
+		return ok && g == w
+	case *float32:
+		w, ok := want.(*float32)
+		return ok && w != nil && *g == *w
+
+	case float64:
+		w, ok := want.(float64)
+		return ok && g == w
+	case *float64:
+		w, ok := want.(*float64)
+		return ok && w != nil && *g == *w
+
+	// ---------- numeric slices ----------
+	case []int:
+		w, ok := want.([]int)
+		return ok && reflect.DeepEqual(g, w)
+	case []*int:
+		w, ok := want.([]*int)
+		return ok && reflect.DeepEqual(g, w)
+
+	case []int64:
+		w, ok := want.([]int64)
+		return ok && reflect.DeepEqual(g, w)
+	case []*int64:
+		w, ok := want.([]*int64)
+		return ok && reflect.DeepEqual(g, w)
+
+	case []uint64:
+		w, ok := want.([]uint64)
+		return ok && reflect.DeepEqual(g, w)
+	case []*uint64:
+		w, ok := want.([]*uint64)
+		return ok && reflect.DeepEqual(g, w)
+
+	case []float32:
+		w, ok := want.([]float32)
+		return ok && reflect.DeepEqual(g, w)
+	case []*float32:
+		w, ok := want.([]*float32)
+		return ok && reflect.DeepEqual(g, w)
+
+	case []float64:
+		w, ok := want.([]float64)
+		return ok && reflect.DeepEqual(g, w)
+	case []*float64:
+		w, ok := want.([]*float64)
+		return ok && reflect.DeepEqual(g, w)
+
+	case []*big.Int:
+		w, ok := want.([]*big.Int)
+		if !ok || len(g) != len(w) {
+			return false
+		}
+		for i := range g {
+			if g[i] == nil || w[i] == nil || g[i].Cmp(w[i]) != 0 {
+				return false
+			}
+		}
+		return true
+
+	case []big.Int:
+		w, ok := want.([]big.Int)
+		if !ok || len(g) != len(w) {
+			return false
+		}
+		for i := range g {
+			if g[i].Cmp(&w[i]) != 0 {
+				return false
+			}
+		}
+		return true
+	}
+	return reflect.DeepEqual(got, want)
 }

@@ -15,28 +15,13 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package common
+package statecell
 
-func SliceToDict[T comparable](s []T) map[T]struct{} {
-	dict := make(map[T]struct{})
-	for _, elem := range s {
-		dict[elem] = struct{}{}
-	}
-	return dict
-}
+import (
+	"encoding/gob"
+)
 
-func ToDereferencedSlice[T any](s []*T) []T {
-	res := make([]T, len(s))
-	for i := range s {
-		res[i] = *s[i]
-	}
-	return res
-}
-
-func ToReferencedSlice[T any](s []T) []*T {
-	res := make([]*T, len(s))
-	for i := range s {
-		res[i] = &s[i]
-	}
-	return res
+func init() {
+	gob.Register(&StateCell{})
+	// gob.Register(StateCells{})
 }
