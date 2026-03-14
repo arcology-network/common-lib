@@ -47,8 +47,8 @@ type Property struct {
 	isExpanded          bool // If true, it is used in the local cache.
 	isBlockBound        bool // If true, it is not persisted to the storage.
 	isCommitted         bool // If the key exists in the source, which can be a cache or a storage.
-	isDeleted           bool // If the value is deleted. Without this the conflict detection will mixed deletes up with normal wirtes whose values are removed for serialization speed.
-	HasConflict     bool // This is for the conflict detection module
+	isDeleted           bool // If the value is deleted. Without it the conflict detection will mixed deletes up with normal writes whose values are removed for serialization speed.
+	HasCollision        bool // This is for the conflict detection module
 
 	reclaimFunc func(any)
 }
@@ -141,21 +141,12 @@ func (this *Property) IncrementReads(reads uint32)             { this.reads += r
 func (this *Property) IncrementWrites(writes uint32)           { this.writes += writes }
 func (this *Property) IncrementDeltaWrites(deltaWrites uint32) { this.deltaWrites += deltaWrites }
 
-func (this *Property) IsReadOnly() bool   { return this.Writes() == 0 && this.DeltaWrites() == 0 }
-func (this *Property) IsCommitted() bool  { return this.isCommitted } // Exist in cache as a failed read
-func (this *Property) SetPreexist(v bool) { this.isCommitted = v }    // Exist in cache as a failed read
+func (this *Property) IsReadOnly() bool  { return this.Writes() == 0 && this.DeltaWrites() == 0 }
+func (this *Property) IsCommitted() bool { return this.isCommitted } // Exist in cache as a failed read
 
-// func (this *Property) Persistent() bool { return this.ifSkipConflictCheck }
-
-// This is for debugging purposes only, do not use it in production code!!!
-func (this *Property) SetIsDeleted(flag bool) { this.isDeleted = flag }
-
-// Check if the key exists in the source, which can be a cache or a storage，which isn't guaranteed
-// to be the same as the cache. It is possible that the key exists in the cache but not in the storage.
-// This means that the key is a new key that hasn't been isCommitted to the storage yet.
-func (this *Property) IsCommiitted(key string, source any) bool {
-	return source.(interface{ IfExists(string) bool }).IfExists(key)
-}
+// For debugging purposes only, do not use it in production code!!!
+func (this *Property) DebugSetPreexist(v bool)     { this.isCommitted = v } // Exist in cache as a failed read
+func (this *Property) DebugSetIsDeleted(flag bool) { this.isDeleted = flag }
 
 func (this *Property) Equal(other *Property) bool {
 	return this.vType == other.vType &&

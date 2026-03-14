@@ -54,7 +54,9 @@ func NewStateCell(tx uint64, key string, reads, writes uint32, deltaWrites uint3
 			writes:        writes,
 			deltaWrites:   deltaWrites,
 			sizeInStorage: 0,
-			isCommitted:   common.IfThenDo1st(source != nil, func() bool { return (&Property{}).IsCommiitted(key, source) }, false),
+			isCommitted: common.IfThenDo1st(source != nil, func() bool {
+				return source.(interface{ IfExists(string) bool }).IfExists(key)
+			}, false),
 		},
 		T,
 		[]byte{},
@@ -281,14 +283,17 @@ func (this *StateCell) IsReadOnly() bool       { return (this.writes == 0 && thi
 func (this *StateCell) IsWriteOnly() bool      { return (this.reads == 0 && this.deltaWrites == 0) }
 func (this *StateCell) IsDeltaWriteOnly() bool { return (this.reads == 0 && this.writes == 0) }
 func (this *StateCell) IsDeleteOnly() bool {
-	return this.isDeleted && this.reads == 0 && this.deltaWrites == 0 // Cannot just use value == nil, because it may be a new value.
+	return	this.isDeleted &&
+		this.reads == 0 &&
+		this.deltaWrites == 0 // Cannot just use value == nil, because it may be a new value.
 }
 
-func (this *StateCell) IsNilInitOnly() bool {
-	return this.reads == 0 &&
-		!this.isDeleted &&
-		this.Value() != nil &&
-		this.Value().(crdtcommon.CRDT).IsCommutative() // Must be commutative
+// There isn't a real path collision here, a path can only be rewritten in two different ways
+// 1. Path creation, which doesn't matter
+// 2. Path deletion, which doesn't actually exist.
+// Anything other than that can be checked for collision through its child paths.
+func (this *StateCell) IsPathCreationOnly() bool {
+	return common.IsPath(*this.GetPath())
 }
 
 // Commutative write is no longer treated as a conflict with read.
@@ -298,7 +303,7 @@ func (this *StateCell) IsCumulativeWriteOnly(other *StateCell) bool {
 		return false
 	}
 
-	min, max := this.Value().(crdtcommon.CRDT).Limits()	
+	min, max := this.Value().(crdtcommon.CRDT).Limits()
 	otherMin, otherMax := other.Value().(crdtcommon.CRDT).Limits()
 	return this.reads == 0 &&
 		this.Value().(crdtcommon.CRDT).IsCommutative() &&
