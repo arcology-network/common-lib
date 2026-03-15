@@ -270,6 +270,12 @@ func (this *StateCell) PathLookupOnly() bool {
 	return this.reads == 0 && this.deltaWrites == 0 && this.writes == 0
 }
 
+// This is no real path write other than creating a new one.
+// Path can only be created. There is no path deletion so far.
+func (this *StateCell) PathCreationOnly() bool {
+	return this.reads == 0 && common.IsPath(*this.GetPath())
+}
+
 // If all the entries in the isCommitted set have been removed.
 // only work for Path type
 // func (this *StateCell) IsCommittedDeleted() (bool, string) {
@@ -283,7 +289,7 @@ func (this *StateCell) IsReadOnly() bool       { return (this.writes == 0 && thi
 func (this *StateCell) IsWriteOnly() bool      { return (this.reads == 0 && this.deltaWrites == 0) }
 func (this *StateCell) IsDeltaWriteOnly() bool { return (this.reads == 0 && this.writes == 0) }
 func (this *StateCell) IsDeleteOnly() bool {
-	return	this.isDeleted &&
+	return this.isDeleted &&
 		this.reads == 0 &&
 		this.deltaWrites == 0 // Cannot just use value == nil, because it may be a new value.
 }
@@ -291,10 +297,10 @@ func (this *StateCell) IsDeleteOnly() bool {
 // There isn't a real path collision here, a path can only be rewritten in two different ways
 // 1. Path creation, which doesn't matter
 // 2. Path deletion, which doesn't actually exist.
-// Anything other than that can be checked for collision through its child paths.
-func (this *StateCell) IsPathCreationOnly() bool {
-	return common.IsPath(*this.GetPath())
-}
+// Anything other than are delta write and can be checked for collision through its child paths.
+// func (this *StateCell) IsPathCreationOnly() bool {
+// 	return this.reads == 0 && common.IsPath(*this.GetPath())
+// }
 
 // Commutative write is no longer treated as a conflict with read.
 // Write without read happens when a new value is created.
