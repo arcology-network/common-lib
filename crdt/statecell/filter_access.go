@@ -30,8 +30,11 @@ type InterProcAccess struct {
 }
 
 func (this InterProcAccess) From(v *StateCell) *StateCell {
-	if this.Err != nil || v.IfSkipConflictCheck() || v.PathLookupOnly() {
-		return nil
+	if this.Err != nil ||
+		v.IfSkipConflictCheck() ||
+		v.PathLookupOnly() ||
+		v.PathCreationOnly() {
+		return nil // Skip conflict checks for these ones.
 	}
 
 	if v.Value() == nil {

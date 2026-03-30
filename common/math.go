@@ -21,6 +21,7 @@ import (
 	"math"
 	"math/big"
 	"reflect"
+	"sort"
 )
 
 // Min returns the minimum value between two values of type T.
@@ -44,6 +45,64 @@ func Max[T ~int8 | ~int32 | ~int | ~int64 | ~uint8 | ~uint32 | ~uint64 | ~float6
 		return a
 	}
 	return b
+}
+
+func DoMax[T any](entries []T, less func(T, T) bool) (T, int) {
+	if len(entries) == 0 {
+		var zero T
+		return zero, -1
+	}
+
+	max := entries[0]
+	maxIndex := 0
+	for i, entry := range entries[1:] {
+		if less(max, entry) {
+			max = entry
+			maxIndex = i + 1
+		}
+	}
+	return max, maxIndex
+}
+
+func DoMin[T any](entries []T, less func(T, T) bool) (T, int) {
+	if len(entries) == 0 {
+		var zero T
+		return zero, -1
+	}
+
+	min := entries[0]
+	minIndex := 0
+	for i, entry := range entries[1:] {
+		if less(entry, min) {
+			min = entry
+			minIndex = i + 1
+		}
+	}
+	return min, minIndex
+}
+
+func DoMedian[T any](entries []T, less func(T, T) bool) (T, int) {
+	if len(entries) == 0 {
+		var zero T
+		return zero, -1
+	}
+
+	type indexedEntry struct {
+		value T
+		index int
+	}
+
+	sorted := make([]indexedEntry, len(entries))
+	for i, entry := range entries {
+		sorted[i] = indexedEntry{value: entry, index: i}
+	}
+
+	sort.SliceStable(sorted, func(i, j int) bool {
+		return less(sorted[i].value, sorted[j].value)
+	})
+
+	medianPos := (len(sorted) - 1) / 2
+	return sorted[medianPos].value, sorted[medianPos].index
 }
 
 // IsBetween checks if a value is within the range defined by min and max, inclusive.
