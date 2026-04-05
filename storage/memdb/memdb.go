@@ -67,7 +67,7 @@ func (this *MemoryDB) BatchGet(keys []string) ([][]byte, error) {
 }
 
 func (this *MemoryDB) BatchSet(keys []string, byteset [][]byte) error {
-	values := make([]interface{}, len(keys))
+	values := make([]any, len(keys))
 	for i, v := range byteset {
 		if v != nil {
 			values[i] = v

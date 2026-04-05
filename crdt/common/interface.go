@@ -45,9 +45,8 @@ type CRDT interface { // value type
 	IsDeletable(any, any) bool
 
 	MemSize() uint64 // Size in memory
+	Size() uint64    // Encoded size
 
-	// Encoding methods
-	Size() uint64 // Encoded size
 	Encode() []byte
 	EncodeTo([]byte) int
 	Decode([]byte) any

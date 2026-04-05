@@ -20,7 +20,7 @@ package interfaces
 import "reflect"
 
 type Accessible interface {
-	Value() interface{}
+	Value() any
 	Reads() uint32
 	Writes() uint32
 	Size() uint64
