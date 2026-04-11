@@ -39,6 +39,14 @@ type StateCell struct {
 	buf   []byte // The encoded value.
 }
 
+func NewStateCellFromParts(Property Property, value any, buf []byte) *StateCell {
+	return &StateCell{
+		Property,
+		value,
+		buf,
+	}
+}
+
 func NewStateCell(tx uint64, key string, reads, writes uint32, deltaWrites uint32, T any, source any) *StateCell {
 	if source != nil {
 		panic("Error: The source should be nil")
@@ -267,11 +275,13 @@ func (this *StateCell) ApplyDelta(vec []*StateCell) error {
 // It may be a read access to the sub key, but it has been already recorded in the sub key record. In addition, it doesn't
 // conflict with other path access like read/write/deltaWrite to the path.
 func (this *StateCell) PathLookupOnly() bool {
-	return this.reads == 0 && this.deltaWrites == 0 && this.writes == 0
+	return this.reads == 0 &&
+		this.deltaWrites == 0 &&
+		this.writes == 0
 }
 
 // This is no real path write other than creating a new one.
-// Path can only be created. There is no path deletion so far.
+// Path can only be created. There is NO path deletion so far.
 func (this *StateCell) PathCreationOnly() bool {
 	return this.reads == 0 && common.IsPath(*this.GetPath())
 }

@@ -86,7 +86,7 @@ func (this *ConcurrentMap[K, V]) Length() uint64 {
 
 // Get retrieves the value associated with the specified key from the ConcurrentMap.
 // It returns the value and a boolean indicating whether the key was found.
-func (this *ConcurrentMap[K, V]) Get(key K, args ...interface{}) (V, bool) {
+func (this *ConcurrentMap[K, V]) Get(key K, args ...any) (V, bool) {
 	shardID := this.hasher(key) % uint64(len(this.shards))
 
 	this.shardLocks[shardID].RLock()
@@ -98,7 +98,7 @@ func (this *ConcurrentMap[K, V]) Get(key K, args ...interface{}) (V, bool) {
 
 // Get retrieves the value associated with the specified key from the ConcurrentMap.
 // It returns the value and a boolean indicating whether the key was found.
-func (this *ConcurrentMap[K, V]) UnsafeGet(key K, args ...interface{}) (V, bool) {
+func (this *ConcurrentMap[K, V]) UnsafeGet(key K, args ...any) (V, bool) {
 	shardID := this.hasher(key) % uint64(len(this.shards))
 	v, ok := this.shards[shardID][key]
 	return v, ok
@@ -106,7 +106,7 @@ func (this *ConcurrentMap[K, V]) UnsafeGet(key K, args ...interface{}) (V, bool)
 
 // BatchGet retrieves the values associated with the specified keys from the ConcurrentMap.
 // It returns a slice of values in the same order as the keys.
-func (this *ConcurrentMap[K, V]) BatchGet(keys []K, args ...interface{}) ([]V, []bool) {
+func (this *ConcurrentMap[K, V]) BatchGet(keys []K, args ...any) ([]V, []bool) {
 	shardIds := slice.NewDo(len(keys), func(i int) uint64 {
 		return this.Hash(keys[i])
 	})
