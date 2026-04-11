@@ -19,6 +19,7 @@ package cachedkvstore
 
 import (
 	"fmt"
+	"reflect"
 	"sync/atomic"
 
 	mapi "github.com/arcology-network/common-lib/exp/map"
@@ -61,7 +62,7 @@ func (this *Entry[T]) Size() uint64 {
 
 type CachedKVStore[K comparable, T any] struct {
 	*mapi.ConcurrentMap[K, *Entry[T]]
-	backend          KVStore[K, *Entry[T]]
+	backend          KVStore[K, T]
 	currentLayerOnly bool
 	cachePolicy      *CachePolicy[*Entry[T]]
 	sizeOf           func(T) uint64
@@ -69,7 +70,7 @@ type CachedKVStore[K comparable, T any] struct {
 }
 
 func NewCachedKVStore[K comparable, T any](
-	backend KVStore[K, *Entry[T]],
+	backend KVStore[K, T],
 	cacheCap uint64,
 	sizeOf func(T) uint64,
 ) *CachedKVStore[K, T] {
@@ -108,6 +109,27 @@ func (this *CachedKVStore[K, T]) entrySize(entry *Entry[T]) uint64 {
 	return entry.Size()
 }
 
+func (this *CachedKVStore[K, T]) wrap(value T) *Entry[T] {
+	entry := &Entry[T]{Value: value}
+	entry.firstLoaded = this.version.Load()
+	entry.visits++
+	return entry
+}
+
+func isNil[T any](value T) bool {
+	if any(value) == nil {
+		return true
+	}
+
+	rv := reflect.ValueOf(any(value))
+	switch rv.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		return rv.IsNil()
+	default:
+		return false
+	}
+}
+
 func (this *CachedKVStore[K, T]) Get(key K) (*Entry[T], bool) {
 	if v, ok := this.ConcurrentMap.Get(key); ok {
 		if v != nil {
@@ -121,17 +143,15 @@ func (this *CachedKVStore[K, T]) Get(key K) (*Entry[T], bool) {
 	}
 
 	v, ok := this.backend.Get(key)
-	if !ok || v == nil {
-		return v, ok
+	if !ok || isNil(v) {
+		return nil, false
 	}
-	v.visits++
-	if this.cachePolicy.Admit(this.cachePolicy.ValueSize(v)) {
-		if v.firstLoaded == 0 {
-			v.firstLoaded = this.version.Load()
-		}
-		this.ConcurrentMap.Set(key, v)
+
+	entry := this.wrap(v)
+	if this.cachePolicy.Admit(this.cachePolicy.ValueSize(entry)) {
+		this.ConcurrentMap.Set(key, entry)
 	}
-	return v, ok
+	return entry, true
 }
 
 func (this *CachedKVStore[K, T]) Set(key K, value *Entry[T]) {
@@ -204,16 +224,14 @@ func (this *CachedKVStore[K, T]) GetBatch(keys []K) []*Entry[T] {
 	}
 
 	for i := 0; i < limit; i++ {
-		values[missingIdx[i]] = fetched[i]
-		if fetched[i] == nil {
+		if isNil(fetched[i]) {
 			continue
 		}
-		fetched[i].visits++
-		if this.cachePolicy.Admit(this.cachePolicy.ValueSize(fetched[i])) {
-			if fetched[i].firstLoaded == 0 {
-				fetched[i].firstLoaded = this.version.Load()
-			}
-			this.ConcurrentMap.Set(missingKeys[i], fetched[i])
+
+		entry := this.wrap(fetched[i])
+		values[missingIdx[i]] = entry
+		if this.cachePolicy.Admit(this.cachePolicy.ValueSize(entry)) {
+			this.ConcurrentMap.Set(missingKeys[i], entry)
 		}
 	}
 	return values
