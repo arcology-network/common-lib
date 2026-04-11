@@ -85,7 +85,7 @@ func TestStoreSkipsCachingOversizedEntry(t *testing.T) {
 	}
 }
 
-func TestStoreLayeredReadAndCommitWriteback(t *testing.T) {
+func TestStoreLayeredReadAndCommitLeavesBackendUntouched(t *testing.T) {
 	backend := NewCachedKVStore[string, crdtcommon.CRDT](nil, 4096, nil)
 	backend.Set("alpha", newProfiledString("one"))
 
@@ -120,8 +120,85 @@ func TestStoreLayeredReadAndCommitWriteback(t *testing.T) {
 	if err := store.Commit(true, 1); err != nil {
 		t.Fatalf("unexpected commit error: %v", err)
 	}
-	if !backend.Has("beta") {
-		t.Fatalf("expected commit to flush staged write to backend")
+	if backend.Has("beta") {
+		t.Fatalf("expected commit to leave backend untouched")
+	}
+	if value, ok := store.Get("beta"); !ok || value != local {
+		t.Fatalf("expected committed value to remain in cache")
+	}
+}
+
+func TestStoreTracksVisitsGenerically(t *testing.T) {
+	store := NewCachedKVStore[string, crdtcommon.CRDT](nil, 4096, nil)
+	alpha := newProfiledString("one")
+	store.UpdateVersion(11)
+
+	store.Set("alpha", alpha)
+	if alpha.visits != 1 {
+		t.Fatalf("expected set to increment visits, got %d", alpha.visits)
+	}
+	if alpha.firstLoaded != 11 {
+		t.Fatalf("expected set to assign the current version as firstLoaded")
+	}
+
+	value, ok := store.Get("alpha")
+	if !ok || value == nil {
+		t.Fatalf("expected get to return cached value")
+	}
+	if value.visits != 2 {
+		t.Fatalf("expected get to increment visits, got %d", value.visits)
+	}
+
+	replacement := newProfiledString("two")
+	store.Set("alpha", replacement)
+	if replacement.visits != 3 {
+		t.Fatalf("expected replacement to inherit and increment visits, got %d", replacement.visits)
+	}
+	if replacement.firstLoaded != alpha.firstLoaded {
+		t.Fatalf("expected replacement to preserve firstLoaded for an existing cache key")
+	}
+
+	batch := store.GetBatch([]string{"alpha"})
+	if len(batch) != 1 || batch[0] == nil {
+		t.Fatalf("expected batch get to return cached value")
+	}
+	if batch[0].visits != 4 {
+		t.Fatalf("expected batch get to increment visits, got %d", batch[0].visits)
+	}
+
+	beta := newProfiledString("three")
+	store.UpdateVersion(21)
+	store.SetBatch([]string{"beta"}, []*Entry[crdtcommon.CRDT]{beta})
+	if beta.visits != 1 {
+		t.Fatalf("expected batch set to increment visits, got %d", beta.visits)
+	}
+	if beta.firstLoaded != 21 {
+		t.Fatalf("expected batch set to assign the current version as firstLoaded")
+	}
+	if beta.firstLoaded == alpha.firstLoaded {
+		t.Fatalf("expected distinct version-derived firstLoaded values for distinct entries")
+	}
+	if batch, ok := store.ConcurrentMap.Get("beta"); !ok || batch != beta {
+		t.Fatalf("expected batch set to update cache entry")
+	}
+
+	backend := NewCachedKVStore[string, crdtcommon.CRDT](nil, 4096, nil)
+	backendValue := newProfiledString("backend")
+	if err := backend.Commit(true, 33); err != nil {
+		t.Fatalf("unexpected backend commit error: %v", err)
+	}
+	backend.Set("backend", backendValue)
+
+	layered := NewCachedKVStore[string, crdtcommon.CRDT](backend, 4096, nil)
+	fetched, ok := layered.Get("backend")
+	if !ok || fetched == nil {
+		t.Fatalf("expected backend get to succeed")
+	}
+	if fetched.visits != 3 {
+		t.Fatalf("expected backend get to increment visits, got %d", fetched.visits)
+	}
+	if fetched.firstLoaded != 33 {
+		t.Fatalf("expected backend get to preserve version-derived firstLoaded")
 	}
 }
 
@@ -143,8 +220,8 @@ func TestStoreCommitEvictsWhenFull(t *testing.T) {
 		t.Fatalf("unexpected commit error: %v", err)
 	}
 
-	if backend.Len() != 2 {
-		t.Fatalf("expected both entries to be committed to backend, got %d", backend.Len())
+	if backend.Len() != 0 {
+		t.Fatalf("expected backend to remain unchanged, got %d", backend.Len())
 	}
 	if store.Size() > 1024 {
 		t.Fatalf("expected eviction to keep cache within cap, got %d", store.Size())
@@ -184,16 +261,28 @@ func TestStoreBatchAndDelete(t *testing.T) {
 	if err := store.Commit(true, 1); err != nil {
 		t.Fatalf("unexpected commit error: %v", err)
 	}
-	if !backend.Has("gamma") {
-		t.Fatalf("expected committed set to update backend")
+	if backend.Has("gamma") {
+		t.Fatalf("expected committed set to stay local")
 	}
 
 	store.Delete("alpha")
 	store.DeleteBatch([]string{"beta", "gamma"})
-	if store.Has("alpha") || store.Has("beta") || store.Has("gamma") {
-		t.Fatalf("expected delete operations to evict values from first layer")
+	if store.Has("gamma") {
+		t.Fatalf("expected local-only key to stay absent after delete")
 	}
-	if backend.Len() != 3 {
+	if !store.Has("alpha") || !store.Has("beta") {
+		t.Fatalf("expected backend-backed keys to surface again after cache delete")
+	}
+	if _, ok := store.GetRaw("alpha"); ok {
+		t.Fatalf("expected delete to evict alpha from first layer")
+	}
+	if _, ok := store.GetRaw("beta"); ok {
+		t.Fatalf("expected delete to evict beta from first layer")
+	}
+	if _, ok := store.GetRaw("gamma"); ok {
+		t.Fatalf("expected delete to evict gamma from first layer")
+	}
+	if backend.Len() != 2 {
 		t.Fatalf("expected backend to remain unchanged before delete commit, got %d items", backend.Len())
 	}
 
@@ -203,8 +292,17 @@ func TestStoreBatchAndDelete(t *testing.T) {
 	if err := store.Commit(true, 2); err != nil {
 		t.Fatalf("unexpected commit error: %v", err)
 	}
-	if backend.Len() != 0 {
-		t.Fatalf("expected backend to be empty after committed delete, got %d items", backend.Len())
+	if backend.Len() != 2 {
+		t.Fatalf("expected backend to remain unchanged after committed delete, got %d items", backend.Len())
+	}
+	if value, ok := store.Get("alpha"); !ok || value == nil {
+		t.Fatalf("expected backend alpha to be readable after cache delete")
+	}
+	if value, ok := store.Get("beta"); !ok || value == nil {
+		t.Fatalf("expected backend beta to be readable after cache delete")
+	}
+	if value, ok := store.Get("gamma"); ok || value != nil {
+		t.Fatalf("expected local-only gamma to stay absent after delete")
 	}
 }
 
@@ -294,8 +392,8 @@ func TestStoreSetGet1MillionEntries1024InCache(t *testing.T) {
 	if err := store.Commit(true, 1); err != nil {
 		t.Fatalf("unexpected commit error: %v", err)
 	}
-	if !backend.Has(commitKey) {
-		t.Fatalf("expected commit to flush staged write to backend")
+	if backend.Has(commitKey) {
+		t.Fatalf("expected commit to leave backend untouched")
 	}
 
 	fmt.Printf("Get 1 Million entries, 1024 Entry cache: %v\n", time.Since(t0))
@@ -331,8 +429,8 @@ func TestStoreSetGet1MillionEntries2048InCache(t *testing.T) {
 	if err := store.Commit(true, 1); err != nil {
 		t.Fatalf("unexpected commit error: %v", err)
 	}
-	if !backend.Has(commitKey) {
-		t.Fatalf("expected commit to flush staged write to backend")
+	if backend.Has(commitKey) {
+		t.Fatalf("expected commit to leave backend untouched")
 	}
 
 	fmt.Printf("Get 1 Million entries, 2048 Entry cache: %v\n", time.Since(t0))
@@ -369,8 +467,8 @@ func TestStoreSetGet1MillionEntriesAllInCache(t *testing.T) {
 	if err := store.Commit(true, 1); err != nil {
 		t.Fatalf("unexpected commit error: %v", err)
 	}
-	if !backend.Has(commitKey) {
-		t.Fatalf("expected commit to flush staged write to backend")
+	if backend.Has(commitKey) {
+		t.Fatalf("expected commit to leave backend untouched")
 	}
 
 	fmt.Printf("Get 1 Million entries, all in cache: %v\n", time.Since(t0))
