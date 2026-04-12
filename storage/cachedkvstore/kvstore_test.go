@@ -9,8 +9,85 @@ import (
 	noncommutative "github.com/arcology-network/common-lib/crdt/noncommutative"
 )
 
+type testKVStore[K comparable, T any] struct {
+	values           map[K]T
+	currentLayerOnly bool
+}
+
+func newTestKVStore[K comparable, T any]() *testKVStore[K, T] {
+	return &testKVStore[K, T]{values: map[K]T{}}
+}
+
+func (this *testKVStore[K, T]) Get(key K) (T, bool) {
+	value, ok := this.values[key]
+	return value, ok
+}
+
+func (this *testKVStore[K, T]) Has(key K) bool {
+	_, ok := this.values[key]
+	return ok
+}
+
+func (this *testKVStore[K, T]) GetBatch(keys []K) []T {
+	values := make([]T, len(keys))
+	for i, key := range keys {
+		if value, ok := this.values[key]; ok {
+			values[i] = value
+		}
+	}
+	return values
+}
+
+func (this *testKVStore[K, T]) Len() uint64 {
+	return uint64(len(this.values))
+}
+
+func (this *testKVStore[K, T]) Size() uint64 {
+	return uint64(len(this.values))
+}
+
+func (this *testKVStore[K, T]) Set(key K, value T) {
+	this.values[key] = value
+}
+
+func (this *testKVStore[K, T]) Delete(key K) {
+	delete(this.values, key)
+}
+
+func (this *testKVStore[K, T]) SetBatch(keys []K, values []T) {
+	for i := 0; i < len(keys) && i < len(values); i++ {
+		this.values[keys[i]] = values[i]
+	}
+}
+
+func (this *testKVStore[K, T]) DeleteBatch(keys []K) {
+	for _, key := range keys {
+		delete(this.values, key)
+	}
+}
+
+func (this *testKVStore[K, T]) Precommit() error {
+	return nil
+}
+
+func (this *testKVStore[K, T]) Commit(bool, uint64) error {
+	return nil
+}
+
+func (this *testKVStore[K, T]) SetLocalOnly(yes bool) {
+	this.currentLayerOnly = yes
+}
+
+func (this *testKVStore[K, T]) LocalOnly() bool {
+	return this.currentLayerOnly
+}
+
+func newStringValue(v string) crdtcommon.CRDT {
+	return noncommutative.NewString(v)
+}
+
 func newProfiledString(v string) *Entry[crdtcommon.CRDT] {
-	value := noncommutative.NewString(v)
+	value := newStringValue(v)
 	return &Entry[crdtcommon.CRDT]{
 		Value: value,
 		Stat: Stat{
@@ -19,27 +96,24 @@ func newProfiledString(v string) *Entry[crdtcommon.CRDT] {
 	}
 }
 
-func newBenchmarkBackend(entryCount int) (*CachedKVStore[string, crdtcommon.CRDT], []string, []*Entry[crdtcommon.CRDT]) {
-	sampleSize := newProfiledString("value").Size()
-	backend := NewCachedKVStore[string, crdtcommon.CRDT](nil, uint64(entryCount)*sampleSize, nil)
+func newBenchmarkBackend(entryCount int) (*testKVStore[string, crdtcommon.CRDT], []string, []crdtcommon.CRDT) {
+	backend := newTestKVStore[string, crdtcommon.CRDT]()
 	keys := make([]string, entryCount)
-	values := make([]*Entry[crdtcommon.CRDT], entryCount)
+	values := make([]crdtcommon.CRDT, entryCount)
 	for i := 0; i < entryCount; i++ {
 		key := fmt.Sprintf("key-%d", i)
-		value := newProfiledString("value")
+		value := newStringValue("value")
 		keys[i] = key
 		values[i] = value
 		backend.Set(key, value)
 	}
-	_ = backend.Commit(false, 0)
 	return backend, keys, values
 }
 
 func TestStoreCachesReads(t *testing.T) {
-	backend := NewCachedKVStore[string, crdtcommon.CRDT](nil, 4096, nil)
-	backend.Set("alpha", newProfiledString("one"))
-	_ = backend.Commit(false, 0)
-	store := NewCachedKVStore(backend, 1024, nil)
+	backend := newTestKVStore[string, crdtcommon.CRDT]()
+	backend.Set("alpha", newStringValue("one"))
+	store := NewCachedKVStore[string, crdtcommon.CRDT](backend, 1024, nil)
 
 	first, ok := store.Get("alpha")
 	if !ok || first == nil {
@@ -61,10 +135,8 @@ func TestStoreCachesReads(t *testing.T) {
 }
 
 func TestStoreSkipsCachingOversizedEntry(t *testing.T) {
-	backend := NewCachedKVStore[string, crdtcommon.CRDT](nil, 4096, nil)
-	oversized := newProfiledString("one")
-	backend.Set("alpha", oversized)
-	_ = backend.Commit(false, 0)
+	backend := newTestKVStore[string, crdtcommon.CRDT]()
+	backend.Set("alpha", newStringValue("one"))
 
 	store := NewCachedKVStore[string, crdtcommon.CRDT](backend, 1024, func(v crdtcommon.CRDT) uint64 { return 2048 })
 
@@ -85,9 +157,9 @@ func TestStoreSkipsCachingOversizedEntry(t *testing.T) {
 	}
 }
 
-func TestStoreLayeredReadAndCommitLeavesBackendUntouched(t *testing.T) {
-	backend := NewCachedKVStore[string, crdtcommon.CRDT](nil, 4096, nil)
-	backend.Set("alpha", newProfiledString("one"))
+func TestStoreLayeredReadLeavesBackendUntouched(t *testing.T) {
+	backend := newTestKVStore[string, crdtcommon.CRDT]()
+	backend.Set("alpha", newStringValue("one"))
 
 	store := NewCachedKVStore[string, crdtcommon.CRDT](backend, 1024, nil)
 
@@ -100,6 +172,9 @@ func TestStoreLayeredReadAndCommitLeavesBackendUntouched(t *testing.T) {
 	if !ok || second == nil {
 		t.Fatalf("expected first layer to return cached backend value")
 	}
+	if second != first {
+		t.Fatalf("expected repeated read to return the cached entry")
+	}
 
 	local := newProfiledString("two")
 	store.Set("beta", local)
@@ -107,24 +182,10 @@ func TestStoreLayeredReadAndCommitLeavesBackendUntouched(t *testing.T) {
 		t.Fatalf("expected local write to stay in first layer")
 	}
 	if backend.Has("beta") {
-		t.Fatalf("expected backend to remain unchanged before commit")
-	}
-
-	if err := store.Precommit(); err != nil {
-		t.Fatalf("unexpected precommit error: %v", err)
-	}
-	if backend.Has("beta") {
-		t.Fatalf("expected precommit not to flush to backend")
-	}
-
-	if err := store.Commit(true, 1); err != nil {
-		t.Fatalf("unexpected commit error: %v", err)
-	}
-	if backend.Has("beta") {
-		t.Fatalf("expected commit to leave backend untouched")
+		t.Fatalf("expected backend to remain unchanged")
 	}
 	if value, ok := store.Get("beta"); !ok || value != local {
-		t.Fatalf("expected committed value to remain in cache")
+		t.Fatalf("expected local value to remain in cache")
 	}
 }
 
@@ -178,32 +239,37 @@ func TestStoreTracksVisitsGenerically(t *testing.T) {
 	if beta.firstLoaded == alpha.firstLoaded {
 		t.Fatalf("expected distinct version-derived firstLoaded values for distinct entries")
 	}
-	if batch, ok := store.ConcurrentMap.Get("beta"); !ok || batch != beta {
+	if cached, ok := store.ConcurrentMap.Get("beta"); !ok || cached != beta {
 		t.Fatalf("expected batch set to update cache entry")
 	}
 
-	backend := NewCachedKVStore[string, crdtcommon.CRDT](nil, 4096, nil)
-	backendValue := newProfiledString("backend")
-	if err := backend.Commit(true, 33); err != nil {
-		t.Fatalf("unexpected backend commit error: %v", err)
-	}
-	backend.Set("backend", backendValue)
+	backend := newTestKVStore[string, crdtcommon.CRDT]()
+	backend.Set("backend", newStringValue("backend"))
 
 	layered := NewCachedKVStore[string, crdtcommon.CRDT](backend, 4096, nil)
+	layered.UpdateVersion(33)
 	fetched, ok := layered.Get("backend")
 	if !ok || fetched == nil {
 		t.Fatalf("expected backend get to succeed")
 	}
-	if fetched.visits != 3 {
-		t.Fatalf("expected backend get to increment visits, got %d", fetched.visits)
+	if fetched.visits != 1 {
+		t.Fatalf("expected backend get to initialize visits, got %d", fetched.visits)
 	}
 	if fetched.firstLoaded != 33 {
-		t.Fatalf("expected backend get to preserve version-derived firstLoaded")
+		t.Fatalf("expected backend get to assign version-derived firstLoaded")
+	}
+
+	again, ok := layered.Get("backend")
+	if !ok || again != fetched {
+		t.Fatalf("expected backend value to be cached after first read")
+	}
+	if again.visits != 2 {
+		t.Fatalf("expected cached backend value to increment visits, got %d", again.visits)
 	}
 }
 
-func TestStoreCommitEvictsWhenFull(t *testing.T) {
-	backend := NewCachedKVStore[string, crdtcommon.CRDT](nil, 4096, nil)
+func TestStoreEvictsWhenFull(t *testing.T) {
+	backend := newTestKVStore[string, crdtcommon.CRDT]()
 	store := NewCachedKVStore[string, crdtcommon.CRDT](backend, 1024, func(v crdtcommon.CRDT) uint64 { return 700 })
 
 	alpha := newProfiledString("one")
@@ -213,12 +279,10 @@ func TestStoreCommitEvictsWhenFull(t *testing.T) {
 	store.Set("beta", beta)
 
 	if store.ConcurrentMap.Length() != 2 {
-		t.Fatalf("expected both entries to stay in the first layer before commit")
+		t.Fatalf("expected both entries to stay in the first layer before eviction")
 	}
 
-	if err := store.Commit(true, 1); err != nil {
-		t.Fatalf("unexpected commit error: %v", err)
-	}
+	store.Evict()
 
 	if backend.Len() != 0 {
 		t.Fatalf("expected backend to remain unchanged, got %d", backend.Len())
@@ -227,15 +291,14 @@ func TestStoreCommitEvictsWhenFull(t *testing.T) {
 		t.Fatalf("expected eviction to keep cache within cap, got %d", store.Size())
 	}
 	if store.ConcurrentMap.Length() >= 2 {
-		t.Fatalf("expected commit-time eviction to remove at least one cached entry")
+		t.Fatalf("expected eviction to remove at least one cached entry")
 	}
 }
 
 func TestStoreBatchAndDelete(t *testing.T) {
-	backend := NewCachedKVStore[string, crdtcommon.CRDT](nil, 4096, nil)
-	backend.Set("alpha", newProfiledString("one"))
-	backend.Set("beta", newProfiledString("two"))
-	_ = backend.Commit(false, 0)
+	backend := newTestKVStore[string, crdtcommon.CRDT]()
+	backend.Set("alpha", newStringValue("one"))
+	backend.Set("beta", newStringValue("two"))
 	store := NewCachedKVStore[string, crdtcommon.CRDT](backend, 1024, nil)
 
 	values := store.GetBatch([]string{"alpha", "beta", "missing"})
@@ -252,17 +315,7 @@ func TestStoreBatchAndDelete(t *testing.T) {
 	gamma := newProfiledString("three")
 	store.Set("gamma", gamma)
 	if backend.Has("gamma") || !store.Has("gamma") {
-		t.Fatalf("expected set to stay local until commit")
-	}
-
-	if err := store.Precommit(); err != nil {
-		t.Fatalf("unexpected precommit error: %v", err)
-	}
-	if err := store.Commit(true, 1); err != nil {
-		t.Fatalf("unexpected commit error: %v", err)
-	}
-	if backend.Has("gamma") {
-		t.Fatalf("expected committed set to stay local")
+		t.Fatalf("expected set to stay local")
 	}
 
 	store.Delete("alpha")
@@ -283,18 +336,9 @@ func TestStoreBatchAndDelete(t *testing.T) {
 		t.Fatalf("expected delete to evict gamma from first layer")
 	}
 	if backend.Len() != 2 {
-		t.Fatalf("expected backend to remain unchanged before delete commit, got %d items", backend.Len())
+		t.Fatalf("expected backend to remain unchanged after delete, got %d items", backend.Len())
 	}
 
-	if err := store.Precommit(); err != nil {
-		t.Fatalf("unexpected precommit error: %v", err)
-	}
-	if err := store.Commit(true, 2); err != nil {
-		t.Fatalf("unexpected commit error: %v", err)
-	}
-	if backend.Len() != 2 {
-		t.Fatalf("expected backend to remain unchanged after committed delete, got %d items", backend.Len())
-	}
 	if value, ok := store.Get("alpha"); !ok || value == nil {
 		t.Fatalf("expected backend alpha to be readable after cache delete")
 	}
@@ -313,10 +357,9 @@ func TestStoreCurrentLayerOnlySkipsBackend(t *testing.T) {
 		t.Fatalf("expected local store read to return cached value")
 	}
 
-	backend := NewCachedKVStore[string, crdtcommon.CRDT](nil, 4096, nil)
-	backend.Set("alpha", newProfiledString("one"))
-	_ = backend.Commit(false, 0)
-	store := NewCachedKVStore(backend, 1024, nil)
+	backend := newTestKVStore[string, crdtcommon.CRDT]()
+	backend.Set("alpha", newStringValue("one"))
+	store := NewCachedKVStore[string, crdtcommon.CRDT](backend, 1024, nil)
 	store.SetLocalOnly(true)
 
 	if value, ok := store.Get("alpha"); ok || value != nil {
@@ -344,7 +387,7 @@ func TestStoreSetGet1MillionEntries(t *testing.T) {
 
 	t0 := time.Now()
 	backend, keys, _ := newBenchmarkBackend(entryCount)
-	store := NewCachedKVStore(backend, uint64(entryCount)*sampleSize, nil)
+	store := NewCachedKVStore[string, crdtcommon.CRDT](backend, uint64(entryCount)*sampleSize, nil)
 	for _, key := range keys {
 		if _, ok := store.Get(key); !ok {
 			t.Fatalf("expected warm cache get to succeed for %s", key)
@@ -368,7 +411,7 @@ func TestStoreSetGet1MillionEntries1024InCache(t *testing.T) {
 
 	t0 := time.Now()
 	backend, keys, _ := newBenchmarkBackend(entryCount)
-	store := NewCachedKVStore(backend, 1024*sampleSize, nil)
+	store := NewCachedKVStore[string, crdtcommon.CRDT](backend, 1024*sampleSize, nil)
 	for _, key := range keys {
 		if _, ok := store.Get(key); !ok {
 			t.Fatalf("expected warm cache get to succeed for %s", key)
@@ -383,17 +426,9 @@ func TestStoreSetGet1MillionEntries1024InCache(t *testing.T) {
 		}
 	}
 
-	commitKey := "committed"
-	store.Set(commitKey, newProfiledString("committed"))
-	if backend.Has(commitKey) {
-		t.Fatalf("expected backend to remain unchanged before commit")
-	}
-
-	if err := store.Commit(true, 1); err != nil {
-		t.Fatalf("unexpected commit error: %v", err)
-	}
-	if backend.Has(commitKey) {
-		t.Fatalf("expected commit to leave backend untouched")
+	store.Set("committed", newProfiledString("committed"))
+	if backend.Has("committed") {
+		t.Fatalf("expected backend to remain unchanged after local set")
 	}
 
 	fmt.Printf("Get 1 Million entries, 1024 Entry cache: %v\n", time.Since(t0))
@@ -405,7 +440,7 @@ func TestStoreSetGet1MillionEntries2048InCache(t *testing.T) {
 
 	t0 := time.Now()
 	backend, keys, _ := newBenchmarkBackend(entryCount)
-	store := NewCachedKVStore(backend, 2048*sampleSize, nil)
+	store := NewCachedKVStore[string, crdtcommon.CRDT](backend, 2048*sampleSize, nil)
 	for _, key := range keys {
 		if _, ok := store.Get(key); !ok {
 			t.Fatalf("expected warm cache get to succeed for %s", key)
@@ -420,17 +455,9 @@ func TestStoreSetGet1MillionEntries2048InCache(t *testing.T) {
 		}
 	}
 
-	commitKey := "committed"
-	store.Set(commitKey, newProfiledString("committed"))
-	if backend.Has(commitKey) {
-		t.Fatalf("expected backend to remain unchanged before commit")
-	}
-
-	if err := store.Commit(true, 1); err != nil {
-		t.Fatalf("unexpected commit error: %v", err)
-	}
-	if backend.Has(commitKey) {
-		t.Fatalf("expected commit to leave backend untouched")
+	store.Set("committed", newProfiledString("committed"))
+	if backend.Has("committed") {
+		t.Fatalf("expected backend to remain unchanged after local set")
 	}
 
 	fmt.Printf("Get 1 Million entries, 2048 Entry cache: %v\n", time.Since(t0))
@@ -442,7 +469,7 @@ func TestStoreSetGet1MillionEntriesAllInCache(t *testing.T) {
 
 	t0 := time.Now()
 	backend, keys, _ := newBenchmarkBackend(entryCount)
-	store := NewCachedKVStore(backend, uint64(entryCount)*sampleSize, nil)
+	store := NewCachedKVStore[string, crdtcommon.CRDT](backend, uint64(entryCount)*sampleSize, nil)
 	for _, key := range keys {
 		if _, ok := store.Get(key); !ok {
 			t.Fatalf("expected warm cache get to succeed for %s", key)
@@ -458,17 +485,9 @@ func TestStoreSetGet1MillionEntriesAllInCache(t *testing.T) {
 		}
 	}
 
-	commitKey := "committed"
-	store.Set(commitKey, newProfiledString("committed"))
-	if backend.Has(commitKey) {
-		t.Fatalf("expected backend to remain unchanged before commit")
-	}
-
-	if err := store.Commit(true, 1); err != nil {
-		t.Fatalf("unexpected commit error: %v", err)
-	}
-	if backend.Has(commitKey) {
-		t.Fatalf("expected commit to leave backend untouched")
+	store.Set("committed", newProfiledString("committed"))
+	if backend.Has("committed") {
+		t.Fatalf("expected backend to remain unchanged after local set")
 	}
 
 	fmt.Printf("Get 1 Million entries, all in cache: %v\n", time.Since(t0))
