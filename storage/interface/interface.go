@@ -17,31 +17,41 @@
 
 package interfaces
 
-import "reflect"
-
-type Accessible interface {
-	Value() any
-	Reads() uint32
-	Writes() uint32
-	Size() uint64
-}
-
 const (
 	MEMORY_DB     = 0
 	PERSISTENT_DB = 1
 )
 
-type PersistentStorage interface {
-	Get(string) ([]byte, error)
-	Set(string, []byte) error
-	BatchGet([]string) ([][]byte, error)
-	BatchSet([]string, [][]byte) error
-	Query(string, func(string, string) bool) ([]string, [][]byte, error)
+type Readable[K comparable, V any] interface {
+	Get(K) (V, bool)
+	Has(K) bool
+	GetBatch([]K) []V
+	Len() uint64
+	Size() uint64
 }
 
-type DbFilter func(PersistentStorage) bool
+type Writeable[K comparable, V any] interface {
+	Set(K, V)
+	Delete(K)
+	SetBatch([]K, []V)
+	DeleteBatch([]K)
+}
 
-func NotQueryRpc(db PersistentStorage) bool { // Do not access MemoryDB
-	name := reflect.TypeOf(db).String()
-	return name == "*storage.ReadonlyRpcClient"
+type ReadWriteStore[K comparable, V any] interface {
+	Readable[K, V]
+	Writeable[K, V]
+}
+
+type KVStore[K comparable, V any] interface {
+	ReadWriteStore[K, V]
+	SetLocalOnly(yes bool)
+	LocalOnly() bool
+}
+
+type PersistentStorage[K comparable, T any] interface {
+	Get(K) (T, error)
+	Set(K, T) error
+	GetBatch([]K) ([]T, error)
+	SetBatch([]K, []T) error
+	Query(K, func(K, T) bool) ([]K, []T, error)
 }

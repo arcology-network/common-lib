@@ -256,7 +256,7 @@ func (this *FileDB) Get(key string) ([]byte, error) {
 	return this.readFile(key)
 }
 
-func (this *FileDB) BatchGet(nkeys []string) ([][]byte, error) {
+func (this *FileDB) GetBatch(nkeys []string) ([][]byte, error) {
 	files := slice.ParallelTransform(nkeys, 8, func(i int, _ string) string {
 		return this.locateFile(nkeys[i]) //Must use the compressed ky to compute the shard
 	})
@@ -295,7 +295,7 @@ func (this *FileDB) BatchGet(nkeys []string) ([][]byte, error) {
 	return data, nil
 }
 
-func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
+func (this *FileDB) SetBatch(nkeys []string, byteset [][]byte) error {
 	files := make([]string, len(nkeys))
 	finder := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {

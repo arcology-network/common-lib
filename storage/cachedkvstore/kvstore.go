@@ -25,6 +25,8 @@ import (
 	mapi "github.com/arcology-network/common-lib/exp/map"
 	"github.com/arcology-network/common-lib/exp/slice"
 	"github.com/cespare/xxhash/v2"
+
+	stgintf "github.com/arcology-network/common-lib/storage/interface"
 )
 
 type Stat struct {
@@ -62,7 +64,7 @@ func (this *Entry[T]) Size() uint64 {
 
 type CachedKVStore[K comparable, T any] struct {
 	*mapi.ConcurrentMap[K, *Entry[T]]
-	backend          KVStore[K, T]
+	backend          stgintf.KVStore[K, T]
 	currentLayerOnly bool
 	cachePolicy      *CachePolicy[*Entry[T]]
 	sizeOf           func(T) uint64
@@ -70,7 +72,7 @@ type CachedKVStore[K comparable, T any] struct {
 }
 
 func NewCachedKVStore[K comparable, T any](
-	backend KVStore[K, T],
+	backend stgintf.KVStore[K, T],
 	cacheCap uint64,
 	sizeOf func(T) uint64,
 ) *CachedKVStore[K, T] {

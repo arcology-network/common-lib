@@ -69,9 +69,9 @@ type Writer[T any] interface {
 
 // ReadOnlyStore defines the interface for a read-only storage source.
 type ReadOnlyStore interface {
-	IfExists(string) bool                  // Check if the key exists in the source, which can be a cache or a storage.
+	Has(string) bool                  // Check if the key exists in the source, which can be a cache or a storage.
 	ReadBackend(string, CRDT) (any, error) // Get from persistent storage directly.
-	Retrieve(string, CRDT) (any, error)    // Get from cache or persistent storage, with cache lookup first.
+	GetAs(string, CRDT) (any, error)    // Get from cache or persistent storage, with cache lookup first.
 	Preload([]byte) any
 }
 

@@ -28,7 +28,7 @@ import (
 	"github.com/arcology-network/common-lib/common"
 )
 
-func BenchmarkParaBadgerBatchSet(b *testing.B) {
+func BenchmarkParaBadgerSetBatch(b *testing.B) {
 	os.RemoveAll(TEST_ROOT_PATH)
 	fileDB := NewParaBadgerDB(TEST_ROOT_PATH, common.Remainder)
 
@@ -43,20 +43,20 @@ func BenchmarkParaBadgerBatchSet(b *testing.B) {
 	}
 
 	t0 := time.Now()
-	if err := fileDB.BatchSet(keys, values); err != nil {
+	if err := fileDB.SetBatch(keys, values); err != nil {
 		b.Error(err)
 	}
-	fmt.Println("BatchSet() ", len(keys), " Entries from files:", time.Since(t0))
+	fmt.Println("SetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 
 	t0 = time.Now()
-	if _, err := fileDB.BatchGet(keys); err != nil {
+	if _, err := fileDB.GetBatch(keys); err != nil {
 		b.Error(err)
 	}
-	fmt.Println("BatchGet() ", len(keys), " Entries from files:", time.Since(t0))
+	fmt.Println("GetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 	os.RemoveAll(TEST_ROOT_PATH)
 }
 
-func BenchmarkBadgerBatchSet2(b *testing.B) {
+func BenchmarkBadgerSetBatch2(b *testing.B) {
 	os.RemoveAll(TEST_ROOT_PATH)
 	fileDB := NewBadgerDB(TEST_ROOT_PATH)
 
@@ -71,16 +71,16 @@ func BenchmarkBadgerBatchSet2(b *testing.B) {
 	}
 
 	t0 := time.Now()
-	if err := fileDB.BatchSet(keys, values); err != nil {
+	if err := fileDB.SetBatch(keys, values); err != nil {
 		b.Error(err)
 	}
-	fmt.Println("BatchSet() ", len(keys), " Entries from files:", time.Since(t0))
+	fmt.Println("SetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 
 	t0 = time.Now()
-	if _, err := fileDB.BatchGet(keys); err != nil {
+	if _, err := fileDB.GetBatch(keys); err != nil {
 		b.Error(err)
 	}
-	fmt.Println("BatchGet() ", len(keys), " Entries from files:", time.Since(t0))
+	fmt.Println("GetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 	os.RemoveAll(TEST_ROOT_PATH)
 }
 
@@ -137,7 +137,7 @@ func BenchmarkBadgerBatchSet2(b *testing.B) {
 // 	// })
 // }
 
-// func ParaBatchSet(db *badger.DB, keys []string, values [][]byte) {
+// func ParaSetBatch(db *badger.DB, keys []string, values [][]byte) {
 // 	index := 0
 // 	for index < len(keys) {
 // 		db.Update(func(txn *badger.Txn) error {

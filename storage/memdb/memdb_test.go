@@ -28,7 +28,7 @@ func TestMemDB(t *testing.T) {
 	values := make([][]byte, 2)
 	values[0] = []byte{1, 2, 3}
 	values[1] = []byte{4, 5, 6}
-	memDB.BatchSet(keys, values)
+	memDB.SetBatch(keys, values)
 
 	if v, _ := memDB.Get(keys[0]); !bytes.Equal(v, values[0]) {
 		t.Error("Error")
@@ -38,7 +38,7 @@ func TestMemDB(t *testing.T) {
 		t.Error("Error")
 	}
 
-	retrived, _ := memDB.BatchGet(append(keys, ""))
+	retrived, _ := memDB.GetBatch(append(keys, ""))
 	if len(values) != 2 || !bytes.Equal(values[0], retrived[0]) || !bytes.Equal(values[1], retrived[1]) {
 		t.Error("Error")
 	}

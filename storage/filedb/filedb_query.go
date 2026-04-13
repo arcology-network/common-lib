@@ -22,7 +22,7 @@ import (
 	slice "github.com/arcology-network/common-lib/exp/slice"
 )
 
-func (this *FileDB) Query(pattern string, condition func(string, string) bool) ([]string, [][]byte, error) {
+func (this *FileDB) Query(pattern string, condition func(string, []byte) bool) ([]string, [][]byte, error) {
 	parentPath := this.findPath(pattern) // match file parent path first
 	if files, err := this.getFilesUnder(parentPath); err == nil {
 		keyset := make([][]string, len(files))
@@ -35,7 +35,7 @@ func (this *FileDB) Query(pattern string, condition func(string, string) bool) (
 			}
 
 			for j := 0; j < len(keys); j++ {
-				if !condition(pattern, keys[j]) {
+				if !condition(pattern, valBytes[j]) {
 					keys[j] = ""
 					valBytes[j] = valBytes[j][:0]
 				}

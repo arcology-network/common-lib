@@ -26,7 +26,7 @@ import (
 	"github.com/dgraph-io/badger"
 )
 
-func BenchmarkBadgerBatchSet(b *testing.B) {
+func BenchmarkBadgerSetBatch(b *testing.B) {
 	opt := badger.DefaultOptions("./badger")
 	bdg, err := badger.Open(opt)
 	if err != nil {
@@ -42,7 +42,7 @@ func BenchmarkBadgerBatchSet(b *testing.B) {
 	}
 
 	timer("setup", func() {
-		batchSet(bdg, keys, values)
+		SetBatch(bdg, keys, values)
 
 		lsm, vlog := bdg.Size()
 		b.Log(lsm, vlog)
@@ -56,7 +56,7 @@ func BenchmarkBadgerBatchSet(b *testing.B) {
 			unique[keys[i]] = struct{}{}
 		}
 		sum += timer("commit", func() {
-			batchSet(bdg, keys, values)
+			SetBatch(bdg, keys, values)
 
 			lsm, vlog := bdg.Size()
 			b.Log(lsm, vlog)
@@ -160,7 +160,7 @@ func TestBadgerIterator(t *testing.T) {
 	// })
 }
 
-func batchSet(db *badger.DB, keys []string, values [][]byte) {
+func SetBatch(db *badger.DB, keys []string, values [][]byte) {
 	index := 0
 	for index < len(keys) {
 		db.Update(func(txn *badger.Txn) error {

@@ -47,14 +47,14 @@ func TestParaBadgerDBFunctions(t *testing.T) {
 		"d01",
 	}
 
-	db.BatchSet(keys, data)
+	db.SetBatch(keys, data)
 
-	values, err := db.BatchGet(keys)
+	values, err := db.GetBatch(keys)
 	if err != nil {
 		t.Error(err)
 	}
 
-	values, _ = db.BatchGet([]string{
+	values, _ = db.GetBatch([]string{
 		"a01",
 		"b01",
 		"c03",
@@ -63,7 +63,7 @@ func TestParaBadgerDBFunctions(t *testing.T) {
 		!bytes.Equal(values[0], []byte{1, 2, 3}) ||
 		!bytes.Equal(values[1], []byte{10, 11, 12}) ||
 		!bytes.Equal(values[2], []byte{13, 14, 15}) {
-		t.Error("BatchGet Failed")
+		t.Error("GetBatch Failed")
 	}
 
 	value, _ := db.Get("d01")

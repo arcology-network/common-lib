@@ -25,7 +25,7 @@ import (
 
 func TestBadgerDBFunctions(t *testing.T) {
 	db := NewBadgerDB(TEST_ROOT_PATH)
-	db.BatchSet([]string{
+	db.SetBatch([]string{
 		"a01",
 		"a02",
 		"a03",
@@ -41,7 +41,7 @@ func TestBadgerDBFunctions(t *testing.T) {
 		{16, 17, 18},
 	})
 
-	values, _ := db.BatchGet([]string{
+	values, _ := db.GetBatch([]string{
 		"a01",
 		"b01",
 		"c01",
@@ -50,7 +50,7 @@ func TestBadgerDBFunctions(t *testing.T) {
 		!bytes.Equal(values[0], []byte{1, 2, 3}) ||
 		!bytes.Equal(values[1], []byte{10, 11, 12}) ||
 		!bytes.Equal(values[2], []byte{13, 14, 15}) {
-		t.Error("BatchGet Failed")
+		t.Error("GetBatch Failed")
 	}
 
 	value, _ := db.Get("d01")

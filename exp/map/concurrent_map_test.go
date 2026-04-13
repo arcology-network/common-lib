@@ -125,7 +125,7 @@ func TestCcmapEmptyKeys(t *testing.T) {
 		t.Error("Error: Failed to get")
 	}
 
-	v, found := ccmap.BatchGet([]string{"1", "2", "3", ""})
+	v, found := ccmap.GetBatch([]string{"1", "2", "3", ""})
 	if !found[0] || !reflect.DeepEqual(v, []int{1, 2, 3, 4}) {
 		t.Error("Error: Entries don't match")
 	}
@@ -142,8 +142,8 @@ func TestCcmapBatchModeAllEntries(t *testing.T) {
 		values[i] = v
 	}
 
-	ccmap.BatchSet(keys, values)
-	outValues := common.First(ccmap.BatchGet(keys))
+	ccmap.SetBatch(keys, values)
+	outValues := common.First(ccmap.GetBatch(keys))
 
 	if !reflect.DeepEqual(outValues, values) {
 		t.Error("Error: Entries don't match")
@@ -162,7 +162,7 @@ func TestCCmapDump(t *testing.T) {
 	keys := []string{"1", "2", "3", "4"}
 	values := []interface{}{"1", "2", 3, "4"}
 
-	ccmap.BatchSet(keys, values)
+	ccmap.SetBatch(keys, values)
 	k, v := ccmap.KVs()
 	if !reflect.DeepEqual(k, []string{"1", "2", "3", "4"}) {
 		t.Error("Error: Entries don't match")
@@ -180,7 +180,7 @@ func TestMinMax(t *testing.T) {
 
 	keys := []string{"1", "2", "3", "4"}
 	values := []int{1, 2, 3, 4}
-	ccmap.BatchSet(keys, values)
+	ccmap.SetBatch(keys, values)
 
 	minv := math.MaxInt
 	less := func(_ string, rhs *int) {
@@ -214,7 +214,7 @@ func TestForeach(t *testing.T) {
 
 	keys := []string{"1", "2", "3", "4"}
 	values := []int{1, 2, 3, 4}
-	ccmap.BatchSet(keys, values)
+	ccmap.SetBatch(keys, values)
 
 	ccmap.Foreach(func(v int) int {
 		return v + 10
@@ -238,7 +238,7 @@ func TestForeachDo(t *testing.T) {
 
 	keys := []string{"1", "2", "3", "4"}
 	values := []*int{&str0, &str1, &str2, &str3}
-	ccmap.BatchSet(keys, values)
+	ccmap.SetBatch(keys, values)
 
 	ccmap.ForeachDo(func(k string, v *int) {
 		*v += 1
@@ -265,9 +265,9 @@ func TestParallelDo(t *testing.T) {
 
 	keys := []string{"1", "2", "3", "4"}
 	values := []interface{}{"1", "2", 3, "4"}
-	ccmap.BatchSet(keys, values)
+	ccmap.SetBatch(keys, values)
 
-	v, found := ccmap.BatchGet([]string{"1", "2", "3", "4"})
+	v, found := ccmap.GetBatch([]string{"1", "2", "3", "4"})
 	if !found[0] || !reflect.DeepEqual(v, values) {
 		t.Error("Error: Entries don't match")
 	}

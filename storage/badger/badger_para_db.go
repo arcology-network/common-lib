@@ -67,7 +67,7 @@ func (this *ParaBadgerDB) Set(key string, value []byte) error {
 	panic("not implemented")
 }
 
-func (this *ParaBadgerDB) BatchGet(keys []string) (values [][]byte, err error) {
+func (this *ParaBadgerDB) GetBatch(keys []string) (values [][]byte, err error) {
 	categorized := make([][]string, len(this.impls))
 	for i := 0; i < len(categorized); i++ {
 		categorized[i] = make([]string, 0, len(keys)/len(this.impls)+100)
@@ -84,7 +84,7 @@ func (this *ParaBadgerDB) BatchGet(keys []string) (values [][]byte, err error) {
 		for index = start; index < end; index++ {
 			this.shardLocks[index].RLock()
 			defer this.shardLocks[index].RUnlock() // Using start is correct, as start + 1 == end
-			valueSet[index], errors[index] = this.impls[index].BatchGet(categorized[index])
+			valueSet[index], errors[index] = this.impls[index].GetBatch(categorized[index])
 		}
 	}
 	common.ParallelWorker(len(categorized), len(categorized), finder)
@@ -103,7 +103,7 @@ func (this *ParaBadgerDB) BatchGet(keys []string) (values [][]byte, err error) {
 	return results, errors[0]
 }
 
-func (this *ParaBadgerDB) BatchSet(keys []string, values [][]byte) error {
+func (this *ParaBadgerDB) SetBatch(keys []string, values [][]byte) error {
 	categorizedKeys := make([][]string, len(this.impls))
 	categorizedVals := make([][][]byte, len(this.impls))
 	for i := 0; i < len(categorizedKeys); i++ {
@@ -120,12 +120,12 @@ func (this *ParaBadgerDB) BatchSet(keys []string, values [][]byte) error {
 	errors := slice.ParallelTransform(categorizedKeys, len(categorizedKeys), func(i int, _ []string) error {
 		this.shardLocks[i].Lock()
 		defer this.shardLocks[i].Unlock() // Using start is correct, as start + 1 == end
-		return this.impls[i].BatchSet(categorizedKeys[i], categorizedVals[i])
+		return this.impls[i].SetBatch(categorizedKeys[i], categorizedVals[i])
 	})
 	return errors[0]
 }
 
-func (this *ParaBadgerDB) Query(prefix string, checker func(string, string) bool) (keys []string, values [][]byte, err error) {
+func (this *ParaBadgerDB) Query(prefix string, checker func(string, []byte) bool) (keys []string, values [][]byte, err error) {
 	shardIdx, db := this.getShard(prefix)
 
 	this.shardLocks[shardIdx].RLock()

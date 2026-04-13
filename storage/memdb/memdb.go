@@ -55,8 +55,8 @@ func (this *MemoryDB) Get(key string) ([]byte, error) {
 	return v.([]byte), nil
 }
 
-func (this *MemoryDB) BatchGet(keys []string) ([][]byte, error) {
-	values, _ := this.db.BatchGet(keys)
+func (this *MemoryDB) GetBatch(keys []string) ([][]byte, error) {
+	values, _ := this.db.GetBatch(keys)
 	byteset := make([][]byte, len(keys))
 	for i, v := range values {
 		if v != nil {
@@ -66,7 +66,7 @@ func (this *MemoryDB) BatchGet(keys []string) ([][]byte, error) {
 	return byteset, nil
 }
 
-func (this *MemoryDB) BatchSet(keys []string, byteset [][]byte) error {
+func (this *MemoryDB) SetBatch(keys []string, byteset [][]byte) error {
 	values := make([]any, len(keys))
 	for i, v := range byteset {
 		if v != nil {
@@ -74,10 +74,10 @@ func (this *MemoryDB) BatchSet(keys []string, byteset [][]byte) error {
 		}
 	}
 
-	this.db.BatchSet(keys, values)
+	this.db.SetBatch(keys, values)
 	return nil
 }
 
-func (this *MemoryDB) Query(key string, functor func(string, string) bool) ([]string, [][]byte, error) {
+func (this *MemoryDB) Query(key string, functor func(string, []byte) bool) ([]string, [][]byte, error) {
 	return []string{}, [][]byte{}, nil
 }

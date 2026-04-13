@@ -136,7 +136,7 @@ func TestIndexerWithDB(t *testing.T) {
 	})
 
 	// Save the transactions to the database.
-	db.BatchSet(keys, encoded)
+	db.SetBatch(keys, encoded)
 
 	// Create a table with two indexes for the transactions.
 	type txIndex struct {
@@ -175,7 +175,7 @@ func TestIndexerWithDB(t *testing.T) {
 	})
 
 	// Get the transactions from the database using the primary keys.
-	encoded, _ = db.BatchGet(primaryKeys)
+	encoded, _ = db.GetBatch(primaryKeys)
 
 	queryTxs = slice.Transform(encoded, func(i int, data []byte) *Tx {
 		tx := &Tx{}

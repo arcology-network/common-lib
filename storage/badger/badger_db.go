@@ -50,7 +50,7 @@ func (db *BadgerDB) Set(key string, value []byte) error {
 	panic("not implemented")
 }
 
-func (db *BadgerDB) BatchGet(keys []string) (values [][]byte, err error) {
+func (db *BadgerDB) GetBatch(keys []string) (values [][]byte, err error) {
 	db.impl.View(func(txn *badger.Txn) error {
 		for i := range keys {
 			if len(keys[i]) == 0 {
@@ -73,7 +73,7 @@ func (db *BadgerDB) BatchGet(keys []string) (values [][]byte, err error) {
 	return
 }
 
-func (db *BadgerDB) BatchSet(keys []string, values [][]byte) error {
+func (db *BadgerDB) SetBatch(keys []string, values [][]byte) error {
 	index := 0
 	for index < len(keys) {
 		db.impl.Update(func(txn *badger.Txn) error {
@@ -94,7 +94,7 @@ func (db *BadgerDB) BatchSet(keys []string, values [][]byte) error {
 	return nil
 }
 
-func (db *BadgerDB) Query(prefix string, checker func(string, string) bool) (keys []string, values [][]byte, err error) {
+func (db *BadgerDB) Query(prefix string, checker func(string, []byte) bool) (keys []string, values [][]byte, err error) {
 	db.impl.View(func(txn *badger.Txn) error {
 		it := txn.NewIterator(badger.IteratorOptions{
 			PrefetchValues: true,

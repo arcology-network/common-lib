@@ -64,6 +64,6 @@ func (this *ReadCache[K, V]) Set(k K, v V) {
 
 func (this *ReadCache[K, V]) Commit(keys []K, values []V) {
 	if this.enabled {
-		this.BatchSet(keys, values)
+		this.SetBatch(keys, values)
 	}
 }
