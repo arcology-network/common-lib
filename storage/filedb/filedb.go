@@ -256,6 +256,30 @@ func (this *FileDB) Get(key string) ([]byte, error) {
 	return this.readFile(key)
 }
 
+func (this *FileDB) Has(key string) bool {
+	file := this.locateFile(key)
+	keys, _, err := this.loadFile(file)
+	if err != nil {
+		return false
+	}
+
+	for i := 0; i < len(keys); i++ {
+		if keys[i] == key {
+			return true
+		}
+	}
+	return false
+}
+
+func (this *FileDB) Delete(key string) error {
+	return this.writeFile(key, nil)
+}
+
+func (this *FileDB) DeleteBatch(keys []string) error {
+	values := make([][]byte, len(keys))
+	return this.SetBatch(keys, values)
+}
+
 func (this *FileDB) GetBatch(nkeys []string) ([][]byte, error) {
 	files := slice.ParallelTransform(nkeys, 8, func(i int, _ string) string {
 		return this.locateFile(nkeys[i]) //Must use the compressed ky to compute the shard
@@ -326,7 +350,7 @@ func (this *FileDB) SetBatch(nkeys []string, byteset [][]byte) error {
 
 	this.files = append(this.files, newFiles...)
 	if len(errs) > 0 {
-		return errs[0].(error)
+		return errs[0]
 	}
 
 	// Write Contents
@@ -454,7 +478,7 @@ func (this *FileDB) readAll(paths []string) ([][]byte, error) {
 	slice.RemoveIf(&errs, func(_ int, v error) bool { return v == nil })
 
 	if len(errs) > 0 {
-		return nil, errs[0].(error)
+		return nil, errs[0]
 	}
 
 	// Flatten
@@ -466,7 +490,7 @@ func (this *FileDB) readAll(paths []string) ([][]byte, error) {
 	}
 
 	if len(errs) > 0 {
-		return flattened, errs[0].(error)
+		return flattened, errs[0]
 	}
 	return flattened, nil
 }

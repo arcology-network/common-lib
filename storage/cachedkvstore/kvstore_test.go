@@ -335,8 +335,13 @@ func TestStoreBatchAndDelete(t *testing.T) {
 		t.Fatalf("expected set to stay local")
 	}
 
-	store.Delete("alpha")
-	store.DeleteBatch([]string{"beta", "gamma"})
+	if err := store.Delete("alpha"); err != nil {
+		t.Fatalf("delete alpha: %v", err)
+	}
+
+	if err := store.DeleteBatch([]string{"beta", "gamma"}); err != nil {
+		t.Fatalf("delete batch: %v", err)
+	}
 	if store.Has("gamma") {
 		t.Fatalf("expected local-only key to stay absent after delete")
 	}

@@ -268,12 +268,14 @@ func (this *CachedKVStore[K, T]) SetBatch(keys []K, values []*Entry[T]) {
 	}
 }
 
-func (this *CachedKVStore[K, T]) Delete(key K) {
+func (this *CachedKVStore[K, T]) Delete(key K) error {
 	this.Set(key, nil)
+	return nil
 }
 
-func (this *CachedKVStore[K, T]) DeleteBatch(keys []K) {
+func (this *CachedKVStore[K, T]) DeleteBatch(keys []K) error {
 	this.SetBatch(keys, make([]*Entry[T], len(keys)))
+	return nil
 }
 
 func (this *CachedKVStore[K, T]) Len() uint64 {

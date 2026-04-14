@@ -22,13 +22,13 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"path"
+	"path/filepath"
 	"time"
 )
 
 var (
-	TEST_ROOT_PATH   = path.Join(os.TempDir(), "/badgerdb/")
-	TEST_BACKUP_PATH = path.Join(os.TempDir(), "/badgerdb-back/")
+	TEST_ROOT_PATH   = filepath.Join(os.TempDir(), "badgerdb")
+	TEST_BACKUP_PATH = filepath.Join(os.TempDir(), "badgerdb-back")
 )
 
 var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))

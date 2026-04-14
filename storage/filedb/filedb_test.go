@@ -116,6 +116,42 @@ func TestFileDBBatch(t *testing.T) {
 	os.RemoveAll(fileDB.rootpath)
 }
 
+func TestFileDBDeleteOps(t *testing.T) {
+	fileDB, err := NewFileDB(TEST_ROOT_PATH, 8, 2)
+	if err != nil {
+		t.Error(err)
+	}
+
+	keys := []string{"123", "456", "789"}
+	values := [][]byte{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
+
+	if err := fileDB.SetBatch(keys, values); err != nil {
+		t.Error(err)
+	}
+
+	if !fileDB.Has(keys[0]) || !fileDB.Has(keys[1]) || !fileDB.Has(keys[2]) {
+		t.Fatal("expected keys to exist")
+	}
+
+	err = fileDB.Delete(keys[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fileDB.Has(keys[0]) {
+		t.Fatal("expected key to be deleted")
+	}
+
+	err = fileDB.DeleteBatch(keys[1:])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fileDB.Has(keys[1]) || fileDB.Has(keys[2]) {
+		t.Fatal("expected batch delete to remove remaining keys")
+	}
+
+	os.RemoveAll(fileDB.rootpath)
+}
+
 func TestFileDbBatch(t *testing.T) {
 	fileDB, err := NewFileDB(TEST_ROOT_PATH, 16, 2)
 

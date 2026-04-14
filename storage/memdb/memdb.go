@@ -55,6 +55,11 @@ func (this *MemoryDB) Get(key string) ([]byte, error) {
 	return v.([]byte), nil
 }
 
+func (this *MemoryDB) Has(key string) bool {
+	v, ok := this.db.Get(key)
+	return ok && v != nil
+}
+
 func (this *MemoryDB) GetBatch(keys []string) ([][]byte, error) {
 	values, _ := this.db.GetBatch(keys)
 	byteset := make([][]byte, len(keys))
@@ -74,6 +79,17 @@ func (this *MemoryDB) SetBatch(keys []string, byteset [][]byte) error {
 		}
 	}
 
+	this.db.SetBatch(keys, values)
+	return nil
+}
+
+func (this *MemoryDB) Delete(key string) error {
+	this.db.Set(key, nil)
+	return nil
+}
+
+func (this *MemoryDB) DeleteBatch(keys []string) error {
+	values := make([]any, len(keys))
 	this.db.SetBatch(keys, values)
 	return nil
 }

@@ -25,7 +25,7 @@ import (
 
 func TestBadgerDBFunctions(t *testing.T) {
 	db := NewBadgerDB(TEST_ROOT_PATH)
-	db.SetBatch([]string{
+	if err := db.SetBatch([]string{
 		"a01",
 		"a02",
 		"a03",
@@ -39,7 +39,9 @@ func TestBadgerDBFunctions(t *testing.T) {
 		{10, 11, 12},
 		{13, 14, 15},
 		{16, 17, 18},
-	})
+	}); err != nil {
+		t.Fatal(err)
+	}
 
 	values, _ := db.GetBatch([]string{
 		"a01",
@@ -56,6 +58,23 @@ func TestBadgerDBFunctions(t *testing.T) {
 	value, _ := db.Get("d01")
 	if !bytes.Equal(value, []byte{16, 17, 18}) {
 		t.Error("Get Failed")
+	}
+	if !db.Has("d01") {
+		t.Error("Has Failed")
+	}
+
+	if err := db.Delete("d01"); err != nil {
+		t.Fatal(err)
+	}
+	if db.Has("d01") {
+		t.Error("Delete Failed")
+	}
+
+	if err := db.DeleteBatch([]string{"a01", "b01"}); err != nil {
+		t.Fatal(err)
+	}
+	if db.Has("a01") || db.Has("b01") {
+		t.Error("DeleteBatch Failed")
 	}
 
 	keys, values, _ := db.Query("a", nil)

@@ -47,14 +47,16 @@ func TestParaBadgerDBFunctions(t *testing.T) {
 		"d01",
 	}
 
-	db.SetBatch(keys, data)
+	if err := db.SetBatch(keys, data); err != nil {
+		t.Fatal(err)
+	}
 
-	values, err := db.GetBatch(keys)
+	_, err := db.GetBatch(keys)
 	if err != nil {
 		t.Error(err)
 	}
 
-	values, _ = db.GetBatch([]string{
+	values, _ := db.GetBatch([]string{
 		"a01",
 		"b01",
 		"c03",
@@ -70,9 +72,26 @@ func TestParaBadgerDBFunctions(t *testing.T) {
 	if !bytes.Equal(value, []byte{16, 17, 18}) {
 		t.Error("Get Failed")
 	}
+	if !db.Has("d01") {
+		t.Error("Has Failed")
+	}
 
-	keys, values, _ = db.Query("a", nil)
-	t.Log(keys)
-	t.Log(values)
+	if err := db.Delete("d01"); err != nil {
+		t.Fatal(err)
+	}
+	if db.Has("d01") {
+		t.Error("Delete Failed")
+	}
+
+	if err := db.DeleteBatch([]string{"a01", "b01"}); err != nil {
+		t.Fatal(err)
+	}
+	if db.Has("a01") || db.Has("b01") {
+		t.Error("DeleteBatch Failed")
+	}
+
+	queryKeys, queryValues, _ := db.Query("a", nil)
+	t.Log(queryKeys)
+	t.Log(queryValues)
 	os.RemoveAll("./badger-test/")
 }
