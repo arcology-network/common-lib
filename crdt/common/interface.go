@@ -67,12 +67,4 @@ type Writer[T any] interface {
 	Name() string
 }
 
-// ReadOnlyStore defines the interface for a read-only storage source.
-type ReadOnlyStore interface {
-	Has(string) bool                  // Check if the key exists in the source, which can be a cache or a storage.
-	ReadBackend(string, CRDT) (any, error) // Get from persistent storage directly.
-	GetAs(string, CRDT) (any, error)    // Get from cache or persistent storage, with cache lookup first.
-	Preload([]byte) any
-}
-
 type Hasher func(CRDT) []byte

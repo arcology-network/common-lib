@@ -114,14 +114,12 @@ func (this *Path) SetDelta(v any, _ bool) { this.DeltaSet.SetDelta(v.(*softdelta
 func (this *Path) SetDeltaSign(v any)     {}
 
 func (this *Path) Preload(k string, source any) {
-	store := source.(crdtcommon.ReadOnlyStore)
+	store := source.(interface {
+		GetAs(string, crdtcommon.CRDT) (any, error)
+	})
 	if this.preloaded != nil { // Already preloaded
 		return
 	}
-
-	// store := source.(interface {
-	// 	GetAs(string, any) (any, error)
-	// })
 
 	if v, err := store.GetAs(k, new(Path)); v != nil && err == nil && v.(*Path).Committed().Length() > 0 {
 		this.preloaded = v.(*Path).Committed()

@@ -24,16 +24,16 @@ const (
 
 type Readable[K comparable, V any] interface {
 	Get(K) (V, bool)
-	Has(K) bool
 	GetBatch([]K) []V
+	Has(K) bool
 	Len() uint64
 	Size() uint64
 }
 
 type Writeable[K comparable, V any] interface {
 	Set(K, V)
-	Delete(K)
 	SetBatch([]K, []V)
+	Delete(K)
 	DeleteBatch([]K)
 }
 
@@ -54,4 +54,12 @@ type PersistentStorage[K comparable, T any] interface {
 	GetBatch([]K) ([]T, error)
 	SetBatch([]K, []T) error
 	Query(K, func(K, T) bool) ([]K, []T, error)
+}
+
+// ReadOnlyStore defines the interface for a read-only storage source.
+type ReadOnlyStore[K comparable, T any] interface {
+	Has(K) bool                    // Check if the key exists in the source, which can be a cache or a storage.
+	ReadBackend(K, T) (any, error) // Get from persistent storage directly.
+	GetAs(K, T) (any, error)       // Get from cache or persistent storage, with cache lookup first.
+	Preload([]byte) any
 }
