@@ -46,6 +46,10 @@ func (db *BadgerDB) Get(key string) (value []byte, err error) {
 	return
 }
 
+func (db *BadgerDB) GetAs(key string, _ []byte) (any, error) {
+	return db.Get(key)
+}
+
 func (db *BadgerDB) Has(key string) bool {
 	err := db.impl.View(func(txn *badger.Txn) error {
 		_, err := txn.Get([]byte(key))

@@ -21,15 +21,20 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"math/rand"
-	"os"
 	"path/filepath"
+	"testing"
 	"time"
 )
 
-var (
-	TEST_ROOT_PATH   = filepath.Join(os.TempDir(), "badgerdb")
-	TEST_BACKUP_PATH = filepath.Join(os.TempDir(), "badgerdb-back")
-)
+func tempBadgerPath(tb testing.TB) string {
+	tb.Helper()
+	return filepath.Join(tb.TempDir(), "badger")
+}
+
+func tempParaBadgerRoot(tb testing.TB) string {
+	tb.Helper()
+	return filepath.Join(tb.TempDir(), "badger-shard-")
+}
 
 var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 

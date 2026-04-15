@@ -19,16 +19,18 @@ package badgerdb
 
 import (
 	"bytes"
-	"os"
 	"testing"
 
 	common "github.com/arcology-network/common-lib/common"
 )
 
 func TestParaBadgerDBFunctions(t *testing.T) {
-	os.RemoveAll(TEST_ROOT_PATH)
-
-	db := NewParaBadgerDB("./badger-test/", common.Remainder)
+	db := NewParaBadgerDB(tempParaBadgerRoot(t), common.Remainder)
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("close db: %v", err)
+		}
+	})
 
 	data := [][]byte{
 		{1, 2, 3},
@@ -93,5 +95,4 @@ func TestParaBadgerDBFunctions(t *testing.T) {
 	queryKeys, queryValues, _ := db.Query("a", nil)
 	t.Log(queryKeys)
 	t.Log(queryValues)
-	os.RemoveAll("./badger-test/")
 }

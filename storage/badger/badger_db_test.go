@@ -19,12 +19,17 @@ package badgerdb
 
 import (
 	"bytes"
-	"os"
 	"testing"
 )
 
 func TestBadgerDBFunctions(t *testing.T) {
-	db := NewBadgerDB(TEST_ROOT_PATH)
+	db := NewBadgerDB(tempBadgerPath(t))
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("close db: %v", err)
+		}
+	})
+
 	if err := db.SetBatch([]string{
 		"a01",
 		"a02",
@@ -80,9 +85,4 @@ func TestBadgerDBFunctions(t *testing.T) {
 	keys, values, _ := db.Query("a", nil)
 	t.Log(keys)
 	t.Log(values)
-
-	err := os.RemoveAll(TEST_ROOT_PATH)
-	if err != nil {
-		t.Log(keys)
-	}
 }

@@ -30,7 +30,7 @@ type Readable[K comparable, V any] interface {
 	Size() uint64
 }
 
-type Writeable[K comparable, V any] interface {
+type WriteableStore[K comparable, V any] interface {
 	Set(K, V)
 	SetBatch([]K, []V)
 	Delete(K)
@@ -39,7 +39,7 @@ type Writeable[K comparable, V any] interface {
 
 type ReadWriteStore[K comparable, V any] interface {
 	Readable[K, V]
-	Writeable[K, V]
+	WriteableStore[K, V]
 }
 
 type KVStore[K comparable, V any] interface {
@@ -54,6 +54,7 @@ type PersistentStorage[K comparable, T any] interface {
 	GetBatch([]K) ([]T, error)
 	SetBatch([]K, []T) error
 	Query(K, func(K, T) bool) ([]K, []T, error)
+	GetAs(K, T) (any, error)
 }
 
 // ReadOnlyStore defines the interface for a read-only storage source.

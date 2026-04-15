@@ -55,6 +55,10 @@ func (this *MemoryDB) Get(key string) ([]byte, error) {
 	return v.([]byte), nil
 }
 
+func (this *MemoryDB) GetAs(key string, _ []byte) (any, error) {
+	return this.Get(key)
+}
+
 func (this *MemoryDB) Has(key string) bool {
 	v, ok := this.db.Get(key)
 	return ok && v != nil

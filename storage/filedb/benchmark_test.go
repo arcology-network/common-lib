@@ -25,11 +25,14 @@ import (
 )
 
 func BenchmarkFileDBBatchWrite(b *testing.B) {
-	db, _ = NewFileDB(TEST_ROOT_PATH, 64, 2)
+	root := testFileDBRoot(b)
+	db, _ = NewFileDB(root, 64, 2)
 
 	keys, values := setup()
 	timer("setup", func() {
-		db.SetBatch(keys, values)
+		if err := db.SetBatch(keys, values); err != nil {
+			b.Fatal(err)
+		}
 	})
 
 	n := 10
@@ -37,7 +40,9 @@ func BenchmarkFileDBBatchWrite(b *testing.B) {
 	for i := 0; i < n; i++ {
 		keys, values := newBlock()
 		sum += timer("commit", func() {
-			db.SetBatch(keys, values)
+			if err := db.SetBatch(keys, values); err != nil {
+				b.Fatal(err)
+			}
 		})
 	}
 	b.Logf("average batch write: %v", sum/time.Duration(n))
@@ -59,7 +64,8 @@ func BenchmarkFileDBBatchWrite(b *testing.B) {
 }
 
 func BenchmarkFileDBQuery(b *testing.B) {
-	db, _ := NewFileDB(TEST_ROOT_PATH, 128, 2)
+	root := testFileDBRoot(b)
+	db, _ := NewFileDB(root, 128, 2)
 
 	total := 0
 	for i := 0; i < 256; i++ {
