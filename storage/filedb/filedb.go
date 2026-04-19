@@ -256,6 +256,10 @@ func (this *FileDB) Get(key string) ([]byte, error) {
 	return this.readFile(key)
 }
 
+func (this *FileDB) GetAs(key string, v []byte) (any, error) {
+	return this.Get(key)
+}
+
 func (this *FileDB) Has(key string) bool {
 	file := this.locateFile(key)
 	keys, _, err := this.loadFile(file)

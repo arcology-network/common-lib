@@ -39,12 +39,12 @@ func (this *Stat) SetLoaded(version uint64) {
 	this.firstLoaded = version
 }
 
-type Entry[T any] struct {
-	Value T
+type entry[T any] struct {
+	value T
 	Stat
 }
 
-func (this *Entry[T]) Size() uint64 {
+func (this *entry[T]) Size() uint64 {
 	if this == nil {
 		return 0
 	}
@@ -53,7 +53,7 @@ func (this *Entry[T]) Size() uint64 {
 		return this.sizeInMem
 	}
 
-	sized, ok := any(this.Value).(interface{ MemSize() uint64 })
+	sized, ok := any(this.value).(interface{ MemSize() uint64 })
 	if !ok {
 		return 0
 	}
@@ -63,10 +63,10 @@ func (this *Entry[T]) Size() uint64 {
 }
 
 type CachedKVStore[K comparable, T any] struct {
-	*mapi.ConcurrentMap[K, *Entry[T]]
+	cache            *mapi.ConcurrentMap[K, *entry[T]]
 	backend          stgintf.KVStore[K, T]
 	currentLayerOnly bool
-	cachePolicy      *CachePolicy[*Entry[T]]
+	cachePolicy      *CachePolicy[*entry[T]]
 	sizeOf           func(T) uint64
 	version          atomic.Uint64
 }
@@ -77,9 +77,9 @@ func NewCachedKVStore[K comparable, T any](
 	sizeOf func(T) uint64,
 ) *CachedKVStore[K, T] {
 	store := &CachedKVStore[K, T]{
-		ConcurrentMap: mapi.NewConcurrentMap(
+		cache: mapi.NewConcurrentMap(
 			4096,
-			func(v *Entry[T]) bool { return v == nil },
+			func(v *entry[T]) bool { return v == nil },
 			func(k K) uint64 { return uint64(xxhash.Sum64String(fmt.Sprintf("%v", k))) },
 		),
 		backend: backend,
@@ -99,20 +99,20 @@ func (this *CachedKVStore[K, T]) UpdateVersion(version uint64) {
 	this.version.Store(version)
 }
 
-func (this *CachedKVStore[K, T]) entrySize(entry *Entry[T]) uint64 {
+func (this *CachedKVStore[K, T]) entrySize(entry *entry[T]) uint64 {
 	if entry == nil {
 		return 0
 	}
 
 	if this != nil && this.sizeOf != nil {
-		return this.sizeOf(entry.Value)
+		return this.sizeOf(entry.value)
 	}
 
 	return entry.Size()
 }
 
-func (this *CachedKVStore[K, T]) wrap(value T) *Entry[T] {
-	entry := &Entry[T]{Value: value}
+func (this *CachedKVStore[K, T]) wrap(value T) *entry[T] {
+	entry := &entry[T]{value: value}
 	entry.firstLoaded = this.version.Load()
 	entry.visits++
 	return entry
@@ -132,59 +132,58 @@ func isNil[T any](value T) bool {
 	}
 }
 
-func (this *CachedKVStore[K, T]) Get(key K) (*Entry[T], bool) {
-	if v, ok := this.ConcurrentMap.Get(key); ok {
+func (this *CachedKVStore[K, T]) Get(key K) (T, bool) {
+	if v, ok := this.cache.Get(key); ok {
 		if v != nil {
 			v.visits++
+			return v.value, true
 		}
-		return v, v != nil
+		var zero T
+		return zero, false
 	}
 
 	if this.LocalOnly() || this.backend == nil {
-		return nil, false
+		var zero T
+		return zero, false
 	}
 
 	v, ok := this.backend.Get(key)
 	if !ok || isNil(v) {
-		return nil, false
+		var zero T
+		return zero, false
 	}
 
 	entry := this.wrap(v)
 	if this.cachePolicy.Admit(this.cachePolicy.ValueSize(entry)) {
-		this.ConcurrentMap.Set(key, entry)
+		this.cache.Set(key, entry)
 	}
-	return entry, true
+	return entry.value, true
 }
 
-func (this *CachedKVStore[K, T]) Set(key K, value *Entry[T]) {
-	origin, ok := this.ConcurrentMap.Get(key)
+func (this *CachedKVStore[K, T]) Set(key K, value T) {
+	origin, ok := this.cache.Get(key)
 	oldSize := uint64(0)
 	if ok && origin != nil {
 		oldSize = this.cachePolicy.ValueSize(origin)
 	}
 
-	if value == nil {
+	if isNil(value) {
 		this.cachePolicy.Remove(oldSize)
-		this.ConcurrentMap.Set(key, nil)
+		this.cache.Set(key, nil)
 		return
 	}
-	if origin != nil && origin != value {
-		value.visits += origin.visits
-		if value.firstLoaded == 0 {
-			value.firstLoaded = origin.firstLoaded
-		}
+	entry := this.wrap(value)
+	if origin != nil {
+		entry.visits += origin.visits
+		entry.firstLoaded = origin.firstLoaded
 	}
-	if origin == nil && value.firstLoaded == 0 {
-		value.firstLoaded = this.version.Load()
-	}
-	value.visits++
 
-	this.cachePolicy.Track(oldSize, this.cachePolicy.ValueSize(value))
-	this.ConcurrentMap.Set(key, value)
+	this.cachePolicy.Track(oldSize, this.cachePolicy.ValueSize(entry))
+	this.cache.Set(key, entry)
 }
 
 func (this *CachedKVStore[K, T]) Has(key K) bool {
-	if v, ok := this.ConcurrentMap.Get(key); ok {
+	if v, ok := this.cache.Get(key); ok {
 		return v != nil
 	}
 
@@ -194,20 +193,20 @@ func (this *CachedKVStore[K, T]) Has(key K) bool {
 	return this.backend.Has(key)
 }
 
-func (this *CachedKVStore[K, T]) GetBatch(keys []K) []*Entry[T] {
+func (this *CachedKVStore[K, T]) GetBatch(keys []K) []T {
 	if len(keys) == 0 {
 		return nil
 	}
 
-	values := make([]*Entry[T], len(keys))
+	values := make([]T, len(keys))
 	missingIdx := make([]int, 0, len(keys))
 	missingKeys := make([]K, 0, len(keys))
 
 	for i, key := range keys {
-		if v, ok := this.ConcurrentMap.Get(key); ok {
+		if v, ok := this.cache.Get(key); ok {
 			if v != nil {
 				v.visits++
-				values[i] = v
+				values[i] = v.value
 			}
 			continue
 		}
@@ -231,50 +230,55 @@ func (this *CachedKVStore[K, T]) GetBatch(keys []K) []*Entry[T] {
 		}
 
 		entry := this.wrap(fetched[i])
-		values[missingIdx[i]] = entry
+		values[missingIdx[i]] = entry.value
 		if this.cachePolicy.Admit(this.cachePolicy.ValueSize(entry)) {
-			this.ConcurrentMap.Set(missingKeys[i], entry)
+			this.cache.Set(missingKeys[i], entry)
 		}
 	}
 	return values
 }
 
-func (this *CachedKVStore[K, T]) SetBatch(keys []K, values []*Entry[T]) {
+func (this *CachedKVStore[K, T]) SetBatch(keys []K, values []T) {
 	for i := 0; i < len(keys); i++ {
-		origin, ok := this.ConcurrentMap.Get(keys[i])
+		origin, ok := this.cache.Get(keys[i])
 		oldSize := uint64(0)
 		if ok && origin != nil {
 			oldSize = this.cachePolicy.ValueSize(origin)
 		}
 
-		if values[i] == nil {
+		if isNil(values[i]) {
 			this.cachePolicy.Remove(oldSize)
-			this.ConcurrentMap.Set(keys[i], nil)
+			this.cache.Set(keys[i], nil)
 			continue
 		}
-		if origin != nil && origin != values[i] {
-			values[i].visits += origin.visits
-			if values[i].firstLoaded == 0 {
-				values[i].firstLoaded = origin.firstLoaded
-			}
-		}
-		if origin == nil && values[i].firstLoaded == 0 {
-			values[i].firstLoaded = this.version.Load()
-		}
-		values[i].visits++
 
-		this.cachePolicy.Track(oldSize, this.cachePolicy.ValueSize(values[i]))
-		this.ConcurrentMap.Set(keys[i], values[i])
+		entry := this.wrap(values[i])
+		if origin != nil {
+			entry.visits += origin.visits
+			entry.firstLoaded = origin.firstLoaded
+		}
+
+		this.cachePolicy.Track(oldSize, this.cachePolicy.ValueSize(entry))
+		this.cache.Set(keys[i], entry)
 	}
 }
 
+func (this *CachedKVStore[K, T]) deleteFromCache(key K) {
+	if origin, ok := this.cache.Get(key); ok && origin != nil {
+		this.cachePolicy.Remove(this.cachePolicy.ValueSize(origin))
+	}
+	this.cache.Set(key, nil)
+}
+
 func (this *CachedKVStore[K, T]) Delete(key K) error {
-	this.Set(key, nil)
+	this.deleteFromCache(key)
 	return nil
 }
 
 func (this *CachedKVStore[K, T]) DeleteBatch(keys []K) error {
-	this.SetBatch(keys, make([]*Entry[T], len(keys)))
+	for _, key := range keys {
+		this.deleteFromCache(key)
+	}
 	return nil
 }
 
@@ -282,7 +286,7 @@ func (this *CachedKVStore[K, T]) Len() uint64 {
 	if this.backend != nil {
 		return this.backend.Len()
 	}
-	return this.ConcurrentMap.Length()
+	return this.cache.Length()
 }
 
 func (this *CachedKVStore[K, T]) Size() uint64 {
@@ -294,7 +298,7 @@ func (this *CachedKVStore[K, T]) Evict() {
 		return
 	}
 
-	keys, vals := this.ConcurrentMap.KVs()
+	keys, vals := this.cache.KVs()
 
 	for i, key := range keys {
 		if !this.cachePolicy.NeedEviction() {
@@ -305,21 +309,23 @@ func (this *CachedKVStore[K, T]) Evict() {
 		}
 
 		this.cachePolicy.Remove(this.cachePolicy.ValueSize(vals[i]))
-		this.ConcurrentMap.Set(key, nil)
+		this.cache.Set(key, nil)
 	}
 }
 
-func (this *CachedKVStore[K, T]) Policy() *CachePolicy[*Entry[T]]  { return this.cachePolicy }
-func (this *CachedKVStore[K, T]) Profile() *CachePolicy[*Entry[T]] { return this.cachePolicy }
+func (this *CachedKVStore[K, T]) Clear() { this.cache.Clear() }
+
+func (this *CachedKVStore[K, T]) Policy() *CachePolicy[*entry[T]]  { return this.cachePolicy }
+func (this *CachedKVStore[K, T]) Profile() *CachePolicy[*entry[T]] { return this.cachePolicy }
 
 func (this *CachedKVStore[K, T]) CacheChecksum() [32]byte {
-	encoders := func(k K, v *Entry[T]) ([]byte, []byte) {
+	encoders := func(k K, v *entry[T]) ([]byte, []byte) {
 		key := []byte(fmt.Sprintf("%v", k))
 		if v == nil {
 			return key, nil
 		}
 
-		encoder, ok := any(v.Value).(interface{ Encode() []byte })
+		encoder, ok := any(v.value).(interface{ Encode() []byte })
 		if !ok {
 			return key, nil
 		}
@@ -329,19 +335,20 @@ func (this *CachedKVStore[K, T]) CacheChecksum() [32]byte {
 	less := func(k0, k1 K) bool {
 		return fmt.Sprintf("%v", k0) < fmt.Sprintf("%v", k1)
 	}
-	return this.ConcurrentMap.Checksum(less, encoders)
+	return this.cache.Checksum(less, encoders)
 }
 
-func (this *CachedKVStore[K, T]) GetRaw(key K) (*Entry[T], bool) {
-	v, ok := this.ConcurrentMap.Get(key)
+func (this *CachedKVStore[K, T]) getRaw(key K) (T, bool) {
+	v, ok := this.cache.Get(key)
 	if !ok || v == nil {
-		return nil, false
+		var zero T
+		return zero, false
 	}
-	return v, true
+	return v.value, true
 }
 
 func (this *CachedKVStore[K, T]) Print() {
-	keys, vals := this.ConcurrentMap.KVs()
+	keys, vals := this.cache.KVs()
 	slice.SortBy1st(keys, vals, func(k0, k1 K) bool {
 		return fmt.Sprintf("%v", k0) < fmt.Sprintf("%v", k1)
 	})
@@ -350,7 +357,7 @@ func (this *CachedKVStore[K, T]) Print() {
 
 	for i, k := range keys {
 		println(k, "  =    ")
-		printer, ok := any(vals[i].Value).(interface{ Print() })
+		printer, ok := any(vals[i].value).(interface{ Print() })
 		if ok {
 			printer.Print()
 		}

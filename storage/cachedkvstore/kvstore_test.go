@@ -103,16 +103,6 @@ func newStringValue(v string) crdtcommon.CRDT {
 	return noncommutative.NewString(v)
 }
 
-func newProfiledString(v string) *Entry[crdtcommon.CRDT] {
-	value := newStringValue(v)
-	return &Entry[crdtcommon.CRDT]{
-		Value: value,
-		Stat: Stat{
-			sizeInMem: value.MemSize(),
-		},
-	}
-}
-
 func newBenchmarkBackend(entryCount int) (*testKVStore[string, crdtcommon.CRDT], []string, []crdtcommon.CRDT) {
 	backend := newTestKVStore[string, crdtcommon.CRDT]()
 	keys := make([]string, entryCount)
@@ -137,7 +127,7 @@ func TestStoreCachesReads(t *testing.T) {
 		t.Fatalf("expected value from backend on first read")
 	}
 
-	cached, ok := store.ConcurrentMap.Get("alpha")
+	cached, ok := store.cache.Get("alpha")
 	if !ok || cached == nil {
 		t.Fatalf("expected first read to promote value into first layer")
 	}
@@ -146,7 +136,7 @@ func TestStoreCachesReads(t *testing.T) {
 	if !ok || second == nil {
 		t.Fatalf("expected cached value on second read")
 	}
-	if second != cached {
+	if second != cached.value {
 		t.Fatalf("expected second read to return the cached value")
 	}
 }
@@ -161,7 +151,7 @@ func TestStoreSkipsCachingOversizedEntry(t *testing.T) {
 	if !ok || first == nil {
 		t.Fatalf("expected oversized value from backend on first read")
 	}
-	if cached, ok := store.ConcurrentMap.Get("alpha"); ok && cached != nil {
+	if cached, ok := store.cache.Get("alpha"); ok && cached != nil {
 		t.Fatalf("expected oversized entry to stay out of the first layer")
 	}
 
@@ -169,7 +159,7 @@ func TestStoreSkipsCachingOversizedEntry(t *testing.T) {
 	if !ok || second == nil {
 		t.Fatalf("expected oversized value from backend on second read")
 	}
-	if cached, ok := store.ConcurrentMap.Get("alpha"); ok && cached != nil {
+	if cached, ok := store.cache.Get("alpha"); ok && cached != nil {
 		t.Fatalf("expected oversized entry not to be cached after repeated reads")
 	}
 }
@@ -193,7 +183,7 @@ func TestStoreLayeredReadLeavesBackendUntouched(t *testing.T) {
 		t.Fatalf("expected repeated read to return the cached entry")
 	}
 
-	local := newProfiledString("two")
+	local := newStringValue("two")
 	store.Set("beta", local)
 	if !store.Has("beta") {
 		t.Fatalf("expected local write to stay in first layer")
@@ -208,10 +198,13 @@ func TestStoreLayeredReadLeavesBackendUntouched(t *testing.T) {
 
 func TestStoreTracksVisitsGenerically(t *testing.T) {
 	store := NewCachedKVStore[string, crdtcommon.CRDT](nil, 4096, nil)
-	alpha := newProfiledString("one")
 	store.UpdateVersion(11)
 
-	store.Set("alpha", alpha)
+	store.Set("alpha", newStringValue("one"))
+	alpha, ok := store.cache.Get("alpha")
+	if !ok || alpha == nil {
+		t.Fatalf("expected set to populate cache")
+	}
 	if alpha.visits != 1 {
 		t.Fatalf("expected set to increment visits, got %d", alpha.visits)
 	}
@@ -223,12 +216,17 @@ func TestStoreTracksVisitsGenerically(t *testing.T) {
 	if !ok || value == nil {
 		t.Fatalf("expected get to return cached value")
 	}
-	if value.visits != 2 {
-		t.Fatalf("expected get to increment visits, got %d", value.visits)
+	alpha, _ = store.cache.Get("alpha")
+	if alpha.visits != 2 {
+		t.Fatalf("expected get to increment visits, got %d", alpha.visits)
 	}
 
-	replacement := newProfiledString("two")
-	store.Set("alpha", replacement)
+	replacementValue := newStringValue("two")
+	store.Set("alpha", replacementValue)
+	replacement, ok := store.cache.Get("alpha")
+	if !ok || replacement == nil {
+		t.Fatalf("expected replacement to stay cached")
+	}
 	if replacement.visits != 3 {
 		t.Fatalf("expected replacement to inherit and increment visits, got %d", replacement.visits)
 	}
@@ -240,13 +238,17 @@ func TestStoreTracksVisitsGenerically(t *testing.T) {
 	if len(batch) != 1 || batch[0] == nil {
 		t.Fatalf("expected batch get to return cached value")
 	}
-	if batch[0].visits != 4 {
-		t.Fatalf("expected batch get to increment visits, got %d", batch[0].visits)
+	replacement, _ = store.cache.Get("alpha")
+	if replacement.visits != 4 {
+		t.Fatalf("expected batch get to increment visits, got %d", replacement.visits)
 	}
 
-	beta := newProfiledString("three")
 	store.UpdateVersion(21)
-	store.SetBatch([]string{"beta"}, []*Entry[crdtcommon.CRDT]{beta})
+	store.SetBatch([]string{"beta"}, []crdtcommon.CRDT{newStringValue("three")})
+	beta, ok := store.cache.Get("beta")
+	if !ok || beta == nil {
+		t.Fatalf("expected batch set to update cache entry")
+	}
 	if beta.visits != 1 {
 		t.Fatalf("expected batch set to increment visits, got %d", beta.visits)
 	}
@@ -256,7 +258,7 @@ func TestStoreTracksVisitsGenerically(t *testing.T) {
 	if beta.firstLoaded == alpha.firstLoaded {
 		t.Fatalf("expected distinct version-derived firstLoaded values for distinct entries")
 	}
-	if cached, ok := store.ConcurrentMap.Get("beta"); !ok || cached != beta {
+	if cached, ok := store.cache.Get("beta"); !ok || cached != beta {
 		t.Fatalf("expected batch set to update cache entry")
 	}
 
@@ -269,10 +271,14 @@ func TestStoreTracksVisitsGenerically(t *testing.T) {
 	if !ok || fetched == nil {
 		t.Fatalf("expected backend get to succeed")
 	}
-	if fetched.visits != 1 {
-		t.Fatalf("expected backend get to initialize visits, got %d", fetched.visits)
+	fetchedEntry, ok := layered.cache.Get("backend")
+	if !ok || fetchedEntry == nil {
+		t.Fatalf("expected backend get to populate cache")
 	}
-	if fetched.firstLoaded != 33 {
+	if fetchedEntry.visits != 1 {
+		t.Fatalf("expected backend get to initialize visits, got %d", fetchedEntry.visits)
+	}
+	if fetchedEntry.firstLoaded != 33 {
 		t.Fatalf("expected backend get to assign version-derived firstLoaded")
 	}
 
@@ -280,8 +286,9 @@ func TestStoreTracksVisitsGenerically(t *testing.T) {
 	if !ok || again != fetched {
 		t.Fatalf("expected backend value to be cached after first read")
 	}
-	if again.visits != 2 {
-		t.Fatalf("expected cached backend value to increment visits, got %d", again.visits)
+	fetchedEntry, _ = layered.cache.Get("backend")
+	if fetchedEntry.visits != 2 {
+		t.Fatalf("expected cached backend value to increment visits, got %d", fetchedEntry.visits)
 	}
 }
 
@@ -289,13 +296,13 @@ func TestStoreEvictsWhenFull(t *testing.T) {
 	backend := newTestKVStore[string, crdtcommon.CRDT]()
 	store := NewCachedKVStore[string, crdtcommon.CRDT](backend, 1024, func(v crdtcommon.CRDT) uint64 { return 700 })
 
-	alpha := newProfiledString("one")
-	beta := newProfiledString("two")
+	alpha := newStringValue("one")
+	beta := newStringValue("two")
 
 	store.Set("alpha", alpha)
 	store.Set("beta", beta)
 
-	if store.ConcurrentMap.Length() != 2 {
+	if store.cache.Length() != 2 {
 		t.Fatalf("expected both entries to stay in the first layer before eviction")
 	}
 
@@ -307,7 +314,7 @@ func TestStoreEvictsWhenFull(t *testing.T) {
 	if store.Size() > 1024 {
 		t.Fatalf("expected eviction to keep cache within cap, got %d", store.Size())
 	}
-	if store.ConcurrentMap.Length() >= 2 {
+	if store.cache.Length() >= 2 {
 		t.Fatalf("expected eviction to remove at least one cached entry")
 	}
 }
@@ -322,14 +329,14 @@ func TestStoreBatchAndDelete(t *testing.T) {
 	if len(values) != 3 || values[0] == nil || values[1] == nil || values[2] != nil {
 		t.Fatalf("unexpected batch result: %#v", values)
 	}
-	if cached, ok := store.ConcurrentMap.Get("alpha"); !ok || cached == nil {
+	if cached, ok := store.cache.Get("alpha"); !ok || cached == nil {
 		t.Fatalf("expected batch read to populate cache for alpha")
 	}
-	if cached, ok := store.ConcurrentMap.Get("beta"); !ok || cached == nil {
+	if cached, ok := store.cache.Get("beta"); !ok || cached == nil {
 		t.Fatalf("expected batch read to populate cache for beta")
 	}
 
-	gamma := newProfiledString("three")
+	gamma := newStringValue("three")
 	store.Set("gamma", gamma)
 	if backend.Has("gamma") || !store.Has("gamma") {
 		t.Fatalf("expected set to stay local")
@@ -348,13 +355,13 @@ func TestStoreBatchAndDelete(t *testing.T) {
 	if !store.Has("alpha") || !store.Has("beta") {
 		t.Fatalf("expected backend-backed keys to surface again after cache delete")
 	}
-	if _, ok := store.GetRaw("alpha"); ok {
+	if _, ok := store.getRaw("alpha"); ok {
 		t.Fatalf("expected delete to evict alpha from first layer")
 	}
-	if _, ok := store.GetRaw("beta"); ok {
+	if _, ok := store.getRaw("beta"); ok {
 		t.Fatalf("expected delete to evict beta from first layer")
 	}
-	if _, ok := store.GetRaw("gamma"); ok {
+	if _, ok := store.getRaw("gamma"); ok {
 		t.Fatalf("expected delete to evict gamma from first layer")
 	}
 	if backend.Len() != 2 {
@@ -374,7 +381,7 @@ func TestStoreBatchAndDelete(t *testing.T) {
 
 func TestStoreCurrentLayerOnlySkipsBackend(t *testing.T) {
 	localCache := NewCachedKVStore[string, crdtcommon.CRDT](nil, 1024, nil)
-	localCache.Set("cached", newProfiledString("value"))
+	localCache.Set("cached", newStringValue("value"))
 	if value, ok := localCache.Get("cached"); !ok || value == nil {
 		t.Fatalf("expected local store read to return cached value")
 	}
@@ -397,7 +404,7 @@ func TestStoreCurrentLayerOnlySkipsBackend(t *testing.T) {
 		t.Fatalf("expected has to skip backend in current-layer-only mode")
 	}
 
-	store.Set("alpha", newProfiledString("local"))
+	store.Set("alpha", newStringValue("local"))
 	if value, ok := store.Get("alpha"); !ok || value == nil {
 		t.Fatalf("expected current-layer-only get to return cached value")
 	}
@@ -405,7 +412,7 @@ func TestStoreCurrentLayerOnlySkipsBackend(t *testing.T) {
 
 func TestStoreSetGet1MillionEntries(t *testing.T) {
 	const entryCount = 1_000_000
-	sampleSize := newProfiledString("value").Size()
+	sampleSize := newStringValue("value").MemSize()
 
 	t0 := time.Now()
 	backend, keys, _ := newBenchmarkBackend(entryCount)
@@ -429,7 +436,7 @@ func TestStoreSetGet1MillionEntries(t *testing.T) {
 
 func TestStoreSetGet1MillionEntries1024InCache(t *testing.T) {
 	const entryCount = 1_000_000
-	sampleSize := newProfiledString("value").Size()
+	sampleSize := newStringValue("value").MemSize()
 
 	t0 := time.Now()
 	backend, keys, _ := newBenchmarkBackend(entryCount)
@@ -448,7 +455,7 @@ func TestStoreSetGet1MillionEntries1024InCache(t *testing.T) {
 		}
 	}
 
-	store.Set("committed", newProfiledString("committed"))
+	store.Set("committed", newStringValue("committed"))
 	if backend.Has("committed") {
 		t.Fatalf("expected backend to remain unchanged after local set")
 	}
@@ -458,7 +465,7 @@ func TestStoreSetGet1MillionEntries1024InCache(t *testing.T) {
 
 func TestStoreSetGet1MillionEntries2048InCache(t *testing.T) {
 	const entryCount = 1_000_000
-	sampleSize := newProfiledString("value").Size()
+	sampleSize := newStringValue("value").MemSize()
 
 	t0 := time.Now()
 	backend, keys, _ := newBenchmarkBackend(entryCount)
@@ -477,7 +484,7 @@ func TestStoreSetGet1MillionEntries2048InCache(t *testing.T) {
 		}
 	}
 
-	store.Set("committed", newProfiledString("committed"))
+	store.Set("committed", newStringValue("committed"))
 	if backend.Has("committed") {
 		t.Fatalf("expected backend to remain unchanged after local set")
 	}
@@ -487,7 +494,7 @@ func TestStoreSetGet1MillionEntries2048InCache(t *testing.T) {
 
 func TestStoreSetGet1MillionEntriesAllInCache(t *testing.T) {
 	const entryCount = 1_000_000
-	sampleSize := newProfiledString("value").Size()
+	sampleSize := newStringValue("value").MemSize()
 
 	t0 := time.Now()
 	backend, keys, _ := newBenchmarkBackend(entryCount)
@@ -507,7 +514,7 @@ func TestStoreSetGet1MillionEntriesAllInCache(t *testing.T) {
 		}
 	}
 
-	store.Set("committed", newProfiledString("committed"))
+	store.Set("committed", newStringValue("committed"))
 	if backend.Has("committed") {
 		t.Fatalf("expected backend to remain unchanged after local set")
 	}
