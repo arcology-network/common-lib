@@ -52,11 +52,11 @@ func TestFileDB(t *testing.T) {
 		t.Error(err)
 	}
 
-	if v, _ := fileDB.Get(keys[0]); !bytes.Equal(v, values[0]) {
+	if v, err := fileDB.Get(keys[0]); err != nil || !bytes.Equal(v.([]byte), values[0]) {
 		t.Error("Error")
 	}
 
-	if v, _ := fileDB.Get(keys[1]); !bytes.Equal(v, values[1]) {
+	if v, err := fileDB.Get(keys[1]); err != nil || !bytes.Equal(v.([]byte), values[1]) {
 		t.Error("Error")
 	}
 
@@ -65,7 +65,7 @@ func TestFileDB(t *testing.T) {
 		t.Error(err)
 	}
 
-	if v, _ := fileDB.Get(keys[0]); v != nil {
+	if v, err := fileDB.Get(keys[0]); err == nil || v != nil {
 		t.Error("Error: Should have been deleted already !")
 	}
 
@@ -73,7 +73,7 @@ func TestFileDB(t *testing.T) {
 		t.Error(err)
 	}
 
-	if v, _ := fileDB.Get(keys[1]); v != nil {
+	if v, err := fileDB.Get(keys[1]); err == nil || v != nil {
 		t.Error("Error: Should have been deleted already !")
 	}
 
@@ -102,15 +102,15 @@ func TestFileDBBatch(t *testing.T) {
 		t.Error(err)
 	}
 
-	if v, _ := fileDB.Get(keys[0]); !bytes.Equal(v, values[0]) {
+	if v, err := fileDB.Get(keys[0]); err != nil || !bytes.Equal(v.([]byte), values[0]) {
 		t.Error("Error")
 	}
 
-	if v, _ := fileDB.Get(keys[1]); !bytes.Equal(v, values[1]) {
+	if v, err := fileDB.Get(keys[1]); err != nil || !bytes.Equal(v.([]byte), values[1]) {
 		t.Error("Error")
 	}
 
-	if v, _ := fileDB.GetBatch(keys); len(v) != 2 || !bytes.Equal(v[0], values[0]) || !bytes.Equal(v[1], values[1]) {
+	if v, errs := fileDB.GetBatch(keys); errs != nil || len(v) != 2 || !bytes.Equal(v[0].([]byte), values[0]) || !bytes.Equal(v[1].([]byte), values[1]) {
 		t.Error("Error")
 	}
 }
@@ -129,7 +129,10 @@ func TestFileDBDeleteOps(t *testing.T) {
 		t.Error(err)
 	}
 
-	if !fileDB.Has(keys[0]) || !fileDB.Has(keys[1]) || !fileDB.Has(keys[2]) {
+	h0 := fileDB.Has(keys[0])
+	h1 := fileDB.Has(keys[1])
+	h2 := fileDB.Has(keys[2])
+	if !h0 || !h1 || !h2 {
 		t.Fatal("expected keys to exist")
 	}
 
@@ -137,15 +140,17 @@ func TestFileDBDeleteOps(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if fileDB.Has(keys[0]) {
+	h0 = fileDB.Has(keys[0])
+	if h0 {
 		t.Fatal("expected key to be deleted")
 	}
 
-	err = fileDB.DeleteBatch(keys[1:])
-	if err != nil {
-		t.Fatal(err)
+	if errs := fileDB.DeleteBatch(keys[1:]); errs != nil {
+		t.Fatal(errs)
 	}
-	if fileDB.Has(keys[1]) || fileDB.Has(keys[2]) {
+	h1 = fileDB.Has(keys[1])
+	h2 = fileDB.Has(keys[2])
+	if h1 || h2 {
 		t.Fatal("expected batch delete to remove remaining keys")
 	}
 }
@@ -173,19 +178,19 @@ func TestFileDbBatch(t *testing.T) {
 		t.Error(err)
 	}
 
-	if retrived, err := fileDB.GetBatch(keys); err == nil {
+	if retrived, errs := fileDB.GetBatch(keys); errs == nil {
 		for i := 0; i < len(keys); i++ {
-			if !bytes.Equal(retrived[i], values[i]) {
+			if !bytes.Equal(retrived[i].([]byte), values[i]) {
 				t.Error("Error: Mismatch !!!")
 			}
 		}
 	} else {
-		t.Error(err)
+		t.Error(errs)
 	}
 
 	for i := 0; i < len(keys); i++ {
 		if retrived, err := fileDB.Get(keys[i]); err == nil {
-			if !bytes.Equal(retrived, values[i]) {
+			if !bytes.Equal(retrived.([]byte), values[i]) {
 				t.Error("Error: Mismatch !!!")
 			}
 		}
@@ -333,8 +338,8 @@ func BenchmarkFileDbBatch(b *testing.B) {
 	fmt.Println("SetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 
 	t0 = time.Now()
-	if _, err := fileDB.GetBatch(keys); err != nil {
-		b.Error(err)
+	if _, errs := fileDB.GetBatch(keys); errs != nil {
+		b.Error(errs)
 	}
 	fmt.Println("GetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 

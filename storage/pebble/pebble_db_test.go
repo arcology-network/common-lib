@@ -18,157 +18,96 @@
 package pebbledb
 
 import (
-	"strconv"
-	"testing"
+"path/filepath"
+"testing"
 )
 
+func tempPebblePath(tb testing.TB) string {
+tb.Helper()
+return filepath.Join(tb.TempDir(), "pebble")
+}
+
+func tempParaPebbleRoot(tb testing.TB) string {
+tb.Helper()
+return filepath.Join(tb.TempDir(), "pebble-shards")
+}
+
 func TestPebbleDBFunctions(t *testing.T) {
-	db := NewPebbleDB[string, uint64](tempPebblePath(t))
-	t.Cleanup(func() {
-		if err := db.Close(); err != nil {
-			t.Errorf("close db: %v", err)
-		}
-	})
+db, err := NewPebbleDB(tempPebblePath(t))
+if err != nil {
+t.Fatal(err)
+}
+t.Cleanup(func() {
+if err := db.Close(); err != nil {
+t.Errorf("close db: %v", err)
+}
+})
 
-	if err := db.SetBatch([]string{
-		"a01",
-		"a02",
-		"a03",
-		"b01",
-		"c01",
-		"d01",
-	}, []uint64{
-		1,
-		4,
-		7,
-		10,
-		13,
-		16,
-	}); err != nil {
-		t.Fatal(err)
-	}
-
-	values, err := db.GetBatch([]string{"a01", "b01", "c01"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(values) != 3 || values[0] != 1 || values[1] != 10 || values[2] != 13 {
-		t.Error("GetBatch Failed")
-	}
-
-	value, err := db.Get("d01")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if value != 16 {
-		t.Error("Get Failed")
-	}
-	if !db.Has("d01") {
-		t.Error("Has Failed")
-	}
-
-	if err := db.Delete("d01"); err != nil {
-		t.Fatal(err)
-	}
-	if db.Has("d01") {
-		t.Error("Delete Failed")
-	}
-
-	if err := db.DeleteBatch([]string{"a01", "b01"}); err != nil {
-		t.Fatal(err)
-	}
-	if db.Has("a01") || db.Has("b01") {
-		t.Error("DeleteBatch Failed")
-	}
-
-	keys, queried, err := db.Query("a", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(keys) != 2 || len(queried) != 2 {
-		t.Fatalf("unexpected query result: %v %v", keys, queried)
-	}
-	t.Log(keys)
-	t.Log(queried)
+keys := [][]byte{
+[]byte("a01"), []byte("a02"), []byte("a03"),
+[]byte("b01"), []byte("c01"), []byte("d01"),
+}
+values := [][]byte{
+{1}, {4}, {7}, {10}, {13}, {16},
 }
 
-func TestPebbleDBCodecHooks(t *testing.T) {
-	encoder := func(_ int, value int64) ([]byte, error) {
-		return []byte(strconv.FormatInt(value, 10)), nil
-	}
-	decoder := func(_ int, raw []byte, _ int64) any {
-		decoded, err := strconv.ParseInt(string(raw), 10, 64)
-		if err != nil {
-			return nil
-		}
-		return decoded
-	}
-
-	db := NewPebbleDBWithCodec[int, int64](tempPebblePath(t), encoder, decoder)
-	t.Cleanup(func() {
-		if err := db.Close(); err != nil {
-			t.Errorf("close db: %v", err)
-		}
-	})
-
-	if err := db.Set(101, -77); err != nil {
-		t.Fatal(err)
-	}
-
-	loaded, err := db.GetAs(101, int64(0))
-	if err != nil {
-		t.Fatal(err)
-	}
-	decoded, ok := loaded.(int64)
-	if !ok {
-		t.Fatalf("expected int64, got %T", loaded)
-	}
-	if decoded != -77 {
-		t.Fatalf("decoded value mismatch: %d", decoded)
-	}
+errs := db.SetBatch(keys, values)
+for i, err := range errs {
+if err != nil {
+t.Fatalf("SetBatch[%d]: %v", i, err)
+}
 }
 
-func TestPebbleDBDefaultCodecGenericKey(t *testing.T) {
-	db := NewPebbleDB[int, int64](tempPebblePath(t))
-	t.Cleanup(func() {
-		if err := db.Close(); err != nil {
-			t.Errorf("close db: %v", err)
-		}
-	})
-
-	const expected int64 = 11
-	if err := db.Set(-7, expected); err != nil {
-		t.Fatal(err)
-	}
-
-	loaded, err := db.Get(-7)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if loaded != expected {
-		t.Fatalf("unexpected loaded value: %d", loaded)
-	}
+got, getErrs := db.GetBatch([][]byte{[]byte("a01"), []byte("b01"), []byte("c01")})
+for i, err := range getErrs {
+if err != nil {
+t.Fatalf("GetBatch[%d]: %v", i, err)
+}
+}
+if len(got) != 3 || got[0][0] != 1 || got[1][0] != 10 || got[2][0] != 13 {
+t.Error("GetBatch failed")
 }
 
-func TestPebbleDBByteKey(t *testing.T) {
-	db := NewPebbleDB[[]byte, float64](tempPebblePath(t))
-	t.Cleanup(func() {
-		if err := db.Close(); err != nil {
-			t.Errorf("close db: %v", err)
-		}
-	})
+val, err := db.Get([]byte("d01"))
+if err != nil {
+t.Fatal(err)
+}
+if val[0] != 16 {
+t.Error("Get failed")
+}
 
-	key := []byte{0x01, 0x02, 0x03}
-	expected := 12.5
-	if err := db.Set(key, expected); err != nil {
-		t.Fatal(err)
-	}
+ok, err := db.Has([]byte("d01"))
+if err != nil || !ok {
+t.Error("Has failed")
+}
 
-	loaded, err := db.Get([]byte{0x01, 0x02, 0x03})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if loaded != expected {
-		t.Fatalf("unexpected loaded value: %f", loaded)
-	}
+if err := db.Delete([]byte("d01")); err != nil {
+t.Fatal(err)
+}
+ok, err = db.Has([]byte("d01"))
+if err != nil || ok {
+t.Error("Delete failed")
+}
+
+delErrs := db.DeleteBatch([][]byte{[]byte("a01"), []byte("b01")})
+for i, err := range delErrs {
+if err != nil {
+t.Fatalf("DeleteBatch[%d]: %v", i, err)
+}
+}
+ok1, _ := db.Has([]byte("a01"))
+ok2, _ := db.Has([]byte("b01"))
+if ok1 || ok2 {
+t.Error("DeleteBatch failed")
+}
+
+qkeys, qvalues, err := db.Query([]byte("a"), nil)
+if err != nil {
+t.Fatal(err)
+}
+if len(qkeys) != 2 || len(qvalues) != 2 {
+t.Fatalf("unexpected query result: %v %v", qkeys, qvalues)
+}
+t.Log(qkeys)
+t.Log(qvalues)
 }

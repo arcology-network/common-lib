@@ -18,150 +18,82 @@
 package pebbledb
 
 import (
-	"strconv"
-	"testing"
-
-	common "github.com/arcology-network/common-lib/common"
+"testing"
 )
 
 func TestParaPebbleDBFunctions(t *testing.T) {
-	db := NewParaPebbleDB[string, uint64](tempParaPebbleRoot(t), common.Remainder)
-	t.Cleanup(func() {
-		if err := db.Close(); err != nil {
-			t.Errorf("close db: %v", err)
-		}
-	})
+db, err := NewParaPebbleDB(tempParaPebbleRoot(t), nil)
+if err != nil {
+t.Fatal(err)
+}
+t.Cleanup(func() {
+if err := db.Close(); err != nil {
+t.Errorf("close db: %v", err)
+}
+})
 
-	data := []uint64{
-		1,
-		4,
-		7,
-		10,
-		13,
-		16,
-	}
-	keys := []string{
-		"a01",
-		"a02",
-		"a03",
-		"b01",
-		"c03",
-		"d01",
-	}
-
-	if err := db.SetBatch(keys, data); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := db.GetBatch(keys); err != nil {
-		t.Fatal(err)
-	}
-
-	values, err := db.GetBatch([]string{"a01", "b01", "c03"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(values) != 3 || values[0] != 1 || values[1] != 10 || values[2] != 13 {
-		t.Error("GetBatch Failed")
-	}
-
-	value, err := db.Get("d01")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if value != 16 {
-		t.Error("Get Failed")
-	}
-	if !db.Has("d01") {
-		t.Error("Has Failed")
-	}
-
-	if err := db.Delete("d01"); err != nil {
-		t.Fatal(err)
-	}
-	if db.Has("d01") {
-		t.Error("Delete Failed")
-	}
-
-	if err := db.DeleteBatch([]string{"a01", "b01"}); err != nil {
-		t.Fatal(err)
-	}
-	if db.Has("a01") || db.Has("b01") {
-		t.Error("DeleteBatch Failed")
-	}
-
-	queryKeys, queryValues, err := db.Query("a", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(queryKeys)
-	t.Log(queryValues)
+keys := [][]byte{
+[]byte("a01"), []byte("a02"), []byte("a03"),
+[]byte("b01"), []byte("c03"), []byte("d01"),
+}
+values := [][]byte{
+{1}, {4}, {7}, {10}, {13}, {16},
 }
 
-func TestParaPebbleDBCodecHooks(t *testing.T) {
-	encoder := func(_ int, value int64) ([]byte, error) {
-		return []byte(strconv.FormatInt(value, 10)), nil
-	}
-	decoder := func(_ int, raw []byte, _ int64) any {
-		decoded, err := strconv.ParseInt(string(raw), 10, 64)
-		if err != nil {
-			return nil
-		}
-		return decoded
-	}
-	shard := func(numOfShard int, key int) int { return key % numOfShard }
-
-	db := NewParaPebbleDBWithCodec[int, int64](tempParaPebbleRoot(t), shard, encoder, decoder)
-	t.Cleanup(func() {
-		if err := db.Close(); err != nil {
-			t.Errorf("close db: %v", err)
-		}
-	})
-
-	if err := db.Set(202, -99); err != nil {
-		t.Fatal(err)
-	}
-
-	loaded, err := db.GetAs(202, int64(0))
-	if err != nil {
-		t.Fatal(err)
-	}
-	decoded, ok := loaded.(int64)
-	if !ok {
-		t.Fatalf("expected int64, got %T", loaded)
-	}
-	if decoded != -99 {
-		t.Fatalf("decoded value mismatch: %d", decoded)
-	}
+errs := db.SetBatch(keys, values)
+for i, err := range errs {
+if err != nil {
+t.Fatalf("SetBatch[%d]: %v", i, err)
+}
 }
 
-func TestParaPebbleDBByteKey(t *testing.T) {
-	shard := func(numOfShard int, key []byte) int {
-		total := 0
-		for i := 0; i < len(key); i++ {
-			total += int(key[i])
-		}
-		return total % numOfShard
-	}
+got, getErrs := db.GetBatch([][]byte{[]byte("a01"), []byte("b01"), []byte("c03")})
+for i, err := range getErrs {
+if err != nil {
+t.Fatalf("GetBatch[%d]: %v", i, err)
+}
+}
+if len(got) != 3 || got[0][0] != 1 || got[1][0] != 10 || got[2][0] != 13 {
+t.Error("GetBatch failed")
+}
 
-	db := NewParaPebbleDB[[]byte, float64](tempParaPebbleRoot(t), shard)
-	t.Cleanup(func() {
-		if err := db.Close(); err != nil {
-			t.Errorf("close db: %v", err)
-		}
-	})
+val, err := db.Get([]byte("d01"))
+if err != nil {
+t.Fatal(err)
+}
+if val[0] != 16 {
+t.Error("Get failed")
+}
 
-	key := []byte{0x0a, 0x0b}
-	expected := 13.25
-	if err := db.Set(key, expected); err != nil {
-		t.Fatal(err)
-	}
+ok, err := db.Has([]byte("d01"))
+if err != nil || !ok {
+t.Error("Has failed")
+}
 
-	loaded, err := db.Get([]byte{0x0a, 0x0b})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if loaded != expected {
-		t.Fatalf("unexpected loaded value: %f", loaded)
-	}
+if err := db.Delete([]byte("d01")); err != nil {
+t.Fatal(err)
+}
+ok, err = db.Has([]byte("d01"))
+if err != nil || ok {
+t.Error("Delete failed")
+}
+
+delErrs := db.DeleteBatch([][]byte{[]byte("a01"), []byte("b01")})
+for i, err := range delErrs {
+if err != nil {
+t.Fatalf("DeleteBatch[%d]: %v", i, err)
+}
+}
+ok1, _ := db.Has([]byte("a01"))
+ok2, _ := db.Has([]byte("b01"))
+if ok1 || ok2 {
+t.Error("DeleteBatch failed")
+}
+
+qkeys, qvalues, err := db.Query([]byte("a"), nil)
+if err != nil {
+t.Fatal(err)
+}
+t.Log(qkeys)
+t.Log(qvalues)
 }

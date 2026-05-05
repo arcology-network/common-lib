@@ -19,18 +19,20 @@ package memdb
 
 import (
 	ccmap "github.com/arcology-network/common-lib/exp/map"
+	stgintf "github.com/arcology-network/common-lib/storage/interface"
 )
 
+var _ stgintf.ReadWriteStore[string, []byte] = (*MemoryDB)(nil)
+
 type MemoryDB struct {
-	// db *ccmap.ConcurrentMap
-	db *ccmap.ConcurrentMap[string, any]
+	db *ccmap.ConcurrentMap[string, []byte]
 }
 
 func NewMemoryDB() *MemoryDB {
 	return &MemoryDB{
 		db: ccmap.NewConcurrentMap(
 			16,
-			func(v any) bool { return v == nil },
+			func(v []byte) bool { return v == nil },
 			func(k string) uint64 {
 				var hash uint64
 				for i := 0; i < len(k); i++ {
@@ -47,16 +49,12 @@ func (this *MemoryDB) Set(key string, v []byte) error {
 	return nil
 }
 
-func (this *MemoryDB) Get(key string) ([]byte, error) {
-	v, _ := this.db.Get(key)
-	if v == nil {
-		return nil, nil
+func (this *MemoryDB) Get(key string) (any, error) {
+	v, ok := this.db.Get(key)
+	if !ok || v == nil {
+		return nil, stgintf.ErrNotFound
 	}
-	return v.([]byte), nil
-}
-
-func (this *MemoryDB) GetAs(key string, _ []byte) (any, error) {
-	return this.Get(key)
+	return v, nil
 }
 
 func (this *MemoryDB) Has(key string) bool {
@@ -64,27 +62,23 @@ func (this *MemoryDB) Has(key string) bool {
 	return ok && v != nil
 }
 
-func (this *MemoryDB) GetBatch(keys []string) ([][]byte, error) {
-	values, _ := this.db.GetBatch(keys)
-	byteset := make([][]byte, len(keys))
+func (this *MemoryDB) GetBatch(keys []string) ([]any, []error) {
+	values, oks := this.db.GetBatch(keys)
+	byteset := make([]any, len(keys))
+	errs := make([]error, len(keys))
 	for i, v := range values {
-		if v != nil {
-			byteset[i] = v.([]byte)
+		if oks[i] && v != nil {
+			byteset[i] = v
+			continue
 		}
+		errs[i] = stgintf.ErrNotFound
 	}
-	return byteset, nil
+	return byteset, errs
 }
 
-func (this *MemoryDB) SetBatch(keys []string, byteset [][]byte) error {
-	values := make([]any, len(keys))
-	for i, v := range byteset {
-		if v != nil {
-			values[i] = v
-		}
-	}
-
-	this.db.SetBatch(keys, values)
-	return nil
+func (this *MemoryDB) SetBatch(keys []string, byteset [][]byte) []error {
+	this.db.SetBatch(keys, byteset)
+	return make([]error, len(keys))
 }
 
 func (this *MemoryDB) Delete(key string) error {
@@ -92,12 +86,31 @@ func (this *MemoryDB) Delete(key string) error {
 	return nil
 }
 
-func (this *MemoryDB) DeleteBatch(keys []string) error {
-	values := make([]any, len(keys))
+func (this *MemoryDB) DeleteBatch(keys []string) []error {
+	values := make([][]byte, len(keys))
 	this.db.SetBatch(keys, values)
-	return nil
+	return make([]error, len(keys))
 }
 
-func (this *MemoryDB) Query(key string, functor func(string, []byte) bool) ([]string, [][]byte, error) {
-	return []string{}, [][]byte{}, nil
+func (this *MemoryDB) Query(key string, functor func(string, []byte) bool) ([]string, [][]byte, []error) {
+	keys, values := this.db.KVs()
+	matchedKeys := make([]string, 0, len(keys))
+	matchedValues := make([][]byte, 0, len(keys))
+
+	for i, storedKey := range keys {
+		storedValue := values[i]
+		if storedValue == nil {
+			continue
+		}
+		if functor != nil {
+			if !functor(storedKey, storedValue) {
+				continue
+			}
+		} else if storedKey != key {
+			continue
+		}
+		matchedKeys = append(matchedKeys, storedKey)
+		matchedValues = append(matchedValues, storedValue)
+	}
+	return matchedKeys, matchedValues, nil
 }

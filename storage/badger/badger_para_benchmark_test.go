@@ -46,14 +46,14 @@ func BenchmarkParaBadgerSetBatch(b *testing.B) {
 	}
 
 	t0 := time.Now()
-	if err := fileDB.SetBatch(keys, values); err != nil {
-		b.Error(err)
+	if errs := fileDB.SetBatch(keys, values); errs != nil {
+		b.Error(errs)
 	}
 	fmt.Println("SetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 
 	t0 = time.Now()
-	if _, err := fileDB.GetBatch(keys); err != nil {
-		b.Error(err)
+	if _, errs := fileDB.GetBatch(keys); errs != nil {
+		b.Error(errs)
 	}
 	fmt.Println("GetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 }
@@ -77,14 +77,14 @@ func BenchmarkBadgerSetBatch2(b *testing.B) {
 	}
 
 	t0 := time.Now()
-	if err := fileDB.SetBatch(keys, values); err != nil {
-		b.Error(err)
+	if errs := fileDB.SetBatch(keys, values); errs != nil {
+		b.Error(errs)
 	}
 	fmt.Println("SetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 
 	t0 = time.Now()
-	if _, err := fileDB.GetBatch(keys); err != nil {
-		b.Error(err)
+	if _, errs := fileDB.GetBatch(keys); errs != nil {
+		b.Error(errs)
 	}
 	fmt.Println("GetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 }

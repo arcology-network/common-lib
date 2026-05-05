@@ -25,7 +25,7 @@ type CRDT interface { // value type
 	IsNumeric() bool
 	IsCommutative() bool // If the type is commutative, the order of the operands does not matter.
 
-	Value() any // Get() - read/write count
+	Value() any
 	Delta() (any, bool)
 
 	Limits() (any, any) // Get the limits of the type, if applicable.
@@ -59,12 +59,24 @@ type CRDT interface { // value type
 	Print()
 }
 
-type Writer[T any] interface {
-	Import([]T)
-	Precommit(bool)
-	Commit(uint64)
-	IsSync() bool // If the writer is synchronous, it will block until the commit is done.
-	Name() string
-}
+// type Writer[T any] interface {
+// 	Import([]T)
+// 	Precommit(bool) error //should return a error
+// 	Commit(uint64) error  //should return a error
+
+// 	IsSync() bool // If the writer is synchronous, it will block until the commit is done.
+// 	Name() string
+// }
 
 type Hasher func(CRDT) []byte
+
+func SizeOf(T any) uint64 {
+	switch v := T.(type) {
+	case CRDT:
+		return v.MemSize()
+	case []byte:
+		return uint64(len(v))
+	}
+	panic("Unsupported type for SizeOf")
+	return 0
+}

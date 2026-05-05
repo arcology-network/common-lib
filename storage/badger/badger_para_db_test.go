@@ -49,46 +49,51 @@ func TestParaBadgerDBFunctions(t *testing.T) {
 		"d01",
 	}
 
-	if err := db.SetBatch(keys, data); err != nil {
-		t.Fatal(err)
+	if errs := db.SetBatch(keys, data); errs != nil {
+		t.Fatal(errs)
 	}
 
-	_, err := db.GetBatch(keys)
-	if err != nil {
-		t.Error(err)
+	_, errs := db.GetBatch(keys)
+	if errs != nil {
+		t.Error(errs)
 	}
 
-	values, _ := db.GetBatch([]string{
+	values, errs := db.GetBatch([]string{
 		"a01",
 		"b01",
 		"c03",
 	})
+	if errs != nil {
+		t.Fatal(errs)
+	}
 	if len(values) != 3 ||
-		!bytes.Equal(values[0], []byte{1, 2, 3}) ||
-		!bytes.Equal(values[1], []byte{10, 11, 12}) ||
-		!bytes.Equal(values[2], []byte{13, 14, 15}) {
+		!bytes.Equal(values[0].([]byte), []byte{1, 2, 3}) ||
+		!bytes.Equal(values[1].([]byte), []byte{10, 11, 12}) ||
+		!bytes.Equal(values[2].([]byte), []byte{13, 14, 15}) {
 		t.Error("GetBatch Failed")
 	}
 
 	value, _ := db.Get("d01")
-	if !bytes.Equal(value, []byte{16, 17, 18}) {
+	if !bytes.Equal(value.([]byte), []byte{16, 17, 18}) {
 		t.Error("Get Failed")
 	}
-	if !db.Has("d01") {
+	if has := db.Has("d01"); !has {
 		t.Error("Has Failed")
 	}
 
 	if err := db.Delete("d01"); err != nil {
 		t.Fatal(err)
 	}
-	if db.Has("d01") {
+	if has := db.Has("d01"); has {
 		t.Error("Delete Failed")
 	}
 
-	if err := db.DeleteBatch([]string{"a01", "b01"}); err != nil {
-		t.Fatal(err)
+	if errs := db.DeleteBatch([]string{"a01", "b01"}); errs != nil {
+		t.Fatal(errs)
 	}
-	if db.Has("a01") || db.Has("b01") {
+	h1 := db.Has("a01")
+	h2 := db.Has("b01")
+	if h1 || h2 {
 		t.Error("DeleteBatch Failed")
 	}
 

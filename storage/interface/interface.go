@@ -17,50 +17,72 @@
 
 package interfaces
 
+import (
+	"errors"
+
+	"golang.org/x/exp/constraints"
+)
+
+var ErrNotFound = errors.New("not found")
+var ErrNoFallBack = errors.New("no fallback available")
+
+type BackendStore[K Key, V any] interface {
+	Get(K) (any, error)
+	GetBatch([]K) ([]any, []error)
+	Set(K, V) error
+	SetBatch([]K, []V) []error
+	Delete(K) error
+	DeleteBatch([]K) []error
+	Has(K) bool
+	// Len() uint64
+}
+
 const (
 	MEMORY_DB     = 0
 	PERSISTENT_DB = 1
 )
 
-type Readable[K comparable, V any] interface {
-	Get(K) (V, bool)
-	GetBatch([]K) []V
-	Has(K) bool
-	Len() uint64
-	Size() uint64
-}
-
-type WriteableStore[K comparable, V any] interface {
-	Set(K, V)
-	SetBatch([]K, []V)
-	Delete(K)
-	DeleteBatch([]K)
-}
-
-type ReadWriteStore[K comparable, V any] interface {
-	Readable[K, V]
-	WriteableStore[K, V]
-}
-
-type KVStore[K comparable, V any] interface {
-	ReadWriteStore[K, V]
-	SetLocalOnly(yes bool)
-	LocalOnly() bool
-}
-
-type PersistentStorage[K comparable, T any] interface {
-	Get(K) (T, error)
-	Set(K, T) error
-	GetBatch([]K) ([]T, error)
-	SetBatch([]K, []T) error
-	Query(K, func(K, T) bool) ([]K, []T, error)
-	GetAs(K, T) (any, error)
+type Key interface {
+	~string | constraints.Integer
 }
 
 // ReadOnlyStore defines the interface for a read-only storage source.
-type ReadOnlyStore[K comparable, T any] interface {
-	Has(K) bool                    // Check if the key exists in the source, which can be a cache or a storage.
-	ReadBackend(K, T) (any, error) // Get from persistent storage directly.
-	GetAs(K, T) (any, error)       // Get from cache or persistent storage, with cache lookup first.
-	Preload([]byte) any
+type ReadOnlyStore[K comparable, V any] interface {
+	Has(K) bool         // Check if the key exists in the source, which can be a cache or a storage.
+	Get(K) (any, error) // Get from cache or persistent storage, with cache lookup first.
 }
+
+type ReadableStore[K comparable, V any] interface {
+	ReadOnlyStore[K, V]
+	GetBatch([]K) ([]any, []error)
+}
+
+type WriteableStore[K comparable, V any] interface {
+	Set(K, V) error
+	SetBatch([]K, []V) []error
+	Delete(K) error
+	DeleteBatch([]K) []error
+}
+
+type ReadWriteStore[K comparable, V any] interface {
+	ReadableStore[K, V]
+	WriteableStore[K, V]
+	Query(K, func(K, V) bool) ([]K, []V, []error)
+}
+
+type StoreWriter[T any] interface {
+	Import([]T)
+	Precommit(bool) error //should return a error
+	Commit(uint64) error  //should return a error
+
+	IsSync() bool // If the writer is synchronous, it will block until the commit is done.
+	Name() string
+}
+
+// type CacheLike[K comparable, V any] interface {
+// 	Len() uint64
+// 	Size() uint64
+// 	IsEnabled() bool // If the cache is enabled
+// 	Enable() bool
+// 	Disable() bool
+// }

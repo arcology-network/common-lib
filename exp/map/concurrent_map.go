@@ -149,6 +149,39 @@ func (this *ConcurrentMap[K, V]) Set(key K, v V, args ...any) {
 	}
 }
 
+func (this *ConcurrentMap[K, V]) Delete(key K) bool {
+	shardID := this.Hash(key)
+	if shardID >= uint64(len(this.shards)) {
+		return false
+	}
+
+	this.shardLocks[shardID].Lock()
+	defer this.shardLocks[shardID].Unlock()
+
+	this.delete(shardID, key)
+	return true
+}
+
+func (this *ConcurrentMap[K, V]) DeleteBatch(keys []K) bool {
+	shardIDs := this.Hash8s(keys)
+	this.DeleteBatchFromShards(shardIDs, keys)
+	return true
+}
+
+func (this *ConcurrentMap[K, V]) DeleteBatchFromShards(ids []uint64, keys []K) {
+	slice.ParallelForeach(this.shards, 8, func(shardNum int, _ *map[K]V) {
+		this.shardLocks[shardNum].Lock()
+		defer this.shardLocks[shardNum].Unlock()
+
+		for i := 0; i < len(ids); i++ {
+			if ids[i] == uint64(shardNum) {
+				delete(this.shards[shardNum], keys[i])
+				continue
+			}
+		}
+	})
+}
+
 func (this *ConcurrentMap[K, V]) RemoveIf(condition func(K, V) bool) {
 	slice.ParallelForeach(this.shards, len(this.shards), func(shardNum int, shard *map[K]V) {
 		this.shardLocks[shardNum].Lock()
@@ -402,7 +435,7 @@ func (this *ConcurrentMap[K, V]) UnsafeParallelFor(first int, last int, key func
 		k := key(i)
 		v, b := this.UnsafeGet(k)
 		if newV, ok := do(i, k, v, b); ok {
-			this.UnsafeSet(k, newV)
+			_ = this.UnsafeSet(k, newV)
 		}
 	})
 }

@@ -819,6 +819,131 @@ func TestMoveIf(t *testing.T) {
 	}
 }
 
+func TestMoveBothIf(t *testing.T) {
+	t.Run("empty slices", func(t *testing.T) {
+		first := []string{}
+		second := []int{}
+
+		movedFirst, movedSecond := MoveBothIf(&first, &second, func(_ int, _ string, _ int) bool {
+			return true
+		})
+
+		if len(first) != 0 || len(second) != 0 || len(movedFirst) != 0 || len(movedSecond) != 0 {
+			t.Error("Error: empty slices should remain empty")
+		}
+	})
+
+	t.Run("no matches", func(t *testing.T) {
+		first := []string{"1", "2", "3", "4"}
+		second := []int{1, 2, 3, 4}
+
+		movedFirst, movedSecond := MoveBothIf(&first, &second, func(_ int, v string, _ int) bool {
+			return v == "missing"
+		})
+
+		if !reflect.DeepEqual(first, []string{"1", "2", "3", "4"}) || !reflect.DeepEqual(second, []int{1, 2, 3, 4}) {
+			t.Error("Error: non-matching entries should stay in place")
+		}
+		if len(movedFirst) != 0 || len(movedSecond) != 0 {
+			t.Error("Error: no entries should be moved when nothing matches")
+		}
+	})
+
+	t.Run("all match", func(t *testing.T) {
+		first := []string{"1", "2", "3", "4"}
+		second := []int{1, 2, 3, 4}
+
+		movedFirst, movedSecond := MoveBothIf(&first, &second, func(_ int, _ string, _ int) bool {
+			return true
+		})
+
+		if len(first) != 0 || len(second) != 0 {
+			t.Error("Error: all matching entries should be moved out")
+		}
+		if !reflect.DeepEqual(movedFirst, []string{"1", "2", "3", "4"}) || !reflect.DeepEqual(movedSecond, []int{1, 2, 3, 4}) {
+			t.Error("Error: moved entries should preserve order when all match")
+		}
+	})
+
+	t.Run("front and middle matches preserve pair alignment", func(t *testing.T) {
+		first := []string{"drop-0", "keep-1", "drop-2", "keep-3", "drop-4"}
+		second := []int{10, 11, 12, 13, 14}
+
+		movedFirst, movedSecond := MoveBothIf(&first, &second, func(_ int, v string, _ int) bool {
+			return strings.HasPrefix(v, "drop")
+		})
+
+		if !reflect.DeepEqual(first, []string{"keep-1", "keep-3"}) || !reflect.DeepEqual(second, []int{11, 13}) {
+			t.Error("Error: kept entries should remain aligned after move")
+		}
+		if !ContentEquivalent(movedFirst, []string{"drop-0", "drop-2", "drop-4"}) || !ContentEquivalent(movedSecond, []int{10, 12, 14}) {
+			t.Error("Error: moved entries should contain all matching pairs")
+		}
+
+		expectedPairs := map[string]int{"drop-0": 10, "drop-2": 12, "drop-4": 14}
+		for i := range movedFirst {
+			if expectedPairs[movedFirst[i]] != movedSecond[i] {
+				t.Error("Error: moved entries should stay aligned")
+			}
+		}
+	})
+
+	t.Run("single element match", func(t *testing.T) {
+		first := []string{"1"}
+		second := []int{1}
+
+		movedFirst, movedSecond := MoveBothIf(&first, &second, func(_ int, v string, _ int) bool {
+			return v == "1"
+		})
+
+		if len(first) != 0 || len(second) != 0 {
+			t.Error("Error: single matching element should be moved")
+		}
+		if !reflect.DeepEqual(movedFirst, []string{"1"}) || !reflect.DeepEqual(movedSecond, []int{1}) {
+			t.Error("Error: single moved pair should be returned")
+		}
+	})
+
+	t.Run("single element no match", func(t *testing.T) {
+		first := []string{"1"}
+		second := []int{1}
+
+		movedFirst, movedSecond := MoveBothIf(&first, &second, func(_ int, v string, _ int) bool {
+			return v == "2"
+		})
+
+		if !reflect.DeepEqual(first, []string{"1"}) || !reflect.DeepEqual(second, []int{1}) {
+			t.Error("Error: single non-matching element should remain")
+		}
+		if len(movedFirst) != 0 || len(movedSecond) != 0 {
+			t.Error("Error: no pairs should move when single element does not match")
+		}
+	})
+
+	t.Run("match by paired values", func(t *testing.T) {
+		first := []string{"a", "b", "c", "d", "e"}
+		second := []int{1, 2, 3, 4, 5}
+
+		movedFirst, movedSecond := MoveBothIf(&first, &second, func(_ int, left string, right int) bool {
+			return (left == "b" && right == 2) || (left == "d" && right == 4)
+		})
+
+		if !reflect.DeepEqual(first, []string{"a", "c", "e"}) || !reflect.DeepEqual(second, []int{1, 3, 5}) {
+			t.Error("Error: unmatched pairs should remain aligned")
+		}
+		if !ContentEquivalent(movedFirst, []string{"b", "d"}) || !ContentEquivalent(movedSecond, []int{2, 4}) {
+			t.Error("Error: matched pairs should move together")
+		}
+
+		expectedPairs := map[string]int{"b": 2, "d": 4}
+		for i := range movedFirst {
+			if expectedPairs[movedFirst[i]] != movedSecond[i] {
+				t.Error("Error: moved matched pairs should stay aligned")
+			}
+		}
+	})
+}
+
 func TestGroupBy(t *testing.T) {
 	strs := []string{"1-1", "2-2", "13", "2-4"}
 
@@ -829,6 +954,28 @@ func TestGroupBy(t *testing.T) {
 
 	if len(keys) != 2 || len(v) != 2 || len(v[0]) != 2 || len(v[1]) != 2 {
 		t.Error("Error: Failed to remove nil values !")
+	}
+}
+
+func TestContains(t *testing.T) {
+	values := []string{"Alpha", "Beta", "Gamma"}
+
+	if !Contains(values, "beta", func(v0, v1 string) bool {
+		return strings.EqualFold(v0, v1)
+	}) {
+		t.Error("Error: should find matching value")
+	}
+
+	if Contains(values, "delta", func(v0, v1 string) bool {
+		return strings.EqualFold(v0, v1)
+	}) {
+		t.Error("Error: should not find missing value")
+	}
+
+	if Contains([]int{}, 1, func(v0, v1 int) bool {
+		return v0 == v1
+	}) {
+		t.Error("Error: empty slice should not contain target")
 	}
 }
 
@@ -854,6 +1001,73 @@ func TestConcate(t *testing.T) {
 
 	if len(strVec) != 8 {
 		t.Error("Error: Failed to remove nil values !")
+	}
+}
+
+func TestConcateIf(t *testing.T) {
+	values := []string{"keep-1", "skip-2", "keep-3", "skip-4"}
+
+	filtered := ConcateIf(func(i int, v string) (bool, string) {
+		if i%2 == 0 {
+			return true, strings.ToUpper(v)
+		}
+		return false, ""
+	}, values...)
+
+	if !reflect.DeepEqual(filtered, []string{"KEEP-1", "KEEP-3"}) {
+		t.Error("Error: ConcateIf should filter and transform values")
+	}
+
+	empty := ConcateIf(func(_ int, v string) (bool, string) {
+		return false, v
+	}, values...)
+
+	if !reflect.DeepEqual(empty, []string{}) {
+		t.Error("Error: ConcateIf should return an empty slice when nothing matches")
+	}
+}
+
+func TestConcateDo(t *testing.T) {
+	values := []string{"ab", "", "cde"}
+
+	buffer := ConcateDo(values,
+		func(v string) uint64 { return uint64(len(v)) },
+		func(v string) []byte { return []byte(v) },
+	)
+
+	if !reflect.DeepEqual(buffer, []byte("abcde")) {
+		t.Error("Error: ConcateDo should concatenate slices into a pre-sized buffer")
+	}
+
+	empty := ConcateDo([]string{},
+		func(v string) uint64 { return uint64(len(v)) },
+		func(v string) []byte { return []byte(v) },
+	)
+
+	if !reflect.DeepEqual(empty, []byte{}) {
+		t.Error("Error: ConcateDo should return an empty buffer for empty input")
+	}
+}
+
+func TestConcateToBuffer(t *testing.T) {
+	values := []string{"ab", "", "cd", "e"}
+	buffer := make([]byte, 5)
+
+	ConcateToBuffer(values, &buffer, func(v string) []byte {
+		return []byte(v)
+	})
+
+	if !reflect.DeepEqual(buffer, []byte("abcde")) {
+		t.Error("Error: ConcateToBuffer should write concatenated data into the provided buffer")
+	}
+
+	prefilled := []byte{'x', 'x', 'x'}
+	ConcateToBuffer([]string{""}, &prefilled, func(v string) []byte {
+		return []byte(v)
+	})
+
+	if !reflect.DeepEqual(prefilled, []byte{'x', 'x', 'x'}) {
+		t.Error("Error: ConcateToBuffer should leave the buffer unchanged when getters return empty slices")
 	}
 }
 

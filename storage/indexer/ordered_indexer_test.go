@@ -175,11 +175,23 @@ func TestIndexerWithDB(t *testing.T) {
 	})
 
 	// Get the transactions from the database using the primary keys.
-	encoded, _ = db.GetBatch(primaryKeys)
+	batch, errs := db.GetBatch(primaryKeys)
+	encoded = slice.Transform(batch, func(i int, data any) []byte {
+		if errs[i] != nil {
+			t.Fatalf("expected batch read to succeed for %s: %v", primaryKeys[i], errs[i])
+		}
+		raw, ok := data.([]byte)
+		if !ok {
+			t.Fatalf("expected []byte payload for %s, got %T", primaryKeys[i], data)
+		}
+		return raw
+	})
 
 	queryTxs = slice.Transform(encoded, func(i int, data []byte) *Tx {
 		tx := &Tx{}
-		json.Unmarshal(data, tx)
+		if err := json.Unmarshal(data, tx); err != nil {
+			t.Fatalf("failed to decode transaction %s: %v", primaryKeys[i], err)
+		}
 		return tx
 	})
 

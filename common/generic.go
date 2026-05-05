@@ -79,7 +79,7 @@ func IfThenDoEither[T any](condition bool, f0 func() T, f1 func() T) T {
 
 // EitherOf returns the first non-nil value between two values.
 // If the first value is non-nil, it returns the first value; otherwise, it returns the second value.
-func EitherOf[T any](lhv interface{}, rhv T) T {
+func EitherOf[T any](lhv any, rhv T) T {
 	if lhv != nil {
 		return lhv.(T)
 	}
@@ -87,7 +87,7 @@ func EitherOf[T any](lhv interface{}, rhv T) T {
 }
 
 // EitherEqualsTo returns the first value if it is equal to a given value; otherwise, it returns the second value.
-func EitherEqualsTo[T any](lhv interface{}, rhv T, equal func(v interface{}) bool) T {
+func EitherEqualsTo[T any](lhv any, rhv T, equal func(v any) bool) T {
 	if equal(lhv) {
 		return lhv.(T)
 	}
@@ -102,9 +102,20 @@ func Second[T0, T1 any](v0 T0, v1 T1) T1 { return v1 }
 
 // IsType checks if the given value is of the specified type.
 // It returns true if the value is of the specified type, otherwise false.
-func IsType[T any](v interface{}) bool {
+func IsType[T any](v any) bool {
 	_, ok := v.(T)
 	return ok
+}
+
+func IsSameType[T any, V any]() bool {
+	var v V
+	_, ok := any(v).(T)
+	return ok
+}
+
+func Zero[V any]() V {
+	var v V
+	return v
 }
 
 func As[T any](v any) (T, error) {

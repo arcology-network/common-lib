@@ -53,7 +53,7 @@ func NewPath(newPaths ...string) crdtcommon.CRDT {
 // The entries that need to be deleted when the path is deleted.
 func (this *Path) GetCascadeSub(prefix string, source any) []string {
 	store := source.(interface {
-		GetAs(string, any) (any, error)
+		Get(string) (any, error)
 	})
 
 	subElem := this.DeltaSet.Elements()
@@ -71,7 +71,7 @@ func (this *Path) GetCascadeSub(prefix string, source any) []string {
 		}
 
 		for i := range subPaths {
-			if path, _ := store.GetAs(subPaths[i], new(Path)); path != nil {
+			if path, _ := store.Get(subPaths[i]); path != nil {
 				underSubPaths := path.(*Path).GetCascadeSub(subPaths[i], store)
 				pathStrs = append(pathStrs, underSubPaths...)
 			}
@@ -115,13 +115,14 @@ func (this *Path) SetDeltaSign(v any)     {}
 
 func (this *Path) Preload(k string, source any) {
 	store := source.(interface {
-		GetAs(string, crdtcommon.CRDT) (any, error)
+		Get(string) (any, error)
 	})
+
 	if this.preloaded != nil { // Already preloaded
 		return
 	}
 
-	if v, err := store.GetAs(k, new(Path)); v != nil && err == nil && v.(*Path).Committed().Length() > 0 {
+	if v, err := store.Get(k); v != nil && err == nil && v.(*Path).Committed().Length() > 0 {
 		this.preloaded = v.(*Path).Committed()
 	}
 }

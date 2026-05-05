@@ -15,19 +15,45 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pebbledb
+package cache
 
-import (
-	"path/filepath"
-	"testing"
-)
-
-func tempPebblePath(tb testing.TB) string {
-	tb.Helper()
-	return filepath.Join(tb.TempDir(), "pebble")
+type Stat struct {
+	sizeInMem   uint64
+	firstLoaded uint64
+	visits      uint64
 }
 
-func tempParaPebbleRoot(tb testing.TB) string {
-	tb.Helper()
-	return filepath.Join(tb.TempDir(), "pebble-shards")
+func (this *Stat) SetLoaded(version uint64) {
+	this.firstLoaded = version
+}
+
+type entry[T any] struct {
+	value T
+	Stat
+}
+
+func (this *entry[T]) Size() uint64 {
+	if this == nil {
+		return 0
+	}
+
+	if this.sizeInMem != 0 {
+		return this.sizeInMem
+	}
+
+	sized, ok := any(this.value).(interface{ MemSize() uint64 })
+	if !ok {
+		return 0
+	}
+
+	this.sizeInMem = sized.MemSize()
+	return this.sizeInMem
+}
+
+func (this *entry[T]) Replace(NewValue T) (uint64, uint64) {
+	oldSize := this.Size()
+	this.value = NewValue
+	this.sizeInMem = this.Size()
+	this.visits++
+	return oldSize, this.sizeInMem
 }
