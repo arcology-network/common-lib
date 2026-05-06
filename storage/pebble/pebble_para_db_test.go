@@ -18,82 +18,86 @@
 package pebbledb
 
 import (
-"testing"
+	"testing"
 )
 
 func TestParaPebbleDBFunctions(t *testing.T) {
-db, err := NewParaPebbleDB(tempParaPebbleRoot(t), nil)
-if err != nil {
-t.Fatal(err)
-}
-t.Cleanup(func() {
-if err := db.Close(); err != nil {
-t.Errorf("close db: %v", err)
-}
-})
+	db, err := NewParaPebbleDB(tempParaPebbleRoot(t), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("close db: %v", err)
+		}
+	})
 
-keys := [][]byte{
-[]byte("a01"), []byte("a02"), []byte("a03"),
-[]byte("b01"), []byte("c03"), []byte("d01"),
-}
-values := [][]byte{
-{1}, {4}, {7}, {10}, {13}, {16},
-}
+	keys := []string{
+		"a01", "a02", "a03",
+		"b01", "c03", "d01",
+	}
+	values := [][]byte{
+		{1}, {4}, {7}, {10}, {13}, {16},
+	}
 
-errs := db.SetBatch(keys, values)
-for i, err := range errs {
-if err != nil {
-t.Fatalf("SetBatch[%d]: %v", i, err)
-}
-}
+	errs := db.SetBatch(keys, values)
+	for i, err := range errs {
+		if err != nil {
+			t.Fatalf("SetBatch[%d]: %v", i, err)
+		}
+	}
 
-got, getErrs := db.GetBatch([][]byte{[]byte("a01"), []byte("b01"), []byte("c03")})
-for i, err := range getErrs {
-if err != nil {
-t.Fatalf("GetBatch[%d]: %v", i, err)
-}
-}
-if len(got) != 3 || got[0][0] != 1 || got[1][0] != 10 || got[2][0] != 13 {
-t.Error("GetBatch failed")
-}
+	got, getErrs := db.GetBatch([]string{"a01", "b01", "c03"})
+	for i, err := range getErrs {
+		if err != nil {
+			t.Fatalf("GetBatch[%d]: %v", i, err)
+		}
+	}
+	got0, ok0 := got[0].([]byte)
+	got1, ok1 := got[1].([]byte)
+	got2, ok2 := got[2].([]byte)
+	if len(got) != 3 || !ok0 || !ok1 || !ok2 || got0[0] != 1 || got1[0] != 10 || got2[0] != 13 {
+		t.Error("GetBatch failed")
+	}
 
-val, err := db.Get([]byte("d01"))
-if err != nil {
-t.Fatal(err)
-}
-if val[0] != 16 {
-t.Error("Get failed")
-}
+	val, err := db.Get("d01")
+	if err != nil {
+		t.Fatal(err)
+	}
+	bytesVal, ok := val.([]byte)
+	if !ok || bytesVal[0] != 16 {
+		t.Error("Get failed")
+	}
 
-ok, err := db.Has([]byte("d01"))
-if err != nil || !ok {
-t.Error("Has failed")
-}
+	exists := db.Has("d01")
+	if !exists {
+		t.Error("Has failed")
+	}
 
-if err := db.Delete([]byte("d01")); err != nil {
-t.Fatal(err)
-}
-ok, err = db.Has([]byte("d01"))
-if err != nil || ok {
-t.Error("Delete failed")
-}
+	if err := db.Delete("d01"); err != nil {
+		t.Fatal(err)
+	}
+	exists = db.Has("d01")
+	if exists {
+		t.Error("Delete failed")
+	}
 
-delErrs := db.DeleteBatch([][]byte{[]byte("a01"), []byte("b01")})
-for i, err := range delErrs {
-if err != nil {
-t.Fatalf("DeleteBatch[%d]: %v", i, err)
-}
-}
-ok1, _ := db.Has([]byte("a01"))
-ok2, _ := db.Has([]byte("b01"))
-if ok1 || ok2 {
-t.Error("DeleteBatch failed")
-}
+	delErrs := db.DeleteBatch([]string{"a01", "b01"})
+	for i, err := range delErrs {
+		if err != nil {
+			t.Fatalf("DeleteBatch[%d]: %v", i, err)
+		}
+	}
+	exists1 := db.Has("a01")
+	exists2 := db.Has("b01")
+	if exists1 || exists2 {
+		t.Error("DeleteBatch failed")
+	}
 
-qkeys, qvalues, err := db.Query([]byte("a"), nil)
-if err != nil {
-t.Fatal(err)
-}
-t.Log(qkeys)
-t.Log(qvalues)
+	qkeys, qvalues, err := db.Query("a", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(qkeys)
+	t.Log(qvalues)
 }

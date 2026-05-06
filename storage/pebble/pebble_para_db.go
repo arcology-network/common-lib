@@ -31,10 +31,10 @@ import (
 type ParaPebbleDB struct {
 	impls      [16]*PebbleDB
 	shardLocks [16]sync.RWMutex
-	shardFunc  func(int, []byte) int
+	shardFunc  func(int, string) int
 }
 
-func NewParaPebbleDB(root string, shardFunc func(numOfShard int, key []byte) int) (*ParaPebbleDB, error) {
+func NewParaPebbleDB(root string, shardFunc func(numOfShard int, key string) int) (*ParaPebbleDB, error) {
 	var paraPebbleDB ParaPebbleDB
 	if _, err := os.Stat(root); os.IsNotExist(err) {
 		if err := os.MkdirAll(root, fs.ModePerm); err != nil {
@@ -54,10 +54,10 @@ func NewParaPebbleDB(root string, shardFunc func(numOfShard int, key []byte) int
 	if shardFunc != nil {
 		paraPebbleDB.shardFunc = shardFunc
 	} else {
-		paraPebbleDB.shardFunc = func(n int, key []byte) int {
+		paraPebbleDB.shardFunc = func(n int, key string) int {
 			total := 0
-			for _, b := range key {
-				total += int(b)
+			for i := 0; i < len(key); i++ {
+				total += int(key[i])
 			}
 			return total % n
 		}
@@ -65,39 +65,39 @@ func NewParaPebbleDB(root string, shardFunc func(numOfShard int, key []byte) int
 	return &paraPebbleDB, nil
 }
 
-func (this *ParaPebbleDB) Get(key []byte) ([]byte, error) {
+func (this *ParaPebbleDB) Get(key string) (any, error) {
 	idx, db := this.getShard(key)
 	this.shardLocks[idx].RLock()
 	defer this.shardLocks[idx].RUnlock()
 	return db.Get(key)
 }
 
-func (this *ParaPebbleDB) Has(key []byte) (bool, error) {
+func (this *ParaPebbleDB) Has(key string) bool {
 	idx, db := this.getShard(key)
 	this.shardLocks[idx].RLock()
 	defer this.shardLocks[idx].RUnlock()
 	return db.Has(key)
 }
 
-func (this *ParaPebbleDB) Set(key []byte, value []byte) error {
+func (this *ParaPebbleDB) Set(key string, value []byte) error {
 	idx, db := this.getShard(key)
 	this.shardLocks[idx].Lock()
 	defer this.shardLocks[idx].Unlock()
 	return db.Set(key, value)
 }
 
-func (this *ParaPebbleDB) Delete(key []byte) error {
+func (this *ParaPebbleDB) Delete(key string) error {
 	idx, db := this.getShard(key)
 	this.shardLocks[idx].Lock()
 	defer this.shardLocks[idx].Unlock()
 	return db.Delete(key)
 }
 
-func (this *ParaPebbleDB) DeleteBatch(keys [][]byte) []error {
-	categorized := make([][][]byte, len(this.impls))
+func (this *ParaPebbleDB) DeleteBatch(keys []string) []error {
+	categorized := make([][]string, len(this.impls))
 	origIdx := make([][]int, len(this.impls))
 	for i := range categorized {
-		categorized[i] = make([][]byte, 0, len(keys)/len(this.impls)+1)
+		categorized[i] = make([]string, 0, len(keys)/len(this.impls)+1)
 		origIdx[i] = make([]int, 0, len(keys)/len(this.impls)+1)
 	}
 
@@ -122,11 +122,11 @@ func (this *ParaPebbleDB) DeleteBatch(keys [][]byte) []error {
 	return errs
 }
 
-func (this *ParaPebbleDB) GetBatch(keys [][]byte) ([][]byte, []error) {
-	categorizedKeys := make([][][]byte, len(this.impls))
+func (this *ParaPebbleDB) GetBatch(keys []string) ([]any, []error) {
+	categorizedKeys := make([][]string, len(this.impls))
 	categorizedIdx := make([][]int, len(this.impls))
 	for i := range categorizedKeys {
-		categorizedKeys[i] = make([][]byte, 0, len(keys)/len(this.impls)+1)
+		categorizedKeys[i] = make([]string, 0, len(keys)/len(this.impls)+1)
 		categorizedIdx[i] = make([]int, 0, len(keys)/len(this.impls)+1)
 	}
 
@@ -136,7 +136,7 @@ func (this *ParaPebbleDB) GetBatch(keys [][]byte) ([][]byte, []error) {
 		categorizedIdx[idx] = append(categorizedIdx[idx], i)
 	}
 
-	shardResults := make([][][]byte, len(this.impls))
+	shardResults := make([][]any, len(this.impls))
 	shardErrSlices := make([][]error, len(this.impls))
 	finder := func(start, end, _ int, _ ...interface{}) {
 		for i := start; i < end; i++ {
@@ -147,7 +147,7 @@ func (this *ParaPebbleDB) GetBatch(keys [][]byte) ([][]byte, []error) {
 	}
 	common.ParallelWorker(len(this.impls), len(this.impls), finder)
 
-	values := make([][]byte, len(keys))
+	values := make([]any, len(keys))
 	errs := make([]error, len(keys))
 	for i := range categorizedIdx {
 		for j, orig := range categorizedIdx[i] {
@@ -158,12 +158,12 @@ func (this *ParaPebbleDB) GetBatch(keys [][]byte) ([][]byte, []error) {
 	return values, errs
 }
 
-func (this *ParaPebbleDB) SetBatch(keys [][]byte, values [][]byte) []error {
-	categorizedKeys := make([][][]byte, len(this.impls))
+func (this *ParaPebbleDB) SetBatch(keys []string, values [][]byte) []error {
+	categorizedKeys := make([][]string, len(this.impls))
 	categorizedVals := make([][][]byte, len(this.impls))
 	origIdx := make([][]int, len(this.impls))
 	for i := range categorizedKeys {
-		categorizedKeys[i] = make([][]byte, 0, len(keys)/len(this.impls)+1)
+		categorizedKeys[i] = make([]string, 0, len(keys)/len(this.impls)+1)
 		categorizedVals[i] = make([][]byte, 0, len(keys)/len(this.impls)+1)
 		origIdx[i] = make([]int, 0, len(keys)/len(this.impls)+1)
 	}
@@ -175,7 +175,7 @@ func (this *ParaPebbleDB) SetBatch(keys [][]byte, values [][]byte) []error {
 		origIdx[idx] = append(origIdx[idx], i)
 	}
 
-	perShardErrs := slice.ParallelTransform(categorizedKeys, len(categorizedKeys), func(i int, _ [][]byte) []error {
+	perShardErrs := slice.ParallelTransform(categorizedKeys, len(categorizedKeys), func(i int, _ []string) []error {
 		this.shardLocks[i].Lock()
 		defer this.shardLocks[i].Unlock()
 		return this.impls[i].SetBatch(categorizedKeys[i], categorizedVals[i])
@@ -190,11 +190,23 @@ func (this *ParaPebbleDB) SetBatch(keys [][]byte, values [][]byte) []error {
 	return errs
 }
 
-func (this *ParaPebbleDB) Query(prefix []byte, checker func([]byte, []byte) bool) ([][]byte, [][]byte, error) {
-	shardIdx, db := this.getShard(prefix)
-	this.shardLocks[shardIdx].RLock()
-	defer this.shardLocks[shardIdx].RUnlock()
-	return db.Query(prefix, checker)
+func (this *ParaPebbleDB) Query(prefix string, checker func(string, []byte) bool) ([]string, [][]byte, error) {
+	keys := make([]string, 0)
+	values := make([][]byte, 0)
+	for i, db := range this.impls {
+		if db == nil {
+			continue
+		}
+		this.shardLocks[i].RLock()
+		shardKeys, shardValues, err := db.Query(prefix, checker)
+		this.shardLocks[i].RUnlock()
+		if err != nil {
+			return nil, nil, err
+		}
+		keys = append(keys, shardKeys...)
+		values = append(values, shardValues...)
+	}
+	return keys, values, nil
 }
 
 func (this *ParaPebbleDB) Close() error {
@@ -209,7 +221,7 @@ func (this *ParaPebbleDB) Close() error {
 	return nil
 }
 
-func (this *ParaPebbleDB) getShard(key []byte) (int, *PebbleDB) {
+func (this *ParaPebbleDB) getShard(key string) (int, *PebbleDB) {
 	shardIdx := this.shardFunc(len(this.impls), key)
 	return shardIdx, this.impls[shardIdx]
 }

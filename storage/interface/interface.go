@@ -26,17 +26,6 @@ import (
 var ErrNotFound = errors.New("not found")
 var ErrNoFallBack = errors.New("no fallback available")
 
-type BackendStore[K Key, V any] interface {
-	Get(K) (any, error)
-	GetBatch([]K) ([]any, []error)
-	Set(K, V) error
-	SetBatch([]K, []V) []error
-	Delete(K) error
-	DeleteBatch([]K) []error
-	Has(K) bool
-	// Len() uint64
-}
-
 const (
 	MEMORY_DB     = 0
 	PERSISTENT_DB = 1
@@ -77,6 +66,16 @@ type StoreWriter[T any] interface {
 
 	IsSync() bool // If the writer is synchronous, it will block until the commit is done.
 	Name() string
+}
+
+type BackendStore[K Key, V any] interface {
+	Get(K) (any, error)
+	GetBatch([]K) ([]any, []error)
+	Set(K, V) error
+	SetBatch([]K, []V) []error
+	Delete(K) error
+	DeleteBatch([]K) []error
+	Has(K) bool
 }
 
 // type CacheLike[K comparable, V any] interface {
