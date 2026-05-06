@@ -21,16 +21,19 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/arcology-network/common-lib/common"
 )
 
-func BenchmarkParaBadgerBatchSet(b *testing.B) {
-	os.RemoveAll(TEST_ROOT_PATH)
-	fileDB := NewParaBadgerDB(TEST_ROOT_PATH, common.Remainder)
+func BenchmarkParaBadgerSetBatch(b *testing.B) {
+	fileDB := NewParaBadgerDB(tempParaBadgerRoot(b), common.Remainder)
+	b.Cleanup(func() {
+		if err := fileDB.Close(); err != nil {
+			b.Errorf("close db: %v", err)
+		}
+	})
 
 	keys := make([]string, 2000000)
 	values := make([][]byte, len(keys))
@@ -43,22 +46,25 @@ func BenchmarkParaBadgerBatchSet(b *testing.B) {
 	}
 
 	t0 := time.Now()
-	if err := fileDB.BatchSet(keys, values); err != nil {
-		b.Error(err)
+	if errs := fileDB.SetBatch(keys, values); errs != nil {
+		b.Error(errs)
 	}
-	fmt.Println("BatchSet() ", len(keys), " Entries from files:", time.Since(t0))
+	fmt.Println("SetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 
 	t0 = time.Now()
-	if _, err := fileDB.BatchGet(keys); err != nil {
-		b.Error(err)
+	if _, errs := fileDB.GetBatch(keys); errs != nil {
+		b.Error(errs)
 	}
-	fmt.Println("BatchGet() ", len(keys), " Entries from files:", time.Since(t0))
-	os.RemoveAll(TEST_ROOT_PATH)
+	fmt.Println("GetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 }
 
-func BenchmarkBadgerBatchSet2(b *testing.B) {
-	os.RemoveAll(TEST_ROOT_PATH)
-	fileDB := NewBadgerDB(TEST_ROOT_PATH)
+func BenchmarkBadgerSetBatch2(b *testing.B) {
+	fileDB := NewBadgerDB(tempBadgerPath(b))
+	b.Cleanup(func() {
+		if err := fileDB.Close(); err != nil {
+			b.Errorf("close db: %v", err)
+		}
+	})
 
 	keys := make([]string, 2000000)
 	values := make([][]byte, len(keys))
@@ -71,17 +77,16 @@ func BenchmarkBadgerBatchSet2(b *testing.B) {
 	}
 
 	t0 := time.Now()
-	if err := fileDB.BatchSet(keys, values); err != nil {
-		b.Error(err)
+	if errs := fileDB.SetBatch(keys, values); errs != nil {
+		b.Error(errs)
 	}
-	fmt.Println("BatchSet() ", len(keys), " Entries from files:", time.Since(t0))
+	fmt.Println("SetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 
 	t0 = time.Now()
-	if _, err := fileDB.BatchGet(keys); err != nil {
-		b.Error(err)
+	if _, errs := fileDB.GetBatch(keys); errs != nil {
+		b.Error(errs)
 	}
-	fmt.Println("BatchGet() ", len(keys), " Entries from files:", time.Since(t0))
-	os.RemoveAll(TEST_ROOT_PATH)
+	fmt.Println("GetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 }
 
 // func TestParaBadgerIterator(t *testing.T) {
@@ -137,7 +142,7 @@ func BenchmarkBadgerBatchSet2(b *testing.B) {
 // 	// })
 // }
 
-// func ParaBatchSet(db *badger.DB, keys []string, values [][]byte) {
+// func ParaSetBatch(db *badger.DB, keys []string, values [][]byte) {
 // 	index := 0
 // 	for index < len(keys) {
 // 		db.Update(func(txn *badger.Txn) error {

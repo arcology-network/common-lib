@@ -28,18 +28,52 @@ func TestMemDB(t *testing.T) {
 	values := make([][]byte, 2)
 	values[0] = []byte{1, 2, 3}
 	values[1] = []byte{4, 5, 6}
-	memDB.BatchSet(keys, values)
-
-	if v, _ := memDB.Get(keys[0]); !bytes.Equal(v, values[0]) {
+	if errs := memDB.SetBatch(keys, values); len(errs) != len(keys) {
+		t.Fatal("unexpected batch error slice length")
+	}
+	h0 := memDB.Has(keys[0])
+	h1 := memDB.Has(keys[1])
+	if !h0 || !h1 {
 		t.Error("Error")
 	}
 
-	if v, _ := memDB.Get(keys[1]); !bytes.Equal(v, values[1]) {
+	v0, err := memDB.Get(keys[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(v0.([]byte), values[0]) {
 		t.Error("Error")
 	}
 
-	retrived, _ := memDB.BatchGet(append(keys, ""))
-	if len(values) != 2 || !bytes.Equal(values[0], retrived[0]) || !bytes.Equal(values[1], retrived[1]) {
+	v1, err := memDB.Get(keys[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(v1.([]byte), values[1]) {
+		t.Error("Error")
+	}
+
+	retrieved, errs := memDB.GetBatch(append(keys, ""))
+	if len(errs) != 3 || errs[2] == nil {
+		t.Fatal("expected missing key error")
+	}
+	if len(values) != 2 || !bytes.Equal(values[0], retrieved[0].([]byte)) || !bytes.Equal(values[1], retrieved[1].([]byte)) {
+		t.Error("Error")
+	}
+
+	if err := memDB.Delete(keys[0]); err != nil {
+		t.Fatal(err)
+	}
+	h0 = memDB.Has(keys[0])
+	if h0 {
+		t.Error("Error")
+	}
+
+	if errs := memDB.DeleteBatch([]string{keys[1]}); len(errs) != 1 {
+		t.Fatal("unexpected delete batch error slice length")
+	}
+	h1 = memDB.Has(keys[1])
+	if h1 {
 		t.Error("Error")
 	}
 }

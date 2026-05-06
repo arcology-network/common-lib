@@ -40,7 +40,7 @@ func BenchmarkMinMax(b *testing.B) {
 		values[i] = i
 	}
 
-	ccmap.BatchSet(keys, values)
+	ccmap.SetBatch(keys, values)
 
 	minv := math.MaxInt
 	less := func(_ string, rhs *int) {
@@ -78,7 +78,7 @@ func BenchmarkForeach(b *testing.B) {
 		keys[i] = fmt.Sprint(i)
 		values[i] = i
 	}
-	ccmap.BatchSet(keys, values)
+	ccmap.SetBatch(keys, values)
 
 	t0 := time.Now()
 	adder := func(v int) int {
@@ -94,7 +94,7 @@ func BenchmarkForeach(b *testing.B) {
 // 	keys := []string{"1", "2", "3", "4"}
 // 	values := []interface{}{codec.String("1"), codec.String("2"), codec.Int64(3), codec.String("4")}
 
-// 	ccmap.BatchSet(keys, values, flags)
+// 	ccmap.SetBatch(keys, values, flags)
 // 	if !reflect.DeepEqual(ccmap.Checksum(), ccmap.Checksum()) {
 // 		t.Error("Error: Checksums don't match")
 // 	}
@@ -119,7 +119,7 @@ func BenchmarkCcmapInit(b *testing.B) {
 	fmt.Println("Init native maps", len(nativeMaps), time.Since(t0))
 }
 
-func BenchmarkCcmapBatchSet(b *testing.B) {
+func BenchmarkCcmapSetBatch(b *testing.B) {
 	genString := func() string {
 		var letters = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
 		rand.Seed(time.Now().UnixNano())
@@ -168,8 +168,8 @@ func BenchmarkCcmapBatchSet(b *testing.B) {
 		return uint64(slice.Sum[byte, int]([]byte(k)))
 	})
 
-	ccmap.BatchSet(paths, values)
-	fmt.Println("BatchSet "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
+	ccmap.SetBatch(paths, values)
+	fmt.Println("SetBatch "+fmt.Sprint(len(paths)), " in ", time.Since(t0))
 
 	fmt.Println("sum:", slice.Sum[int, int](ccmap.Sizes()))
 

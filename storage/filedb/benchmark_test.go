@@ -25,11 +25,14 @@ import (
 )
 
 func BenchmarkFileDBBatchWrite(b *testing.B) {
-	db, _ = NewFileDB(TEST_ROOT_PATH, 64, 2)
+	root := testFileDBRoot(b)
+	db, _ = NewFileDB(root, 64, 2)
 
 	keys, values := setup()
 	timer("setup", func() {
-		db.BatchSet(keys, values)
+		if err := db.SetBatch(keys, values); err != nil {
+			b.Fatal(err)
+		}
 	})
 
 	n := 10
@@ -37,7 +40,9 @@ func BenchmarkFileDBBatchWrite(b *testing.B) {
 	for i := 0; i < n; i++ {
 		keys, values := newBlock()
 		sum += timer("commit", func() {
-			db.BatchSet(keys, values)
+			if err := db.SetBatch(keys, values); err != nil {
+				b.Fatal(err)
+			}
 		})
 	}
 	b.Logf("average batch write: %v", sum/time.Duration(n))
@@ -59,13 +64,14 @@ func BenchmarkFileDBBatchWrite(b *testing.B) {
 }
 
 func BenchmarkFileDBQuery(b *testing.B) {
-	db, _ := NewFileDB(TEST_ROOT_PATH, 128, 2)
+	root := testFileDBRoot(b)
+	db, _ := NewFileDB(root, 128, 2)
 
 	total := 0
 	for i := 0; i < 256; i++ {
 		timer(fmt.Sprintf("iteration %d", i), func() {
-			keys, _, _ := db.Query(string([]byte{byte(i)}), func(pattern string, target string) bool {
-				return strings.HasPrefix(target, pattern)
+			keys, _, _ := db.Query(string([]byte{byte(i)}), func(pattern string, target []byte) bool {
+				return strings.HasPrefix(string(target), pattern)
 			})
 			if len(keys) != 0 {
 				b.Log(keys[0])

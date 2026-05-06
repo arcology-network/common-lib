@@ -53,7 +53,7 @@ func NewPath(newPaths ...string) crdtcommon.CRDT {
 // The entries that need to be deleted when the path is deleted.
 func (this *Path) GetCascadeSub(prefix string, source any) []string {
 	store := source.(interface {
-		Retrieve(string, any) (any, error)
+		Get(string) (any, error)
 	})
 
 	subElem := this.DeltaSet.Elements()
@@ -71,7 +71,7 @@ func (this *Path) GetCascadeSub(prefix string, source any) []string {
 		}
 
 		for i := range subPaths {
-			if path, _ := store.Retrieve(subPaths[i], new(Path)); path != nil {
+			if path, _ := store.Get(subPaths[i]); path != nil {
 				underSubPaths := path.(*Path).GetCascadeSub(subPaths[i], store)
 				pathStrs = append(pathStrs, underSubPaths...)
 			}
@@ -114,16 +114,15 @@ func (this *Path) SetDelta(v any, _ bool) { this.DeltaSet.SetDelta(v.(*softdelta
 func (this *Path) SetDeltaSign(v any)     {}
 
 func (this *Path) Preload(k string, source any) {
-	store := source.(crdtcommon.ReadOnlyStore)
+	store := source.(interface {
+		Get(string) (any, error)
+	})
+
 	if this.preloaded != nil { // Already preloaded
 		return
 	}
 
-	// store := source.(interface {
-	// 	Retrieve(string, any) (any, error)
-	// })
-
-	if v, err := store.Retrieve(k, new(Path)); v != nil && err == nil && v.(*Path).Committed().Length() > 0 {
+	if v, err := store.Get(k); v != nil && err == nil && v.(*Path).Committed().Length() > 0 {
 		this.preloaded = v.(*Path).Committed()
 	}
 }
@@ -198,7 +197,7 @@ func (this *Path) Set(value any, source any) (any, uint32, uint32, uint32, error
 	tx := source.([]any)[2].(uint64)
 	cache := source.([]any)[3].(interface {
 		Write(uint64, string, crdtcommon.CRDT, ...any) (int64, error)
-		IfExists(string) bool
+		Has(string) bool
 		GetIfCached(string) (any, bool)
 	})
 
@@ -248,7 +247,7 @@ func (this *Path) Set(value any, source any) (any, uint32, uint32, uint32, error
 func (this *Path) deleteInPath(tx uint64, parentPath string, elems []string, do func(), source any) (any, uint32, uint32, uint32, error) {
 	writeCache := source.(interface {
 		Write(uint64, string, crdtcommon.CRDT, ...any) (int64, error)
-		IfExists(string) bool
+		Has(string) bool
 		GetIfCached(string) (any, bool)
 	})
 

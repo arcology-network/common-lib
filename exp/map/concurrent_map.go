@@ -84,7 +84,7 @@ func (this *ConcurrentMap[K, V]) Length() uint64 {
 	return v
 }
 
-// Get retrieves the value associated with the specified key from the ConcurrentMap.
+// Get the value associated with the specified key from the ConcurrentMap.
 // It returns the value and a boolean indicating whether the key was found.
 func (this *ConcurrentMap[K, V]) Get(key K, args ...any) (V, bool) {
 	shardID := this.hasher(key) % uint64(len(this.shards))
@@ -96,7 +96,7 @@ func (this *ConcurrentMap[K, V]) Get(key K, args ...any) (V, bool) {
 	return v, ok
 }
 
-// Get retrieves the value associated with the specified key from the ConcurrentMap.
+// Get the value associated with the specified key from the ConcurrentMap.
 // It returns the value and a boolean indicating whether the key was found.
 func (this *ConcurrentMap[K, V]) UnsafeGet(key K, args ...any) (V, bool) {
 	shardID := this.hasher(key) % uint64(len(this.shards))
@@ -104,14 +104,14 @@ func (this *ConcurrentMap[K, V]) UnsafeGet(key K, args ...any) (V, bool) {
 	return v, ok
 }
 
-// BatchGet retrieves the values associated with the specified keys from the ConcurrentMap.
+// GetBatch retrieves the values associated with the specified keys from the ConcurrentMap.
 // It returns a slice of values in the same order as the keys.
-func (this *ConcurrentMap[K, V]) BatchGet(keys []K, args ...any) ([]V, []bool) {
+func (this *ConcurrentMap[K, V]) GetBatch(keys []K, args ...any) ([]V, []bool) {
 	shardIds := slice.NewDo(len(keys), func(i int) uint64 {
 		return this.Hash(keys[i])
 	})
 
-	// The BatchGet is usually called.
+	// The GetBatch is usually called.
 	values, found := make([]V, len(keys)), make([]bool, len(keys))
 	slice.ParallelForeach(this.shards, len(keys), func(shard int, _ *map[K]V) {
 		this.shardLocks[shard].RLock()
@@ -147,6 +147,39 @@ func (this *ConcurrentMap[K, V]) Set(key K, v V, args ...any) {
 	} else {
 		this.shards[shardID][key] = v
 	}
+}
+
+func (this *ConcurrentMap[K, V]) Delete(key K) bool {
+	shardID := this.Hash(key)
+	if shardID >= uint64(len(this.shards)) {
+		return false
+	}
+
+	this.shardLocks[shardID].Lock()
+	defer this.shardLocks[shardID].Unlock()
+
+	this.delete(shardID, key)
+	return true
+}
+
+func (this *ConcurrentMap[K, V]) DeleteBatch(keys []K) bool {
+	shardIDs := this.Hash8s(keys)
+	this.DeleteBatchFromShards(shardIDs, keys)
+	return true
+}
+
+func (this *ConcurrentMap[K, V]) DeleteBatchFromShards(ids []uint64, keys []K) {
+	slice.ParallelForeach(this.shards, 8, func(shardNum int, _ *map[K]V) {
+		this.shardLocks[shardNum].Lock()
+		defer this.shardLocks[shardNum].Unlock()
+
+		for i := 0; i < len(ids); i++ {
+			if ids[i] == uint64(shardNum) {
+				delete(this.shards[shardNum], keys[i])
+				continue
+			}
+		}
+	})
 }
 
 func (this *ConcurrentMap[K, V]) RemoveIf(condition func(K, V) bool) {
@@ -190,15 +223,15 @@ func (this *ConcurrentMap[K, V]) BatchUpdate(keys []K, values []V, updater func(
 	})
 }
 
-// BatchSet associates the specified values with the specified keys in the ConcurrentMap.
+// SetBatch associates the specified values with the specified keys in the ConcurrentMap.
 // If the values slice is shorter than the keys slice, the remaining keys are deleted from the map.
 // If the values slice is longer than the keys slice, the extra values are ignored.
-func (this *ConcurrentMap[K, V]) BatchSet(keys []K, values []V) {
+func (this *ConcurrentMap[K, V]) SetBatch(keys []K, values []V) {
 	shardIDs := this.Hash8s(keys)
-	this.BatchSetToShards(shardIDs, keys, values)
+	this.SetBatchToShards(shardIDs, keys, values)
 }
 
-// func (this *ConcurrentMap[K, V]) BatchSetIf(keys []K, setter func(K) (V, bool)) {
+// func (this *ConcurrentMap[K, V]) SetBatchIf(keys []K, setter func(K) (V, bool)) {
 // 	values, flags := make([]V, len(keys)), make([]bool, len(keys))
 // 	for i := 0; i < len(keys); i++ {
 // 		values[i], flags[i] = setter(keys[i])
@@ -207,11 +240,11 @@ func (this *ConcurrentMap[K, V]) BatchSet(keys []K, values []V) {
 // 	slice.RemoveIf(&keys, func(i int, k K) bool { return flags[i] })
 // 	slice.RemoveIf(&values, func(i int, v V) bool { return flags[i] })
 
-// 	this.BatchSetToShards(this.Hash8s(keys), keys, values)
+// 	this.SetBatchToShards(this.Hash8s(keys), keys, values)
 // }
 
-// BatchSetToShard associates the specified values with the specified shard IDs and keys in the ConcurrentMap.
-func (this *ConcurrentMap[K, V]) BatchSetToShards(ids []uint64, keys []K, values []V) {
+// SetBatchToShard associates the specified values with the specified shard IDs and keys in the ConcurrentMap.
+func (this *ConcurrentMap[K, V]) SetBatchToShards(ids []uint64, keys []K, values []V) {
 	slice.ParallelForeach(this.shards, 8, func(shardNum int, shard *map[K]V) {
 		this.shardLocks[shardNum].Lock()
 		defer this.shardLocks[shardNum].Unlock()
@@ -228,13 +261,13 @@ func (this *ConcurrentMap[K, V]) BatchSetToShards(ids []uint64, keys []K, values
 	})
 }
 
-func (this *ConcurrentMap[K, V]) BatchSetWith(keys []K, setter func(k *K) V) {
+func (this *ConcurrentMap[K, V]) SetBatchWith(keys []K, setter func(k *K) V) {
 	shardIDs := this.Hash8s(keys)
-	this.BatchSetToShardWith(shardIDs, keys, setter)
+	this.SetBatchToShardWith(shardIDs, keys, setter)
 }
 
-// BatchSetToShard associates the specified values with the specified shard IDs and keys in the ConcurrentMap.
-func (this *ConcurrentMap[K, V]) BatchSetToShardWith(ids []uint64, keys []K, setter func(k *K) V) {
+// SetBatchToShard associates the specified values with the specified shard IDs and keys in the ConcurrentMap.
+func (this *ConcurrentMap[K, V]) SetBatchToShardWith(ids []uint64, keys []K, setter func(k *K) V) {
 	slice.ParallelForeach(this.shards, 8, func(shardNum int, shard *map[K]V) {
 		this.globalLock.Lock()
 		defer this.globalLock.Unlock()
@@ -367,7 +400,7 @@ func (this *ConcurrentMap[K, V]) ParallelDo(keys []K, do func(i int, k K, v V, b
 	this.globalLock.Lock()
 	defer this.globalLock.Unlock()
 
-	values, found := this.BatchGet(keys)
+	values, found := this.GetBatch(keys)
 
 	assignBack := make([]bool, len(keys))
 	slice.ParallelForeach(found, 4, func(i int, _ *bool) {
@@ -377,7 +410,7 @@ func (this *ConcurrentMap[K, V]) ParallelDo(keys []K, do func(i int, k K, v V, b
 	slice.RemoveBothIf(&keys, &values, func(i int, _ K, _ V) bool {
 		return !assignBack[i]
 	})
-	this.BatchSet(keys, values)
+	this.SetBatch(keys, values)
 }
 
 // ParallelFor applies the specified do function to each key-value pair in a range defined by the first and last indices.
@@ -402,7 +435,7 @@ func (this *ConcurrentMap[K, V]) UnsafeParallelFor(first int, last int, key func
 		k := key(i)
 		v, b := this.UnsafeGet(k)
 		if newV, ok := do(i, k, v, b); ok {
-			this.UnsafeSet(k, newV)
+			_ = this.UnsafeSet(k, newV)
 		}
 	})
 }
@@ -418,7 +451,7 @@ func (this *ConcurrentMap[K, V]) KVs(less ...func(k0, k1 K) bool) ([]K, []V) {
 			return less[0](keys[i], keys[j])
 		})
 	}
-	return keys, common.First(this.BatchGet(keys)).([]V)
+	return keys, common.First(this.GetBatch(keys)).([]V)
 }
 
 func (this *ConcurrentMap[K, V]) Checksum(less func(K, K) bool, encoders func(K, V) ([]byte, []byte)) [32]byte {

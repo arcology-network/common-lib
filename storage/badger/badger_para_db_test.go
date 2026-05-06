@@ -19,16 +19,18 @@ package badgerdb
 
 import (
 	"bytes"
-	"os"
 	"testing"
 
 	common "github.com/arcology-network/common-lib/common"
 )
 
 func TestParaBadgerDBFunctions(t *testing.T) {
-	os.RemoveAll(TEST_ROOT_PATH)
-
-	db := NewParaBadgerDB("./badger-test/", common.Remainder)
+	db := NewParaBadgerDB(tempParaBadgerRoot(t), common.Remainder)
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("close db: %v", err)
+		}
+	})
 
 	data := [][]byte{
 		{1, 2, 3},
@@ -47,32 +49,55 @@ func TestParaBadgerDBFunctions(t *testing.T) {
 		"d01",
 	}
 
-	db.BatchSet(keys, data)
-
-	values, err := db.BatchGet(keys)
-	if err != nil {
-		t.Error(err)
+	if errs := db.SetBatch(keys, data); errs != nil {
+		t.Fatal(errs)
 	}
 
-	values, _ = db.BatchGet([]string{
+	_, errs := db.GetBatch(keys)
+	if errs != nil {
+		t.Error(errs)
+	}
+
+	values, errs := db.GetBatch([]string{
 		"a01",
 		"b01",
 		"c03",
 	})
+	if errs != nil {
+		t.Fatal(errs)
+	}
 	if len(values) != 3 ||
-		!bytes.Equal(values[0], []byte{1, 2, 3}) ||
-		!bytes.Equal(values[1], []byte{10, 11, 12}) ||
-		!bytes.Equal(values[2], []byte{13, 14, 15}) {
-		t.Error("BatchGet Failed")
+		!bytes.Equal(values[0].([]byte), []byte{1, 2, 3}) ||
+		!bytes.Equal(values[1].([]byte), []byte{10, 11, 12}) ||
+		!bytes.Equal(values[2].([]byte), []byte{13, 14, 15}) {
+		t.Error("GetBatch Failed")
 	}
 
 	value, _ := db.Get("d01")
-	if !bytes.Equal(value, []byte{16, 17, 18}) {
+	if !bytes.Equal(value.([]byte), []byte{16, 17, 18}) {
 		t.Error("Get Failed")
 	}
+	if has := db.Has("d01"); !has {
+		t.Error("Has Failed")
+	}
 
-	keys, values, _ = db.Query("a", nil)
-	t.Log(keys)
-	t.Log(values)
-	os.RemoveAll("./badger-test/")
+	if err := db.Delete("d01"); err != nil {
+		t.Fatal(err)
+	}
+	if has := db.Has("d01"); has {
+		t.Error("Delete Failed")
+	}
+
+	if errs := db.DeleteBatch([]string{"a01", "b01"}); errs != nil {
+		t.Fatal(errs)
+	}
+	h1 := db.Has("a01")
+	h2 := db.Has("b01")
+	if h1 || h2 {
+		t.Error("DeleteBatch Failed")
+	}
+
+	queryKeys, queryValues, _ := db.Query("a", nil)
+	t.Log(queryKeys)
+	t.Log(queryValues)
 }

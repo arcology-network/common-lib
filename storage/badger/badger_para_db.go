@@ -25,8 +25,10 @@ import (
 	"sync"
 
 	common "github.com/arcology-network/common-lib/common"
-	slice "github.com/arcology-network/common-lib/exp/slice"
+	stgintf "github.com/arcology-network/common-lib/storage/interface"
 )
+
+var _ stgintf.ReadWriteStore[string, []byte] = (*ParaBadgerDB)(nil)
 
 type ParaBadgerDB struct {
 	impls      [16]*BadgerDB
@@ -37,13 +39,17 @@ type ParaBadgerDB struct {
 func NewParaBadgerDB(root string, shardFunc func(numOfShard int, key string) int) *ParaBadgerDB {
 	var paraBadgerDB ParaBadgerDB
 	if _, err := os.Stat(root); os.IsNotExist(err) {
-		os.MkdirAll(root, fs.ModePerm)
+		if err := os.MkdirAll(root, fs.ModePerm); err != nil {
+			panic(err)
+		}
 	}
 
 	for i := 0; i < len(paraBadgerDB.impls); i++ {
 		path := path.Join(root+fmt.Sprint(i)) + "/"
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			os.Mkdir(path, fs.ModePerm)
+			if err := os.Mkdir(path, fs.ModePerm); err != nil {
+				panic(err)
+			}
 		}
 		paraBadgerDB.impls[i] = NewBadgerDB(path)
 	}
@@ -56,76 +62,95 @@ func NewParaBadgerDB(root string, shardFunc func(numOfShard int, key string) int
 	return &paraBadgerDB
 }
 
-func (this *ParaBadgerDB) Get(key string) (value []byte, err error) {
+func (this *ParaBadgerDB) Get(key string) (value any, err error) {
 	idx, db := this.getShard(key)
 	this.shardLocks[idx].RLock()
 	defer this.shardLocks[idx].RUnlock()
 	return db.Get(key)
 }
 
+func (this *ParaBadgerDB) Has(key string) bool {
+	idx, db := this.getShard(key)
+	this.shardLocks[idx].RLock()
+	defer this.shardLocks[idx].RUnlock()
+	return db.Has(key)
+}
+
 func (this *ParaBadgerDB) Set(key string, value []byte) error {
-	panic("not implemented")
+	idx, db := this.getShard(key)
+	this.shardLocks[idx].Lock()
+	defer this.shardLocks[idx].Unlock()
+	return db.Set(key, value)
 }
 
-func (this *ParaBadgerDB) BatchGet(keys []string) (values [][]byte, err error) {
-	categorized := make([][]string, len(this.impls))
-	for i := 0; i < len(categorized); i++ {
-		categorized[i] = make([]string, 0, len(keys)/len(this.impls)+100)
-	}
+func (this *ParaBadgerDB) Delete(key string) error {
+	idx, db := this.getShard(key)
+	this.shardLocks[idx].Lock()
+	defer this.shardLocks[idx].Unlock()
+	return db.Delete(key)
+}
 
+func (this *ParaBadgerDB) DeleteBatch(keys []string) []error {
+	errs := make([]error, len(keys))
 	for i := 0; i < len(keys); i++ {
-		idx, _ := this.getShard(keys[i])
-		categorized[idx] = append(categorized[idx], keys[i])
+		idx, db := this.getShard(keys[i])
+		this.shardLocks[idx].Lock()
+		err := db.Delete(keys[i])
+		this.shardLocks[idx].Unlock()
+		if err != nil {
+			errs[i] = err
+		}
 	}
+	if allNil(errs) {
+		return nil
+	}
+	return errs
+}
 
-	errors := make([]error, len(categorized))
-	valueSet := make([][][]byte, len(categorized))
+func (this *ParaBadgerDB) GetBatch(keys []string) ([]any, []error) {
+	results := make([]any, len(keys))
+	errs := make([]error, len(keys))
 	finder := func(start, end, index int, args ...interface{}) {
-		for index = start; index < end; index++ {
-			this.shardLocks[index].RLock()
-			defer this.shardLocks[index].RUnlock() // Using start is correct, as start + 1 == end
-			valueSet[index], errors[index] = this.impls[index].BatchGet(categorized[index])
+		for i := start; i < end; i++ {
+			idx, db := this.getShard(keys[i])
+			this.shardLocks[idx].RLock()
+			v, err := db.Get(keys[i])
+			this.shardLocks[idx].RUnlock()
+			if err != nil {
+				errs[i] = err
+				continue
+			}
+			results[i] = v
 		}
 	}
-	common.ParallelWorker(len(categorized), len(categorized), finder)
+	common.ParallelWorker(len(keys), len(this.impls), finder)
+	if allNil(errs) {
+		return results, nil
+	}
+	return results, errs
+}
 
-	mp := map[string][]byte{}
-	for i := range categorized {
-		for k := range categorized[i] {
-			mp[categorized[i][k]] = valueSet[i][k]
+func (this *ParaBadgerDB) SetBatch(keys []string, values [][]byte) []error {
+	errs := make([]error, len(keys))
+	finder := func(start, end, index int, args ...interface{}) {
+		for i := start; i < end; i++ {
+			idx, db := this.getShard(keys[i])
+			this.shardLocks[idx].Lock()
+			err := db.Set(keys[i], values[i])
+			this.shardLocks[idx].Unlock()
+			if err != nil {
+				errs[i] = err
+			}
 		}
 	}
-	results := make([][]byte, len(keys))
-	for i := range keys {
-		results[i] = mp[keys[i]]
+	common.ParallelWorker(len(keys), len(this.impls), finder)
+	if allNil(errs) {
+		return nil
 	}
-
-	return results, errors[0]
+	return errs
 }
 
-func (this *ParaBadgerDB) BatchSet(keys []string, values [][]byte) error {
-	categorizedKeys := make([][]string, len(this.impls))
-	categorizedVals := make([][][]byte, len(this.impls))
-	for i := 0; i < len(categorizedKeys); i++ {
-		categorizedKeys[i] = make([]string, 0, len(keys)/len(this.impls)+100)
-		categorizedVals[i] = make([][]byte, 0, len(keys)/len(this.impls)+100)
-	}
-
-	for i := 0; i < len(keys); i++ {
-		idx, _ := this.getShard(keys[i])
-		categorizedKeys[idx] = append(categorizedKeys[idx], keys[i])
-		categorizedVals[idx] = append(categorizedVals[idx], values[i])
-	}
-
-	errors := slice.ParallelTransform(categorizedKeys, len(categorizedKeys), func(i int, _ []string) error {
-		this.shardLocks[i].Lock()
-		defer this.shardLocks[i].Unlock() // Using start is correct, as start + 1 == end
-		return this.impls[i].BatchSet(categorizedKeys[i], categorizedVals[i])
-	})
-	return errors[0]
-}
-
-func (this *ParaBadgerDB) Query(prefix string, checker func(string, string) bool) (keys []string, values [][]byte, err error) {
+func (this *ParaBadgerDB) Query(prefix string, checker func(string, []byte) bool) (keys []string, values [][]byte, errs []error) {
 	shardIdx, db := this.getShard(prefix)
 
 	this.shardLocks[shardIdx].RLock()
@@ -147,7 +172,7 @@ func (this *ParaBadgerDB) getShard(key string) (int, *BadgerDB) {
 
 func (this *ParaBadgerDB) hash32(numOfShard int, key string) int {
 	if len(key) == 0 {
-		return math.MaxUint32
+		return int(math.MaxUint32 % uint32(numOfShard))
 	}
 
 	var total int = 0

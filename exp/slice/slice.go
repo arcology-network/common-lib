@@ -107,12 +107,24 @@ func Move[T comparable](values *[]T) []T {
 // MoveIf moves all elements from a slice that satisfy a given condition to a new slice.
 // It modifies the original slice and returns the moved elements in a new slice.
 func MoveBothIf[T0, T1 any](first *[]T0, second *[]T1, condition func(int, T0, T1) bool) ([]T0, []T1) {
-	pos := 0
+	if first == nil || second == nil {
+		panic("nil slice pointer")
+	}
+	if len(*first) != len(*second) {
+		panic("slice length mismatch")
+	}
+
+	pos := -1
 	for i := 0; i < len(*first); i++ {
 		if condition(i, (*first)[i], (*second)[i]) {
 			pos = i // Get the first position that satisfies the condition
 			break
 		}
+	}
+
+	// No Found
+	if pos == -1 {
+		return nil, nil
 	}
 
 	for i := pos; i < len(*first); i++ {

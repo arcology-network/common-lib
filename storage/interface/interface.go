@@ -17,13 +17,24 @@
 
 package interfaces
 
-import "reflect"
+import (
+	"errors"
 
-type Accessible interface {
-	Value() any
-	Reads() uint32
-	Writes() uint32
-	Size() uint64
+	"golang.org/x/exp/constraints"
+)
+
+var ErrNotFound = errors.New("not found")
+var ErrNoFallBack = errors.New("no fallback available")
+
+type BackendStore[K Key, V any] interface {
+	Get(K) (any, error)
+	GetBatch([]K) ([]any, []error)
+	Set(K, V) error
+	SetBatch([]K, []V) []error
+	Delete(K) error
+	DeleteBatch([]K) []error
+	Has(K) bool
+	// Len() uint64
 }
 
 const (
@@ -31,17 +42,47 @@ const (
 	PERSISTENT_DB = 1
 )
 
-type PersistentStorage interface {
-	Get(string) ([]byte, error)
-	Set(string, []byte) error
-	BatchGet([]string) ([][]byte, error)
-	BatchSet([]string, [][]byte) error
-	Query(string, func(string, string) bool) ([]string, [][]byte, error)
+type Key interface {
+	~string | constraints.Integer
 }
 
-type DbFilter func(PersistentStorage) bool
-
-func NotQueryRpc(db PersistentStorage) bool { // Do not access MemoryDB
-	name := reflect.TypeOf(db).String()
-	return name == "*storage.ReadonlyRpcClient"
+// ReadOnlyStore defines the interface for a read-only storage source.
+type ReadOnlyStore[K comparable, V any] interface {
+	Has(K) bool         // Check if the key exists in the source, which can be a cache or a storage.
+	Get(K) (any, error) // Get from cache or persistent storage, with cache lookup first.
 }
+
+type ReadableStore[K comparable, V any] interface {
+	ReadOnlyStore[K, V]
+	GetBatch([]K) ([]any, []error)
+}
+
+type WriteableStore[K comparable, V any] interface {
+	Set(K, V) error
+	SetBatch([]K, []V) []error
+	Delete(K) error
+	DeleteBatch([]K) []error
+}
+
+type ReadWriteStore[K comparable, V any] interface {
+	ReadableStore[K, V]
+	WriteableStore[K, V]
+	Query(K, func(K, V) bool) ([]K, []V, []error)
+}
+
+type StoreWriter[T any] interface {
+	Import([]T)
+	Precommit(bool) error //should return a error
+	Commit(uint64) error  //should return a error
+
+	IsSync() bool // If the writer is synchronous, it will block until the commit is done.
+	Name() string
+}
+
+// type CacheLike[K comparable, V any] interface {
+// 	Len() uint64
+// 	Size() uint64
+// 	IsEnabled() bool // If the cache is enabled
+// 	Enable() bool
+// 	Disable() bool
+// }

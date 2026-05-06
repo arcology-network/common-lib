@@ -18,8 +18,11 @@
 package badgerdb
 
 import (
+	stgintf "github.com/arcology-network/common-lib/storage/interface"
 	"github.com/dgraph-io/badger"
 )
+
+var _ stgintf.ReadWriteStore[string, []byte] = (*BadgerDB)(nil)
 
 type BadgerDB struct {
 	impl *badger.DB
@@ -35,7 +38,7 @@ func NewBadgerDB(path string) *BadgerDB {
 	}
 }
 
-func (db *BadgerDB) Get(key string) (value []byte, err error) {
+func (db *BadgerDB) Get(key string) (value any, err error) {
 	err = db.impl.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(key))
 		if err == nil {
@@ -43,59 +46,98 @@ func (db *BadgerDB) Get(key string) (value []byte, err error) {
 		}
 		return err
 	})
+	if err == badger.ErrKeyNotFound {
+		return nil, stgintf.ErrNotFound
+	}
 	return
+}
+
+func (db *BadgerDB) Has(key string) bool {
+	_, err := db.Get(key)
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func (db *BadgerDB) Set(key string, value []byte) error {
-	panic("not implemented")
-}
-
-func (db *BadgerDB) BatchGet(keys []string) (values [][]byte, err error) {
-	db.impl.View(func(txn *badger.Txn) error {
-		for i := range keys {
-			if len(keys[i]) == 0 {
-				continue
-			}
-			item, err := txn.Get([]byte(keys[i]))
-			if err != nil {
-				values = append(values, nil)
-			} else {
-				val, err := item.ValueCopy(nil)
-				if err != nil {
-					values = append(values, nil)
-				} else {
-					values = append(values, val)
-				}
-			}
-		}
-		return nil
+	return db.impl.Update(func(txn *badger.Txn) error {
+		return txn.Set([]byte(key), value)
 	})
-	return
 }
 
-func (db *BadgerDB) BatchSet(keys []string, values [][]byte) error {
-	index := 0
-	for index < len(keys) {
-		db.impl.Update(func(txn *badger.Txn) error {
-			for i := index; i < len(keys); i++ {
-				if len(keys[i]) == 0 {
-					continue
-				}
+func (db *BadgerDB) Delete(key string) error {
+	return db.impl.Update(func(txn *badger.Txn) error {
+		return txn.Delete([]byte(key))
+	})
+}
 
-				if err := txn.Set([]byte(keys[i]), values[i]); err != nil {
-					return nil
-				} else {
-					index++
-				}
-			}
-			return nil
-		})
+func (db *BadgerDB) DeleteBatch(keys []string) []error {
+	errs := make([]error, len(keys))
+	for i, key := range keys {
+		if len(key) == 0 {
+			errs[i] = stgintf.ErrNotFound
+			continue
+		}
+		if err := db.Delete(key); err != nil && err != badger.ErrKeyNotFound {
+			errs[i] = err
+		}
 	}
-	return nil
+	if allNil(errs) {
+		return nil
+	}
+	return errs
 }
 
-func (db *BadgerDB) Query(prefix string, checker func(string, string) bool) (keys []string, values [][]byte, err error) {
-	db.impl.View(func(txn *badger.Txn) error {
+func (db *BadgerDB) GetBatch(keys []string) (values []any, errs []error) {
+	values = make([]any, len(keys))
+	errs = make([]error, len(keys))
+	for i := range keys {
+		if len(keys[i]) == 0 {
+			errs[i] = stgintf.ErrNotFound
+			continue
+		}
+		v, err := db.Get(keys[i])
+		if err != nil {
+			errs[i] = err
+			continue
+		}
+		values[i] = v
+	}
+	if allNil(errs) {
+		return values, nil
+	}
+	return values, errs
+}
+
+func (db *BadgerDB) SetBatch(keys []string, values [][]byte) []error {
+	errs := make([]error, len(keys))
+	for i := range keys {
+		if len(keys[i]) == 0 {
+			errs[i] = stgintf.ErrNotFound
+			continue
+		}
+		if err := db.Set(keys[i], values[i]); err != nil {
+			errs[i] = err
+		}
+	}
+	if allNil(errs) {
+		return nil
+	}
+	return errs
+}
+
+func allNil(errs []error) bool {
+	for _, err := range errs {
+		if err != nil {
+			return false
+		}
+	}
+	return true
+}
+
+func (db *BadgerDB) Query(prefix string, checker func(string, []byte) bool) (keys []string, values [][]byte, errs []error) {
+	err := db.impl.View(func(txn *badger.Txn) error {
 		it := txn.NewIterator(badger.IteratorOptions{
 			PrefetchValues: true,
 			PrefetchSize:   100,
@@ -105,13 +147,23 @@ func (db *BadgerDB) Query(prefix string, checker func(string, string) bool) (key
 
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
-			keys = append(keys, string(item.Key()))
-			val, _ := item.ValueCopy(nil)
+			key := string(item.Key())
+			val, copyErr := item.ValueCopy(nil)
+			if copyErr != nil {
+				return copyErr
+			}
+			if checker != nil && !checker(key, val) {
+				continue
+			}
+			keys = append(keys, key)
 			values = append(values, val)
 		}
 		return nil
 	})
-	return
+	if err != nil {
+		return nil, nil, []error{err}
+	}
+	return keys, values, nil
 }
 
 func (db *BadgerDB) Close() error {

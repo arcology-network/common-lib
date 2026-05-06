@@ -28,13 +28,14 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/arcology-network/common-lib/codec"
 	"github.com/arcology-network/common-lib/common"
 	slice "github.com/arcology-network/common-lib/exp/slice"
-	intf "github.com/arcology-network/common-lib/storage/interface"
+	stgintf "github.com/arcology-network/common-lib/storage/interface"
 )
+
+var _ stgintf.ReadWriteStore[string, []byte] = (*FileDB)(nil)
 
 const (
 	MAX_DEPTH    = 4
@@ -106,7 +107,7 @@ func NewFileDB(rootPath string, shards uint32, depth uint8) (*FileDB, error) {
 }
 
 func (this *FileDB) CRDT() uint8 {
-	return intf.PERSISTENT_DB
+	return stgintf.PERSISTENT_DB
 }
 
 func (this *FileDB) Root() string {
@@ -252,50 +253,90 @@ func (this *FileDB) Set(key string, v []byte) error {
 	return this.writeFile(key, v)
 }
 
-func (this *FileDB) Get(key string) ([]byte, error) {
-	return this.readFile(key)
+func (this *FileDB) Get(key string) (any, error) {
+	v, err := this.readFile(key)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, stgintf.ErrNotFound
+		}
+		return nil, err
+	}
+	if v == nil {
+		return nil, stgintf.ErrNotFound
+	}
+	return v, nil
 }
 
-func (this *FileDB) BatchGet(nkeys []string) ([][]byte, error) {
+func (this *FileDB) Has(key string) bool {
+	_, err := this.Get(key)
+	return err == nil
+}
+
+func (this *FileDB) Delete(key string) error {
+	return this.writeFile(key, nil)
+}
+
+func (this *FileDB) DeleteBatch(keys []string) []error {
+	values := make([][]byte, len(keys))
+	return this.SetBatch(keys, values)
+}
+
+func hasErrors(errs []error) bool {
+	for _, err := range errs {
+		if err != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func (this *FileDB) GetBatch(nkeys []string) ([]any, []error) {
 	files := slice.ParallelTransform(nkeys, 8, func(i int, _ string) string {
 		return this.locateFile(nkeys[i]) //Must use the compressed ky to compute the shard
 	})
 
 	// Read files
+	data := make([]any, len(nkeys))
 	errs := make([]error, len(nkeys))
-	data := make([][]byte, len(nkeys))
-	t0 := time.Now()
+	for i := range errs {
+		errs[i] = stgintf.ErrNotFound
+	}
+
 	uniqueFiles, indices := this.CategorizeFiles(files)
-	fmt.Println("niqueFiles, indices := this.CategorizeFiles(files):", time.Since(t0))
 
 	reader := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
 			keys, values, err := this.loadFile(uniqueFiles[i])
-			if err != nil && !os.IsNotExist(err) {
-				errs[i] = err
-				return
+			if err != nil {
+				if os.IsNotExist(err) {
+					continue
+				}
+				for _, idx := range indices[i] {
+					errs[idx] = err
+				}
+				continue
 			}
 
 			for j := 0; j < len(indices[i]); j++ {
+				idx := indices[i][j]
 				for k := 0; k < len(keys); k++ {
-					if keys[k] == nkeys[indices[i][j]] {
-						data[indices[i][j]] = values[k]
+					if keys[k] == nkeys[idx] {
+						data[idx] = values[k]
+						errs[idx] = nil
+						break
 					}
 				}
 			}
 		}
 	}
 	common.ParallelWorker(len(uniqueFiles), 8, reader)
-	slice.RemoveIf(&errs, func(_ int, v error) bool { return v == nil })
-
-	if len(errs) > 0 {
-		return data, errs[0]
+	if !hasErrors(errs) {
+		return data, nil
 	}
-
-	return data, nil
+	return data, errs
 }
 
-func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
+func (this *FileDB) SetBatch(nkeys []string, byteset [][]byte) []error {
 	files := make([]string, len(nkeys))
 	finder := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
@@ -304,7 +345,7 @@ func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
 	}
 	common.ParallelWorker(len(nkeys), 8, finder)
 
-	errs := make([]error, len(files))
+	errs := make([]error, len(nkeys))
 	uniqueFiles, indices := this.CategorizeFiles(files)
 
 	newFiles := make([]string, len(uniqueFiles))
@@ -312,8 +353,10 @@ func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
 		for i := start; i < end; i++ {
 			if _, err := os.Stat(uniqueFiles[i]); err != nil { // File doesn't exist, create it
 				if err := os.WriteFile(uniqueFiles[i], []byte{}, os.ModePerm); err != nil && errors.Is(err, os.ErrNotExist) {
-					errs[i] = err
-					return
+					for _, idx := range indices[i] {
+						errs[idx] = err
+					}
+					continue
 				}
 				newFiles[i] = uniqueFiles[i]
 			}
@@ -322,22 +365,19 @@ func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
 	common.ParallelWorker(len(uniqueFiles), 4, maker)
 
 	slice.Remove(&newFiles, "")
-	slice.RemoveIf(&errs, func(_ int, v error) bool { return v == nil })
 
 	this.files = append(this.files, newFiles...)
-	if len(errs) > 0 {
-		return errs[0].(error)
-	}
 
 	// Write Contents
-	errs = make([]error, len(uniqueFiles))
 	writer := func(start, end, index int, args ...interface{}) {
 		for i := start; i < end; i++ {
 			file := uniqueFiles[i]
 			keys, values, err := this.loadFile(file)
 			if err != nil && !os.IsNotExist(err) {
-				errs[i] = err
-				return
+				for _, idx := range indices[i] {
+					errs[idx] = err
+				}
+				continue
 			}
 
 			for j := 0; j < len(indices[i]); j++ {
@@ -346,23 +386,28 @@ func (this *FileDB) BatchSet(nkeys []string, byteset [][]byte) error {
 
 			content := codec.Byteset([][]byte{codec.Strings(keys).Encode(), codec.Byteset(values).Encode()}).Encode()
 			if len(content) == 0 {
-				errs[i] = os.Remove(file)
-				return
+				err := os.Remove(file)
+				if err != nil {
+					for _, idx := range indices[i] {
+						errs[idx] = err
+					}
+				}
+				continue
 			}
 
 			if err := os.WriteFile(file, content, os.ModePerm); err != nil {
-				errs[i] = err
-				return
+				for _, idx := range indices[i] {
+					errs[idx] = err
+				}
+				continue
 			}
 		}
 	}
 	common.ParallelWorker(len(uniqueFiles), 8, writer)
-	slice.RemoveIf(&errs, func(_ int, v error) bool { return v == nil })
-
-	if len(errs) > 0 {
-		return errs[0]
+	if !hasErrors(errs) {
+		return nil
 	}
-	return nil
+	return errs
 }
 
 func (this *FileDB) CategorizeFiles(keys []string) ([]string, [][]uint32) {
@@ -454,7 +499,7 @@ func (this *FileDB) readAll(paths []string) ([][]byte, error) {
 	slice.RemoveIf(&errs, func(_ int, v error) bool { return v == nil })
 
 	if len(errs) > 0 {
-		return nil, errs[0].(error)
+		return nil, errs[0]
 	}
 
 	// Flatten
@@ -466,7 +511,7 @@ func (this *FileDB) readAll(paths []string) ([][]byte, error) {
 	}
 
 	if len(errs) > 0 {
-		return flattened, errs[0].(error)
+		return flattened, errs[0]
 	}
 	return flattened, nil
 }

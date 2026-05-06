@@ -22,19 +22,19 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
-	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 )
 
-var (
-	TEST_ROOT_PATH   = path.Join(os.TempDir(), "/filedb/")
-	TEST_BACKUP_PATH = path.Join(os.TempDir(), "/filedb-back/")
-)
+func testFileDBRoot(tb testing.TB) string {
+	tb.Helper()
+	return filepath.Join(tb.TempDir(), "filedb")
+}
 
 func TestFileDB(t *testing.T) {
-	fileDB, err := NewFileDB(TEST_ROOT_PATH, 8, 2)
+	root := testFileDBRoot(t)
+	fileDB, err := NewFileDB(root, 8, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -52,11 +52,11 @@ func TestFileDB(t *testing.T) {
 		t.Error(err)
 	}
 
-	if v, _ := fileDB.Get(keys[0]); !bytes.Equal(v, values[0]) {
+	if v, err := fileDB.Get(keys[0]); err != nil || !bytes.Equal(v.([]byte), values[0]) {
 		t.Error("Error")
 	}
 
-	if v, _ := fileDB.Get(keys[1]); !bytes.Equal(v, values[1]) {
+	if v, err := fileDB.Get(keys[1]); err != nil || !bytes.Equal(v.([]byte), values[1]) {
 		t.Error("Error")
 	}
 
@@ -65,7 +65,7 @@ func TestFileDB(t *testing.T) {
 		t.Error(err)
 	}
 
-	if v, _ := fileDB.Get(keys[0]); v != nil {
+	if v, err := fileDB.Get(keys[0]); err == nil || v != nil {
 		t.Error("Error: Should have been deleted already !")
 	}
 
@@ -73,7 +73,7 @@ func TestFileDB(t *testing.T) {
 		t.Error(err)
 	}
 
-	if v, _ := fileDB.Get(keys[1]); v != nil {
+	if v, err := fileDB.Get(keys[1]); err == nil || v != nil {
 		t.Error("Error: Should have been deleted already !")
 	}
 
@@ -84,11 +84,11 @@ func TestFileDB(t *testing.T) {
 			t.Error("Error: All deleted")
 		}
 	}
-	os.RemoveAll(fileDB.rootpath)
 }
 
 func TestFileDBBatch(t *testing.T) {
-	fileDB, err := NewFileDB(TEST_ROOT_PATH, 8, 2)
+	root := testFileDBRoot(t)
+	fileDB, err := NewFileDB(root, 8, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -98,26 +98,66 @@ func TestFileDBBatch(t *testing.T) {
 	values[0] = []byte{1, 2, 3}
 	values[1] = []byte{4, 5, 6}
 
-	if err := fileDB.BatchSet(keys, values); err != nil {
+	if err := fileDB.SetBatch(keys, values); err != nil {
 		t.Error(err)
 	}
 
-	if v, _ := fileDB.Get(keys[0]); !bytes.Equal(v, values[0]) {
+	if v, err := fileDB.Get(keys[0]); err != nil || !bytes.Equal(v.([]byte), values[0]) {
 		t.Error("Error")
 	}
 
-	if v, _ := fileDB.Get(keys[1]); !bytes.Equal(v, values[1]) {
+	if v, err := fileDB.Get(keys[1]); err != nil || !bytes.Equal(v.([]byte), values[1]) {
 		t.Error("Error")
 	}
 
-	if v, _ := fileDB.BatchGet(keys); len(v) != 2 || !bytes.Equal(v[0], values[0]) || !bytes.Equal(v[1], values[1]) {
+	if v, errs := fileDB.GetBatch(keys); errs != nil || len(v) != 2 || !bytes.Equal(v[0].([]byte), values[0]) || !bytes.Equal(v[1].([]byte), values[1]) {
 		t.Error("Error")
 	}
-	os.RemoveAll(fileDB.rootpath)
+}
+
+func TestFileDBDeleteOps(t *testing.T) {
+	root := testFileDBRoot(t)
+	fileDB, err := NewFileDB(root, 8, 2)
+	if err != nil {
+		t.Error(err)
+	}
+
+	keys := []string{"123", "456", "789"}
+	values := [][]byte{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
+
+	if err := fileDB.SetBatch(keys, values); err != nil {
+		t.Error(err)
+	}
+
+	h0 := fileDB.Has(keys[0])
+	h1 := fileDB.Has(keys[1])
+	h2 := fileDB.Has(keys[2])
+	if !h0 || !h1 || !h2 {
+		t.Fatal("expected keys to exist")
+	}
+
+	err = fileDB.Delete(keys[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	h0 = fileDB.Has(keys[0])
+	if h0 {
+		t.Fatal("expected key to be deleted")
+	}
+
+	if errs := fileDB.DeleteBatch(keys[1:]); errs != nil {
+		t.Fatal(errs)
+	}
+	h1 = fileDB.Has(keys[1])
+	h2 = fileDB.Has(keys[2])
+	if h1 || h2 {
+		t.Fatal("expected batch delete to remove remaining keys")
+	}
 }
 
 func TestFileDbBatch(t *testing.T) {
-	fileDB, err := NewFileDB(TEST_ROOT_PATH, 16, 2)
+	root := testFileDBRoot(t)
+	fileDB, err := NewFileDB(root, 16, 2)
 
 	if err != nil {
 		t.Error(err)
@@ -134,34 +174,34 @@ func TestFileDbBatch(t *testing.T) {
 	}
 
 	t0 := time.Now()
-	if err := fileDB.BatchSet(keys, values); err != nil {
+	if err := fileDB.SetBatch(keys, values); err != nil {
 		t.Error(err)
 	}
 
-	if retrived, err := fileDB.BatchGet(keys); err == nil {
+	if retrived, errs := fileDB.GetBatch(keys); errs == nil {
 		for i := 0; i < len(keys); i++ {
-			if !bytes.Equal(retrived[i], values[i]) {
+			if !bytes.Equal(retrived[i].([]byte), values[i]) {
 				t.Error("Error: Mismatch !!!")
 			}
 		}
 	} else {
-		t.Error(err)
+		t.Error(errs)
 	}
 
 	for i := 0; i < len(keys); i++ {
 		if retrived, err := fileDB.Get(keys[i]); err == nil {
-			if !bytes.Equal(retrived, values[i]) {
+			if !bytes.Equal(retrived.([]byte), values[i]) {
 				t.Error("Error: Mismatch !!!")
 			}
 		}
 	}
 
 	fmt.Println("Batch Set ", len(keys), " Entries from files:", time.Since(t0))
-	os.RemoveAll(fileDB.rootpath)
 }
 
 func TestFileDbExport(t *testing.T) {
-	fileDB, err := NewFileDB(TEST_ROOT_PATH, 4, 2)
+	root := testFileDBRoot(t)
+	fileDB, err := NewFileDB(root, 4, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -176,7 +216,7 @@ func TestFileDbExport(t *testing.T) {
 		keys[i] = string(k[:])
 	}
 
-	if err := fileDB.BatchSet(keys, values); err != nil {
+	if err := fileDB.SetBatch(keys, values); err != nil {
 		t.Error(err)
 	}
 
@@ -184,11 +224,11 @@ func TestFileDbExport(t *testing.T) {
 	if data, err := fileDB.Export(prefixes); err != nil || len(data) != 2 {
 		t.Error(err)
 	}
-	os.RemoveAll(fileDB.rootpath)
 }
 
 func TestFileDbExportAll(t *testing.T) {
-	fileDB, err := NewFileDB(TEST_ROOT_PATH, 4, 2)
+	root := testFileDBRoot(t)
+	fileDB, err := NewFileDB(root, 4, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -205,7 +245,7 @@ func TestFileDbExportAll(t *testing.T) {
 		inHashes[i] = sha256.Sum256(buffer)
 	}
 
-	if err := fileDB.BatchSet(keys, values); err != nil {
+	if err := fileDB.SetBatch(keys, values); err != nil {
 		t.Error(err)
 	}
 
@@ -218,7 +258,7 @@ func TestFileDbExportAll(t *testing.T) {
 		t.Error(err)
 	}
 
-	fileDb, err := LoadFileDB(TEST_ROOT_PATH, 4, 2)
+	fileDb, err := LoadFileDB(root, 4, 2)
 	if err == nil {
 		if err := fileDb.Import(data); err != nil {
 			t.Error(err)
@@ -230,12 +270,11 @@ func TestFileDbExportAll(t *testing.T) {
 	if !fileDB.Equal(fileDb) {
 		t.Error("Error: Two files are different")
 	}
-	os.RemoveAll(fileDB.rootpath)
-	os.RemoveAll(fileDb.rootpath)
 }
 
 func TestLoadFileDB(t *testing.T) {
-	fileDB, err := NewFileDB(TEST_ROOT_PATH, 4, 2)
+	root := testFileDBRoot(t)
+	fileDB, err := NewFileDB(root, 4, 2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -252,7 +291,7 @@ func TestLoadFileDB(t *testing.T) {
 		inHashes[i] = sha256.Sum256(buffer)
 	}
 
-	if err := fileDB.BatchSet(keys, values); err != nil {
+	if err := fileDB.SetBatch(keys, values); err != nil {
 		t.Error(err)
 	}
 
@@ -261,7 +300,7 @@ func TestLoadFileDB(t *testing.T) {
 		t.Error(err)
 	}
 
-	fileDb, err := LoadFileDB(TEST_ROOT_PATH, 4, 2)
+	fileDb, err := LoadFileDB(root, 4, 2)
 	if err == nil {
 		if err := fileDb.Import(data); err != nil {
 			t.Error(err)
@@ -273,13 +312,11 @@ func TestLoadFileDB(t *testing.T) {
 	if !fileDB.Equal(fileDb) {
 		t.Error("Error: Two files are different")
 	}
-
-	os.RemoveAll(TEST_ROOT_PATH)
-	os.RemoveAll(TEST_BACKUP_PATH)
 }
 
 func BenchmarkFileDbBatch(b *testing.B) {
-	fileDB, err := NewFileDB(TEST_ROOT_PATH, 128, 2)
+	root := testFileDBRoot(b)
+	fileDB, err := NewFileDB(root, 128, 2)
 	if err != nil {
 		b.Error(err)
 	}
@@ -295,22 +332,20 @@ func BenchmarkFileDbBatch(b *testing.B) {
 	}
 
 	t0 := time.Now()
-	if err := fileDB.BatchSet(keys, values); err != nil {
+	if err := fileDB.SetBatch(keys, values); err != nil {
 		b.Error(err)
 	}
-	fmt.Println("BatchSet() ", len(keys), " Entries from files:", time.Since(t0))
+	fmt.Println("SetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 
 	t0 = time.Now()
-	if _, err := fileDB.BatchGet(keys); err != nil {
-		b.Error(err)
+	if _, errs := fileDB.GetBatch(keys); errs != nil {
+		b.Error(errs)
 	}
-	fmt.Println("BatchGet() ", len(keys), " Entries from files:", time.Since(t0))
+	fmt.Println("GetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 
 	t0 = time.Now()
-	if err := fileDB.BatchSet(keys, values); err != nil {
+	if err := fileDB.SetBatch(keys, values); err != nil {
 		b.Error(err)
 	}
-	fmt.Println("BatchSet() ", len(keys), " Entries from files:", time.Since(t0))
-
-	os.RemoveAll(fileDB.rootpath)
+	fmt.Println("SetBatch() ", len(keys), " Entries from files:", time.Since(t0))
 }

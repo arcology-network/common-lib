@@ -19,13 +19,18 @@ package badgerdb
 
 import (
 	"bytes"
-	"os"
 	"testing"
 )
 
 func TestBadgerDBFunctions(t *testing.T) {
-	db := NewBadgerDB(TEST_ROOT_PATH)
-	db.BatchSet([]string{
+	db := NewBadgerDB(tempBadgerPath(t))
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("close db: %v", err)
+		}
+	})
+
+	if errs := db.SetBatch([]string{
 		"a01",
 		"a02",
 		"a03",
@@ -39,31 +44,50 @@ func TestBadgerDBFunctions(t *testing.T) {
 		{10, 11, 12},
 		{13, 14, 15},
 		{16, 17, 18},
-	})
+	}); errs != nil {
+		t.Fatal(errs)
+	}
 
-	values, _ := db.BatchGet([]string{
+	values, errs := db.GetBatch([]string{
 		"a01",
 		"b01",
 		"c01",
 	})
+	if errs != nil {
+		t.Fatal(errs)
+	}
 	if len(values) != 3 ||
-		!bytes.Equal(values[0], []byte{1, 2, 3}) ||
-		!bytes.Equal(values[1], []byte{10, 11, 12}) ||
-		!bytes.Equal(values[2], []byte{13, 14, 15}) {
-		t.Error("BatchGet Failed")
+		!bytes.Equal(values[0].([]byte), []byte{1, 2, 3}) ||
+		!bytes.Equal(values[1].([]byte), []byte{10, 11, 12}) ||
+		!bytes.Equal(values[2].([]byte), []byte{13, 14, 15}) {
+		t.Error("GetBatch Failed")
 	}
 
 	value, _ := db.Get("d01")
-	if !bytes.Equal(value, []byte{16, 17, 18}) {
+	if !bytes.Equal(value.([]byte), []byte{16, 17, 18}) {
 		t.Error("Get Failed")
 	}
-
-	keys, values, _ := db.Query("a", nil)
-	t.Log(keys)
-	t.Log(values)
-
-	err := os.RemoveAll(TEST_ROOT_PATH)
-	if err != nil {
-		t.Log(keys)
+	if has := db.Has("d01"); !has {
+		t.Error("Has Failed")
 	}
+
+	if err := db.Delete("d01"); err != nil {
+		t.Fatal(err)
+	}
+	if has := db.Has("d01"); has {
+		t.Error("Delete Failed")
+	}
+
+	if errs := db.DeleteBatch([]string{"a01", "b01"}); errs != nil {
+		t.Fatal(errs)
+	}
+	h1 := db.Has("a01")
+	h2 := db.Has("b01")
+	if h1 || h2 {
+		t.Error("DeleteBatch Failed")
+	}
+
+	queryKeys, queryValues, _ := db.Query("a", nil)
+	t.Log(queryKeys)
+	t.Log(queryValues)
 }

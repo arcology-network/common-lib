@@ -25,7 +25,7 @@ type CRDT interface { // value type
 	IsNumeric() bool
 	IsCommutative() bool // If the type is commutative, the order of the operands does not matter.
 
-	Value() any // Get() - read/write count
+	Value() any
 	Delta() (any, bool)
 
 	Limits() (any, any) // Get the limits of the type, if applicable.
@@ -59,20 +59,24 @@ type CRDT interface { // value type
 	Print()
 }
 
-type Writer[T any] interface {
-	Import([]T)
-	Precommit(bool)
-	Commit(uint64)
-	IsSync() bool // If the writer is synchronous, it will block until the commit is done.
-	Name() string
-}
+// type Writer[T any] interface {
+// 	Import([]T)
+// 	Precommit(bool) error //should return a error
+// 	Commit(uint64) error  //should return a error
 
-// ReadOnlyStore defines the interface for a read-only storage source.
-type ReadOnlyStore interface {
-	IfExists(string) bool                  // Check if the key exists in the source, which can be a cache or a storage.
-	ReadBackend(string, CRDT) (any, error) // Get from persistent storage directly.
-	Retrieve(string, CRDT) (any, error)    // Get from cache or persistent storage, with cache lookup first.
-	Preload([]byte) any
-}
+// 	IsSync() bool // If the writer is synchronous, it will block until the commit is done.
+// 	Name() string
+// }
 
 type Hasher func(CRDT) []byte
+
+func SizeOf(T any) uint64 {
+	switch v := T.(type) {
+	case CRDT:
+		return v.MemSize()
+	case []byte:
+		return uint64(len(v))
+	}
+	panic("Unsupported type for SizeOf")
+	return 0
+}
