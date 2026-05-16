@@ -42,7 +42,7 @@ func NewCachedStore[K0 stgintf.Key, V0 any, K1 stgintf.Key, V1 any](
 	sizeOf func(V0) uint64,
 ) *CachedStore[K0, V0, K1, V1] {
 	store := &CachedStore[K0, V0, K1, V1]{
-		cache: cache.NewCache[K0, V0](
+		cache: cache.NewCache(
 			16,
 			func(k K0) uint64 {
 				return uint64(xxhash.Sum64String(fmt.Sprintf("%v", k)))
@@ -59,7 +59,8 @@ func (this *CachedStore[K0, V0, K1, V1]) Codec() *stgcodec.StorageCodec[K0, V0, 
 	return this.converter
 }
 
-func (this *CachedStore[K0, V0, K1, V1]) Cache() *cache.Cache[K0, V0]           { return this.cache }
+func (this *CachedStore[K0, V0, K1, V1]) Cache() *cache.Cache[K0, V0] { return this.cache }
+
 func (this *CachedStore[K0, V0, K1, V1]) Preload([]byte) any                    { return nil }
 func (this *CachedStore[K0, V0, K1, V1]) Backend() stgintf.BackendStore[K1, V1] { return this.backend }
 
@@ -106,7 +107,8 @@ func (this *CachedStore[K0, V0, K1, V1]) Get(key K0) (any, error) {
 		return this.zero, err
 	}
 
-	this.cache.Set(key, value)
+	// this.cache.Set(key, value)
+	_ = this.cache.Set(key, value)
 	return value, nil
 }
 

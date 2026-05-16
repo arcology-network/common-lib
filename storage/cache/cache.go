@@ -34,8 +34,8 @@ var _ stgintf.ReadWriteStore[string, any] = (*Cache[string, any])(nil)
 type Cache[K stgintf.Key, V any] struct {
 	*mapi.ConcurrentMap[K, *entry[V]]
 	cachePolicy *CachePolicy[V]
-	sizeOf      func(V) uint64
-	epoch       atomic.Uint64
+	epoch   atomic.Uint64
+	enabled bool
 }
 
 func NewCache[K stgintf.Key, V any](
@@ -50,26 +50,40 @@ func NewCache[K stgintf.Key, V any](
 			hasher,
 		),
 		cachePolicy: cachePolicy,
+		enabled:     true,
 	}
 	return newReadCache
 }
 
 func (this *Cache[K, V]) Has(key K) bool {
+	if !this.enabled {
+		return false
+	}
 	_, ok := this.ConcurrentMap.Get(key)
-	return ok
+	return ok && this.enabled
 }
 
 func (this *Cache[K, V]) Get(key K) (any, error) {
-	if record, ok := this.ConcurrentMap.Get(key); ok {
-		if record != nil {
-			record.visits++
-			return record.value, nil
+	if this.enabled {
+		if record, ok := this.ConcurrentMap.Get(key); ok {
+			if record != nil {
+				record.visits++
+				return record.value, nil
+			}
 		}
 	}
 	return nil, stgintf.ErrNotFound
 }
 
 func (this *Cache[K, V]) GetBatch(keys []K) ([]any, []error) {
+	if !this.enabled {
+		errs := make([]error, len(keys))
+		for i := range keys {
+			errs[i] = stgintf.ErrNotFound
+		}
+		return nil, errs
+	}
+
 	if len(keys) == 0 {
 		return nil, nil
 	}
@@ -88,6 +102,10 @@ func (this *Cache[K, V]) GetBatch(keys []K) ([]any, []error) {
 }
 
 func (this *Cache[K, V]) Set(key K, value V) error {
+	if !this.enabled {
+		return nil
+	}
+
 	origin, ok := this.ConcurrentMap.Get(key)
 	if ok {
 		oldSize, newSize := origin.Replace(value)
@@ -105,6 +123,10 @@ func (this *Cache[K, V]) Set(key K, value V) error {
 
 func (this *Cache[K, V]) SetBatch(keys []K, values []V) []error {
 	errs := make([]error, len(keys))
+	if !this.enabled {
+		return errs
+	}
+
 	for i := 0; i < len(keys); i++ {
 		if i < len(values) {
 			errs[i] = this.Set(keys[i], values[i])
@@ -114,6 +136,10 @@ func (this *Cache[K, V]) SetBatch(keys []K, values []V) []error {
 }
 
 func (this *Cache[K, V]) Delete(key K) error {
+	if !this.enabled {
+		return nil
+	}
+
 	if origin, ok := this.ConcurrentMap.Get(key); ok {
 		if origin != nil {
 			oldSize := this.cachePolicy.ValueSize(origin.value)
@@ -126,6 +152,10 @@ func (this *Cache[K, V]) Delete(key K) error {
 
 func (this *Cache[K, V]) DeleteBatch(keys []K) []error {
 	errs := make([]error, len(keys))
+	if !this.enabled {
+		return errs
+	}
+
 	for i, key := range keys {
 		errs[i] = this.Delete(key)
 	}
@@ -133,6 +163,10 @@ func (this *Cache[K, V]) DeleteBatch(keys []K) []error {
 }
 
 func (this *Cache[K, V]) Query(target K, predicate func(K, V) bool) ([]K, []V, []error) {
+	if !this.enabled {
+		return nil, nil, nil
+	}
+
 	keys, entries := this.ConcurrentMap.KVs()
 	matchedKeys := make([]K, 0, len(keys))
 	matchedValues := make([]V, 0, len(keys))
@@ -159,6 +193,10 @@ func (this *Cache[K, V]) Query(target K, predicate func(K, V) bool) ([]K, []V, [
 }
 
 func (this *Cache[K, V]) Evict() {
+	if !this.enabled {
+		return
+	}
+
 	if !this.cachePolicy.NeedEviction() {
 		return
 	}
@@ -178,24 +216,24 @@ func (this *Cache[K, V]) Evict() {
 	}
 }
 
-// func (this *Cache[K, V]) Status() bool            { return this.enabled }
-// func (this *Cache[K, V]) SetStatus(flag bool)     { this.enabled = flag }
+func (this *Cache[K, V]) Status() bool            { return this.enabled }
+func (this *Cache[K, V]) SetStatus(flag bool)     { this.enabled = flag }
 func (this *Cache[K, V]) Hash(k K) uint64         { return this.ConcurrentMap.Hash(k) }
 func (this *Cache[K, V]) Cap() uint64             { return this.cachePolicy.Size() }
 func (this *Cache[K, V]) Clear()                  { this.ConcurrentMap.Clear() }
 func (this *Cache[K, V]) Policy() *CachePolicy[V] { return this.cachePolicy }
 
-func (this *Cache[K, V]) entrySize(entry *entry[V]) uint64 {
-	if entry == nil {
-		return 0
-	}
+// func (this *Cache[K, V]) entrySize(entry *entry[V]) uint64 {
+// 	if entry == nil {
+// 		return 0
+// 	}
 
-	if this != nil && this.sizeOf != nil {
-		return this.sizeOf(entry.value)
-	}
+// 	if this != nil && this.sizeOf != nil {
+// 		return this.sizeOf(entry.value)
+// 	}
 
-	return entry.Size()
-}
+// 	return entry.Size()
+// }
 
 func (this *Cache[K, V]) wrap(value V) *entry[V] {
 	entry := &entry[V]{value: value}

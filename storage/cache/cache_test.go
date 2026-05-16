@@ -2,6 +2,8 @@ package cache
 
 import (
 	"testing"
+
+	stgintf "github.com/arcology-network/common-lib/storage/interface"
 )
 
 // For entrySize test: type with MemSize method
@@ -18,8 +20,8 @@ func testStringHash(v string) uint64 {
 
 func TestCacheBasic(t *testing.T) {
 	// Policy: count size as value itself
-	policy := NewCachePolicy[int](100, func(v int) uint64 { return uint64(v) })
-	cache := NewCache[string, int](4, testStringHash, policy)
+	policy := NewCachePolicy(100, func(v int) uint64 { return uint64(v) })
+	cache := NewCache(4, testStringHash, policy)
 
 	// Hash
 	if cache.Hash("abc") != testStringHash("abc")%4 {
@@ -109,22 +111,20 @@ func TestCacheBasic(t *testing.T) {
 		t.Error("Update should decrease occupied size")
 	}
 
-	// wrap/entrySize: int (no MemSize, sizeOf)
+	// wrap/value sizing
 	entry := cache.wrap(123)
 	if entry.value != 123 || entry.visits != 1 {
 		t.Error("wrap should set value and visits")
 	}
-	// entrySize with sizeOf
-	cache.sizeOf = func(v int) uint64 { return 42 }
-	if cache.entrySize(entry) != 42 {
-		t.Error("entrySize should use sizeOf if set")
+	if cache.Policy().ValueSize(entry.value) != 123 {
+		t.Error("ValueSize should use the cache policy sizer")
 	}
-	// entrySize with MemSize
-	cache.sizeOf = nil
+
+	// entry.Size with MemSize
 	sizedCache := NewCache[string, sized](4, testStringHash, nil)
 	entry2 := sizedCache.wrap(sized{})
-	if sizedCache.entrySize(entry2) != 99 {
-		t.Error("entrySize should use MemSize if available")
+	if entry2.Size() != 99 {
+		t.Error("entry Size should use MemSize if available")
 	}
 }
 
@@ -180,5 +180,58 @@ func TestCacheEvictSkipsNilEntries(t *testing.T) {
 
 	if _, ok := c.ConcurrentMap.Get("nil"); !ok {
 		t.Fatalf("expected nil entry key to remain after Evict nil-skip path")
+	}
+}
+
+func TestCacheDisabledBypassesAllOperations(t *testing.T) {
+	policy := NewCachePolicy[int](100, func(v int) uint64 { return uint64(v) })
+	c := NewCache[string, int](4, testStringHash, policy)
+
+	c.Set("before", 7)
+	c.SetStatus(false)
+
+	if c.Status() {
+		t.Fatalf("expected cache status to report disabled")
+	}
+	if c.Has("before") {
+		t.Fatalf("expected disabled cache to hide existing entries")
+	}
+	if _, err := c.Get("before"); err == nil {
+		t.Fatalf("expected disabled cache Get to miss")
+	}
+
+	values, errs := c.GetBatch([]string{"before", "missing"})
+	if values != nil {
+		t.Fatalf("expected disabled cache GetBatch values to be nil")
+	}
+	if len(errs) != 2 || errs[0] != stgintf.ErrNotFound || errs[1] != stgintf.ErrNotFound {
+		t.Fatalf("expected disabled cache GetBatch to miss every key")
+	}
+
+	if err := c.Set("new", 9); err != nil {
+		t.Fatalf("expected disabled cache Set to stay a no-op, got %v", err)
+	}
+	if c.Length() != 1 {
+		t.Fatalf("expected disabled cache Set to avoid mutating entries")
+	}
+
+	if gotKeys, gotValues, errs := c.Query("before", nil); gotKeys != nil || gotValues != nil || errs != nil {
+		t.Fatalf("expected disabled cache Query to return empty results")
+	}
+
+	c.Policy().occupied = 200
+	c.Evict()
+	if c.Length() != 1 {
+		t.Fatalf("expected disabled cache Evict to stay a no-op")
+	}
+	if c.Policy().Size() != 200 {
+		t.Fatalf("expected disabled cache Evict to leave policy usage unchanged")
+	}
+
+	if err := c.Delete("before"); err != nil {
+		t.Fatalf("expected disabled cache Delete to stay a no-op, got %v", err)
+	}
+	if c.Length() != 1 {
+		t.Fatalf("expected disabled cache Delete to avoid mutating entries")
 	}
 }

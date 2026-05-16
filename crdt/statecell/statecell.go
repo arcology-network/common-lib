@@ -188,7 +188,7 @@ func (this *StateCell) CopyTo(writable any) {
 	univ.IncrementDeltaWrites(this.DeltaWrites())
 }
 
-func (this *StateCell) Set(tx uint64, path string, newV any, inCache bool, importer any) error { // update the value
+func (this *StateCell) Set(tx uint64, path string, newV any, importer any) error { // update the value
 	this.tx = tx
 
 	// Delete an non-existing value or deleting an entry that has been deleted already.
