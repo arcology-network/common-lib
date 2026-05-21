@@ -164,7 +164,7 @@ func (this *StateCell) CopyTo(writable any) {
 	writeCache := writable.(interface {
 		Read(uint64, string, crdtcommon.CRDT) (any, any, uint64)
 		Write(uint64, string, crdtcommon.CRDT, ...any) (int64, error)
-		LookupForRead(uint64, string, crdtcommon.CRDT, func(*StateCell)) (any, *StateCell, bool)
+		ReadCell(uint64, string, crdtcommon.CRDT, func(*StateCell)) (any, *StateCell, error)
 	})
 
 	var v crdtcommon.CRDT
@@ -178,7 +178,7 @@ func (this *StateCell) CopyTo(writable any) {
 		writeCache.Write(this.tx, *this.GetPath(), v)
 	}
 
-	_, univ, _ := writeCache.LookupForRead(this.tx, *this.GetPath(), nil, nil)
+	_, univ, _ := writeCache.ReadCell(this.tx, *this.GetPath(), nil, nil)
 	if this == univ {
 		return
 	}
@@ -188,7 +188,7 @@ func (this *StateCell) CopyTo(writable any) {
 	univ.IncrementDeltaWrites(this.DeltaWrites())
 }
 
-func (this *StateCell) Set(tx uint64, path string, newV any, inCache bool, importer any) error { // update the value
+func (this *StateCell) Set(tx uint64, path string, newV any, importer any) error { // update the value
 	this.tx = tx
 
 	// Delete an non-existing value or deleting an entry that has been deleted already.

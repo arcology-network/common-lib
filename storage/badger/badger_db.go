@@ -25,39 +25,62 @@ import (
 var _ stgintf.ReadWriteStore[string, []byte] = (*BadgerDB)(nil)
 
 type BadgerDB struct {
-	impl *badger.DB
+	impl    *badger.DB
+	decoder func(string, any, any) (any, error)
 }
 
-func NewBadgerDB(path string) *BadgerDB {
+func NewBadgerDB(path string, decoder ...func(string, any, any) (any, error)) *BadgerDB {
 	bdg, err := badger.Open(badger.DefaultOptions(path))
 	if err != nil {
 		panic(err)
 	}
+
+	var decode func(string, any, any) (any, error)
+	if len(decoder) > 0 {
+		decode = decoder[0]
+	}
+
 	return &BadgerDB{
-		impl: bdg,
+		impl:    bdg,
+		decoder: decode,
 	}
 }
 
 func (db *BadgerDB) Get(key string) (value any, err error) {
-	err = db.impl.View(func(txn *badger.Txn) error {
+	return db.GetAs(key, nil)
+}
+
+func (db *BadgerDB) GetAs(key string, typeHint any) (any, error) {
+	if db == nil {
+		return nil, stgintf.ErrNotFound
+	}
+
+	var value []byte
+	err := db.impl.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(key))
 		if err == nil {
 			value, err = item.ValueCopy(nil)
 		}
 		return err
 	})
+
 	if err == badger.ErrKeyNotFound {
 		return nil, stgintf.ErrNotFound
 	}
-	return
+
+	if err != nil {
+		return nil, err
+	}
+
+	if db.decoder != nil {
+		return db.decoder(key, value, typeHint)
+	}
+	return value, nil
 }
 
 func (db *BadgerDB) Has(key string) bool {
 	_, err := db.Get(key)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func (db *BadgerDB) Set(key string, value []byte) error {

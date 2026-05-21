@@ -26,6 +26,7 @@ import (
 
 	common "github.com/arcology-network/common-lib/common"
 	slice "github.com/arcology-network/common-lib/exp/slice"
+	stgintf "github.com/arcology-network/common-lib/storage/interface"
 )
 
 type ParaPebbleDB struct {
@@ -34,7 +35,7 @@ type ParaPebbleDB struct {
 	shardFunc  func(int, string) int
 }
 
-func NewParaPebbleDB(root string, shardFunc func(numOfShard int, key string) int) (*ParaPebbleDB, error) {
+func NewParaPebbleDB(root string, shardFunc func(numOfShard int, key string) int, decoder ...func(string, any, any) (any, error)) (*ParaPebbleDB, error) {
 	var paraPebbleDB ParaPebbleDB
 	if _, err := os.Stat(root); os.IsNotExist(err) {
 		if err := os.MkdirAll(root, fs.ModePerm); err != nil {
@@ -42,9 +43,14 @@ func NewParaPebbleDB(root string, shardFunc func(numOfShard int, key string) int
 		}
 	}
 
+	var decode func(string, any, any) (any, error)
+	if len(decoder) > 0 {
+		decode = decoder[0]
+	}
+
 	for i := 0; i < len(paraPebbleDB.impls); i++ {
 		path := filepath.Join(root, fmt.Sprint(i))
-		db, err := NewPebbleDB(path)
+		db, err := NewPebbleDB(path, decode)
 		if err != nil {
 			return nil, err
 		}
@@ -70,6 +76,17 @@ func (this *ParaPebbleDB) Get(key string) (any, error) {
 	this.shardLocks[idx].RLock()
 	defer this.shardLocks[idx].RUnlock()
 	return db.Get(key)
+}
+
+func (this *ParaPebbleDB) GetAs(key string, typeHint any) (any, error) {
+	if this == nil {
+		return nil, stgintf.ErrNotFound
+	}
+
+	idx, db := this.getShard(key)
+	this.shardLocks[idx].RLock()
+	defer this.shardLocks[idx].RUnlock()
+	return db.GetAs(key, typeHint)
 }
 
 func (this *ParaPebbleDB) Has(key string) bool {

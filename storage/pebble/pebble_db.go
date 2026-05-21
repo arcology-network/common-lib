@@ -21,28 +21,50 @@ import (
 	"bytes"
 	"unsafe"
 
+	stgintf "github.com/arcology-network/common-lib/storage/interface"
 	"github.com/cockroachdb/pebble"
 )
 
 type PebbleDB struct {
-	impl *pebble.DB
+	impl    *pebble.DB
+	decoder func(string, any, any) (any, error)
 }
 
-func NewPebbleDB(path string) (*PebbleDB, error) {
+func NewPebbleDB(path string, decoder ...func(string, any, any) (any, error)) (*PebbleDB, error) {
 	db, err := pebble.Open(path, &pebble.Options{})
 	if err != nil {
 		return nil, err
 	}
-	return &PebbleDB{impl: db}, nil
+
+	var decode func(string, any, any) (any, error)
+	if len(decoder) > 0 {
+		decode = decoder[0]
+	}
+	return &PebbleDB{impl: db, decoder: decode}, nil
 }
 
 func (this *PebbleDB) Get(key string) (any, error) {
+	return this.GetAs(key, nil)
+}
+
+func (this *PebbleDB) GetAs(key string, typeHint any) (any, error) {
+	if this == nil {
+		return nil, stgintf.ErrNotFound
+	}
+
 	stored, closer, err := this.impl.Get(unsafe.Slice(unsafe.StringData(key), len(key)))
 	if err != nil {
+		if err == pebble.ErrNotFound {
+			return nil, stgintf.ErrNotFound
+		}
 		return nil, err
 	}
 	defer closer.Close()
-	return bytes.Clone(stored), nil
+	value := bytes.Clone(stored)
+	if this.decoder != nil {
+		return this.decoder(key, value, typeHint)
+	}
+	return value, nil
 }
 
 func (this *PebbleDB) GetBatch(keys []string) ([]any, []error) {

@@ -50,13 +50,19 @@ type FileDB struct {
 	files    []string
 	shards   uint32
 	depth    uint8
+	decoder  func(string, any, any) (any, error)
 }
 
 func LoadFileDB(rootpath string, shards uint32, depth uint8) (*FileDB, error) {
+	return LoadFileDBWithCodec(rootpath, shards, depth, nil)
+}
+
+func LoadFileDBWithCodec(rootpath string, shards uint32, depth uint8, decoder func(string, any, any) (any, error)) (*FileDB, error) {
 	fileDB := &FileDB{
 		rootpath: path.Join(rootpath, "/") + "/",
 		shards:   shards,
 		depth:    depth,
+		decoder:  decoder,
 	}
 
 	if files, err := fileDB.ListFiles(); err == nil {
@@ -68,7 +74,7 @@ func LoadFileDB(rootpath string, shards uint32, depth uint8) (*FileDB, error) {
 	return fileDB, nil
 }
 
-func NewFileDB(rootPath string, shards uint32, depth uint8) (*FileDB, error) {
+func NewFileDB(rootPath string, shards uint32, depth uint8, decoder ...func(string, any, any) (any, error)) (*FileDB, error) {
 	var err error
 	if rootPath, err = filepath.Abs(rootPath); err != nil {
 		return nil, err
@@ -82,10 +88,16 @@ func NewFileDB(rootPath string, shards uint32, depth uint8) (*FileDB, error) {
 		return nil, errors.New("Error: Excessed max depth ")
 	}
 
+	var decode func(string, any, any) (any, error)
+	if len(decoder) > 0 {
+		decode = decoder[0]
+	}
+
 	fileDB := &FileDB{
 		rootpath: path.Join(rootPath, "/") + "/",
 		shards:   shards,
 		depth:    2,
+		decoder:  decode,
 	}
 
 	if fileDB.depth > 2 {
@@ -254,6 +266,14 @@ func (this *FileDB) Set(key string, v []byte) error {
 }
 
 func (this *FileDB) Get(key string) (any, error) {
+	return this.GetAs(key, nil)
+}
+
+func (this *FileDB) GetAs(key string, typeHint any) (any, error) {
+	if this == nil {
+		return nil, stgintf.ErrNotFound
+	}
+
 	v, err := this.readFile(key)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -263,6 +283,9 @@ func (this *FileDB) Get(key string) (any, error) {
 	}
 	if v == nil {
 		return nil, stgintf.ErrNotFound
+	}
+	if this.decoder != nil {
+		return this.decoder(key, v, typeHint)
 	}
 	return v, nil
 }

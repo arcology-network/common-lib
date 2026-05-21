@@ -24,6 +24,7 @@ import (
 )
 
 var ErrNotFound = errors.New("not found")
+var ErrNotInParent = errors.New("not in parent")
 var ErrNoFallBack = errors.New("no fallback available")
 
 const (
@@ -39,6 +40,7 @@ type Key interface {
 type ReadOnlyStore[K comparable, V any] interface {
 	Has(K) bool         // Check if the key exists in the source, which can be a cache or a storage.
 	Get(K) (any, error) // Get from cache or persistent storage, with cache lookup first.
+	GetAs(K, any) (any, error)
 }
 
 type ReadableStore[K comparable, V any] interface {
@@ -70,6 +72,7 @@ type StoreWriter[T any] interface {
 
 type BackendStore[K Key, V any] interface {
 	Get(K) (any, error)
+	GetAs(K, any) (any, error)
 	GetBatch([]K) ([]any, []error)
 	Set(K, V) error
 	SetBatch([]K, []V) []error

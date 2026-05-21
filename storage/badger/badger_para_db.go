@@ -36,12 +36,17 @@ type ParaBadgerDB struct {
 	shardFunc  func(int, string) int
 }
 
-func NewParaBadgerDB(root string, shardFunc func(numOfShard int, key string) int) *ParaBadgerDB {
+func NewParaBadgerDB(root string, shardFunc func(numOfShard int, key string) int, decoder ...func(string, any, any) (any, error)) *ParaBadgerDB {
 	var paraBadgerDB ParaBadgerDB
 	if _, err := os.Stat(root); os.IsNotExist(err) {
 		if err := os.MkdirAll(root, fs.ModePerm); err != nil {
 			panic(err)
 		}
+	}
+
+	var decode func(string, any, any) (any, error)
+	if len(decoder) > 0 {
+		decode = decoder[0]
 	}
 
 	for i := 0; i < len(paraBadgerDB.impls); i++ {
@@ -51,7 +56,7 @@ func NewParaBadgerDB(root string, shardFunc func(numOfShard int, key string) int
 				panic(err)
 			}
 		}
-		paraBadgerDB.impls[i] = NewBadgerDB(path)
+		paraBadgerDB.impls[i] = NewBadgerDB(path, decode)
 	}
 
 	if shardFunc != nil {
@@ -67,6 +72,17 @@ func (this *ParaBadgerDB) Get(key string) (value any, err error) {
 	this.shardLocks[idx].RLock()
 	defer this.shardLocks[idx].RUnlock()
 	return db.Get(key)
+}
+
+func (this *ParaBadgerDB) GetAs(key string, typeHint any) (any, error) {
+	if this == nil {
+		return nil, stgintf.ErrNotFound
+	}
+
+	idx, db := this.getShard(key)
+	this.shardLocks[idx].RLock()
+	defer this.shardLocks[idx].RUnlock()
+	return db.GetAs(key, typeHint)
 }
 
 func (this *ParaBadgerDB) Has(key string) bool {

@@ -205,7 +205,7 @@ func TestCcmapBatchModeAllEntries(t *testing.T) {
 	}
 
 	ccmap.SetBatch(keys, values)
-	outValues := common.First(ccmap.GetBatch(keys))
+	outValues := common.First(ccmap.GetBatch(keys)).([]interface{})
 
 	if !reflect.DeepEqual(outValues, values) {
 		t.Error("Error: Entries don't match")
