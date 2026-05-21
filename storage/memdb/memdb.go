@@ -25,10 +25,16 @@ import (
 var _ stgintf.ReadWriteStore[string, []byte] = (*MemoryDB)(nil)
 
 type MemoryDB struct {
-	db *ccmap.ConcurrentMap[string, []byte]
+	db      *ccmap.ConcurrentMap[string, []byte]
+	decoder func(string, any, any) (any, error)
 }
 
-func NewMemoryDB() *MemoryDB {
+func NewMemoryDB(decoder ...func(string, any, any) (any, error)) *MemoryDB {
+	var decode func(string, any, any) (any, error)
+	if len(decoder) > 0 {
+		decode = decoder[0]
+	}
+
 	return &MemoryDB{
 		db: ccmap.NewConcurrentMap(
 			16,
@@ -41,6 +47,7 @@ func NewMemoryDB() *MemoryDB {
 				return hash % 16
 			},
 		),
+		decoder: decode,
 	}
 }
 
@@ -50,9 +57,21 @@ func (this *MemoryDB) Set(key string, v []byte) error {
 }
 
 func (this *MemoryDB) Get(key string) (any, error) {
+	return this.GetAs(key, nil)
+}
+
+func (this *MemoryDB) GetAs(key string, typeHint any) (any, error) {
+	if this == nil {
+		return nil, stgintf.ErrNotFound
+	}
+
 	v, ok := this.db.Get(key)
 	if !ok || v == nil {
 		return nil, stgintf.ErrNotFound
+	}
+
+	if this.decoder != nil {
+		return this.decoder(key, v, typeHint)
 	}
 	return v, nil
 }

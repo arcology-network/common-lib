@@ -73,6 +73,10 @@ func (this *byteBackendAdapter) Get(key string) (any, error) {
 	return this.get(key)
 }
 
+func (this *byteBackendAdapter) GetAs(key string, typeHint any) (any, error) {
+	return this.Get(key)
+}
+
 func (this *byteBackendAdapter) GetBatch(keys []string) ([]any, []error) {
 	return this.getBatch(keys)
 }
@@ -186,6 +190,10 @@ func (this *testKVStore[K, T]) Get(key K) (any, error) {
 		return value, nil
 	}
 	return nil, stgintf.ErrNotFound
+}
+
+func (this *testKVStore[K, T]) GetAs(key K, typeHint any) (any, error) {
+	return this.Get(key)
 }
 
 func (this *testKVStore[K, T]) Has(key K) bool {

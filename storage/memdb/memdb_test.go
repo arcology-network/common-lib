@@ -77,3 +77,25 @@ func TestMemDB(t *testing.T) {
 		t.Error("Error")
 	}
 }
+
+func TestMemDBGetDelegatesToGetAsNilDecoder(t *testing.T) {
+	memDB := NewMemoryDB()
+	expected := []byte{7, 8, 9}
+	if err := memDB.Set("alpha", expected); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := memDB.Get("alpha")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	viaGetAs, err := memDB.GetAs("alpha", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Equal(got.([]byte), viaGetAs.([]byte)) {
+		t.Fatalf("expected Get to match GetAs with nil decoder")
+	}
+}

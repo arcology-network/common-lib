@@ -34,15 +34,22 @@ var _ stgintf.ReadWriteStore[string, any] = (*Cache[string, any])(nil)
 type Cache[K stgintf.Key, V any] struct {
 	*mapi.ConcurrentMap[K, *entry[V]]
 	cachePolicy *CachePolicy[V]
-	epoch   atomic.Uint64
-	enabled bool
+	decoder     func(K, any, any) (any, error)
+	epoch       atomic.Uint64
+	enabled     bool
 }
 
 func NewCache[K stgintf.Key, V any](
 	numShards uint64,
 	hasher func(K) uint64,
 	cachePolicy *CachePolicy[V],
+	decoder ...func(K, any, any) (any, error),
 ) *Cache[K, V] {
+	var decode func(K, any, any) (any, error)
+	if len(decoder) > 0 {
+		decode = decoder[0]
+	}
+
 	newReadCache := &Cache[K, V]{
 		ConcurrentMap: mapi.NewConcurrentMap(
 			int(numShards),
@@ -50,8 +57,10 @@ func NewCache[K stgintf.Key, V any](
 			hasher,
 		),
 		cachePolicy: cachePolicy,
+		decoder:     decode,
 		enabled:     true,
 	}
+	newReadCache.epoch.Store(0)
 	return newReadCache
 }
 
@@ -64,10 +73,21 @@ func (this *Cache[K, V]) Has(key K) bool {
 }
 
 func (this *Cache[K, V]) Get(key K) (any, error) {
+	return this.GetAs(key, nil)
+}
+
+func (this *Cache[K, V]) GetAs(key K, typeHint any) (any, error) {
+	if this == nil {
+		return nil, stgintf.ErrNotFound
+	}
+
 	if this.enabled {
 		if record, ok := this.ConcurrentMap.Get(key); ok {
 			if record != nil {
 				record.visits++
+				if this.decoder != nil {
+					return this.decoder(key, record.value, typeHint)
+				}
 				return record.value, nil
 			}
 		}
