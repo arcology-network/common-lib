@@ -37,25 +37,25 @@ type Key interface {
 }
 
 // ReadOnlyStore defines the interface for a read-only storage source.
-type ReadOnlyStore[K comparable, V any] interface {
+type ReadOnlyStore[K Key, V any] interface {
 	Has(K) bool         // Check if the key exists in the source, which can be a cache or a storage.
 	Get(K) (any, error) // Get from cache or persistent storage, with cache lookup first.
 	GetAs(K, any) (any, error)
 }
 
-type ReadableStore[K comparable, V any] interface {
+type ReadableStore[K Key, V any] interface {
 	ReadOnlyStore[K, V]
 	GetBatch([]K) ([]any, []error)
 }
 
-type WriteableStore[K comparable, V any] interface {
+type WriteableStore[K Key, V any] interface {
 	Set(K, V) error
 	SetBatch([]K, []V) []error
 	Delete(K) error
 	DeleteBatch([]K) []error
 }
 
-type ReadWriteStore[K comparable, V any] interface {
+type ReadWriteStore[K Key, V any] interface {
 	ReadableStore[K, V]
 	WriteableStore[K, V]
 	Query(K, func(K, V) bool) ([]K, []V, []error)
@@ -69,22 +69,3 @@ type StoreWriter[T any] interface {
 	IsSync() bool // If the writer is synchronous, it will block until the commit is done.
 	Name() string
 }
-
-type BackendStore[K Key, V any] interface {
-	Get(K) (any, error)
-	GetAs(K, any) (any, error)
-	GetBatch([]K) ([]any, []error)
-	Set(K, V) error
-	SetBatch([]K, []V) []error
-	Delete(K) error
-	DeleteBatch([]K) []error
-	Has(K) bool
-}
-
-// type CacheLike[K comparable, V any] interface {
-// 	Len() uint64
-// 	Size() uint64
-// 	IsEnabled() bool // If the cache is enabled
-// 	Enable() bool
-// 	Disable() bool
-// }

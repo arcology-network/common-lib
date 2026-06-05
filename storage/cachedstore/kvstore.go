@@ -30,14 +30,14 @@ var _ stgintf.ReadWriteStore[string, any] = (*CachedStore[string, any, string, a
 
 type CachedStore[K0 stgintf.Key, V0 any, K1 stgintf.Key, V1 any] struct {
 	cache     *cache.Cache[K0, V0]
-	backend   stgintf.BackendStore[K1, V1]
+	backend   stgintf.ReadWriteStore[K1, V1]
 	converter *stgcodec.StorageCodec[K0, V0, K1, V1]
 	decoder   func(K0, any, any) (any, error)
 	zero      V0
 }
 
 func NewCachedStore[K0 stgintf.Key, V0 any, K1 stgintf.Key, V1 any](
-	backend stgintf.BackendStore[K1, V1],
+	backend stgintf.ReadWriteStore[K1, V1],
 	converter *stgcodec.StorageCodec[K0, V0, K1, V1],
 	cacheCap uint64,
 	sizeOf func(V0) uint64,
@@ -62,8 +62,10 @@ func (this *CachedStore[K0, V0, K1, V1]) Codec() *stgcodec.StorageCodec[K0, V0, 
 
 func (this *CachedStore[K0, V0, K1, V1]) Cache() *cache.Cache[K0, V0] { return this.cache }
 
-func (this *CachedStore[K0, V0, K1, V1]) Preload([]byte) any                    { return nil }
-func (this *CachedStore[K0, V0, K1, V1]) Backend() stgintf.BackendStore[K1, V1] { return this.backend }
+func (this *CachedStore[K0, V0, K1, V1]) Preload([]byte) any { return nil }
+func (this *CachedStore[K0, V0, K1, V1]) Backend() stgintf.ReadWriteStore[K1, V1] {
+	return this.backend
+}
 
 // func (this *CachedStore[K0, V0, K1, V1]) Encoder(any) func(string, any) ([]byte, error) { return this.encoder }
 // func (this *CachedStore[K0, V0, K1, V1]) Decoder(any) func(string, []byte, any) any     { return this.decoder }

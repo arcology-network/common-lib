@@ -207,21 +207,26 @@ func (this *ParaPebbleDB) SetBatch(keys []string, values [][]byte) []error {
 	return errs
 }
 
-func (this *ParaPebbleDB) Query(prefix string, checker func(string, []byte) bool) ([]string, [][]byte, error) {
+func (this *ParaPebbleDB) Query(prefix string, checker func(string, []byte) bool) ([]string, [][]byte, []error) {
 	keys := make([]string, 0)
 	values := make([][]byte, 0)
+	errs := make([]error, 0)
 	for i, db := range this.impls {
 		if db == nil {
 			continue
 		}
 		this.shardLocks[i].RLock()
-		shardKeys, shardValues, err := db.Query(prefix, checker)
+		shardKeys, shardValues, shardErrs := db.Query(prefix, checker)
 		this.shardLocks[i].RUnlock()
-		if err != nil {
-			return nil, nil, err
+		if len(shardErrs) > 0 {
+			errs = append(errs, shardErrs...)
+			continue
 		}
 		keys = append(keys, shardKeys...)
 		values = append(values, shardValues...)
+	}
+	if len(errs) > 0 {
+		return nil, nil, errs
 	}
 	return keys, values, nil
 }
