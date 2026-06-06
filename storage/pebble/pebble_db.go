@@ -142,10 +142,10 @@ func (this *PebbleDB) Has(key string) bool {
 	return true
 }
 
-func (this *PebbleDB) Query(prefix string, checker func(string, []byte) bool) ([]string, [][]byte, error) {
+func (this *PebbleDB) Query(prefix string, checker func(string, []byte) bool) ([]string, [][]byte, []error) {
 	iter, err := this.impl.NewIter(&pebble.IterOptions{})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, []error{err}
 	}
 	defer iter.Close()
 
@@ -164,7 +164,10 @@ func (this *PebbleDB) Query(prefix string, checker func(string, []byte) bool) ([
 		keys = append(keys, k)
 		values = append(values, v)
 	}
-	return keys, values, iter.Error()
+	if err := iter.Error(); err != nil {
+		return nil, nil, []error{err}
+	}
+	return keys, values, nil
 }
 
 func (this *PebbleDB) Close() error {

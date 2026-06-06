@@ -105,9 +105,9 @@ func TestPebbleDBFunctions(t *testing.T) {
 		t.Error("DeleteBatch failed")
 	}
 
-	qkeys, qvalues, err := db.Query("a", nil)
-	if err != nil {
-		t.Fatal(err)
+	qkeys, qvalues, errs := db.Query("a", nil)
+	if len(errs) != 0 {
+		t.Fatal(errs)
 	}
 	if len(qkeys) != 2 || len(qvalues) != 2 {
 		t.Fatalf("unexpected query result: %v %v", qkeys, qvalues)

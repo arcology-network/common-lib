@@ -15,7 +15,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package common
+package codec
 
 import (
 	crdtcommon "github.com/arcology-network/common-lib/crdt/common"

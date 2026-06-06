@@ -66,6 +66,7 @@ type byteBackendAdapter struct {
 	setBatch    func([]string, [][]byte) []error
 	delete      func(string) error
 	deleteBatch func([]string) []error
+	query       func(string, func(string, []byte) bool) ([]string, [][]byte, []error)
 	has         func(string) bool
 }
 
@@ -97,6 +98,10 @@ func (this *byteBackendAdapter) DeleteBatch(keys []string) []error {
 	return this.deleteBatch(keys)
 }
 
+func (this *byteBackendAdapter) Query(key string, predicate func(string, []byte) bool) ([]string, [][]byte, []error) {
+	return this.query(key, predicate)
+}
+
 func (this *byteBackendAdapter) Has(key string) bool {
 	return this.has(key)
 }
@@ -111,7 +116,7 @@ func castAnyBytes(values [][]byte) []any {
 	return converted
 }
 
-func wrapMemoryByteBackend(db *memdb.MemoryDB) stgintf.BackendStore[string, []byte] {
+func wrapMemoryByteBackend(db *memdb.MemoryDB) stgintf.ReadWriteStore[string, []byte] {
 	return &byteBackendAdapter{
 		get: func(key string) (any, error) {
 			value, err := db.Get(key)
@@ -128,13 +133,14 @@ func wrapMemoryByteBackend(db *memdb.MemoryDB) stgintf.BackendStore[string, []by
 		setBatch:    db.SetBatch,
 		delete:      db.Delete,
 		deleteBatch: db.DeleteBatch,
+		query:       db.Query,
 		has: func(key string) bool {
 			return db.Has(key)
 		},
 	}
 }
 
-func wrapFileByteBackend(db *filedb.FileDB) stgintf.BackendStore[string, []byte] {
+func wrapFileByteBackend(db *filedb.FileDB) stgintf.ReadWriteStore[string, []byte] {
 	return &byteBackendAdapter{
 		get: func(key string) (any, error) {
 			value, err := db.Get(key)
@@ -151,13 +157,14 @@ func wrapFileByteBackend(db *filedb.FileDB) stgintf.BackendStore[string, []byte]
 		setBatch:    db.SetBatch,
 		delete:      db.Delete,
 		deleteBatch: db.DeleteBatch,
+		query:       db.Query,
 		has: func(key string) bool {
 			return db.Has(key)
 		},
 	}
 }
 
-func wrapBadgerByteBackend(db *badgerdb.BadgerDB) stgintf.BackendStore[string, []byte] {
+func wrapBadgerByteBackend(db *badgerdb.BadgerDB) stgintf.ReadWriteStore[string, []byte] {
 	return &byteBackendAdapter{
 		get:         db.Get,
 		getBatch:    db.GetBatch,
@@ -165,11 +172,12 @@ func wrapBadgerByteBackend(db *badgerdb.BadgerDB) stgintf.BackendStore[string, [
 		setBatch:    db.SetBatch,
 		delete:      db.Delete,
 		deleteBatch: db.DeleteBatch,
+		query:       db.Query,
 		has:         db.Has,
 	}
 }
 
-func wrapParaBadgerByteBackend(db *badgerdb.ParaBadgerDB) stgintf.BackendStore[string, []byte] {
+func wrapParaBadgerByteBackend(db *badgerdb.ParaBadgerDB) stgintf.ReadWriteStore[string, []byte] {
 	return &byteBackendAdapter{
 		get:         db.Get,
 		getBatch:    db.GetBatch,
@@ -177,6 +185,7 @@ func wrapParaBadgerByteBackend(db *badgerdb.ParaBadgerDB) stgintf.BackendStore[s
 		setBatch:    db.SetBatch,
 		delete:      db.Delete,
 		deleteBatch: db.DeleteBatch,
+		query:       db.Query,
 		has:         db.Has,
 	}
 }
@@ -239,6 +248,23 @@ func (this *testKVStore[K, T]) DeleteBatch(keys []K) []error {
 		delete(this.values, key)
 	}
 	return errs
+}
+
+func (this *testKVStore[K, T]) Query(target K, predicate func(K, T) bool) ([]K, []T, []error) {
+	keys := make([]K, 0, len(this.values))
+	values := make([]T, 0, len(this.values))
+	for key, value := range this.values {
+		if predicate != nil {
+			if !predicate(key, value) {
+				continue
+			}
+		} else if key != target {
+			continue
+		}
+		keys = append(keys, key)
+		values = append(values, value)
+	}
+	return keys, values, nil
 }
 
 func (this *testKVStore[K, T]) Precommit() error {
@@ -1076,7 +1102,7 @@ func newDemoObjCodec() *stgcodec.StorageCodec[string, demoObj, string, []byte] {
 	)
 }
 
-func runStoreWithByteBackend(t *testing.T, backend stgintf.BackendStore[string, []byte], backendName string) {
+func runStoreWithByteBackend(t *testing.T, backend stgintf.ReadWriteStore[string, []byte], backendName string) {
 	t.Helper()
 
 	codec := newDemoObjCodec()
