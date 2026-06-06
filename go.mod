@@ -4,9 +4,9 @@ go 1.22
 
 // replace github.com/google/btree v1.1.2 => github.com/arcology-network/btree v0.0.0-20220505111221-93be90b154a9
 
-replace github.com/ethereum/go-ethereum => ../concurrent-evm/
+// replace github.com/ethereum/go-ethereum => ../concurrent-evm/
 
-// replace github.com/emirpasic/gods/v2 => ../v2/
+replace github.com/ethereum/go-ethereum v1.14.8 => github.com/arcology-network/concurrent-evm v0.0.0-20260606134708-2b2a978d283f
 
 require (
 	github.com/cockroachdb/pebble v0.0.0-20231208175357-58bdc725addc
@@ -23,6 +23,7 @@ require (
 	github.com/google/btree v1.1.2
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-memdb v1.3.4
+	github.com/natefinch/atomic v1.0.1
 	github.com/shirou/gopsutil v3.21.11+incompatible
 )
 
