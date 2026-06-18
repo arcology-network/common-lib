@@ -196,7 +196,7 @@ func (this *Path) Set(value any, source any) (any, uint32, uint32, uint32, error
 	containerRoot := source.([]any)[1].(string)
 	tx := source.([]any)[2].(uint64)
 	cache := source.([]any)[3].(interface {
-		Write(uint64, string, crdtcommon.CRDT, ...any) (int64, error)
+		Write(uint64, string, crdtcommon.CRDT, any) (int64, error)
 		Has(string) bool
 		GetIfCached(string) (any, bool)
 	})
@@ -246,7 +246,7 @@ func (this *Path) Set(value any, source any) (any, uint32, uint32, uint32, error
 
 func (this *Path) deleteInPath(tx uint64, parentPath string, elems []string, do func(), source any) (any, uint32, uint32, uint32, error) {
 	writeCache := source.(interface {
-		Write(uint64, string, crdtcommon.CRDT, ...any) (int64, error)
+		Write(uint64, string, crdtcommon.CRDT, any) (int64, error)
 		Has(string) bool
 		GetIfCached(string) (any, bool)
 	})
@@ -258,9 +258,11 @@ func (this *Path) deleteInPath(tx uint64, parentPath string, elems []string, do 
 
 	// Only mark the elements already in the cache as deleted.
 	// No need to touch those in the storage.
+	var err error
 	for _, elem := range elems {
 		if _, ok := writeCache.GetIfCached(parentPath + elem); ok {
-			writeCache.Write(tx, parentPath+elem, nil)
+			_, e := writeCache.Write(tx, parentPath+elem, nil, nil) // Mark the element as deleted in the cache.
+			err = errors.Join(err, e)
 		}
 	}
 
@@ -271,20 +273,22 @@ func (this *Path) deleteInPath(tx uint64, parentPath string, elems []string, do 
 	// Remove all the sub paths and their elements recursively.
 	// This is NOT fully supported yet. For it to work, The write cache
 	// needs to be able to handle recursive path meta checks.
+
 	for _, subpath := range subPaths {
-		writeCache.Write(tx, parentPath+subpath, nil)
+		_, e := writeCache.Write(tx, parentPath+subpath, nil, nil)
+		err = errors.Join(err, e)
 	}
 
 	// Delete isCommitted items only result in 1 delta write. Since no other thread may alter the path at the same time.
 	if this.DeltaSet.CommittedOnly() {
-		return this, 0, 0, 1, nil
+		return this, 0, 0, 1, err
 	}
 
 	// Need to delete the elements that are not isCommitted yet. This is a full delete.
 	// For example, if Thread A adds some elements and Thread B deletes the path at the same time.
 	// depending on the order of execution, the final result may be different. If A is executed first, then the elements
 	// added by A will be deleted by B. If B is executed first, then the elements added by A will remain. They aren't commutative.
-	return this, 0, 1, 0, nil
+	return this, 0, 1, 0, err
 }
 
 // data cleaning before saving to storage
