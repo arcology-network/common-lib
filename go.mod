@@ -1,6 +1,8 @@
 module github.com/arcology-network/common-lib
 
-go 1.22
+go 1.23
+
+toolchain go1.23.0
 
 // replace github.com/google/btree v1.1.2 => github.com/arcology-network/btree v0.0.0-20220505111221-93be90b154a9
 
