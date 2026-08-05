@@ -20,23 +20,10 @@
 package common
 
 import (
+	"errors"
 	"math"
-	"runtime"
 	"sync"
 )
-
-// generateRanges generates a slice of ranges based on the length and number of threads.
-// Each range represents a portion of the total length that can be processed by a single thread.
-func generateRanges(length int, numThreads int) []int {
-	numThreads = Min(Min(numThreads, length), runtime.NumCPU()) // limit the number of threads to the number of CPUs
-
-	ranges := make([]int, 0, numThreads+1)
-	step := int(math.Ceil(float64(length) / float64(numThreads)))
-	for i := 0; i <= numThreads; i++ {
-		ranges = append(ranges, int(math.Min(float64(step*i), float64(length))))
-	}
-	return ranges
-}
 
 // ParallelExecute executes the given tasks in parallel using goroutines.
 // It waits for all the tasks to complete before returning.
@@ -52,30 +39,41 @@ func ParallelExecute(tasks ...any) {
 	wg.Wait()
 }
 
-// ParallelWorker divides the total work into multiple ranges and assigns each range to a worker function.
-// The worker function is called in parallel for each range.
-// The number of threads determines the number of ranges and worker functions.
 func ParallelWorker(total, nThds int, worker func(start, end, idx int, args ...any), args ...any) {
-	idxRanges := generateRanges(total, nThds)
+	if total <= 0 || nThds <= 0 {
+		return
+	}
+
+	nThds = min(total, nThds)
+	stride := int(math.Ceil(float64(total) / float64(nThds)))
+
 	var wg sync.WaitGroup
-	for i := 0; i < len(idxRanges)-1; i++ {
+	for i := 0; i < nThds; i++ {
+		end := int(min((i+1)*stride, total))
 		wg.Add(1)
 		go func(start int, end int, idx int) {
 			defer wg.Done()
-			if start != end {
-				worker(start, end, idx, args)
-			}
-		}(idxRanges[i], idxRanges[i+1], i)
+			worker(start, end, idx, args...)
+		}(i*stride, end, i)
 	}
 	wg.Wait()
 }
 
 // ParallelForeach applies a function to each element in a slice in parallel using multiple threads.
-func ParallelFor(v0, v1, nThds int, do func(int)) {
+func ParallelFor(v0, v1, nThds int, do func(int)) error {
+	if nThds <= 0 {
+		return errors.New("The number of threads must be greater than 0")
+	}
+
 	processor := func(start, end, index int, args ...any) {
 		for i := start; i < end; i++ {
 			do(i + v0)
 		}
 	}
-	ParallelWorker(v1-v0, nThds, processor)
+
+	if v1 > v0 {
+		ParallelWorker((v1 - v0), nThds, processor)
+		return nil
+	}
+	return errors.New("Range must be positive")
 }
