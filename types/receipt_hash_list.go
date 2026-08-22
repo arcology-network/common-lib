@@ -42,6 +42,7 @@ func (rhl *ReceiptHashList) GobEncode() ([]byte, error) {
 	}
 	return codec.Byteset(data).Encode(), nil
 }
+
 func (rhl *ReceiptHashList) GobDecode(data []byte) error {
 	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
 	rhl.TxHashList = Hashes(rhl.TxHashList).Decode(fields[0])

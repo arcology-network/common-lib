@@ -43,6 +43,7 @@ func Test_getList(t *testing.T) {
 	selList, clearList := inclusive.GetList()
 	fmt.Printf(" inclusive.getlist selList=%v\n,clearList=%v\n", selList, clearList)
 }
+
 func TestInclusive(t *testing.T) {
 	hashes := []ethCommon.Hash{
 		ethCommon.BytesToHash([]byte{1, 2, 3}),

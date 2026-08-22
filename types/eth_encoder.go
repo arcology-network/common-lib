@@ -47,6 +47,7 @@ func MsgDecode(data []byte) (*core.Message, error) {
 func TxEncode(tx *evmTypes.Transaction) ([]byte, error) {
 	return tx.MarshalBinary()
 }
+
 func TxDecode(data []byte) (*evmTypes.Transaction, error) {
 	tx := evmTypes.Transaction{}
 	return &tx, tx.UnmarshalBinary(data)

@@ -34,15 +34,15 @@ import (
 func TestStandardMessageSortingByFee(t *testing.T) {
 	to := ethCommon.BytesToAddress(crypto.Keccak256([]byte("1"))[:])
 
-	ethMsg_serial_0 := core.NewMessage(ethCommon.Address{}, &to, 1, big.NewInt(int64(1)), 100, big.NewInt(int64(8)), []byte{}, nil, false)
-	ethMsg_serial_1 := core.NewMessage(ethCommon.Address{}, &to, 3, big.NewInt(int64(100)), 200, big.NewInt(int64(9)), []byte{}, nil, false)
-	ethMsg_serial_2 := core.NewMessage(ethCommon.Address{}, &to, 2, big.NewInt(int64(500)), 100, big.NewInt(int64(1)), []byte{}, nil, false)
+	ethMsg_serial_0 := core.Message{From: ethCommon.Address{}, To: &to, Nonce: 1, Value: big.NewInt(1), GasLimit: 100, GasPrice: big.NewInt(8)}
+	ethMsg_serial_1 := core.Message{From: ethCommon.Address{}, To: &to, Nonce: 3, Value: big.NewInt(100), GasLimit: 200, GasPrice: big.NewInt(9)}
+	ethMsg_serial_2 := core.Message{From: ethCommon.Address{}, To: &to, Nonce: 2, Value: big.NewInt(500), GasLimit: 100, GasPrice: big.NewInt(1)}
 
 	from_3 := ethCommon.BytesToAddress([]byte("1"))
-	ethMsg_serial_3 := core.NewMessage(from_3, &to, 1, big.NewInt(int64(200)), 500, big.NewInt(int64(8)), []byte{}, nil, false)
+	ethMsg_serial_3 := core.Message{From: from_3, To: &to, Nonce: 1, Value: big.NewInt(200), GasLimit: 500, GasPrice: big.NewInt(8)}
 
 	from_4 := ethCommon.BytesToAddress([]byte("2"))
-	ethMsg_serial_4 := core.NewMessage(from_4, &to, 1, big.NewInt(int64(10)), 2, big.NewInt(int64(9)), []byte{}, nil, false)
+	ethMsg_serial_4 := core.Message{From: from_4, To: &to, Nonce: 1, Value: big.NewInt(10), GasLimit: 2, GasPrice: big.NewInt(9)}
 
 	stdMsgs := []*StandardTransaction{
 		{Source: 0, NativeMessage: &ethMsg_serial_0},
@@ -63,15 +63,15 @@ func TestStandardMessageSortingByFee(t *testing.T) {
 func TestStandardMessageSortingByGas(t *testing.T) {
 	to := ethCommon.BytesToAddress(crypto.Keccak256([]byte("1"))[:])
 
-	ethMsg_serial_0 := core.NewMessage(ethCommon.Address{}, &to, 1, big.NewInt(int64(1)), 100, big.NewInt(int64(8)), []byte{}, nil, false)
-	ethMsg_serial_1 := core.NewMessage(ethCommon.Address{}, &to, 3, big.NewInt(int64(100)), 200, big.NewInt(int64(9)), []byte{}, nil, false)
-	ethMsg_serial_2 := core.NewMessage(ethCommon.Address{}, &to, 2, big.NewInt(int64(500)), 100, big.NewInt(int64(1)), []byte{}, nil, false)
+	ethMsg_serial_0 := core.Message{From: ethCommon.Address{}, To: &to, Nonce: 1, Value: big.NewInt(1), GasLimit: 100, GasPrice: big.NewInt(8)}
+	ethMsg_serial_1 := core.Message{From: ethCommon.Address{}, To: &to, Nonce: 3, Value: big.NewInt(100), GasLimit: 200, GasPrice: big.NewInt(9)}
+	ethMsg_serial_2 := core.Message{From: ethCommon.Address{}, To: &to, Nonce: 2, Value: big.NewInt(500), GasLimit: 100, GasPrice: big.NewInt(1)}
 
 	from_3 := ethCommon.BytesToAddress([]byte("1"))
-	ethMsg_serial_3 := core.NewMessage(from_3, &to, 1, big.NewInt(int64(200)), 500, big.NewInt(int64(8)), []byte{}, nil, false)
+	ethMsg_serial_3 := core.Message{From: from_3, To: &to, Nonce: 1, Value: big.NewInt(200), GasLimit: 500, GasPrice: big.NewInt(8)}
 
 	from_4 := ethCommon.BytesToAddress([]byte("2"))
-	ethMsg_serial_4 := core.NewMessage(from_4, &to, 1, big.NewInt(int64(10)), 2, big.NewInt(int64(9)), []byte{}, nil, false)
+	ethMsg_serial_4 := core.Message{From: from_4, To: &to, Nonce: 1, Value: big.NewInt(10), GasLimit: 2, GasPrice: big.NewInt(9)}
 
 	stdMsgs := []*StandardTransaction{
 		{Source: 0, NativeMessage: &ethMsg_serial_0},
@@ -94,17 +94,15 @@ func PrepareData(max int) []*StandardTransaction {
 	for i := 0; i < len(stdMsgs); i++ {
 		to := ethCommon.BytesToAddress([]byte{11, 8, 9, 10})
 		bytes := sha256.Sum256([]byte{byte(i)})
-		ethMsg := core.NewMessage(
-			ethCommon.BytesToAddress(bytes[:]),
-			&to,
-			uint64(10),
-			big.NewInt(12000000),
-			uint64(22),
-			big.NewInt(34),
-			make([]byte, 128),
-			nil,
-			false,
-		)
+		ethMsg := core.Message{
+			From:     ethCommon.BytesToAddress(bytes[:]),
+			To:       &to,
+			Nonce:    10,
+			Value:    big.NewInt(12000000),
+			GasLimit: 22,
+			GasPrice: big.NewInt(34),
+			Data:     make([]byte, 128),
+		}
 
 		stdMsgs[i] = &StandardTransaction{
 			Source:        1,

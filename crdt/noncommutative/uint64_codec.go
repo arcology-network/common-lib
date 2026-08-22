@@ -27,6 +27,7 @@ import (
 func (this *Uint64) Size() uint64 {
 	return 8 // 8 bytes
 }
+
 func (this *Uint64) Encode() []byte {
 	return codec.Uint64(*this).Encode()
 }

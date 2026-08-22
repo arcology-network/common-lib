@@ -909,10 +909,6 @@ func SelectN[T any](vals [][]T, n int) []T {
 // It returns two slices, one containing the unique keys and the other containing the groups of elements
 // that have the same key.
 func GroupBy[T0 any, K comparable](array []T0, getter func(int, T0) *K, reserved ...int) ([]K, [][]T0) {
-	if len(array) == 1 {
-		return []K{*getter(0, array[0])}, [][]T0{array}
-	}
-
 	length := len(reserved)
 	if len(reserved) > 0 {
 		length = reserved[0]

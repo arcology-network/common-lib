@@ -106,23 +106,28 @@ func TestCacheBasic(t *testing.T) {
 
 	// Policy: Remove (simulate by Update)
 	cache.Set("z", 10)
-	cache.Policy().Update(10, 0)
+	cache.Policy().Update(-10)
 	if cache.Policy().Size() > 100 {
 		t.Error("Update should decrease occupied size")
 	}
 
 	// wrap/value sizing
-	entry := cache.wrap(123)
-	if entry.value != 123 || entry.visits != 1 {
+	wrappedValue := 123
+	entry := cache.wrap(&wrappedValue)
+	if entry.value == nil || *entry.value != 123 || entry.visits != 1 {
 		t.Error("wrap should set value and visits")
 	}
-	if cache.Policy().ValueSize(entry.value) != 123 {
+	if cache.Policy().ValueSize(*entry.value) != 123 {
 		t.Error("ValueSize should use the cache policy sizer")
+	}
+	if nilEntry := cache.wrap(nil); nilEntry.value != nil {
+		t.Error("wrap(nil) should preserve a nil value")
 	}
 
 	// entry.Size with MemSize
 	sizedCache := NewCache[string, sized](4, testStringHash, nil)
-	entry2 := sizedCache.wrap(sized{})
+	sizedValue := sized{}
+	entry2 := sizedCache.wrap(&sizedValue)
 	if entry2.Size() != 99 {
 		t.Error("entry Size should use MemSize if available")
 	}
@@ -208,7 +213,7 @@ func TestCacheDisabledBypassesAllOperations(t *testing.T) {
 		t.Fatalf("expected disabled cache GetBatch to miss every key")
 	}
 
-	if err := c.Set("new", 9); err != nil {
+	if err := c.Set("new", 9); err != stgintf.ErrCacheNotInUse {
 		t.Fatalf("expected disabled cache Set to stay a no-op, got %v", err)
 	}
 	if c.Length() != 1 {

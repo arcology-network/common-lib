@@ -21,6 +21,7 @@ import (
 	"sync/atomic"
 
 	mapi "github.com/arcology-network/common-lib/exp/map"
+	"github.com/arcology-network/common-lib/exp/slice"
 	stgintf "github.com/arcology-network/common-lib/storage/interface"
 )
 
@@ -83,12 +84,12 @@ func (this *Cache[K, V]) GetAs(key K, typeHint any) (any, error) {
 
 	if this.enabled {
 		if record, ok := this.ConcurrentMap.Get(key); ok {
-			if record != nil {
+			if record != nil && record.value != nil {
 				record.visits++
 				if this.decoder != nil {
-					return this.decoder(key, record.value, typeHint)
+					return this.decoder(key, *record.value, typeHint)
 				}
-				return record.value, nil
+				return *record.value, nil
 			}
 		}
 	}
@@ -110,10 +111,11 @@ func (this *Cache[K, V]) GetBatch(keys []K) ([]any, []error) {
 
 	values := make([]any, len(keys))
 	errs := make([]error, len(keys))
-	for i, key := range keys {
-		if record, ok := this.ConcurrentMap.Get(key); ok && record != nil {
+	records, found := this.ConcurrentMap.GetBatch(keys)
+	for i, record := range records {
+		if found[i] && record != nil && record.value != nil {
 			record.visits++
-			values[i] = record.value
+			values[i] = *record.value
 			continue
 		}
 		errs[i] = stgintf.ErrNotFound
@@ -123,19 +125,18 @@ func (this *Cache[K, V]) GetBatch(keys []K) ([]any, []error) {
 
 func (this *Cache[K, V]) Set(key K, value V) error {
 	if !this.enabled {
-		return nil
+		return stgintf.ErrCacheNotInUse
 	}
 
 	origin, ok := this.ConcurrentMap.Get(key)
 	if ok {
-		oldSize, newSize := origin.Replace(value)
-		this.cachePolicy.Update(oldSize, newSize)
+		this.cachePolicy.Update(int64(origin.ReplaceBy(value)))
 		return nil
 	}
 
 	newVSize := this.cachePolicy.ValueSize(value)
-	if this.cachePolicy.Update(0, newVSize) {
-		entry := this.wrap(value)
+	if this.cachePolicy.Update(int64(newVSize)) {
+		entry := this.wrap(&value)
 		this.ConcurrentMap.Set(key, entry)
 	}
 	return nil
@@ -147,11 +148,20 @@ func (this *Cache[K, V]) SetBatch(keys []K, values []V) []error {
 		return errs
 	}
 
-	for i := 0; i < len(keys); i++ {
-		if i < len(values) {
-			errs[i] = this.Set(keys[i], values[i])
+	vals, founds := this.ConcurrentMap.GetBatch(keys)
+	last := len(vals)
+	for i := 0; i < len(vals); i++ {
+		if !founds[i] {
+			vals[i] = this.wrap(nil)
+		}
+		if ok := this.cachePolicy.Update(vals[i].ReplaceBy(values[i])); !ok {
+			last = i // memeoy limit reached, stop updating the cache
+			break
 		}
 	}
+
+	slice.Fill(errs[last:], stgintf.ErrCacheFull)
+	this.ConcurrentMap.SetBatch(keys[:last], vals[:last])
 	return errs
 }
 
@@ -162,8 +172,8 @@ func (this *Cache[K, V]) Delete(key K) error {
 
 	if origin, ok := this.ConcurrentMap.Get(key); ok {
 		if origin != nil {
-			oldSize := this.cachePolicy.ValueSize(origin.value)
-			this.cachePolicy.Update(oldSize, 0)
+			oldSize := this.cachePolicy.ValueSize(*origin.value)
+			this.cachePolicy.Update(-int64(oldSize))
 		}
 		this.ConcurrentMap.Delete(key)
 	}
@@ -197,7 +207,10 @@ func (this *Cache[K, V]) Query(target K, predicate func(K, V) bool) ([]K, []V, [
 			continue
 		}
 
-		value := entry.value
+		if entry.value == nil {
+			continue
+		}
+		value := *entry.value
 		if predicate != nil {
 			if !predicate(key, value) {
 				continue
@@ -231,7 +244,9 @@ func (this *Cache[K, V]) Evict() {
 			continue
 		}
 
-		this.cachePolicy.Update(this.cachePolicy.ValueSize(vals[i].value), 0)
+		if vals[i].value != nil {
+			this.cachePolicy.Update(-int64(this.cachePolicy.ValueSize(*vals[i].value)))
+		}
 		this.ConcurrentMap.Delete(key)
 	}
 }
@@ -255,7 +270,7 @@ func (this *Cache[K, V]) Policy() *CachePolicy[V] { return this.cachePolicy }
 // 	return entry.Size()
 // }
 
-func (this *Cache[K, V]) wrap(value V) *entry[V] {
+func (this *Cache[K, V]) wrap(value *V) *entry[V] {
 	entry := &entry[V]{value: value}
 	entry.firstLoaded = this.epoch.Load()
 	entry.visits++

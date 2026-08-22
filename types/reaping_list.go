@@ -48,6 +48,7 @@ func (rl *ReapingList) GobEncode() ([]byte, error) {
 	}
 	return codec.Byteset(data).Encode(), nil
 }
+
 func (rl *ReapingList) GobDecode(data []byte) error {
 	fields := codec.Byteset{}.Decode(data).(codec.Byteset)
 	arrs := []ethCommon.Hash{}

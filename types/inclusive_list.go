@@ -49,6 +49,7 @@ func (il *InclusiveList) CopyListAddHeight(height, round uint64) *InclusiveList 
 		HashList:   hashList,
 	}
 }
+
 func (il InclusiveList) GetList() (selectList []ethCommon.Hash, clearList []ethCommon.Hash) {
 	selectList = make([]ethCommon.Hash, 0, len(il.HashList))
 	clearList = make([]ethCommon.Hash, 0, len(il.HashList))

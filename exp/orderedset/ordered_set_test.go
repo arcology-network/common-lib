@@ -30,6 +30,7 @@ func encodeToBuffer(s string, buf []byte) int {
 	copy(buf, s)
 	return len(s)
 }
+
 func decoder(buf []byte) string {
 	return string(buf)
 }

@@ -25,7 +25,7 @@ import (
 func TestParallelExecute(t *testing.T) {
 	var counter atomic.Int64
 	n := 10
-	tasks := make([]any, n)
+	tasks := make([]func(), n)
 	for i := range tasks {
 		tasks[i] = func() { counter.Add(1) }
 	}

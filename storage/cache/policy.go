@@ -21,21 +21,23 @@ import (
 )
 
 type CachePolicy[T any] struct {
-	occupied uint64
-	maxSize  uint64
-	sizeOf   func(T) uint64
+	occupied     uint64
+	maxSize      uint64
+	sizeOf       func(T) uint64
+	triggerRatio float64
 }
 
 // NewCachePolicy returns a CachePolicy with a memory cap and value sizer.
 func NewCachePolicy[T any](maxSize uint64, sizeOf func(T) uint64) *CachePolicy[T] {
 	usage := &CachePolicy[T]{
-		occupied: 0,
-		maxSize:  uint64(24 * 1024 * 1024 * 1024),
-		sizeOf:   sizeOf,
+		occupied:     0,
+		maxSize:      uint64(24 * 1024 * 1024 * 1024),
+		sizeOf:       sizeOf,
+		triggerRatio: 1.2,
 	}
 
 	if v, err := common.GetAvailableMemory(); err == nil {
-		usage.maxSize = common.Min(maxSize, uint64(float64(v)*0.8))
+		usage.maxSize = min(maxSize, uint64(float64(v)*0.8))
 	}
 	return usage
 }
@@ -51,23 +53,20 @@ func (this *CachePolicy[T]) ValueSize(value T) uint64 {
 	return this.sizeOf(value)
 }
 
-// Update replaces an old value with a new one, updating usage; returns false if over limit.
-func (this *CachePolicy[T]) Update(oldSize, newSize uint64) bool {
+// Update adjusts memory usage by delta; returns false if a positive delta exceeds the limit.
+func (this *CachePolicy[T]) Update(delta int64) bool {
 	if this == nil {
 		return true
 	}
 
-	if oldSize > this.occupied {
-		oldSize = this.occupied
-	}
-
-	if newSize <= oldSize {
-		this.occupied -= oldSize - newSize
+	if delta <= 0 {
+		decrease := uint64(-(delta + 1)) + 1
+		this.occupied -= min(decrease, this.occupied)
 		return true
 	}
 
-	growth := newSize - oldSize
-	if this.maxSize > 0 && this.occupied+growth > this.maxSize {
+	growth := uint64(delta)
+	if this.maxSize > 0 && this.occupied+growth > uint64(float64(this.maxSize)*this.triggerRatio) {
 		return false
 	}
 

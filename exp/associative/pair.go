@@ -17,7 +17,11 @@
 
 package associative
 
-import slice "github.com/arcology-network/common-lib/exp/slice"
+import (
+	"sort"
+
+	slice "github.com/arcology-network/common-lib/exp/slice"
+)
 
 type Pair[T0, T1 any] struct {
 	First  T0
@@ -135,6 +139,12 @@ func (this *Pairs[T0, T1]) To() ([]T0, []T1) {
 		arr1[i] = pair.Second
 	}
 	return arr0, arr1
+}
+
+func (this *Pairs[T0, T1]) Sort(less func(a, b *Pair[T0, T1]) bool) {
+	sort.Slice(*this, func(i, j int) bool {
+		return less((*this)[i], (*this)[j])
+	})
 }
 
 // // ToTuples converts three arrays into an array of tuples.

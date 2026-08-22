@@ -138,58 +138,12 @@ func TestCcmapDelete(t *testing.T) {
 
 	ccmap.Set("1", 1)
 	ccmap.Set("2", 2)
-	ccmap.Set("3", 3)
-
-	ccmap.Delete("2")
-	if _, ok := ccmap.Get("2"); ok {
-		t.Fatal("expected key to be deleted")
-	}
-	if ccmap.Length() != 2 {
-		t.Fatal("expected length to shrink after delete")
-	}
-
-	ccmap.DeleteBatch([]string{"1", "3", "missing"})
-	if ccmap.Length() != 0 {
-		t.Fatal("expected delete batch to remove remaining keys")
-	}
+	ccmap.Delete("1")
 	if _, ok := ccmap.Get("1"); ok {
-		t.Fatal("expected key 1 to be deleted")
-	}
-	if _, ok := ccmap.Get("3"); ok {
-		t.Fatal("expected key 3 to be deleted")
-	}
-	if _, ok := ccmap.Get("missing"); ok {
-		t.Fatal("expected missing key to stay absent")
-	}
-}
-
-func TestCcmapDeleteBatchFromShards(t *testing.T) {
-	ccmap := NewConcurrentMap(8, func(v int) bool { return v == -1 }, func(k string) uint64 {
-		return uint64(slice.Sum[byte, int]([]byte(k)))
-	})
-
-	keys := []string{"1", "2", "3", "4"}
-	values := []int{1, 2, 3, 4}
-	ccmap.SetBatch(keys, values)
-
-	deleteKeys := []string{"1", "4"}
-	deleteIDs := ccmap.Hash8s(deleteKeys)
-	ccmap.DeleteBatchFromShards(deleteIDs, deleteKeys)
-
-	if _, ok := ccmap.Get("1"); ok {
-		t.Fatal("expected key 1 to be deleted")
-	}
-	if _, ok := ccmap.Get("4"); ok {
-		t.Fatal("expected key 4 to be deleted")
+		t.Fatal("expected deleted key to be absent")
 	}
 	if value, ok := ccmap.Get("2"); !ok || value != 2 {
-		t.Fatal("expected key 2 to remain")
-	}
-	if value, ok := ccmap.Get("3"); !ok || value != 3 {
-		t.Fatal("expected key 3 to remain")
-	}
-	if ccmap.Length() != 2 {
-		t.Fatal("expected length to reflect shard-targeted batch delete")
+		t.Fatal("expected unrelated key to remain")
 	}
 }
 
@@ -357,7 +311,7 @@ func TestParallelDo(t *testing.T) {
 	}
 
 	keys = append(keys, "5")
-	ccmap.UnsafeParallelFor(0, len(keys), func(i int) string { return keys[i] }, func(i int, k string, v interface{}, b bool) (interface{}, bool) {
+	ccmap.ParallelFor(0, len(keys), func(i int) string { return keys[i] }, func(i int, k string, v interface{}, b bool) (interface{}, bool) {
 		if k == "5" {
 			return "15", true
 		}

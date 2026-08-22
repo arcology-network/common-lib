@@ -27,16 +27,12 @@ import (
 
 // ParallelExecute executes the given tasks in parallel using goroutines.
 // It waits for all the tasks to complete before returning.
-func ParallelExecute(tasks ...any) {
-	var wg sync.WaitGroup
-	for i := range tasks {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			tasks[i].(func())()
-		}(i)
-	}
-	wg.Wait()
+func ParallelExecute(tasks ...func()) {
+	ParallelWorker(len(tasks), len(tasks), func(start, end, _ int, _ ...any) {
+		for i := start; i < end; i++ {
+			tasks[i]()
+		}
+	})
 }
 
 func ParallelWorker(total, nThds int, worker func(start, end, idx int, args ...any), args ...any) {

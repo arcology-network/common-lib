@@ -6,3 +6,6 @@
 *.vlog
 MANIFEST
 *.out
+
+# Test-generated storage
+/storage/transactional/testdb/

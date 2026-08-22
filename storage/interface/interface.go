@@ -24,6 +24,8 @@ import (
 )
 
 var ErrNotFound = errors.New("not found")
+var ErrCacheNotInUse = errors.New("cache isn't in use")
+var ErrCacheFull = errors.New("cache full")
 var ErrNotInParent = errors.New("not in parent")
 var ErrNoFallBack = errors.New("no fallback available")
 

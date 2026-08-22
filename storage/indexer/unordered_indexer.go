@@ -51,5 +51,6 @@ func (this *UnorderedIndexer[K, T, V]) Import(transitions []T) {
 func (this *UnorderedIndexer[K, T, V]) ParallelForeachDo(do func(k K, v *V)) {
 	this.OrderedMap.ParallelForeachDo(do)
 }
+
 func (this *UnorderedIndexer[K, T, V]) ForeachDo(do func(k K, v V)) { this.OrderedMap.ForeachDo(do) }
 func (this *UnorderedIndexer[K, T, V]) Clear()                      { this.OrderedMap.Clear() }

@@ -24,7 +24,6 @@ import (
 	"io/fs"
 	"math"
 	"os"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -53,13 +52,17 @@ type FileDB struct {
 	decoder  func(string, any, any) (any, error)
 }
 
+func directoryPath(name string) string {
+	return strings.TrimRight(filepath.Clean(name), string(os.PathSeparator)) + string(os.PathSeparator)
+}
+
 func LoadFileDB(rootpath string, shards uint32, depth uint8) (*FileDB, error) {
 	return LoadFileDBWithCodec(rootpath, shards, depth, nil)
 }
 
 func LoadFileDBWithCodec(rootpath string, shards uint32, depth uint8, decoder func(string, any, any) (any, error)) (*FileDB, error) {
 	fileDB := &FileDB{
-		rootpath: path.Join(rootpath, "/") + "/",
+		rootpath: directoryPath(rootpath),
 		shards:   shards,
 		depth:    depth,
 		decoder:  decoder,
@@ -94,7 +97,7 @@ func NewFileDB(rootPath string, shards uint32, depth uint8, decoder ...func(stri
 	}
 
 	fileDB := &FileDB{
-		rootpath: path.Join(rootPath, "/") + "/",
+		rootpath: directoryPath(rootPath),
 		shards:   shards,
 		depth:    2,
 		decoder:  decode,
@@ -137,7 +140,7 @@ func (this *FileDB) SetVer(newVer uint64) (uint64, error) {
 			return version, errors.New("Error: The version numbers have to be consecutive !")
 		}
 
-		err = os.WriteFile(path.Join(this.rootpath, VERSION_FILE), codec.Uint64(newVer).Encode(), os.ModePerm)
+		err = os.WriteFile(filepath.Join(this.rootpath, VERSION_FILE), codec.Uint64(newVer).Encode(), os.ModePerm)
 		if err == nil {
 			return this.GetVer()
 		}
@@ -146,7 +149,7 @@ func (this *FileDB) SetVer(newVer uint64) (uint64, error) {
 }
 
 func (this *FileDB) GetVer() (uint64, error) {
-	if verBytes, err := os.ReadFile(path.Join(this.rootpath, VERSION_FILE)); err == nil {
+	if verBytes, err := os.ReadFile(filepath.Join(this.rootpath, VERSION_FILE)); err == nil {
 		version := codec.Uint64(0).Decode(verBytes).(uint64)
 		return version, nil
 	} else {
@@ -158,7 +161,7 @@ func (this *FileDB) Directories(folder string, depth uint8) []string {
 	dirs := []string{}
 	if depth < this.depth {
 		for i := uint32(0); i < this.shards; i++ {
-			newDir := path.Join(folder, fmt.Sprint(i)) + "/"
+			newDir := directoryPath(filepath.Join(folder, fmt.Sprint(i)))
 			if depth+1 == this.depth {
 				dirs = append(dirs, newDir)
 			}
@@ -180,17 +183,15 @@ func (this *FileDB) makeDirectories(folder string, depth uint8) ([]string, error
 }
 
 func (this *FileDB) locateFile(key string) string {
-	path := this.findPath(key)
-	path += fmt.Sprint(byte(key[this.depth]%byte(this.shards))) + EXTENSIION
-	return path
+	return filepath.Join(this.findPath(key), fmt.Sprint(byte(key[this.depth]%byte(this.shards)))+EXTENSIION)
 }
 
 func (this *FileDB) findPath(key string) string {
-	path := this.rootpath
+	filePath := this.rootpath
 	for i := uint8(0); i < this.depth; i++ {
-		path += fmt.Sprint(byte(key[0]%byte(this.shards))) + "/"
+		filePath = filepath.Join(filePath, fmt.Sprint(byte(key[0]%byte(this.shards))))
 	}
-	return path
+	return filePath
 }
 
 func (this *FileDB) loadFile(file string) ([]string, [][]byte, error) {
@@ -492,10 +493,10 @@ func (this *FileDB) readAll(paths []string) ([][]byte, error) {
 				var files []fs.DirEntry
 				if files, err = os.ReadDir(paths[i]); err == nil { // Get all files in the directory
 					for j := 0; j < len(files); j++ {
-						if buffer, err := os.ReadFile(paths[i] + files[j].Name()); err == nil {
-							file := paths[i] + files[j].Name()
-							file = file[len(this.rootpath):]
-							buffer = codec.Byteset([][]byte{codec.String(file).ToBytes(), buffer}).Encode()
+						file := filepath.Join(paths[i], files[j].Name())
+						if buffer, err := os.ReadFile(file); err == nil {
+							relativePath := filepath.ToSlash(file[len(this.rootpath):])
+							buffer = codec.Byteset([][]byte{codec.String(relativePath).ToBytes(), buffer}).Encode()
 							data[i] = append(data[i], buffer)
 						} else {
 							errs[i] = err
@@ -570,7 +571,6 @@ func (this *FileDB) Import(data [][]byte) error {
 		combo := codec.Byteset{}.Decode(data[i]).(codec.Byteset)
 
 		file := codec.Bytes(combo[0]).ToString() // file ROOT_PATH
-		// file := this.rootpath + relativePath
 
 		reversed := codec.String(file).Reverse()
 		parts := strings.Split(reversed, "/")
@@ -578,8 +578,9 @@ func (this *FileDB) Import(data [][]byte) error {
 			return errors.New("Error: Wrong path !!!")
 		}
 		reversed = strings.Join(parts[:this.depth+1], "/")
-		ROOT_PATH := this.rootpath + codec.String(reversed).Reverse()
-		if err := os.WriteFile(ROOT_PATH, combo[1], os.ModePerm); err != nil {
+		relativePath := filepath.FromSlash(codec.String(reversed).Reverse())
+		rootPath := filepath.Join(this.rootpath, relativePath)
+		if err := os.WriteFile(rootPath, combo[1], os.ModePerm); err != nil {
 			return err
 		}
 	}

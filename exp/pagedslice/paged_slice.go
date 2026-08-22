@@ -40,8 +40,8 @@ func NewPagedSlice[T any](pageSize, minPages, preAlloc int) *PagedSlice[T] {
 	}
 
 	array := &PagedSlice[T]{
-		minPages: common.Max(minPages, 1),
-		pageSize: common.Max(pageSize, 1),
+		minPages: max(minPages, 1),
+		pageSize: max(pageSize, 1),
 		length:   preAlloc,
 	}
 
@@ -90,7 +90,7 @@ func (this *PagedSlice[T]) Concate(values []T) {
 	nextBlockID, offset := this.next()
 	copy(this.pages[nextBlockID][offset:], values)
 
-	minLen := common.Min(len(values), this.pageSize-offset)
+	minLen := min(len(values), this.pageSize-offset)
 	values = values[minLen:]
 	this.length += minLen
 
@@ -133,9 +133,9 @@ func (this *PagedSlice[T]) ToSlice(start int, end int) []T {
 
 // PopBackToBuffer removes and copies the elements from the end of the PagedSlice to a specified buffer.
 func (this *PagedSlice[T]) PopBackToBuffer(buffer []T) {
-	start := common.Max(this.length-len(buffer), 0)
-	this.ToBuffer(start, common.Min(start+len(buffer), this.Size()), buffer)
-	this.length -= common.Min(len(buffer), this.Size())
+	start := max(this.length-len(buffer), 0)
+	this.ToBuffer(start, min(start+len(buffer), this.Size()), buffer)
+	this.length -= min(len(buffer), this.Size())
 }
 
 // ToBuffer copies the elements from the PagedSlice to the specified buffer starting from the specified start

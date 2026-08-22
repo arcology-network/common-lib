@@ -93,7 +93,7 @@ func (this *Property) Reset() {
 // 	this.writes += other.writes
 // 	this.deltaWrites += other.deltaWrites
 // 	this.gasUsed += other.gasUsed
-// 	this.sizeInStorage = common.Max(this.sizeInStorage, other.sizeInStorage)
+// 	this.sizeInStorage = max(this.sizeInStorage, other.sizeInStorage)
 // 	this.ifSkipConflictCheck = this.ifSkipConflictCheck || other.ifSkipConflictCheck
 // 	return this.keyHash == other.keyHash
 // }

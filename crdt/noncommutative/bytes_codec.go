@@ -24,9 +24,11 @@ import (
 func (this *Bytes) HeaderSize() uint64 {
 	return 0
 }
+
 func (this *Bytes) Size() uint64 {
 	return this.HeaderSize() + this.MemSize()
 }
+
 func (this *Bytes) Encode() []byte {
 	return append([]byte{BYTES}, (*this)...)
 }

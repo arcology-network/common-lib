@@ -59,6 +59,7 @@ func (addresses Addresses) Decode(data []byte) []ethCommon.Address {
 	}
 	return addresses
 }
+
 func (addresses Addresses) Flatten() []byte {
 	buffer := make([]byte, len(addresses)*AddressLength)
 	for i := 0; i < len(addresses); i++ {

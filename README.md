@@ -47,7 +47,6 @@ This package facilitates Files DBs, memory DB, and offers wrappers for various t
 | datastore   | A high-level datastore designed to handle state transition persistency. |
 | filedb      | A file database.                                            |
 | memDB       | A high-performance DB for concurrent use utilizing a concurrent map. |
-| bager DB    | A [BagerDB](https://github.com/dgraph-io/badger) wrapper.                                           |
 
 
 <h2> Usage  <img align="center" height="32" src="./img/ruler-cross-pen.svg">  </h2>

@@ -25,11 +25,11 @@ import (
 
 	crdtcommon "github.com/arcology-network/common-lib/crdt/common"
 	noncommutative "github.com/arcology-network/common-lib/crdt/noncommutative"
-	badgerdb "github.com/arcology-network/common-lib/storage/badger"
 	stgcodec "github.com/arcology-network/common-lib/storage/codec"
 	filedb "github.com/arcology-network/common-lib/storage/filedb"
 	stgintf "github.com/arcology-network/common-lib/storage/interface"
 	memdb "github.com/arcology-network/common-lib/storage/memdb"
+	pebbledb "github.com/arcology-network/common-lib/storage/pebble"
 )
 
 type demoObj interface {
@@ -164,7 +164,7 @@ func wrapFileByteBackend(db *filedb.FileDB) stgintf.ReadWriteStore[string, []byt
 	}
 }
 
-func wrapBadgerByteBackend(db *badgerdb.BadgerDB) stgintf.ReadWriteStore[string, []byte] {
+func wrapPebbleByteBackend(db *pebbledb.PebbleDB) stgintf.ReadWriteStore[string, []byte] {
 	return &byteBackendAdapter{
 		get:         db.Get,
 		getBatch:    db.GetBatch,
@@ -177,7 +177,7 @@ func wrapBadgerByteBackend(db *badgerdb.BadgerDB) stgintf.ReadWriteStore[string,
 	}
 }
 
-func wrapParaBadgerByteBackend(db *badgerdb.ParaBadgerDB) stgintf.ReadWriteStore[string, []byte] {
+func wrapParaPebbleByteBackend(db *pebbledb.ParaPebbleDB) stgintf.ReadWriteStore[string, []byte] {
 	return &byteBackendAdapter{
 		get:         db.Get,
 		getBatch:    db.GetBatch,
@@ -223,6 +223,7 @@ func (this *testKVStore[K, T]) GetBatch(keys []K) ([]any, []error) {
 	}
 	return values, errs
 }
+
 func (this *testKVStore[K, T]) Set(key K, value T) error {
 	this.values[key] = value
 	return nil
@@ -1190,18 +1191,24 @@ func TestStoreWithFileDBBackend(t *testing.T) {
 	runStoreWithByteBackend(t, wrapFileByteBackend(db), "FileDB")
 }
 
-func TestStoreWithBadgerDBBackend(t *testing.T) {
-	db := badgerdb.NewBadgerDB(filepath.Join(t.TempDir(), "badger"))
+func TestStoreWithPebbleDBBackend(t *testing.T) {
+	db, err := pebbledb.NewPebbleDB(filepath.Join(t.TempDir(), "pebble"))
+	if err != nil {
+		t.Fatalf("failed to create PebbleDB backend: %v", err)
+	}
 	t.Cleanup(func() {
 		_ = db.Close()
 	})
-	runStoreWithByteBackend(t, wrapBadgerByteBackend(db), "BadgerDB")
+	runStoreWithByteBackend(t, wrapPebbleByteBackend(db), "PebbleDB")
 }
 
-func TestStoreWithParaBadgerDBBackend(t *testing.T) {
-	db := badgerdb.NewParaBadgerDB(filepath.Join(t.TempDir(), "parabadger")+"/", nil)
+func TestStoreWithParaPebbleDBBackend(t *testing.T) {
+	db, err := pebbledb.NewParaPebbleDB(filepath.Join(t.TempDir(), "parapebble"), nil)
+	if err != nil {
+		t.Fatalf("failed to create ParaPebbleDB backend: %v", err)
+	}
 	t.Cleanup(func() {
 		_ = db.Close()
 	})
-	runStoreWithByteBackend(t, wrapParaBadgerByteBackend(db), "ParaBadgerDB")
+	runStoreWithByteBackend(t, wrapParaPebbleByteBackend(db), "ParaPebbleDB")
 }

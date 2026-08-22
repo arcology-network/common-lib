@@ -20,7 +20,7 @@ package cache
 type Stat struct {
 	sizeInMem   uint64
 	firstLoaded uint64
-	visits      uint64
+	visits      uint64 // Will race, just an approximation, atomic counter is too expensive.
 }
 
 func (this *Stat) SetLoaded(version uint64) {
@@ -28,7 +28,7 @@ func (this *Stat) SetLoaded(version uint64) {
 }
 
 type entry[T any] struct {
-	value T
+	value *T
 	Stat
 }
 
@@ -37,11 +37,11 @@ func (this *entry[T]) Size() uint64 {
 		return 0
 	}
 
-	if this.sizeInMem != 0 {
-		return this.sizeInMem
+	if this.value == nil {
+		return 0
 	}
 
-	sized, ok := any(this.value).(interface{ MemSize() uint64 })
+	sized, ok := any(*this.value).(interface{ MemSize() uint64 })
 	if !ok {
 		return 0
 	}
@@ -50,10 +50,11 @@ func (this *entry[T]) Size() uint64 {
 	return this.sizeInMem
 }
 
-func (this *entry[T]) Replace(NewValue T) (uint64, uint64) {
+func (this *entry[T]) ReplaceBy(NewValue T) int64 {
 	oldSize := this.Size()
-	this.value = NewValue
+	this.value = &NewValue
 	this.sizeInMem = this.Size()
 	this.visits++
-	return oldSize, this.sizeInMem
+	return int64(this.sizeInMem) - int64(oldSize)
+
 }

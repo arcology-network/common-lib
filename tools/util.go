@@ -28,6 +28,7 @@ import (
 func CalculateHash(hashes []*evmCommon.Hash) evmCommon.Hash {
 	return evmCommon.BytesToHash(crypto.Keccak256(slice.Concate(hashes, func(v *evmCommon.Hash) []byte { return (*v)[:] })))
 }
+
 func RlpHash(x interface{}) (h evmCommon.Hash) {
 	hw := sha3.NewLegacyKeccak256()
 	rlp.Encode(hw, x)
